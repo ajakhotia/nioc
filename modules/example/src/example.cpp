@@ -4,8 +4,22 @@
 // Author   : Anurag Jakhotia                                                                                          /
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+// NOTE:    Local headers(usually private) are referenced using relative path from the parent directory of the
+//          source file and are included using double quotes ("").
+//
+//          examplePrivateHeader.hpp lives in the directory as example.cpp so it can be included directly as below.
 #include "examplePrivateHeader.hpp"
+
+// NOTE:    Public Header or header in other locations are referenced using the relative path from include-root
+//          of the appropriate module / library that owns that said header. The include-root of a module / library
+//          is specified by the build system. The parameters to the target_include_directories(...) directive in
+//          the appropriate CMakeLists.txt dictates the include-root of the corresponding module / library.
+//
+//          example.hpp is a public header that declares the interface for the example library. CMakeLists.txt
+//          in the example module specifies "include" directory as the include-root of the example library. So we
+//          reference the example.hpp header using a path w.r.t to that "include" directory as below.
 #include <naksh/example/example.hpp>
+
 #include <cassert>
 
 namespace naksh::example
