@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.16)
 project(naksh VERSION 0.0.0.0 LANGUAGES C CXX)
 
 
-#[[ Setup unit tests framework. ]]
+#[[ Setup unit testing framework. ]]
 if(BUILD_TESTING)
     find_package(GTest REQUIRED)
 else()
@@ -15,16 +15,16 @@ if((TARGET GTest::GTest) AND (TARGET GTest::Main))
     include(CTest)
 endif()
 
-add_subdirectory(external)  # Hosts repositories managed outside the scope of this project.
-add_subdirectory(modules)   # Hosts code managed by this project.
+
+add_subdirectory(external)
+add_subdirectory(modules)
 add_subdirectory(docker)
 
 
-#[[ Include cmake-default tools to help create export files. ]]
+#[[ Include cmake-default tools to create export files. ]]
 include(CMakePackageConfigHelpers)
 
-#[[ Install ${CMAKE_INSTALL_PREFIX}/lib/cmake/naksh/nakshTargets.cmake for other projects to include the
-    installation tree. ]]
+#[[ Export the target metadata to the install tree. ]]
 install(EXPORT nakshTargets NAMESPACE Naksh::
         FILE nakshTargets.cmake
         DESTINATION lib/cmake/naksh)
