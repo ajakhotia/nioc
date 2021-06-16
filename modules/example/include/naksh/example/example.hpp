@@ -41,4 +41,5 @@ private:
     std::string mName;
 };
 
+
 } // End of namespace naksh::example
