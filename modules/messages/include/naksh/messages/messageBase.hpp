@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 namespace naksh::messages
 {
 

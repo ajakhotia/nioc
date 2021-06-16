@@ -7,7 +7,6 @@
 #pragma once
 
 #include "messageBase.hpp"
-#include <cstdint>
 
 namespace naksh::messages
 {

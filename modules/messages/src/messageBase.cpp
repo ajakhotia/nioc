@@ -4,6 +4,8 @@
 // Author   : Anurag Jakhotia                                                                                          /
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#include <naksh/messages/messageBase.hpp>
+
 namespace naksh::messages
 {
 
