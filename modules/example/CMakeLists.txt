@@ -21,6 +21,9 @@ target_compile_features(exampleMain INTERFACE cxx_std_17)
 
 target_link_libraries(exampleMain Naksh::example)
 
+if(BUILD_TESTING)
+    add_subdirectory(test)
+endif()
 
 install(DIRECTORY include/
         DESTINATION include
