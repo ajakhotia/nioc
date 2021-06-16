@@ -6,30 +6,23 @@
 
 #pragma once
 
-#include "messageBase.hpp"
-#include <cstdint>
-
 namespace naksh::messages
 {
 
-
-template<typename SerializableType_>
-class Message : public MessageBase
+class MessageBase
 {
 public:
-    using SerializableType = SerializableType_;
+    using MessageId = uint64_t;
 
-    using MessageId  = MessageBase::MessageId;
+    MessageBase() = default;
 
-    static constexpr const MessageId kMessageId = SerializableType::_capnpPrivate::typeId;
+    virtual ~MessageBase() = default;
 
-    [[nodiscard]] MessageId messageId() const override
-    {
-        return kMessageId;
-    }
+    [[nodiscard]] virtual MessageId messageId() const = 0;
 
 private:
 
 };
+
 
 } // End of namespace naksh::messages.

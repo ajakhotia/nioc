@@ -5,7 +5,7 @@ capnp_generate_cpp(CAPNP_SRCS CAPNP_HDRS
 
 
 add_library(messages SHARED
-        src/message.cpp
+        src/messageBase.cpp
         ${CAPNP_SRCS})
 
 add_library(Naksh::messages ALIAS messages)
