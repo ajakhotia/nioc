@@ -1,6 +1,6 @@
 find_package(CapnProto REQUIRED)
 
-function(naksh_capnproto_generate_cpp TARGET_NAMESPACE TARGET_NAME SCHEMA_FILES_LIST)
+function(naksh_capnproto_generate_cpp TARGET_NAMESPACE TARGET_NAME)
 
     # Acquire the paths to capnp tool, run-time library and interface directory.
     get_target_property(CAPNP_TOOL_PATH CapnProto::capnp_tool LOCATION)
@@ -10,7 +10,7 @@ function(naksh_capnproto_generate_cpp TARGET_NAMESPACE TARGET_NAME SCHEMA_FILES_
     get_filename_component(CAPNP_PATH ${CAPNP_TOOL_PATH} DIRECTORY)
     get_filename_component(CAPNP_LIBRARY_PATH ${CAPNP_TOOL_RUNTIME_LIBRARY_PATH} DIRECTORY)
 
-    foreach(SCHEMA_FILE_PATH ${SCHEMA_FILES_LIST})
+    foreach(SCHEMA_FILE_PATH ${ARGN})
 
         # Build absolute and relative paths from the current source directory to the schema file.
         get_filename_component(SCHEMA_FILE_ABSOLUTE_PATH ${SCHEMA_FILE_PATH} ABSOLUTE)
@@ -56,7 +56,7 @@ function(naksh_capnproto_generate_cpp TARGET_NAMESPACE TARGET_NAME SCHEMA_FILES_
 
     # Build a shared library from the generated code.
     add_library(${TARGET_NAME} SHARED ${SCHEMA_SOURCE_FILENAME_LIST})
-    add_library(${TARGET_NAMESPACE}::${TARGET_NAME} ALIAS ${TARGET_NAME})
+    add_library(${TARGET_NAMESPACE}${TARGET_NAME} ALIAS ${TARGET_NAME})
 
     target_include_directories(${TARGET_NAME} PUBLIC
             $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
