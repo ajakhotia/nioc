@@ -15,6 +15,7 @@ if((TARGET GTest::GTest) AND (TARGET GTest::Main))
     include(CTest)
 endif()
 
+include(cmake/capnprotoGenerateMacro.cmake)
 
 add_subdirectory(external)
 add_subdirectory(modules)

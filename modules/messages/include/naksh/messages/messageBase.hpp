@@ -16,7 +16,7 @@ class MessageBase
 public:
     using MessageId = uint64_t;
 
-    MessageBase() = default;
+    MessageBase();
 
     virtual ~MessageBase() = default;
 
