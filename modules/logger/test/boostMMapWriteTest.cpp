@@ -4,10 +4,5 @@
 // Author   : Anurag Jakhotia                                                                                          /
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include <naksh/logger/logger.hpp>
 #include <boost/iostreams/device/mapped_file.hpp>
-
-namespace naksh::logger
-{
-
-} // End of namespace naksh::logger
+#include <gtest/gtest.h>
