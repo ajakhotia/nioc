@@ -10,12 +10,9 @@
 namespace naksh::messages
 {
 
-MessageBase::MessageBase()
-{
+MessageBase::MessageBase() = default;
 
-}
-
-
+MessageBase::~MessageBase() = default;
 
 
 } // End of namespace naksh::messages.

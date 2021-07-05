@@ -18,7 +18,7 @@ public:
 
     MessageBase();
 
-    virtual ~MessageBase() = default;
+    virtual ~MessageBase();
 
     [[nodiscard]] virtual MessageId messageId() const = 0;
 
