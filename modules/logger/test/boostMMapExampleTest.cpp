@@ -50,7 +50,7 @@ TEST(LoggerBoostUsageExample, MMapFileWriting)
 
 TEST(LoggerBoostUsageExample, SerialFileWrite)
 {
-    // Create 1 MB file and  write 'a' to it.
+    // Create a file and  write 'a' to it.
     const auto tic = std::clock();
     {
         std::ofstream file("/tmp/serialFileWriting.txt");
