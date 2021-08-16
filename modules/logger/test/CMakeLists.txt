@@ -1,8 +1,10 @@
 find_package(GTest REQUIRED)
 include(GoogleTest)
 
-add_executable(loggerTest boostMMapWriteTest.cpp)
-target_link_libraries(loggerTest Naksh::logger GTest::GTest GTest::Main)
+find_package(Boost REQUIRED COMPONENTS iostreams)
+
+add_executable(loggerTest boostMMapExampleTest.cpp)
+target_link_libraries(loggerTest Boost::iostreams Naksh::logger GTest::GTest GTest::Main)
 
 target_compile_options(loggerTest PRIVATE
         $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
