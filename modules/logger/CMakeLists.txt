@@ -1,4 +1,8 @@
 find_package(Boost REQUIRED COMPONENTS iostreams)
+find_package(spdlog REQUIRED)
+
+naksh_capnproto_generate_cpp(Naksh:: loggerIdl
+        include/naksh/logger/idl/frame.capnp)
 
 add_library(logger SHARED src/logger.cpp)
 add_library(Naksh::logger ALIAS logger)
@@ -8,7 +12,7 @@ target_include_directories(logger
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>)
 
-target_link_libraries(logger PRIVATE Boost::iostreams)
+target_link_libraries(logger PRIVATE Naksh::loggerIdl spdlog::spdlog Boost::iostreams)
 
 target_compile_features(logger PUBLIC cxx_std_17)
 

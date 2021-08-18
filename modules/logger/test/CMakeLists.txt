@@ -3,7 +3,8 @@ include(GoogleTest)
 
 find_package(Boost REQUIRED COMPONENTS iostreams)
 
-add_executable(loggerTest boostMMapExampleTest.cpp)
+add_executable(loggerTest boostMMapExampleTest.cpp loggerTest.cpp)
+
 target_link_libraries(loggerTest Naksh::logger Boost::iostreams GTest::GTest GTest::Main)
 
 target_compile_options(loggerTest PRIVATE
