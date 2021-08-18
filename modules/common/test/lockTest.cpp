@@ -73,7 +73,7 @@ TEST(CommonTest, LockedOperatorConst)
 {
     const Locked<int> lockedInt(12);
 
-    // This is legal because we use a const-reference as lambda parameter.
+    // This is legal because we use a const-reference for the lambda parameter.
     const auto r1 = lockedInt(
             [](const int& lhs)
             {
@@ -83,7 +83,7 @@ TEST(CommonTest, LockedOperatorConst)
     EXPECT_EQ(19, r1);
 
 
-    // This is legal because we use pass-by-value as lambda parameter.
+    // This is legal because we use pass-by-value for the lambda parameter.
     const auto r2 = lockedInt(
             [](int lhs)
             {
@@ -93,8 +93,8 @@ TEST(CommonTest, LockedOperatorConst)
     EXPECT_EQ(41, r2);
 
 
-    // This ill-legal because we use pass by non-const reference which discards the
-    // const qualifier of lockedInt.
+    // This ill-legal because we use non-const-reference for the lambda parameter
+    // which discards the const qualifier of lockedInt.
     // const auto r3 = lockedInt(
     //        [](int& lhs)
     //        {
@@ -124,7 +124,7 @@ TEST(CommonTest, AssignmentMoveSemantics)
 
     auto intPtr = std::make_unique<int>(29);
 
-    // This is ill-legal because intPtr is an l-value and unique pointer are not copyable.
+    // This is ill-legal because intPtr is an l-value and unique pointers are not copyable.
     // Additionally, l-values cannot be moved implicitly.
     //lockedIntPtr = intPtr;
 
