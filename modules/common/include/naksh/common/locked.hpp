@@ -53,7 +53,7 @@ public:
     ///         constructor of the underlying types.
     ///
     /// @tparam Args    Variadic parameter pack accepted by the constructors of
-    ///                 the underlying type a.k.a @tparam ValueType
+    ///                 the underlying type a.k.a ValueType
     ///
     /// @param  args    Parameter pack to be forwarded as arguments to the
     ///                 constructor of the underlying value a.k.a Locked::mLockedValue
@@ -81,7 +81,7 @@ public:
     Locked& operator=(Locked&&) = delete;
 
 
-    /// @brief  Runs the @param operation with Locked::mLockedValue as the argument
+    /// @brief  Runs the operation with Locked::mLockedValue as the argument
     ///         after acquiring a shared lock. Because this overload is
     ///         const-qualified, it's invoked only for read-only operations.
     ///
@@ -89,7 +89,7 @@ public:
     ///
     /// @param  operation   The operating lambda.
     ///
-    /// @return Any result returned by the @param operation is returned to the
+    /// @return Any result returned by the operation is returned to the
     ///         calling context.
     template<typename Operation>
     decltype(auto) operator()(Operation&& operation) const
@@ -99,7 +99,7 @@ public:
     }
 
 
-    /// @brief  Runs the @param operation with Locked::mLockedValue as the argument
+    /// @brief  Runs the operation with Locked::mLockedValue as the argument
     ///         after acquiring an exclusive lock. Because this overload is
     ///         not const-qualified, it's typical invoked for write operations.
     ///
@@ -107,7 +107,7 @@ public:
     ///
     /// @param  operation   The operating lambda.
     ///
-    /// @return Any result returned by the @param operation is returned to the
+    /// @return Any result returned by the operation is returned to the
     ///         calling context.
     template<typename Operation>
     decltype(auto) operator()(Operation&& operation)
@@ -119,7 +119,7 @@ public:
 
     /// @brief  A convenience operator to copy-assign a value to the underlying type
     ///         in a thread-safe manner. Of course invocation of this method is
-    ///         only valid when @tparam OtherType is copy-assignable to @tparam ValueType.
+    ///         only valid when OtherType is copy-assignable to ValueType.
     ///
     /// @tparam OtherType   The type of the assigned variable.
     ///                     Any implicit conversion are performed automatically.
@@ -137,7 +137,7 @@ public:
 
     /// @brief  A convenience operator to move-assign a value to the underlying type
     ///         in a thread-safe manner. Of course invocation of this method is
-    ///         only valid when @tparam OtherType is move-assignable to @tparam ValueType .
+    ///         only valid when OtherType is move-assignable to ValueType.
     ///
     /// @tparam OtherType   The type of the assigned variable.
     ///                     Any implicit conversion are performed automatically.
@@ -171,9 +171,9 @@ public:
     ///
     /// @details    After the extraction, the underlying member is set to state
     ///             as dictated by the move assignment of the underlying type,
-    ///             a.k.a @tparam ValueType.
+    ///             a.k.a ValueType.
     ///
-    /// @return     Extracted value of the underlying member.
+    /// @return     A moved-copy of the underlying member.
     ValueType move()
     {
         // Without std::move() here, the compiler will attempt to make a copy.
