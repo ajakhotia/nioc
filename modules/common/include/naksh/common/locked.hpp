@@ -189,13 +189,25 @@ private:
 };
 
 
-/// Equality Check.
+/// @brief  Equality check operator.
+/// @tparam ValueType   Underlying value type protected by the Locked type.
+/// @tparam Other       Type of the other operand that is comparable with ValueType.
+/// @param  lockedValue LHS operand.
+/// @param  otherValue  RHS operand.
+/// @return true if the underlying value of lockedValue equals the otherValue, false otherwise.
 template<typename ValueType, typename Other>
 constexpr bool operator==(const Locked<ValueType>& lockedValue, const Other& otherValue)
 {
     return lockedValue([&otherValue](const ValueType& value) { return value == otherValue; });
 }
 
+
+/// @brief  Equality check operator.
+/// @tparam Other       Type of the operand that is comparable with @tparam ValueType.
+/// @tparam ValueType   Type of the other operand that is comparable with ValueType.
+/// @param  otherValue  LHS operand.
+/// @param  lockedValue RHS operand.
+/// @return true if the otherValue equals the underlying value of the lockedValue, false otherwise.
 template<typename Other, typename ValueType>
 constexpr bool operator==(const Other& otherValue, const Locked<ValueType>& lockedValue)
 {
@@ -203,13 +215,27 @@ constexpr bool operator==(const Other& otherValue, const Locked<ValueType>& lock
 }
 
 
-/// In-equality check.
+/// @brief  Inequality check operator.
+/// @tparam ValueType   Underlying value type protected by the Locked type.
+/// @tparam Other       Type of the other operand that is comparable with ValueType.
+/// @param  lockedValue LHS operand.
+/// @param  otherValue  RHS operand.
+/// @return true if the underlying value of the lockedValue is not equal to the otherValue,
+///         false otherwise.
 template<typename ValueType, typename Other>
 constexpr bool operator!=(const Locked<ValueType>& lockedValue, const Other& otherValue)
 {
     return lockedValue([&otherValue](const ValueType& value) { return value != otherValue; });
 }
 
+
+/// @brief  Equality check operator.
+/// @tparam Other       Type of the operand that is comparable with @tparam ValueType.
+/// @tparam ValueType   Type of the other operand that is comparable with ValueType.
+/// @param  otherValue  LHS operand.
+/// @param  lockedValue RHS operand.
+/// @return true if the otherValue is not equal to the underlying value of the lockedValue,
+///         false otherwise.
 template<typename Other, typename ValueType>
 constexpr bool operator!=(const Other& otherValue, const Locked<ValueType>& lockedValue)
 {
@@ -217,13 +243,27 @@ constexpr bool operator!=(const Other& otherValue, const Locked<ValueType>& lock
 }
 
 
-/// Lesser-than check.
+/// @brief  Lesser-than check operator.
+/// @tparam ValueType   Underlying value type protected by the Locked type.
+/// @tparam Other       Type of the other operand that is comparable with ValueType.
+/// @param  lockedValue LHS operand.
+/// @param  otherValue  RHS operand.
+/// @return true if the underlying value of the lockedValue is lesser than the otherValue,
+///         false otherwise.
 template<typename ValueType, typename Other>
 constexpr bool operator<(const Locked<ValueType>& lockedValue, const Other& otherValue)
 {
     return lockedValue([&otherValue](const ValueType& value) { return value < otherValue; });
 }
 
+
+/// @brief  Lesser-than check operator.
+/// @tparam Other       Type of the operand that is comparable with @tparam ValueType.
+/// @tparam ValueType   Type of the other operand that is comparable with ValueType.
+/// @param  otherValue  LHS operand.
+/// @param  lockedValue RHS operand.
+/// @return true if the otherValue is lesser than the underlying value of the lockedValue,
+///         false otherwise.
 template<typename Other, typename ValueType>
 constexpr bool operator<(const Other& otherValue, const Locked<ValueType>& lockedValue)
 {
@@ -231,13 +271,27 @@ constexpr bool operator<(const Other& otherValue, const Locked<ValueType>& locke
 }
 
 
-/// Lesser-than-or-equal check.
+/// @brief  Lesser-than or equal check operator.
+/// @tparam ValueType   Underlying value type protected by the Locked type.
+/// @tparam Other       Type of the other operand that is comparable with ValueType.
+/// @param  lockedValue LHS operand.
+/// @param  otherValue  RHS operand.
+/// @return true if the underlying value of the lockedValue is lesser than or equal to the otherValue,
+///         false otherwise.
 template<typename ValueType, typename Other>
 constexpr bool operator<=(const Locked<ValueType>& lockedValue, const Other& otherValue)
 {
     return lockedValue([&otherValue](const ValueType& value) { return value <= otherValue; });
 }
 
+
+/// @brief  Lesser-than or equal check operator.
+/// @tparam Other       Type of the operand that is comparable with @tparam ValueType.
+/// @tparam ValueType   Type of the other operand that is comparable with ValueType.
+/// @param  otherValue  LHS operand.
+/// @param  lockedValue RHS operand.
+/// @return true if the otherValue is lesser than or equal to the underlying value of the lockedValue,
+///         false otherwise.
 template<typename Other, typename ValueType>
 constexpr bool operator<=(const Other& otherValue, const Locked<ValueType>& lockedValue)
 {
@@ -245,13 +299,27 @@ constexpr bool operator<=(const Other& otherValue, const Locked<ValueType>& lock
 }
 
 
-/// Greater-than check.
+/// @brief  Greater-than check operator.
+/// @tparam ValueType   Underlying value type protected by the Locked type.
+/// @tparam Other       Type of the other operand that is comparable with ValueType.
+/// @param  lockedValue LHS operand.
+/// @param  otherValue  RHS operand.
+/// @return true if the underlying value of lockedValue is greater than the otherValue,
+///         false otherwise.
 template<typename ValueType, typename Other>
 constexpr bool operator>(const Locked<ValueType>& lockedValue, const Other& otherValue)
 {
     return lockedValue([&otherValue](const ValueType& value) { return value > otherValue; });
 }
 
+
+/// @brief  Greater-than check operator.
+/// @tparam Other       Type of the operand that is comparable with @tparam ValueType.
+/// @tparam ValueType   Type of the other operand that is comparable with ValueType.
+/// @param  otherValue  LHS operand.
+/// @param  lockedValue RHS operand.
+/// @return true if the otherValue is greater than the underlying value of the lockedValue,
+///         false otherwise.
 template<typename Other, typename ValueType>
 constexpr bool operator>(const Other& otherValue, const Locked<ValueType>& lockedValue)
 {
@@ -259,19 +327,32 @@ constexpr bool operator>(const Other& otherValue, const Locked<ValueType>& locke
 }
 
 
-/// Greater-than-or-equal.
+/// @brief  Greater-than or equal check operator.
+/// @tparam ValueType   Underlying value type protected by the Locked type.
+/// @tparam Other       Type of the other operand that is comparable with ValueType.
+/// @param  lockedValue LHS operand.
+/// @param  otherValue  RHS operand.
+/// @return true if the underlying value of lockedValue is greater-than or equal to the otherValue,
+///         false otherwise.
 template<typename ValueType, typename Other>
 constexpr bool operator>=(const Locked<ValueType>& lockedValue, const Other& otherValue)
 {
     return lockedValue([&otherValue](const ValueType& value) { return value >= otherValue; });
 }
 
+
+/// @brief  Greater-than or equal check operator.
+/// @tparam Other       Type of the operand that is comparable with @tparam ValueType.
+/// @tparam ValueType   Type of the other operand that is comparable with ValueType.
+/// @param  otherValue  LHS operand.
+/// @param  lockedValue RHS operand.
+/// @return true if the otherValue is greater than or equal to the underlying value of the lockedValue,
+///         false otherwise.
 template<typename Other, typename ValueType>
 constexpr bool operator>=(const Other& otherValue, const Locked<ValueType>& lockedValue)
 {
     return lockedValue([&otherValue](const ValueType& value) { return otherValue >= value; });
 }
-
 
 
 } // End of namespace naksh::common.
