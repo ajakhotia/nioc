@@ -10,33 +10,46 @@
 namespace naksh::common
 {
 
-TEST(CommonTest, LockedConstrutionDefault)
+TEST(CommonTest, LockedConstruction)
 {
-    const Locked<int> lockedInt;
-    EXPECT_EQ(0, lockedInt.copy());
-    //EXPECT_EQ(0, lockedInt.move()); // Illegal as lockedInt is const and move is non-const qualified.
-}
+    // Default construction of trivial type.
+    {
+        const Locked<int> locked;
+        EXPECT_EQ(0, locked.copy());
+        //EXPECT_EQ(0, locked.move()); // Illegal as locked is const and move is non-const qualified.
+    }
 
+    // Construction of a trivial type with an initial value.
+    {
+        const Locked<int> locked(7);
+        EXPECT_EQ(7, locked.copy());
+    }
 
-TEST(CommonTest, LockedConstrutionWithValue)
-{
-    Locked<int> lockedInt(7);
-    EXPECT_EQ(7, lockedInt.copy());
-    EXPECT_EQ(7, lockedInt.move()); // Legal because lockedInt is not const.
-}
+    // Default construction of a non-trivial type.
+    {
+        const Locked<std::vector<int>> locked;
+        EXPECT_EQ(0u, locked.copy().size());
+    }
 
+    // Construction of a non-trivial type with an initial value.
+    {
+        const Locked<std::vector<int>> locked(
+                std::initializer_list<int>({1, 2, 3, 4, 5}));
 
-TEST(CommonTest, LockedConstrutionWithMove)
-{
-    auto intPtr = std::make_unique<int>(12);
-    // Locked<std::unique_ptr<int>> lockedIntPtr(intPtr); // Ill-legal as std::unique_ptr cannot be copied.
-    Locked<std::unique_ptr<int>> lockedIntPtr(std::move(intPtr));
+        EXPECT_EQ(5u, locked.copy().size());
+    }
 
-    // EXPECT_EQ(12, *(lockedIntPtr.copy())); // Ill-legal as std::unique_ptr cannot be copied.
-    EXPECT_EQ(12, *(lockedIntPtr.move()));
+    // Default construction of movable-only entities.
+    {
+        Locked<std::unique_ptr<int>> locked;
+        EXPECT_EQ(nullptr, locked.move());
+    }
 
-    // intPtr has been consumed in construction of lockerIntPtr, so, we expect it to be null.
-    EXPECT_TRUE(intPtr == nullptr);
+    // Construction of movable-only entities with an initial value.
+    {
+        Locked<std::unique_ptr<int>> locked(std::make_unique<int>(7));
+        EXPECT_EQ(7, *(locked.move()));
+    }
 }
 
 
@@ -81,6 +94,7 @@ TEST(CommonTest, LockedOperatorConst)
             });
 
     EXPECT_EQ(19, r1);
+    EXPECT_EQ(12, lockedInt);
 
 
     // This is legal because we use pass-by-value for the lambda parameter.
@@ -106,23 +120,27 @@ TEST(CommonTest, LockedOperatorConst)
 TEST(CommonTest, AssignmentCopySemantics)
 {
     Locked<int> lockedInt(12);
+    EXPECT_EQ(12, lockedInt.copy());
+
+    //const int a = 13;
+
     lockedInt = 13;
     EXPECT_EQ(13, lockedInt.copy());
 
+    /*
     Locked<std::unique_ptr<int>> lockedIntPtr(std::make_unique<int>(12));
 
     auto intPtr = std::make_unique<int>(29);
 
     // This is ill-legal because intPtr is an l-value and unique pointer are copyable.
     //lockedIntPtr = intPtr;
+     */
 }
 
 
 TEST(CommonTest, AssignmentMoveSemantics)
 {
     Locked<std::unique_ptr<int>> lockedIntPtr(std::make_unique<int>(12));
-
-    auto intPtr = std::make_unique<int>(29);
 
     // This is ill-legal because intPtr is an l-value and unique pointers are not copyable.
     // Additionally, l-values cannot be moved implicitly.
@@ -136,8 +154,10 @@ TEST(CommonTest, AssignmentMoveSemantics)
 
     // This is legal because we use std::move() to convert intPtr from l-value to r-value so that
     // it can be moved into lockedIntPtr.
+    auto intPtr = std::make_unique<int>(29);
     lockedIntPtr = std::move(intPtr);
     EXPECT_EQ(29, *(lockedIntPtr.move()));
+    EXPECT_EQ(nullptr, lockedIntPtr);
 }
 
 
