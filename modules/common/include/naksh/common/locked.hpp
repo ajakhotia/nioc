@@ -82,8 +82,7 @@ public:
 
 
     /// @brief  Runs the operation with Locked::mLockedValue as the argument
-    ///         after acquiring a shared lock. Because this overload is
-    ///         const-qualified, it's invoked only for read-only operations.
+    ///         to the operation after acquiring a shared lock (read-lock).
     ///
     /// @tparam Operation   Type of the operating lambda.
     ///
@@ -100,8 +99,7 @@ public:
 
 
     /// @brief  Runs the operation with Locked::mLockedValue as the argument
-    ///         after acquiring an exclusive lock. Because this overload is
-    ///         not const-qualified, it's typical invoked for write operations.
+    ///         after acquiring an exclusive lock (write-lock).
     ///
     /// @tparam Operation   Type of the operating lambda.
     ///
