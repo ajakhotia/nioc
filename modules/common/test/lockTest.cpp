@@ -3,6 +3,7 @@
 // Project  : Naksh                                                                                                    /
 // Author   : Anurag Jakhotia                                                                                          /
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#pragma ide diagnostic ignored "cert-err58-cpp"
 
 #include <naksh/common/locked.hpp>
 #include <gtest/gtest.h>
@@ -26,7 +27,7 @@ TEST(CommonTest, LockedConstruction)
         EXPECT_EQ(0, locked);
     }
 
-    // Construction of a trivial type with an initial value(.
+    // Construction of a trivial type with an initial value.
     {
         const Locked<int> locked(7);
         EXPECT_EQ(7, locked);
@@ -260,3 +261,5 @@ TEST(CommonTest, LockedGreaterThanOrEqualCheck)
 }
 
 } // End of namespace naksh::common.
+
+#pragma clang diagnostic pop
