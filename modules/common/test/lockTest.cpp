@@ -3,6 +3,7 @@
 // Project  : Naksh                                                                                                    /
 // Author   : Anurag Jakhotia                                                                                          /
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#pragma clang diagnostic push
 #pragma ide diagnostic ignored "cert-err58-cpp"
 
 #include <naksh/common/locked.hpp>

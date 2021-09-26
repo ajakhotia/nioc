@@ -6,6 +6,6 @@ target_link_libraries(messagesTest Naksh::messages Naksh::messagesIdl GTest::GTe
 
 target_compile_options(messagesTest PRIVATE
         $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -pedantic -Werror>)
+        $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>)
 
 gtest_discover_tests(messagesTest)

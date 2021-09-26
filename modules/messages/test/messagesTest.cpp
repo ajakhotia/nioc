@@ -3,6 +3,8 @@
 // Project  : Naksh                                                                                                    /
 // Author   : Anurag Jakhotia                                                                                          /
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "cert-err58-cpp"
 
 #include <naksh/messages/idl/sample1.capnp.h>
 #include <naksh/messages/message.hpp>
@@ -23,3 +25,5 @@ TEST(MessagesTest, MessageIdentityChecks)
 }
 
 } // End of namespace naksh::messages.
+
+#pragma clang diagnostic pop

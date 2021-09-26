@@ -9,6 +9,6 @@ target_link_libraries(loggerTest Naksh::logger Boost::iostreams GTest::GTest GTe
 
 target_compile_options(loggerTest PRIVATE
         $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
-        $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror>)
+        $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>)
 
 gtest_discover_tests(loggerTest)

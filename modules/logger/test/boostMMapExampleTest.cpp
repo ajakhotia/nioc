@@ -3,6 +3,8 @@
 // Project  : Naksh                                                                                                    /
 // Author   : Anurag Jakhotia                                                                                          /
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "cert-err58-cpp"
 
 #include <boost/iostreams/device/mapped_file.hpp>
 
@@ -70,3 +72,5 @@ TEST(LoggerBoostUsageExample, SerialFileWrite)
 
 
 } // End of namespace naksh::logger.
+
+#pragma clang diagnostic pop
