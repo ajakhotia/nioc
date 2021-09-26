@@ -25,7 +25,8 @@ namespace naksh::common
 ///
 ///             The underlying variable Locked::mLockedValue is passed as an
 ///             argument to the provided lambda after suitably locking the
-///             protecting mutex (Locked::mMutex). See Locked::operator()(...).
+///             protecting mutex (Locked::mMutex).
+///             @sa Locked::execute()(...), Locked::cExecute(...), Locked::operator()(...)
 ///
 ///             NOTE A:
 ///                 Lambdas with signature 1 and 2 do not modify the underlying
@@ -39,6 +40,18 @@ namespace naksh::common
 ///                 variables. Such an operation mandates an exclusive lock
 ///                 as seen in the non-const qualified overload of operator()(...).
 ///
+///             Pro-tip:
+///                 To make code easy and more readable, leverage placeholder type
+///                 specifier to define the lambdas as in examples below.
+///
+///                 Read only / const versions:
+///                     Access by const-reference:  [](const auto& value){ doSomething(); return somethingOrNot(); }
+///                     Access by const-value:      [](const auto value){ doSomething(); return somethingOrNot(); }
+///                     Access by value:            [](auto value){ doSomething(); return somethingOrNot(); }
+///
+///                 Read write / non-const versions:
+///                     Access by l-reference:      [](auto& value){ doSomething(); return somethingOrNot(); }
+///                     Access by r-reference:      [](auto&& value){ doSomething(); return somethingOrNot(); }
 ///
 /// @tparam     ValueType_  Type of the underlying variable. Any const qualifiers
 ///                         specifiers are discarded.
@@ -176,7 +189,7 @@ public:
     template<typename OtherType>
     Locked& operator=(const OtherType& other)
     {
-        execute([&other](ValueType& value){ value = other; });
+        execute([&other](auto& value){ value = other; });
         return *this;
     }
 
@@ -194,7 +207,7 @@ public:
     template<typename OtherType>
     Locked& operator=(OtherType&& other)
     {
-        execute([other = std::forward<OtherType>(other)](ValueType& value) mutable
+        execute([other = std::forward<OtherType>(other)](auto& value) mutable
                 {
                     value = std::move(other);
                 });
@@ -208,7 +221,7 @@ public:
     ValueType copy() const
     {
         // Note the copy in the invocation of the lambda.
-        return cExecute([](const ValueType value){ return value; });
+        return cExecute([](const auto value){ return value; });
     }
 
 
@@ -222,7 +235,7 @@ public:
     ValueType move()
     {
         // Without std::move() here, the compiler will attempt to make a copy.
-        return execute([](ValueType& value){ return std::move(value); });
+        return execute([](auto& value){ return std::move(value); });
     }
 
 private:
@@ -243,7 +256,7 @@ private:
 template<typename ValueType, typename Other>
 constexpr bool operator==(const Locked<ValueType>& lockedValue, const Other& otherValue)
 {
-    return lockedValue([&otherValue](const ValueType& value) { return value == otherValue; });
+    return lockedValue([&otherValue](const auto& value) { return value == otherValue; });
 }
 
 
@@ -256,7 +269,7 @@ constexpr bool operator==(const Locked<ValueType>& lockedValue, const Other& oth
 template<typename Other, typename ValueType>
 constexpr bool operator==(const Other& otherValue, const Locked<ValueType>& lockedValue)
 {
-    return lockedValue([&otherValue](const ValueType& value) { return otherValue == value; });
+    return lockedValue([&otherValue](const auto& value) { return otherValue == value; });
 }
 
 
@@ -270,7 +283,7 @@ constexpr bool operator==(const Other& otherValue, const Locked<ValueType>& lock
 template<typename ValueType, typename Other>
 constexpr bool operator!=(const Locked<ValueType>& lockedValue, const Other& otherValue)
 {
-    return lockedValue([&otherValue](const ValueType& value) { return value != otherValue; });
+    return lockedValue([&otherValue](const auto& value) { return value != otherValue; });
 }
 
 
@@ -284,7 +297,7 @@ constexpr bool operator!=(const Locked<ValueType>& lockedValue, const Other& oth
 template<typename Other, typename ValueType>
 constexpr bool operator!=(const Other& otherValue, const Locked<ValueType>& lockedValue)
 {
-    return lockedValue([&otherValue](const ValueType& value) { return otherValue != value; });
+    return lockedValue([&otherValue](const auto& value) { return otherValue != value; });
 }
 
 
@@ -298,7 +311,7 @@ constexpr bool operator!=(const Other& otherValue, const Locked<ValueType>& lock
 template<typename ValueType, typename Other>
 constexpr bool operator<(const Locked<ValueType>& lockedValue, const Other& otherValue)
 {
-    return lockedValue([&otherValue](const ValueType& value) { return value < otherValue; });
+    return lockedValue([&otherValue](const auto& value) { return value < otherValue; });
 }
 
 
@@ -312,7 +325,7 @@ constexpr bool operator<(const Locked<ValueType>& lockedValue, const Other& othe
 template<typename Other, typename ValueType>
 constexpr bool operator<(const Other& otherValue, const Locked<ValueType>& lockedValue)
 {
-    return lockedValue([&otherValue](const ValueType& value) { return  otherValue < value; });
+    return lockedValue([&otherValue](const auto& value) { return  otherValue < value; });
 }
 
 
@@ -326,7 +339,7 @@ constexpr bool operator<(const Other& otherValue, const Locked<ValueType>& locke
 template<typename ValueType, typename Other>
 constexpr bool operator<=(const Locked<ValueType>& lockedValue, const Other& otherValue)
 {
-    return lockedValue([&otherValue](const ValueType& value) { return value <= otherValue; });
+    return lockedValue([&otherValue](const auto& value) { return value <= otherValue; });
 }
 
 
@@ -340,7 +353,7 @@ constexpr bool operator<=(const Locked<ValueType>& lockedValue, const Other& oth
 template<typename Other, typename ValueType>
 constexpr bool operator<=(const Other& otherValue, const Locked<ValueType>& lockedValue)
 {
-    return lockedValue([&otherValue](const ValueType& value) { return otherValue <= value; });
+    return lockedValue([&otherValue](const auto& value) { return otherValue <= value; });
 }
 
 
@@ -354,7 +367,7 @@ constexpr bool operator<=(const Other& otherValue, const Locked<ValueType>& lock
 template<typename ValueType, typename Other>
 constexpr bool operator>(const Locked<ValueType>& lockedValue, const Other& otherValue)
 {
-    return lockedValue([&otherValue](const ValueType& value) { return value > otherValue; });
+    return lockedValue([&otherValue](const auto& value) { return value > otherValue; });
 }
 
 
@@ -368,7 +381,7 @@ constexpr bool operator>(const Locked<ValueType>& lockedValue, const Other& othe
 template<typename Other, typename ValueType>
 constexpr bool operator>(const Other& otherValue, const Locked<ValueType>& lockedValue)
 {
-    return lockedValue([&otherValue](const ValueType& value) { return otherValue > value; });
+    return lockedValue([&otherValue](const auto& value) { return otherValue > value; });
 }
 
 
@@ -382,7 +395,7 @@ constexpr bool operator>(const Other& otherValue, const Locked<ValueType>& locke
 template<typename ValueType, typename Other>
 constexpr bool operator>=(const Locked<ValueType>& lockedValue, const Other& otherValue)
 {
-    return lockedValue([&otherValue](const ValueType& value) { return value >= otherValue; });
+    return lockedValue([&otherValue](const auto& value) { return value >= otherValue; });
 }
 
 
@@ -396,7 +409,7 @@ constexpr bool operator>=(const Locked<ValueType>& lockedValue, const Other& oth
 template<typename Other, typename ValueType>
 constexpr bool operator>=(const Other& otherValue, const Locked<ValueType>& lockedValue)
 {
-    return lockedValue([&otherValue](const ValueType& value) { return otherValue >= value; });
+    return lockedValue([&otherValue](const auto& value) { return otherValue >= value; });
 }
 
 
