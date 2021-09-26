@@ -53,31 +53,31 @@ TEST(CommonTest, LockedConstruction)
 }
 
 
-TEST(CommonTest, LockedOperatorNonConst)
+TEST(CommonTest, NonConstOperator)
 {
     Locked<int> lockedInt(7);
     int rhs = 13;
 
     // Run an operation on the lockedInt in a thread-safe manner.
-    lockedInt(
+    lockedInt.execute(
             [&](int& lhs)
             {
                 lhs = rhs + 12;
             });
 
-    EXPECT_EQ(25, lockedInt.copy());
+    EXPECT_EQ(25, lockedInt);
 
     // Run an operation on lockedInt but lhs is accepted into the operation by value.
     // Hence, we don't expect this operation to modify lockedInt. However, we expect the
     // result of the operation to be 15 + 13 + 29. Note the += in the operation below.
-    const auto result = lockedInt(
+    const auto result = lockedInt.cExecute(
             [&](int lhs)
             {
                 lhs += rhs + 29;
                 return lhs;
             });
 
-    EXPECT_EQ(25, lockedInt.copy());
+    EXPECT_EQ(25, lockedInt);
     EXPECT_EQ(67, result);
 }
 

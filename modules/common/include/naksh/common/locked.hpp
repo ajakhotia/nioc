@@ -58,7 +58,7 @@ public:
     /// @param  args    Parameter pack to be forwarded as arguments to the
     ///                 constructor of the underlying value a.k.a Locked::mLockedValue
     template<typename... Args>
-    explicit Locked(Args... args):
+    explicit Locked(Args&&... args):
             mMutex{},
             mLockedValue{std::forward<Args>(args)...}
     {
@@ -81,8 +81,41 @@ public:
     Locked& operator=(Locked&&) = delete;
 
 
-    /// @brief  Runs the operation with Locked::mLockedValue as the argument
-    ///         to the operation after acquiring a shared lock (read-lock).
+    /// @brief  Executes the operation lambda with Locked::mLockedValue as the argument
+    ///         after acquiring a shared lock (read-lock).
+    ///
+    /// @tparam Operation   Type of the operating lambda.
+    ///
+    /// @param  operation   The operating lambda.
+    ///
+    /// @return Any result returned by the operation is returned to the
+    ///         calling context.
+    template<typename Operation>
+    decltype(auto) cExecute(Operation&& operation) const
+    {
+        std::shared_lock sharedLock(mMutex);
+        return operation(mLockedValue);
+    }
+
+
+    /// @brief  Executes the operation lambda with Locked::mLockedValue as the argument
+    ///         after acquiring a shared lock (read-lock).
+    ///
+    /// @tparam Operation   Type of the operating lambda.
+    ///
+    /// @param  operation   The operating lambda.
+    ///
+    /// @return Any result returned by the operation is returned to the
+    ///         calling context.
+    template<typename Operation>
+    decltype(auto) execute(Operation&& operation) const
+    {
+        return cExecute(std::forward<Operation>(operation));
+    }
+
+
+    /// @brief  Executes the operation lambda with Locked::mLockedValue as the argument
+    ///         after acquiring a shared lock (read-lock).
     ///
     /// @tparam Operation   Type of the operating lambda.
     ///
@@ -93,12 +126,28 @@ public:
     template<typename Operation>
     decltype(auto) operator()(Operation&& operation) const
     {
-        std::shared_lock sharedLock(mMutex);
+        return cExecute(std::forward<Operation>(operation));
+    }
+
+
+    /// @brief  Executes the operation lambda with Locked::mLockedValue as the argument
+    ///         after acquiring an exclusive lock (write-lock).
+    ///
+    /// @tparam Operation   Type of the operating lambda.
+    ///
+    /// @param  operation   The operating lambda.
+    ///
+    /// @return Any result returned by the operation is returned to the
+    ///         calling context.
+    template<typename Operation>
+    decltype(auto) execute(Operation&& operation)
+    {
+        std::lock_guard exclusiveLock(mMutex);
         return operation(mLockedValue);
     }
 
 
-    /// @brief  Runs the operation with Locked::mLockedValue as the argument
+    /// @brief  Executes the operation lambda with Locked::mLockedValue as the argument
     ///         after acquiring an exclusive lock (write-lock).
     ///
     /// @tparam Operation   Type of the operating lambda.
@@ -110,8 +159,7 @@ public:
     template<typename Operation>
     decltype(auto) operator()(Operation&& operation)
     {
-        std::lock_guard exclusiveLock(mMutex);
-        return operation(mLockedValue);
+        return execute(std::forward<Operation>(operation));
     }
 
 
@@ -128,7 +176,7 @@ public:
     template<typename OtherType>
     Locked& operator=(const OtherType& other)
     {
-        this->template operator()([&other](ValueType& value){ value = other; });
+        execute([&other](ValueType& value){ value = other; });
         return *this;
     }
 
@@ -146,8 +194,7 @@ public:
     template<typename OtherType>
     Locked& operator=(OtherType&& other)
     {
-        this->template operator()(
-                [other = std::forward<OtherType>(other)](ValueType& value) mutable
+        execute([other = std::forward<OtherType>(other)](ValueType& value) mutable
                 {
                     value = std::move(other);
                 });
@@ -161,7 +208,7 @@ public:
     ValueType copy() const
     {
         // Note the copy in the invocation of the lambda.
-        return this->template operator()([](const ValueType value){ return value; });
+        return cExecute([](const ValueType value){ return value; });
     }
 
 
@@ -175,7 +222,7 @@ public:
     ValueType move()
     {
         // Without std::move() here, the compiler will attempt to make a copy.
-        return this->template operator()([](ValueType& value){ return std::move(value); });
+        return execute([](ValueType& value){ return std::move(value); });
     }
 
 private:
