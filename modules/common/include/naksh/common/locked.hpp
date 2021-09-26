@@ -287,7 +287,7 @@ constexpr bool operator!=(const Locked<ValueType>& lockedValue, const Other& oth
 }
 
 
-/// @brief  Equality check operator.
+/// @brief  Inequality check operator.
 /// @tparam Other       Type of the operand that is comparable with @tparam ValueType.
 /// @tparam ValueType   Type of the other operand that is comparable with ValueType.
 /// @param  otherValue  LHS operand.

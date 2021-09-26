@@ -179,4 +179,83 @@ TEST(CommonTest, LockedMoveExtraction)
 }
 
 
+TEST(CommonTest, LockedEqualityCheck)
+{
+    Locked<int> locked(13);
+
+    EXPECT_TRUE(locked == 13);
+    EXPECT_TRUE(13 == locked);
+
+    EXPECT_FALSE(locked == 23);
+    EXPECT_FALSE(23 == locked);
+}
+
+
+TEST(CommonTest, LockedInEqualityCheck)
+{
+    Locked<int> locked(13);
+
+    EXPECT_FALSE(locked != 13);
+    EXPECT_FALSE(13 != locked);
+
+    EXPECT_TRUE(locked != 23);
+    EXPECT_TRUE(23 != locked);
+}
+
+
+TEST(CommonTest, LockedLesserThanCheck)
+{
+    Locked<int> locked(13);
+
+    EXPECT_TRUE(locked < 14);
+    EXPECT_FALSE(locked < 13);
+    EXPECT_FALSE(locked < 12);
+
+    EXPECT_TRUE(12 < locked);
+    EXPECT_FALSE(13 < locked);
+    EXPECT_FALSE(14 < locked);
+}
+
+
+TEST(CommonTest, LockedLesserThanOrEqualCheck)
+{
+    Locked<int> locked(13);
+
+    EXPECT_TRUE(locked <= 14);
+    EXPECT_TRUE(locked <= 13);
+    EXPECT_FALSE(locked < 12);
+
+    EXPECT_TRUE(12 <= locked);
+    EXPECT_TRUE(13 <= locked);
+    EXPECT_FALSE(14 <= locked);
+}
+
+
+TEST(CommonTest, LockedGreaterThanCheck)
+{
+    Locked<int> locked(13);
+
+    EXPECT_FALSE(locked > 14);
+    EXPECT_FALSE(locked > 13);
+    EXPECT_TRUE(locked > 12);
+
+    EXPECT_FALSE(12 > locked);
+    EXPECT_FALSE(13 > locked);
+    EXPECT_TRUE(14 > locked);
+}
+
+
+TEST(CommonTest, LockedGreaterThanOrEqualCheck)
+{
+    Locked<int> locked(13);
+
+    EXPECT_FALSE(locked >= 14);
+    EXPECT_TRUE(locked >= 13);
+    EXPECT_TRUE(locked >= 12);
+
+    EXPECT_FALSE(12 >= locked);
+    EXPECT_TRUE(13 >= locked);
+    EXPECT_TRUE(14 >= locked);
+}
+
 } // End of namespace naksh::common.
