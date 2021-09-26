@@ -13,9 +13,10 @@ namespace
 {
 
 // A lambda function to extract value from pointer types.
-const auto valueExtractorHelper = [](const auto& value){ return *value; };
+const auto valueExtractorHelper = [](const auto& value) { return *value; };
 
 } // End of anonymous namespace.
+
 
 TEST(CommonTest, LockedConstruction)
 {
@@ -34,13 +35,13 @@ TEST(CommonTest, LockedConstruction)
     // Default construction of a non-trivial type.
     {
         const Locked<std::vector<int>> locked;
-        EXPECT_EQ(0u, locked([](const auto& value){ return value.size(); }));
+        EXPECT_EQ(0u, locked([](const auto& value) { return value.size(); }));
     }
 
     // Construction of a non-trivial type with an initial value.
     {
         const Locked<std::vector<int>> locked(std::initializer_list<int>({1, 2, 3, 4, 5}));
-        EXPECT_EQ(5u, locked([](const auto& value){ return value.size(); }));
+        EXPECT_EQ(5u, locked([](const auto& value) { return value.size(); }));
     }
 
     // Default construction of movable-only entities.
@@ -161,7 +162,7 @@ TEST(CommonTest, LockedMoveAssignment)
 TEST(CommonTest, LockedCopyExtraction)
 {
     Locked<int> locked(12);
-    const auto  extractedValue = locked.copy();
+    const auto extractedValue = locked.copy();
 
     EXPECT_EQ(12, extractedValue);
     EXPECT_EQ(12, locked);

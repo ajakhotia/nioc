@@ -71,7 +71,7 @@ public:
     /// @param  args    Parameter pack to be forwarded as arguments to the
     ///                 constructor of the underlying value a.k.a Locked::mLockedValue
     template<typename... Args>
-    explicit Locked(Args&&... args):
+    explicit Locked(Args&& ... args):
             mMutex{},
             mLockedValue{std::forward<Args>(args)...}
     {
@@ -189,7 +189,7 @@ public:
     template<typename OtherType>
     Locked& operator=(const OtherType& other)
     {
-        execute([&other](auto& value){ value = other; });
+        execute([&other](auto& value) { value = other; });
         return *this;
     }
 
@@ -221,7 +221,7 @@ public:
     ValueType copy() const
     {
         // Note the copy in the invocation of the lambda.
-        return cExecute([](const auto value){ return value; });
+        return cExecute([](const auto value) { return value; });
     }
 
 
@@ -235,7 +235,7 @@ public:
     ValueType move()
     {
         // Without std::move() here, the compiler will attempt to make a copy.
-        return execute([](auto& value){ return std::move(value); });
+        return execute([](auto& value) { return std::move(value); });
     }
 
 private:
@@ -325,7 +325,7 @@ constexpr bool operator<(const Locked<ValueType>& lockedValue, const Other& othe
 template<typename Other, typename ValueType>
 constexpr bool operator<(const Other& otherValue, const Locked<ValueType>& lockedValue)
 {
-    return lockedValue([&otherValue](const auto& value) { return  otherValue < value; });
+    return lockedValue([&otherValue](const auto& value) { return otherValue < value; });
 }
 
 
