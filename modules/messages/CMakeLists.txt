@@ -1,8 +1,10 @@
 find_package(CapnProto REQUIRED)
 
-capnproto_generate_library(Naksh:: messagesIdl nakshTargets
-        include/naksh/messages/idl/sample1.capnp
-        include/naksh/messages/idl/sample2.capnp)
+capnproto_generate_library(
+        TARGET messagesIdl NAMESPACE Naksh:: EXPORT nakshTargets
+        FILES
+            include/naksh/messages/idl/sample1.capnp
+            include/naksh/messages/idl/sample2.capnp)
 
 add_library(messages SHARED src/messageBase.cpp)
 add_library(Naksh::messages ALIAS messages)

@@ -1,6 +1,15 @@
 find_package(CapnProto REQUIRED)
 
-function(capnproto_generate_library TARGET_NAMESPACE TARGET_NAME TARGET_EXPORT_SET)
+function(capnproto_generate_library)
+    cmake_parse_arguments("PARAM" "" "TARGET;NAMESPACE;EXPORT" "FILES" ${ARGN})
+
+    if(NOT PARAM_FILES)
+        message(FATAL_ERROR "No schema files were provided. Skipping generation.")
+    endif()
+
+    if(NOT PARAM_TARGET)
+        message(FATAL_ERROR "No target name specified")
+    endif()
 
     # Acquire the paths to capnp tool, run-time library and interface directory.
     get_target_property(CAPNP_TOOL_PATH CapnProto::capnp_tool LOCATION)
@@ -10,7 +19,7 @@ function(capnproto_generate_library TARGET_NAMESPACE TARGET_NAME TARGET_EXPORT_S
     get_filename_component(CAPNP_PATH ${CAPNP_TOOL_PATH} DIRECTORY)
     get_filename_component(CAPNP_LIBRARY_PATH ${CAPNP_TOOL_RUNTIME_LIBRARY_PATH} DIRECTORY)
 
-    foreach(SCHEMA_FILE_PATH ${ARGN})
+    foreach(SCHEMA_FILE_PATH ${PARAM_FILES})
 
         # Build absolute and relative paths from the current source directory to the schema file.
         get_filename_component(SCHEMA_FILE_ABSOLUTE_PATH ${SCHEMA_FILE_PATH} ABSOLUTE)
@@ -37,6 +46,7 @@ function(capnproto_generate_library TARGET_NAMESPACE TARGET_NAME TARGET_EXPORT_S
                     LD_LIBRARY_PATH=${CAPNP_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}
                     ${CAPNP_TOOL_PATH}
                     compile
+                    --no-standard-import
                     --import-path=${CAPNP_INTERFACE_DIRECTORY}
                     --output=c++:${CMAKE_CURRENT_BINARY_DIR}/include
                     --src-prefix=${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -55,20 +65,20 @@ function(capnproto_generate_library TARGET_NAMESPACE TARGET_NAME TARGET_EXPORT_S
     endforeach()
 
     # Build a shared library from the generated code.
-    add_library(${TARGET_NAME} SHARED ${SCHEMA_SOURCE_FILENAME_LIST})
-    add_library(${TARGET_NAMESPACE}${TARGET_NAME} ALIAS ${TARGET_NAME})
+    add_library(${PARAM_TARGET} SHARED ${SCHEMA_SOURCE_FILENAME_LIST})
+    add_library(${PARAM_NAMESPACE}${PARAM_TARGET} ALIAS ${PARAM_TARGET})
 
-    target_include_directories(${TARGET_NAME} PUBLIC
+    target_include_directories(${PARAM_TARGET} PUBLIC
             $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
             $<INSTALL_INTERFACE:include>)
 
-    target_link_libraries(${TARGET_NAME} PUBLIC CapnProto::capnp)
+    target_link_libraries(${PARAM_TARGET} PUBLIC CapnProto::capnp)
 
 
     install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/
             DESTINATION include
             FILES_MATCHING PATTERN "*.capnp.h")
 
-    install(TARGETS ${TARGET_NAME} EXPORT ${TARGET_EXPORT_SET})
+    install(TARGETS ${PARAM_TARGET} EXPORT ${PARAM_EXPORT})
 
 endfunction()
