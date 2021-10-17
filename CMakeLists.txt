@@ -17,7 +17,17 @@ endif()
 
 include(cmake/capnprotoGenerateMacro.cmake)
 
-add_subdirectory(external)
+
+#[[ Only add external dependencies to the source tree from here if this project is the top-level project.
+    If this project has been included with-in another project as a submodule, then the onus of setting up the
+    required external dependencies fall on that top-level project. This is done in order to maintain a single
+     flat level of external sub-modules/sub-repos and avoid a tree of sub-modules with potential for conflict
+     and multiple points of truth. ]]
+if(${CMAKE_SOURCE_DIR} STREQUAL ${naksh_SOURCE_DIR})
+    add_subdirectory(external)
+endif()
+
+
 add_subdirectory(modules)
 add_subdirectory(docker)
 

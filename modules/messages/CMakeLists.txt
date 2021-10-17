@@ -1,6 +1,6 @@
 find_package(CapnProto REQUIRED)
 
-naksh_capnproto_generate_cpp(Naksh:: messagesIdl
+capnproto_generate_library(Naksh:: messagesIdl nakshTargets
         include/naksh/messages/idl/sample1.capnp
         include/naksh/messages/idl/sample2.capnp)
 

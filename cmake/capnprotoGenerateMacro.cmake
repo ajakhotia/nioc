@@ -1,6 +1,6 @@
 find_package(CapnProto REQUIRED)
 
-function(naksh_capnproto_generate_cpp TARGET_NAMESPACE TARGET_NAME)
+function(capnproto_generate_library TARGET_NAMESPACE TARGET_NAME TARGET_EXPORT_SET)
 
     # Acquire the paths to capnp tool, run-time library and interface directory.
     get_target_property(CAPNP_TOOL_PATH CapnProto::capnp_tool LOCATION)
@@ -69,6 +69,6 @@ function(naksh_capnproto_generate_cpp TARGET_NAMESPACE TARGET_NAME)
             DESTINATION include
             FILES_MATCHING PATTERN "*.capnp.h")
 
-    install(TARGETS ${TARGET_NAME} EXPORT nakshTargets)
+    install(TARGETS ${TARGET_NAME} EXPORT ${TARGET_EXPORT_SET})
 
 endfunction()

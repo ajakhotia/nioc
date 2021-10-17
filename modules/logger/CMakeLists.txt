@@ -1,7 +1,7 @@
 find_package(Boost REQUIRED COMPONENTS iostreams)
 find_package(spdlog REQUIRED)
 
-naksh_capnproto_generate_cpp(Naksh:: loggerIdl
+capnproto_generate_library(Naksh:: loggerIdl nakshTargets
         include/naksh/logger/idl/frame.capnp)
 
 add_library(logger SHARED src/logger.cpp)

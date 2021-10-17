@@ -27,19 +27,19 @@ namespace naksh::common
 ///             protecting mutex (Locked::mMutex).
 ///             @sa Locked::execute()(...), Locked::cExecute(...), Locked::operator()(...)
 ///
-///             NOTE A:
+///             - NOTE A:
 ///                 Lambdas with signature 1 and 2 do not modify the underlying
 ///                 value and hence can be used with const-qualified instances
 ///                 of this class. Such an operation requires a shared lock only
 ///                 as seen on the const-qualified overload of operator()(...).
 ///
-///             NOTE B:
+///             - NOTE B:
 ///                 Lambdas with signature 3 and 4 may modify the underlying
 ///                 value and hence can be only used with non-const-qualified
 ///                 variables. Such an operation mandates an exclusive lock
 ///                 as seen in the non-const qualified overload of operator()(...).
 ///
-///             Pro-tip:
+///             - Pro-tip:
 ///                 To make code easy and more readable, leverage placeholder type
 ///                 specifier to define the lambdas as in examples below.
 ///
