@@ -21,5 +21,4 @@ install(DIRECTORY include/
         DESTINATION include
         FILES_MATCHING PATTERN "*.hpp")
 
-# Install the created targets as part the following target set.
 install(TARGETS common EXPORT nakshTargets)
