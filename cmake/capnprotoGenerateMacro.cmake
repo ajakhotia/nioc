@@ -66,7 +66,10 @@ function(capnproto_generate_library)
 
     # Build a shared library from the generated code.
     add_library(${PARAM_TARGET} SHARED ${SCHEMA_SOURCE_FILENAME_LIST})
-    add_library(${PARAM_NAMESPACE}${PARAM_TARGET} ALIAS ${PARAM_TARGET})
+
+    if(PARAM_NAMESPACE)
+        add_library(${PARAM_NAMESPACE}${PARAM_TARGET} ALIAS ${PARAM_TARGET})
+    endif()
 
     target_include_directories(${PARAM_TARGET} PUBLIC
             $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
