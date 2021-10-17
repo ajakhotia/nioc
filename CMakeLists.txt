@@ -18,11 +18,13 @@ endif()
 include(cmake/capnprotoGenerateMacro.cmake)
 
 
-#[[ Only add external dependencies to the source tree from here if this project is the top-level project.
-    If this project has been included with-in another project as a submodule, then the onus of setting up the
-    required external dependencies fall on that top-level project. This is done in order to maintain a single
-     flat level of external sub-modules/sub-repos and avoid a tree of sub-modules with potential for conflict
-     and multiple points of truth. ]]
+#[[ Only add external dependencies to the source tree from here if this project
+    is the top-level project. If this project has been included with-in another
+    project as a submodule, then the onus of setting up the required external
+    dependencies fall on that top-level project. This is done in order to
+    maintain a single flat level of external sub-modules/sub-repos and avoid a
+    tree of sub-modules with potential for conflict and multiple points of
+    truth. ]]
 if(${CMAKE_SOURCE_DIR} STREQUAL ${naksh_SOURCE_DIR})
     add_subdirectory(external)
 endif()
@@ -48,10 +50,11 @@ write_basic_package_version_file(
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cmake/nakshConfigVersion.cmake
         DESTINATION lib/cmake/naksh)
 
-#[[ Configure and install nakshConfig.cmake.in to enable other projects find naksh from
-    the install tree. Even though the function configure_package_config_file takes the INSTALL_DESTINATION, it
-    doesn't actually create a installation step for "make install". So, to install the generated config file, we
-    are required to manually create a install step. ]]
+#[[ Configure and install nakshConfig.cmake.in to enable other projects find
+    naksh from the install tree. Even though the function
+    "configure_package_config_file" takes the INSTALL_DESTINATION, it doesn't
+    actually create a installation step for "make install". So, to install the
+    generated config file, we are required to manually create a install step. ]]
 configure_package_config_file(
         cmake/nakshConfig.cmake.in cmake/nakshConfig.cmake
         INSTALL_DESTINATION lib/cmake/naksh)
