@@ -19,7 +19,6 @@ function(add_exported_library)
             COMPILE_FEATURES
             COMPILE_OPTIONS)
 
-
     cmake_parse_arguments("AEL_PARAM"
             "${OPTIONS_ARGUMENTS}"
             "${SINGLE_VALUE_ARGUMENTS}"
@@ -78,7 +77,6 @@ function(add_exported_executable)
             PRIVATE_HEADERS
             COMPILE_FEATURES
             COMPILE_OPTIONS)
-
 
     cmake_parse_arguments("AEL_PARAM"
             "${OPTIONS_ARGUMENTS}"
