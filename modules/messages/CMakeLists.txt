@@ -1,12 +1,22 @@
 find_package(CapnProto REQUIRED)
 
 capnproto_generate_library(
-        TARGET messagesIdl
-        NAMESPACE Naksh::
-        EXPORT nakshTargets
+        TARGET
+            messagesIdl
+        TYPE
+            SHARED
+        NAMESPACE
+            Naksh::
+        EXPORT
+            nakshTargets
         SCHEMA_FILES
             include/naksh/messages/idl/sample1.capnp
-            include/naksh/messages/idl/sample2.capnp)
+            include/naksh/messages/idl/sample2.capnp
+        COMPILE_FEATURES
+            cxx_std_17
+        COMPILE_OPTIONS
+            $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
+            $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>)
 
 
 add_exported_library(
@@ -38,7 +48,7 @@ add_exported_library(
             cxx_std_17
         COMPILE_OPTIONS
             $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
-            $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror>)
+            $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>)
 
 
 if(BUILD_TESTING)

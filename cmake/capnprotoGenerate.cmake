@@ -17,7 +17,6 @@ function(capnproto_generate_library)
             COMPILE_FEATURES
             COMPILE_OPTIONS)
 
-
     cmake_parse_arguments("CGL_PARAM"
             "${OPTIONS_ARGUMENTS}"
             "${SINGLE_VALUE_ARGUMENTS}"
@@ -82,44 +81,31 @@ function(capnproto_generate_library)
 
     endforeach()
 
-
     add_exported_library(
             TARGET
                 ${CGL_PARAM_TARGET}
-
             TYPE
                 ${CGL_PARAM_TYPE}
-
             NAMESPACE
                 ${CGL_PARAM_NAMESPACE}
-
             EXPORT
                 ${CGL_PARAM_EXPORT}
-
             SRC_FILES
                 ${SCHEMA_SOURCE_FILENAME_LIST}
-
             PUBLIC_INCLUDE_DIR
                 ${CMAKE_CURRENT_BINARY_DIR}/include
-
             PRIVATE_INCLUDE_DIR
                 ""
-
             PUBLIC_LINK_LIBRARIES
                 CapnProto::capnp
-
             PRIVATE_LINK_LIBRARIES
                 ""
-
             PUBLIC_HEADERS
                 ${SCHEMA_HEADER_FILENAME_LIST}
-
             PRIVATE_HEADERS
                 ""
-
             COMPILE_FEATURES
                 ${CGL_PARAM_COMPILE_FEATURES}
-
             COMPILE_OPTIONS
                 ${CGL_PARAM_COMPILE_OPTIONS})
 
