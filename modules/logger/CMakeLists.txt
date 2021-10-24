@@ -4,35 +4,51 @@ find_package(spdlog REQUIRED)
 capnproto_generate_library(
         TARGET
             loggerIdl
+        TYPE
+            SHARED
         NAMESPACE
             Naksh::
         EXPORT
             nakshTargets
         SCHEMA_FILES
-            include/naksh/logger/idl/frame.capnp)
+            include/naksh/logger/idl/frame.capnp
+        COMPILE_FEATURES
+            cxx_std_17
+        COMPILE_OPTIONS
+            $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
+            $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>)
 
-add_library(logger SHARED src/logger.cpp)
-add_library(Naksh::logger ALIAS logger)
 
-target_include_directories(logger
-    PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include>)
+add_exported_library(
+        TARGET
+            logger
+        TYPE
+            SHARED
+        NAMESPACE
+            Naksh::
+        SRC_FILES
+            src/logger.cpp
+        PUBLIC_INCLUDE_DIR
+            ${CMAKE_CURRENT_SOURCE_DIR}/include
+        PRIVATE_INCLUDE_DIR
+            ""
+        PUBLIC_LINK_LIBRARIES
+            ""
+        PRIVATE_LINK_LIBRARIES
+            Naksh::loggerIdl
+            spdlog::spdlog
+            Boost::iostreams
+        PUBLIC_HEADERS
+            include/naksh/logger/logger.hpp
+        PRIVATE_HEADERS
+            ""
+        COMPILE_FEATURES
+            cxx_std_17
+        COMPILE_OPTIONS
+            $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
+            $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>)
 
-target_link_libraries(logger PRIVATE Naksh::loggerIdl spdlog::spdlog Boost::iostreams)
-
-target_compile_features(logger PUBLIC cxx_std_17)
-
-target_compile_options(logger PRIVATE
-        $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
-        $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror>)
 
 if(BUILD_TESTING)
     add_subdirectory(test)
 endif()
-
-install(DIRECTORY include/
-        DESTINATION include
-        FILES_MATCHING PATTERN "*.hpp")
-
-install(TARGETS logger EXPORT nakshTargets)
