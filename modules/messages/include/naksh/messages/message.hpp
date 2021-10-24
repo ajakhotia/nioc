@@ -5,25 +5,27 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include "messageBase.hpp"
+#include "msgBase.hpp"
 
 namespace naksh::messages
 {
 
 
 template<typename SerializableType_>
-class Message : public MessageBase
+class Msg final : public MsgBase
 {
 public:
     using SerializableType = SerializableType_;
 
-    using MessageId  = MessageBase::MessageId;
+    using SelfType = Msg<SerializableType>;
 
-    static constexpr const MessageId kMessageId = SerializableType::_capnpPrivate::typeId;
+    using MsgHandle = MsgBase::MsgHandle;
 
-    [[nodiscard]] MessageId messageId() const override
+    static constexpr MsgHandle kMsgHandle = SerializableType::_capnpPrivate::typeId;
+
+    [[nodiscard]] MsgHandle msgHandle() const override
     {
-        return kMessageId;
+        return kMsgHandle;
     }
 
 private:

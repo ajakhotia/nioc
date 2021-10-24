@@ -15,13 +15,13 @@ namespace naksh::messages
 
 TEST(MessagesTest, MessageIdentityChecks)
 {
-    static_assert(Message<Sample1>::kMessageId == Sample1::_capnpPrivate::typeId);
+    static_assert(Msg<Sample1>::kMsgHandle == Sample1::_capnpPrivate::typeId);
 
-    const Message<Sample1> testMsg;
-    EXPECT_EQ(testMsg.messageId(), Sample1::_capnpPrivate::typeId);
+    const Msg<Sample1> testMsg;
+    EXPECT_EQ(testMsg.msgHandle(), Msg<Sample1>::kMsgHandle);
 
-    const auto& baseRef = dynamic_cast<const MessageBase&>(testMsg);
-    EXPECT_EQ(baseRef.messageId(), Sample1::_capnpPrivate::typeId);
+    const auto& baseRef = dynamic_cast<const MsgBase&>(testMsg);
+    EXPECT_EQ(baseRef.msgHandle(), Msg<Sample1>::kMsgHandle);
 }
 
 } // End of namespace naksh::messages.

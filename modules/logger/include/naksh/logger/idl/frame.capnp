@@ -11,7 +11,7 @@ struct Timestamp @0xb2cac35f6f565bc8
 }
 
 
-struct Frame @0xbbe393db90ef9d35 (Message)
+struct Frame @0xbbe393db90ef9d35 (Msg)
 {
     arrivalTimestamp @0 : Timestamp;
     # Timestamp corresponding to the moment when the system
@@ -19,6 +19,6 @@ struct Frame @0xbbe393db90ef9d35 (Message)
     # the timestamp of the message itself as it may be affected
     # by the transmission, scheduling, and processing delays.
 
-    message @1 : Message;
+    message @1 : Msg;
     # The message.
 }

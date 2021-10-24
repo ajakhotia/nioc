@@ -15,7 +15,7 @@ A log contains the following:
     * A single message along with the necessary metadata will be referred to as a frame.
   * Files will be numbered starting at 0 and counting up as new ones are created.
   * **NOTES**:
-    * Message type shall not be overloaded. That is, each message type is to be strictly 
+    * Msg type shall not be overloaded. That is, each message type is to be strictly 
       associated with a unique source. Eg: If two source generate Vec3, then a unique
       message type should be created representing each source that may wrap around the
       Vec3 message if needed so that they are logged to distinct channels.

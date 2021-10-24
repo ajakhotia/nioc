@@ -77,6 +77,11 @@ function(capnproto_generate_library)
 
     target_link_libraries(${PARAM_TARGET} PUBLIC CapnProto::capnp)
 
+    target_compile_features(${PARAM_TARGET} PUBLIC cxx_std_17)
+
+    target_compile_options(${PARAM_TARGET} PRIVATE
+            $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
+            $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror>)
 
     install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/
             DESTINATION include

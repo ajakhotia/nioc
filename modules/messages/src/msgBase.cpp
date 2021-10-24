@@ -3,27 +3,16 @@
 // Project  : Naksh                                                                                                    /
 // Author   : Anurag Jakhotia                                                                                          /
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-#pragma once
 
-#include <cstdint>
+#include <naksh/messages/msgBase.hpp>
+#include <capnp/message.h>
 
 namespace naksh::messages
 {
 
-class MessageBase
-{
-public:
-    using MessageId = uint64_t;
+MsgBase::MsgBase() = default;
 
-    MessageBase();
-
-    virtual ~MessageBase();
-
-    [[nodiscard]] virtual MessageId messageId() const = 0;
-
-private:
-
-};
+MsgBase::~MsgBase() = default;
 
 
 } // End of namespace naksh::messages.
