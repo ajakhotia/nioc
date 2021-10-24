@@ -1,1 +1,1 @@
-message(STATUS "Naksh is including external projects into the source tree")
+message(STATUS "Naksh is including external sub-modules into the source tree")

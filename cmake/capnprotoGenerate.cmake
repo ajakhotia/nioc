@@ -1,14 +1,31 @@
 find_package(CapnProto REQUIRED)
 
+include(${CMAKE_CURRENT_LIST_DIR}/addTargets.cmake)
+
 function(capnproto_generate_library)
-    cmake_parse_arguments("PARAM" "" "TARGET;NAMESPACE;EXPORT" "FILES" ${ARGN})
 
-    if(NOT PARAM_FILES)
+    set(OPTIONS_ARGUMENTS "")
+
+    set(SINGLE_VALUE_ARGUMENTS
+            TARGET
+            TYPE
+            NAMESPACE
+            EXPORT)
+
+    set(MULTI_VALUE_ARGUMENTS
+            SCHEMA_FILES
+            COMPILE_FEATURES
+            COMPILE_OPTIONS)
+
+
+    cmake_parse_arguments("CGL_PARAM"
+            "${OPTIONS_ARGUMENTS}"
+            "${SINGLE_VALUE_ARGUMENTS}"
+            "${MULTI_VALUE_ARGUMENTS}"
+            ${ARGN})
+
+    if(NOT CGL_PARAM_SCHEMA_FILES)
         message(FATAL_ERROR "No schema files were provided. Skipping generation.")
-    endif()
-
-    if(NOT PARAM_TARGET)
-        message(FATAL_ERROR "No target name specified")
     endif()
 
     # Acquire the paths to capnp tool, run-time library and interface directory.
@@ -19,7 +36,7 @@ function(capnproto_generate_library)
     get_filename_component(CAPNP_PATH ${CAPNP_TOOL_PATH} DIRECTORY)
     get_filename_component(CAPNP_LIBRARY_PATH ${CAPNP_TOOL_RUNTIME_LIBRARY_PATH} DIRECTORY)
 
-    foreach(SCHEMA_FILE_PATH ${PARAM_FILES})
+    foreach(SCHEMA_FILE_PATH ${CGL_PARAM_SCHEMA_FILES})
 
         # Build absolute and relative paths from the current source directory to the schema file.
         get_filename_component(SCHEMA_FILE_ABSOLUTE_PATH ${SCHEMA_FILE_PATH} ABSOLUTE)
@@ -61,32 +78,49 @@ function(capnproto_generate_library)
                 VERBATIM)
 
         list(APPEND SCHEMA_SOURCE_FILENAME_LIST ${SCHEMA_SOURCE_FILENAME})
+        list(APPEND SCHEMA_HEADER_FILENAME_LIST ${SCHEMA_HEADER_FILENAME})
 
     endforeach()
 
-    # Build a shared library from the generated code.
-    add_library(${PARAM_TARGET} SHARED ${SCHEMA_SOURCE_FILENAME_LIST})
 
-    if(PARAM_NAMESPACE)
-        add_library(${PARAM_NAMESPACE}${PARAM_TARGET} ALIAS ${PARAM_TARGET})
-    endif()
+    add_exported_library(
+            TARGET
+                ${CGL_PARAM_TARGET}
 
-    target_include_directories(${PARAM_TARGET} PUBLIC
-            $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
-            $<INSTALL_INTERFACE:include>)
+            TYPE
+                ${CGL_PARAM_TYPE}
 
-    target_link_libraries(${PARAM_TARGET} PUBLIC CapnProto::capnp)
+            NAMESPACE
+                ${CGL_PARAM_NAMESPACE}
 
-    target_compile_features(${PARAM_TARGET} PUBLIC cxx_std_17)
+            EXPORT
+                ${CGL_PARAM_EXPORT}
 
-    target_compile_options(${PARAM_TARGET} PRIVATE
-            $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
-            $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror>)
+            SRC_FILES
+                ${SCHEMA_SOURCE_FILENAME_LIST}
 
-    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/
-            DESTINATION include
-            FILES_MATCHING PATTERN "*.capnp.h")
+            PUBLIC_INCLUDE_DIR
+                ${CMAKE_CURRENT_BINARY_DIR}/include
 
-    install(TARGETS ${PARAM_TARGET} EXPORT ${PARAM_EXPORT})
+            PRIVATE_INCLUDE_DIR
+                ""
+
+            PUBLIC_LINK_LIBRARIES
+                CapnProto::capnp
+
+            PRIVATE_LINK_LIBRARIES
+                ""
+
+            PUBLIC_HEADERS
+                ${SCHEMA_HEADER_FILENAME_LIST}
+
+            PRIVATE_HEADERS
+                ""
+
+            COMPILE_FEATURES
+                ${CGL_PARAM_COMPILE_FEATURES}
+
+            COMPILE_OPTIONS
+                ${CGL_PARAM_COMPILE_OPTIONS})
 
 endfunction()

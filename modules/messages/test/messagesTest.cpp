@@ -7,7 +7,7 @@
 #pragma ide diagnostic ignored "cert-err58-cpp"
 
 #include <naksh/messages/idl/sample1.capnp.h>
-#include <naksh/messages/message.hpp>
+#include <naksh/messages/msg.hpp>
 #include <gtest/gtest.h>
 
 namespace naksh::messages

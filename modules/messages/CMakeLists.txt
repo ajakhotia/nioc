@@ -4,33 +4,43 @@ capnproto_generate_library(
         TARGET messagesIdl
         NAMESPACE Naksh::
         EXPORT nakshTargets
-        FILES
+        SCHEMA_FILES
             include/naksh/messages/idl/sample1.capnp
             include/naksh/messages/idl/sample2.capnp)
 
-add_library(messages SHARED src/msgBase.cpp)
-add_library(Naksh::messages ALIAS messages)
 
-target_include_directories(messages PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include>)
-
-target_link_libraries(messages PRIVATE CapnProto::capnp CapnProto::kj)
-
-target_compile_features(messages PUBLIC cxx_std_17)
-
-target_compile_options(messages PRIVATE
-        $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
-        $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror>)
+add_exported_library(
+        TARGET
+            messages
+        TYPE
+            SHARED
+        NAMESPACE
+            Naksh::
+        EXPORT
+            nakshTargets
+        SRC_FILES
+            src/msgBase.cpp
+        PUBLIC_INCLUDE_DIR
+            ${CMAKE_CURRENT_SOURCE_DIR}/include
+        PRIVATE_INCLUDE_DIR
+            ""
+        PUBLIC_LINK_LIBRARIES
+            ""
+        PRIVATE_LINK_LIBRARIES
+            CapnProto::capnp
+            CapnProto::kj
+        PUBLIC_HEADERS
+            include/naksh/messages/msg.hpp
+            include/naksh/messages/msgBase.hpp
+        PRIVATE_HEADERS
+            ""
+        COMPILE_FEATURES
+            cxx_std_17
+        COMPILE_OPTIONS
+            $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
+            $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror>)
 
 
 if(BUILD_TESTING)
     add_subdirectory(test)
 endif()
-
-
-install(DIRECTORY include/
-        DESTINATION include
-        FILES_MATCHING PATTERN "*.hpp")
-
-install(TARGETS messages EXPORT nakshTargets)
