@@ -7,7 +7,8 @@
 // NOTE:    Local headers(usually private) are referenced using relative path from the parent directory of the
 //          source file and are included using double quotes ("").
 //
-//          examplePrivateHeader.hpp lives in the directory as example.cpp so it can be included directly as below.
+//          examplePrivateHeader.hpp lives in the same directory as example.cpp, so it can be included
+//          directly as below.
 #include "examplePrivateHeader.hpp"
 
 // NOTE:    Public Header or header in other locations are referenced using the relative path from include-root
