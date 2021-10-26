@@ -16,10 +16,6 @@ if((TARGET GTest::GTest) AND (TARGET GTest::Main))
 endif()
 
 
-include(cmake/addTargets.cmake)
-include(cmake/capnprotoGenerate.cmake)
-
-
 #[[ Only add external dependencies to the source tree from here if this project
     is the top-level project. If this project has been included with-in another
     project as a submodule, then the onus of setting up the required external
