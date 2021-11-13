@@ -13,10 +13,13 @@ capnproto_generate_library(
         SCHEMA_FILES
             include/naksh/logger/idl/frame.capnp
         COMPILE_FEATURES
-            cxx_std_17
+            PUBLIC cxx_std_17
         COMPILE_OPTIONS
-            $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
-            $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>)
+            PRIVATE
+                $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
+                $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
+        COMPILE_DEFINITIONS
+            "")
 
 
 add_exported_library(
@@ -26,27 +29,27 @@ add_exported_library(
             SHARED
         NAMESPACE
             Naksh::
-        SRC_FILES
+        EXPORT
+            nakshTargets
+        SOURCES
             src/logger.cpp
-        PUBLIC_INCLUDE_DIR
-            ${CMAKE_CURRENT_SOURCE_DIR}/include
-        PRIVATE_INCLUDE_DIR
-            ""
-        PUBLIC_LINK_LIBRARIES
-            ""
-        PRIVATE_LINK_LIBRARIES
-            Naksh::loggerIdl
-            spdlog::spdlog
-            Boost::iostreams
-        PUBLIC_HEADERS
+        HEADERS
             include/naksh/logger/logger.hpp
-        PRIVATE_HEADERS
-            ""
+        INCLUDE_DIRECTORIES
+            ${CMAKE_CURRENT_SOURCE_DIR}/include
+        LINK_LIBRARIES
+            PRIVATE
+                Naksh::loggerIdl
+                spdlog::spdlog
+                Boost::iostreams
         COMPILE_FEATURES
-            cxx_std_17
+            PUBLIC cxx_std_17
         COMPILE_OPTIONS
-            $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
-            $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>)
+            PRIVATE
+                $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
+                $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
+        COMPILE_DEFINITIONS
+            "")
 
 
 if(BUILD_TESTING)

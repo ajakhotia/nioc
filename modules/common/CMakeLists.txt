@@ -2,30 +2,28 @@ add_exported_library(
         TARGET
             common
         TYPE
-            SHARED
+            INTERFACE
         NAMESPACE
             Naksh::
         EXPORT
             nakshTargets
-        SRC_FILES
-            src/common.cpp
-        PUBLIC_INCLUDE_DIR
+        SOURCES
+            ""
+        HEADERS
+            PUBLIC
+                include/naksh/common/locked.hpp
+                include/naksh/common/typetraits.hpp
+        INCLUDE_DIRECTORIES
             ${CMAKE_CURRENT_SOURCE_DIR}/include
-        PRIVATE_INCLUDE_DIR
-            ""
-        PUBLIC_LINK_LIBRARIES
-            ""
-        PRIVATE_LINK_LIBRARIES
-            ""
-        PUBLIC_HEADERS
-            include/naksh/common/locked.hpp
-        PRIVATE_HEADERS
+        LINK_LIBRARIES
             ""
         COMPILE_FEATURES
-            cxx_std_17
+            INTERFACE
+                cxx_std_17
         COMPILE_OPTIONS
-            $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
-            $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>)
+            ""
+        COMPILE_DEFINITIONS
+            "")
 
 
 if(BUILD_TESTING)

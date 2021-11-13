@@ -13,10 +13,13 @@ capnproto_generate_library(
             include/naksh/messages/idl/sample1.capnp
             include/naksh/messages/idl/sample2.capnp
         COMPILE_FEATURES
-            cxx_std_17
+            PUBLIC cxx_std_17
         COMPILE_OPTIONS
-            $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
-            $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>)
+            PRIVATE
+                $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
+                $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
+        COMPILE_DEFINITIONS
+            "")
 
 
 add_exported_library(
@@ -28,27 +31,26 @@ add_exported_library(
             Naksh::
         EXPORT
             nakshTargets
-        SRC_FILES
+        SOURCES
             src/msgBase.cpp
-        PUBLIC_INCLUDE_DIR
+        HEADERS
+            PUBLIC
+                include/naksh/messages/msg.hpp
+                include/naksh/messages/msgBase.hpp
+        INCLUDE_DIRECTORIES
             ${CMAKE_CURRENT_SOURCE_DIR}/include
-        PRIVATE_INCLUDE_DIR
-            ""
-        PUBLIC_LINK_LIBRARIES
-            ""
-        PRIVATE_LINK_LIBRARIES
-            CapnProto::capnp
-            CapnProto::kj
-        PUBLIC_HEADERS
-            include/naksh/messages/msg.hpp
-            include/naksh/messages/msgBase.hpp
-        PRIVATE_HEADERS
-            ""
+        LINK_LIBRARIES
+            PRIVATE
+                CapnProto::capnp
+                CapnProto::kj
         COMPILE_FEATURES
-            cxx_std_17
+            PUBLIC cxx_std_17
         COMPILE_OPTIONS
-            $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
-            $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>)
+            PRIVATE
+                $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
+                $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
+        COMPILE_DEFINITIONS
+            "")
 
 
 if(BUILD_TESTING)
