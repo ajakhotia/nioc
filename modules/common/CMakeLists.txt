@@ -10,9 +10,10 @@ add_exported_library(
         SOURCES
             ""
         HEADERS
-            PUBLIC
+            INTERFACE
                 include/naksh/common/locked.hpp
                 include/naksh/common/typetraits.hpp
+
         INCLUDE_DIRECTORIES
             ${CMAKE_CURRENT_SOURCE_DIR}/include
         LINK_LIBRARIES
