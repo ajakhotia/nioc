@@ -34,7 +34,8 @@ add_exported_library(
         SOURCES
             src/logger.cpp
         HEADERS
-            include/naksh/logger/logger.hpp
+            PUBLIC
+                include/naksh/logger/logger.hpp
         INCLUDE_DIRECTORIES
             ${CMAKE_CURRENT_SOURCE_DIR}/include
         LINK_LIBRARIES
