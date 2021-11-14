@@ -1,3 +1,5 @@
+find_package(Boost REQUIRED COMPONENTS headers)
+
 add_exported_library(
         TARGET
             common
@@ -12,12 +14,12 @@ add_exported_library(
         HEADERS
             INTERFACE
                 include/naksh/common/locked.hpp
-                include/naksh/common/typetraits.hpp
+        include/naksh/common/typeTraits.hpp
 
         INCLUDE_DIRECTORIES
             ${CMAKE_CURRENT_SOURCE_DIR}/include
         LINK_LIBRARIES
-            ""
+            INTERFACE Boost::headers
         COMPILE_FEATURES
             INTERFACE
                 cxx_std_17

@@ -1,7 +1,7 @@
 find_package(GTest REQUIRED)
 include(GoogleTest)
 
-add_executable(geometryTest frameIdTest.cpp frameReferencesTest.cpp)
+add_executable(geometryTest frameTest.cpp frameReferencesTest.cpp)
 target_link_libraries(geometryTest Naksh::geometry GTest::GTest GTest::Main)
 
 target_compile_options(geometryTest PRIVATE

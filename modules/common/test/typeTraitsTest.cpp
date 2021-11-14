@@ -1,12 +1,12 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2021.                                                                                                 /
-// Project  : NakshOps                                                                                                 /
+// Project  : Naksh                                                                                                    /
 // Author   : Anurag Jakhotia                                                                                          /
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "cert-err58-cpp"
 
-#include <naksh/common/typetraits.hpp>
+#include <naksh/common/typeTraits.hpp>
 #include <gtest/gtest.h>
 #include <vector>
 #include <deque>
@@ -21,6 +21,19 @@ TEST(TypeTraits, IsSpecialization)
 
     EXPECT_TRUE(bool(IsSpecialization<std::vector<int>, std::vector>::value));
     EXPECT_FALSE(bool(IsSpecialization<std::vector<int>, std::deque>::value));
+}
+
+
+class TestType;
+class AnotherTestType;
+
+
+TEST(TypeTraits, prettyName)
+{
+    static_assert("naksh::common::TestType" == prettyName<TestType>());
+    static_assert("naksh::common::TestType" != prettyName<AnotherTestType>());
+    EXPECT_EQ("naksh::common::TestType", prettyName<TestType>());
+    EXPECT_NE("naksh::common::TestType", prettyName<AnotherTestType>());
 }
 
 
