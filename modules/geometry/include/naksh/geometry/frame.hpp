@@ -57,10 +57,16 @@ public:
 
     /// @brief  Constructor.
     /// @param  frameId   Run-time identity of the reference frame.
-    template<typename ...Args>
-    explicit DynamicFrame(Args&& ...args) noexcept : mFrameId(std::forward<Args>(args)...)
+    explicit DynamicFrame(FrameId frameId) noexcept : mFrameId(std::move(frameId))
     {
     }
+
+    /// @brief  Implicitly converts DynamicFrame with compatible but different underlying type.
+    ///         Eg: std::string & char[]
+    /// @tparam RhsFrameId  Underlying representation of the Rhs dynamic frame type.
+    /// @param  rhs
+    template<typename RhsFrameId>
+    DynamicFrame(const DynamicFrame<RhsFrameId>& rhs): DynamicFrame(rhs.name()) { }
 
     DynamicFrame(const DynamicFrame&) = default;
     DynamicFrame(DynamicFrame&&) noexcept = default;
@@ -113,13 +119,13 @@ class ParentFrame<DynamicFrame<FrameId>>
 public:
     using Parent = DynamicFrame<FrameId>;
 
-    explicit ParentFrame(Parent parent) noexcept: mParent(std::move(parent)) { };
+    explicit ParentFrame(Parent parent) noexcept: mParent(std::move(parent)) { }
 
-    explicit ParentFrame(FrameId frameId) noexcept: ParentFrame(Parent(frameId)) { };
+    explicit ParentFrame(FrameId frameId) noexcept: ParentFrame(Parent(frameId)) { }
 
     virtual ~ParentFrame() = default;
 
-    [[nodiscard]] const Parent& parentFrame() const noexcept { return mParent; };
+    [[nodiscard]] const Parent& parentFrame() const noexcept { return mParent; }
 
 private:
     Parent mParent;
@@ -134,13 +140,13 @@ class ChildFrame<DynamicFrame<FrameId>>
 public:
     using Child = DynamicFrame<FrameId>;
 
-    explicit ChildFrame(Child child) noexcept: mChild(std::move(child)) { };
+    explicit ChildFrame(Child child) noexcept: mChild(std::move(child)) { }
 
-    explicit ChildFrame(FrameId frameId) noexcept: ChildFrame(Child(std::move(frameId))) { };
+    explicit ChildFrame(FrameId frameId) noexcept: ChildFrame(Child(std::move(frameId))) { }
 
     virtual ~ChildFrame() = default;
 
-    [[nodiscard]] const Child& childFrame() const noexcept { return mChild; };
+    [[nodiscard]] const Child& childFrame() const noexcept { return mChild; }
 
 private:
     Child mChild;
