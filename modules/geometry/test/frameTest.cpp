@@ -89,6 +89,43 @@ TEST(ChildFrame, DynamicName)
 }
 
 
+TEST(DynamicFrame, EqualityCheck)
+{
+    DynamicFrame<std::string> d1("Test125");
+
+    {
+        DynamicFrame<std::string> d2("Test125");
+        EXPECT_TRUE(d1 == d2);
+        EXPECT_FALSE(d1 != d2);
+    }
+
+    {
+        DynamicFrame<std::string> d3("Test43");
+        EXPECT_FALSE(d1 == d3);
+        EXPECT_TRUE(d1 != d3);
+    }
+
+    {
+        DynamicFrame<const char*> d4("Test125");
+        EXPECT_TRUE(d1 == d4);
+        EXPECT_FALSE(d1 != d4);
+    }
+
+    DynamicFrame<int> d5(7);
+    {
+        DynamicFrame<int> d6(7);
+        EXPECT_TRUE(d5 == d6);
+        EXPECT_FALSE(d5 != d6);
+    }
+
+    {
+        DynamicFrame<double> d7(7.0);
+        EXPECT_TRUE(d7 == d5);
+        EXPECT_FALSE(d7 != d5);
+    }
+}
+
+
 } // End of namespace naksh::messages.
 
 #pragma clang diagnostic pop
