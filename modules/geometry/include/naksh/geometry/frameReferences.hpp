@@ -9,95 +9,163 @@
 
 namespace naksh::geometry
 {
+namespace helpers
+{
 
 
 /// @brief  A class representing the concept of a parent frame.
 /// @tparam FrameId Compile time identity of the frame.
 template<typename FrameId>
-class ParentFrame
+class ParentConcept
 {
 public:
     /// Avoid nesting StaticFrame type
     static_assert(not common::IsSpecialization<FrameId, StaticFrame>::value);
 
-    using Parent = StaticFrame<FrameId>;
+    using ParentFrame = StaticFrame<FrameId>;
 
-    virtual ~ParentFrame() = default;
+    virtual ~ParentConcept() = default;
 };
 
 
 /// @brief  A class representing the concept of a child frame.
 /// @tparam FrameId Compile time identity of the frame.
 template<typename FrameId>
-class ChildFrame
+class ChildConcept
 {
 public:
     /// Avoid nesting StaticFrame type
     static_assert(not common::IsSpecialization<FrameId, StaticFrame>::value);
 
-    using Child = StaticFrame<FrameId>;
+    using ChildFrame = StaticFrame<FrameId>;
 
-    virtual ~ChildFrame() = default;
+    virtual ~ChildConcept() = default;
 };
 
 
-/// @brief  @ParentFrame specialized for the dynamic case.
+/// @brief  ParentConcept specialized for the dynamic case.
 template<>
-class ParentFrame<DynamicFrame>
+class ParentConcept<DynamicFrame>
 {
 public:
-    using Parent = DynamicFrame;
+    using ParentFrame = DynamicFrame;
 
-    explicit ParentFrame(Parent parent) noexcept: mParent(std::move(parent)) { }
-
-    explicit ParentFrame(std::string frameId) noexcept:
-            ParentFrame(Parent(std::move(frameId)))
+    explicit ParentConcept(ParentFrame parent) noexcept: mParentFrame(std::move(parent))
     {
     }
 
-    virtual ~ParentFrame() = default;
-
-    [[nodiscard]] const Parent& parentFrame() const noexcept { return mParent; }
-
-private:
-    Parent mParent;
-};
-
-
-/// @brief  @ChildFrame specialized for the dynamic case.
-template<>
-class ChildFrame<DynamicFrame>
-{
-public:
-    using Child = DynamicFrame;
-
-    explicit ChildFrame(Child child) noexcept: mChild(std::move(child)) { }
-
-    explicit ChildFrame(std::string frameId) noexcept:
-            ChildFrame(Child(std::move(frameId)))
+    explicit ParentConcept(std::string frameId) noexcept:
+            ParentConcept(ParentFrame(std::move(frameId)))
     {
     }
 
-    virtual ~ChildFrame() = default;
+    virtual ~ParentConcept() = default;
 
-    [[nodiscard]] const Child& childFrame() const noexcept { return mChild; }
+    [[nodiscard]] const ParentFrame& parentFrame() const noexcept
+    { return mParentFrame; }
 
 private:
-    Child mChild;
+    ParentFrame mParentFrame;
 };
+
+
+/// @brief  ChildConcept specialized for the dynamic case.
+template<>
+class ChildConcept<DynamicFrame>
+{
+public:
+    using ChildFrame = DynamicFrame;
+
+    explicit ChildConcept(ChildFrame child) noexcept: mChildFrame(std::move(child))
+    {
+    }
+
+    explicit ChildConcept(std::string frameId) noexcept:
+            ChildConcept(ChildFrame(std::move(frameId)))
+    {
+    }
+
+    virtual ~ChildConcept() = default;
+
+    [[nodiscard]] const ChildFrame& childFrame() const noexcept
+    { return mChildFrame; }
+
+private:
+    ChildFrame mChildFrame;
+};
+
+
+} // End of namespace helpers.
 
 
 /// @brief
-/// @tparam Parent
-/// @tparam Child
+/// @tparam ParentFrameId
+/// @tparam ChildFrameId
 template<typename ParentFrameId, typename ChildFrameId>
-class FrameReferences : public ParentFrame<ParentFrameId>, public ChildFrame<ChildFrameId>
+class FrameReferences : public helpers::ParentConcept<ParentFrameId>, public helpers::ChildConcept<ChildFrameId>
 {
 public:
-    template<typename ...ParentArgs, typename ...ChildArgs>
-    explicit FrameReferences(ParentArgs&&... parentArgs, ChildArgs&&... childArgs) :
-            ParentFrame<ParentFrameId>(std::forward<ParentArgs>(parentArgs)...),
-            ChildFrame<ChildFrameId>(std::forward<ChildArgs>(childArgs)...)
+
+    template<
+            typename PConcept = helpers::ParentConcept<ParentFrameId>,
+            typename CConcept = helpers::ChildConcept<ChildFrameId>,
+            typename = typename std::enable_if<
+                    common::IsSpecialization<typename PConcept::ParentFrame, StaticFrame>::value>::type,
+            typename = typename std::enable_if<
+                    common::IsSpecialization<typename CConcept::ChildFrame, StaticFrame>::value>::type
+                    >
+    FrameReferences():
+            helpers::ParentConcept<ParentFrameId>(),
+            helpers::ChildConcept<ChildFrameId>()
+    {
+    }
+
+
+    template<
+            typename ChildArg,
+            typename PConcept = helpers::ParentConcept<ParentFrameId>,
+            typename CConcept = helpers::ChildConcept<DynamicFrame>,
+            typename = typename std::enable_if<
+                    common::IsSpecialization<typename PConcept::ParentFrame, StaticFrame>::value>::type,
+            typename = typename std::enable_if<
+                    std::is_same<typename CConcept::ChildFrame, DynamicFrame>::value>::type
+                    >
+    explicit FrameReferences(ChildArg&& childFrameId):
+            helpers::ParentConcept<ParentFrameId>(),
+            helpers::ChildConcept<ChildFrameId>(std::forward<ChildArg>(childFrameId))
+    {
+    }
+
+
+    template<
+            typename ParentArg,
+            typename PConcept = helpers::ParentConcept<DynamicFrame>,
+            typename CConcept = helpers::ChildConcept<ChildFrameId>,
+            typename = typename std::enable_if<
+                    std::is_same<typename PConcept::ParentFrame, DynamicFrame>::value>::type,
+            typename = typename std::enable_if<
+                    common::IsSpecialization<typename CConcept::ChildFrame, StaticFrame>::value>::type
+                    >
+    explicit FrameReferences(ParentArg&& parentFrameId, int = 0):
+            helpers::ParentConcept<ParentFrameId>(std::forward<ParentArg>(parentFrameId)),
+            helpers::ChildConcept<ChildFrameId>()
+    {
+    }
+
+
+    template<
+            typename ParentArg,
+            typename ChildArg,
+            typename PConcept = helpers::ParentConcept<DynamicFrame>,
+            typename CConcept = helpers::ChildConcept<DynamicFrame>,
+            typename = typename std::enable_if<
+                    std::is_same<typename PConcept::ParentFrame, DynamicFrame>::value>::type,
+            typename = typename std::enable_if<
+                    std::is_same<typename CConcept::ChildFrame, DynamicFrame>::value>::type
+                    >
+    FrameReferences(ParentArg&& parentFrameId, ChildArg&& childFrameId):
+            helpers::ParentConcept<ParentFrameId>(std::forward<ParentArg>(parentFrameId)),
+            helpers::ChildConcept<ChildFrameId>(std::forward<ChildArg>(childFrameId))
     {
     }
 };
