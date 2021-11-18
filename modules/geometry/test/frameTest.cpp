@@ -17,6 +17,7 @@ class Venus;
 
 TEST(StaticFrame, construction)
 {
+    // A static frame cannot be constructed as one should never need to.
     //EXPECT_NO_THROW(StaticFrame<Mercury>());
 }
 
