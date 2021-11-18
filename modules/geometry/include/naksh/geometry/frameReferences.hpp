@@ -42,7 +42,6 @@ public:
     ///                             std::string("...") or DynamicFrame("...")
     /// @tparam ParentFrame
     /// @tparam ChildFrame
-    /// @param childId
     template<
         typename ChildConceptArgs,
         typename ParentFrame = typename ParentConcept::ParentFrame,
@@ -60,7 +59,6 @@ public:
     ///                             std::string("...") or DynamicFrame("...")
     /// @tparam ParentFrame
     /// @tparam ChildFrame
-    /// @param parentId
     template<
         typename ParentConceptArgs,
         typename ParentFrame = typename ParentConcept::ParentFrame,
@@ -80,8 +78,6 @@ public:
     ///                             std::string("...") or DynamicFrame("...")
     /// @tparam ParentFrame
     /// @tparam ChildFrame
-    /// @param parentId
-    /// @param childId
     template<
         typename ParentConceptArgs,
         typename ChildConceptArgs,

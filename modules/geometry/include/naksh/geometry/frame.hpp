@@ -32,7 +32,8 @@ public:
 
     /// Assert that the FrameId is not a specialization of StaticFrame. This is
     /// done to avoid nesting specialization such as StaticFrame<StaticFrame<...>>.
-    static_assert(not(common::IsSpecialization<FrameId, StaticFrame>::value));
+    static_assert(not(common::IsSpecialization<FrameId, StaticFrame>::value),
+                  "FrameId cannot be a specialization of the StaticFrame<> template."  );
 
     /// Name identifying the reference frame. Used at run-time to evaluate
     /// frame compatibility if one of the operands is a dynamic frame.
