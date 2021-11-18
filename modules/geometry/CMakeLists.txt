@@ -12,6 +12,7 @@ add_exported_library(
         HEADERS
             PUBLIC
                 include/naksh/geometry/frame.hpp
+                include/naksh/geometry/frameConcepts.hpp
                 include/naksh/geometry/frameReferences.hpp
         INCLUDE_DIRECTORIES
             ${CMAKE_CURRENT_SOURCE_DIR}/include

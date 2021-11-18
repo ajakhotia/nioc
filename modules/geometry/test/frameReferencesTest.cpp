@@ -12,94 +12,44 @@
 namespace naksh::geometry
 {
 
-class Earth;
+class Saturn;
 class Jupiter;
-
-namespace helpers
-{
-
-TEST(ParentConcept, StaticConstruction)
-{
-    EXPECT_NO_THROW(ParentConcept<Earth>());
-}
-
-
-TEST(ParentConcept, DynamicConstruction)
-{
-    EXPECT_NO_THROW(ParentConcept<DynamicFrame>("Test845"));
-    EXPECT_NO_THROW(ParentConcept<DynamicFrame>(DynamicFrame("Test943")));
-}
-
-
-TEST(ParentConcept, DynamicName)
-{
-    ParentConcept<DynamicFrame> p1("Test845");
-    ParentConcept<DynamicFrame> p2(DynamicFrame("Test943"));
-
-    EXPECT_EQ(DynamicFrame("Test845"), p1.parentFrame());
-    EXPECT_EQ(DynamicFrame("Test943"), p2.parentFrame());
-}
-
-
-TEST(ChildConcept, StaticConstruction)
-{
-    EXPECT_NO_THROW(ChildConcept<Earth>());
-}
-
-
-TEST(ChildConcept, DynamicConstruction)
-{
-    EXPECT_NO_THROW(ChildConcept<DynamicFrame>("Test845"));
-    EXPECT_NO_THROW(ChildConcept<DynamicFrame>(DynamicFrame("Test943")));
-}
-
-
-TEST(ChildConcept, DynamicName)
-{
-    ChildConcept<DynamicFrame> p1("Test845");
-    ChildConcept<DynamicFrame> p2(DynamicFrame("Test943"));
-
-    EXPECT_EQ(DynamicFrame("Test845"), p1.childFrame());
-    EXPECT_EQ(DynamicFrame("Test943"), p2.childFrame());
-}
-
-} // End of namespace helpers.
 
 
 TEST(FrameReferences, StaticParentStaticChild)
 {
-    using EarthFromJupiter = FrameReferences<Earth, Jupiter>;
-    EXPECT_NO_THROW(EarthFromJupiter());
+    using SaturnFromJupiter = FrameReferences<Saturn, Jupiter>;
+    EXPECT_NO_THROW(SaturnFromJupiter());
 
-    static_assert(EarthFromJupiter::ParentFrame::name() == "naksh::geometry::Earth");
-    static_assert(EarthFromJupiter::ChildFrame::name() == "naksh::geometry::Jupiter");
+    static_assert(SaturnFromJupiter::ParentFrame::name() == "naksh::geometry::Saturn");
+    static_assert(SaturnFromJupiter::ChildFrame::name() == "naksh::geometry::Jupiter");
 
-    const EarthFromJupiter earthFromJupiter;
-    EXPECT_EQ("naksh::geometry::Earth", decltype(earthFromJupiter)::ParentFrame::name());
-    EXPECT_EQ("naksh::geometry::Jupiter", decltype(earthFromJupiter)::ChildFrame::name());
+    const SaturnFromJupiter saturnFromJupiter;
+    EXPECT_EQ("naksh::geometry::Saturn", decltype(saturnFromJupiter)::ParentFrame::name());
+    EXPECT_EQ("naksh::geometry::Jupiter", decltype(saturnFromJupiter)::ChildFrame::name());
 }
 
 
 TEST(FrameReferences, StaticParentDynamicChild)
 {
-    using EarthFromDynamic = FrameReferences<Earth, DynamicFrame>;
-    EXPECT_NO_THROW(EarthFromDynamic("DynamicSaturn"));
+    using SaturnFromDynamic = FrameReferences<Saturn, DynamicFrame>;
+    EXPECT_NO_THROW(SaturnFromDynamic("DynamicSaturn"));
 
     {
-        static_assert(EarthFromDynamic::ParentFrame::name() == "naksh::geometry::Earth");
-        //static_assert(EarthFromDynamic::ChildFrame::name() == "");
+        static_assert(SaturnFromDynamic::ParentFrame::name() == "naksh::geometry::Saturn");
+        //static_assert(SaturnFromDynamic::ChildFrame::name() == "");
     }
 
     {
-        const EarthFromDynamic earthFromDynamic("DynamicSaturn");
-        EXPECT_EQ("naksh::geometry::Earth", decltype(earthFromDynamic)::ParentFrame::name());
-        EXPECT_EQ("DynamicSaturn", earthFromDynamic.childFrame().name());
+        const SaturnFromDynamic saturnFromDynamic("DynamicSaturn");
+        EXPECT_EQ("naksh::geometry::Saturn", decltype(saturnFromDynamic)::ParentFrame::name());
+        EXPECT_EQ("DynamicSaturn", saturnFromDynamic.childFrame().name());
     }
 
     {
-        const EarthFromDynamic earthFromDynamic(DynamicFrame("DynamicSaturn"));
-        EXPECT_EQ("naksh::geometry::Earth", decltype(earthFromDynamic)::ParentFrame::name());
-        EXPECT_EQ("DynamicSaturn", earthFromDynamic.childFrame().name());
+        const SaturnFromDynamic saturnFromDynamic(DynamicFrame("DynamicSaturn"));
+        EXPECT_EQ("naksh::geometry::Saturn", decltype(saturnFromDynamic)::ParentFrame::name());
+        EXPECT_EQ("DynamicSaturn", saturnFromDynamic.childFrame().name());
     }
 }
 

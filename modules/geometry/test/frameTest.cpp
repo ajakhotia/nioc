@@ -12,19 +12,19 @@
 
 namespace naksh::geometry
 {
-class TestWorld;
-class TestCow;
+class Mercury;
+class Venus;
 
 TEST(StaticFrame, construction)
 {
-    //EXPECT_NO_THROW(StaticFrame<TestWorld>());
+    //EXPECT_NO_THROW(StaticFrame<Mercury>());
 }
 
 
 TEST(StaticFrame, name)
 {
-    static_assert("naksh::geometry::TestWorld" == StaticFrame<TestWorld>::name());
-    EXPECT_EQ("naksh::geometry::TestCow", StaticFrame<TestCow>::name());
+    static_assert("naksh::geometry::Mercury" == StaticFrame<Mercury>::name());
+    EXPECT_EQ("naksh::geometry::Venus", StaticFrame<Venus>::name());
 }
 
 

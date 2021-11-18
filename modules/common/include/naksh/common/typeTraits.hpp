@@ -25,6 +25,10 @@ struct IsSpecialization<Template<Args...>, Template> : public std::true_type
 };
 
 
+template<typename LhsType, template <typename...> typename RhsType>
+inline constexpr bool isSpecialization = IsSpecialization<LhsType, RhsType>::value;
+
+
 /// @brief  Function to get a human readable name of a type.
 ///         This function uses boost ctti to interpret build the name string_view but
 ///         omits the trailing ']' character at the end.
