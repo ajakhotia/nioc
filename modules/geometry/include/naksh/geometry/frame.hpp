@@ -22,7 +22,7 @@ namespace naksh::geometry
 ///
 ///             MyCompileTimeCheck<StaticFrame<World>, ... > ...
 ///
-/// @tparam FrameId_   Type used to statically identify a reference frame.
+/// @tparam FrameId_   Compile-time identity of the reference frame.
 template<typename FrameId_>
 class StaticFrame
 {
@@ -74,17 +74,17 @@ private:
 };
 
 
-/// @brief
+/// @brief  Equality check operator.
 /// @param lhs
 /// @param rhs
-/// @return
+/// @return True if the identity of lhs and rhs are the same. False otherwise.
 bool operator==(const DynamicFrame& lhs, const DynamicFrame& rhs);
 
 
-/// @brief
+/// @brief  In-equality check operator.
 /// @param lhs
 /// @param rhs
-/// @return
+/// @return True if the identity of lhs and rhs are not the same. False otherwise.
 bool operator!=(const DynamicFrame& lhs, const DynamicFrame& rhs);
 
 
