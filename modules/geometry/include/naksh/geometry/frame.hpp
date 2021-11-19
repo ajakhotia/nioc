@@ -90,91 +90,84 @@ bool operator!=(const DynamicFrame& lhs, const DynamicFrame& rhs);
 
 
 template<typename LhsFrame, typename RhsFrame>
-class AreSameFrames
+class FramesEqual
 {
 public:
-    static_assert(common::isSpecialization<LhsFrame, StaticFrame>,
-            "Provided frame is not a template specialization of StaticFrame<...>");
+    static_assert(common::isSpecialization<LhsFrame, StaticFrame> or std::is_same_v<LhsFrame, DynamicFrame>,
+            "Provided LhsFrame is neither a specialization of StaticFrame<...> nor is a DynamicFrame");
 
-    static_assert(common::isSpecialization<RhsFrame, StaticFrame>,
-                  "Provided frame is not a template specialization of StaticFrame<...>");
+    static_assert(common::isSpecialization<RhsFrame, StaticFrame> or std::is_same_v<RhsFrame, DynamicFrame>,
+            "Provided RhsFrame is neither a specialization of StaticFrame<...> nor is a DynamicFrame");
 
-    static constexpr bool kValue = LhsFrame::name() == RhsFrame::name();
+    static constexpr bool kValue =
+            std::is_same_v<LhsFrame, DynamicFrame> or
+            std::is_same_v<RhsFrame, DynamicFrame> or
+            std::is_same_v<LhsFrame, RhsFrame>;
 
-    static_assert(std::is_same_v<LhsFrame, RhsFrame> == kValue,
-                  "Mismatch between the similarity of frame names and frame types");
+    template<
+        typename Lhs = LhsFrame,
+        typename Rhs = RhsFrame,
+        typename = typename std::enable_if_t<
+            common::isSpecialization<Lhs, StaticFrame> and common::isSpecialization<Rhs, StaticFrame>>>
+    FramesEqual() noexcept = delete;
 
+
+    template<
+        typename Lhs = LhsFrame,
+        typename Rhs = RhsFrame,
+        typename = typename std::enable_if_t<
+            common::isSpecialization<Lhs, StaticFrame> and std::is_same_v<Rhs, DynamicFrame>>>
+    explicit FramesEqual(const Rhs& rhsFrame) noexcept: mValue(Lhs::name() == rhsFrame.name())
+    {
+    }
+
+
+    template<
+        typename Lhs = LhsFrame,
+        typename Rhs = RhsFrame,
+        typename = typename std::enable_if_t<
+            std::is_same_v<Lhs, DynamicFrame> and common::isSpecialization<Rhs, StaticFrame>>>
+    explicit FramesEqual(const Lhs& lhsFrame, int = 0) noexcept: mValue(lhsFrame.name() == Rhs::name())
+    {
+    }
+
+
+    template<
+        typename Lhs = LhsFrame,
+        typename Rhs = RhsFrame,
+        typename = typename std::enable_if_t<
+            std::is_same_v<Lhs, DynamicFrame> and std::is_same_v<Rhs, DynamicFrame>>>
+    FramesEqual(const Lhs& lhsFrame, const Rhs& rhsFrame) noexcept: mValue(lhsFrame.name() == rhsFrame.name())
+    {
+    }
+
+
+    ~FramesEqual() = default;
+
+
+    template<
+        typename Lhs = LhsFrame,
+        typename Rhs = RhsFrame,
+        typename = typename std::enable_if_t<
+            common::isSpecialization<Lhs, StaticFrame> and common::isSpecialization<Rhs, StaticFrame>>>
     [[nodiscard]] static constexpr bool value() noexcept
     {
         return kValue;
     }
-};
 
 
-template<typename LhsFrame>
-class AreSameFrames<LhsFrame, DynamicFrame>
-{
-public:
-    static_assert(common::isSpecialization<LhsFrame, StaticFrame>,
-                  "Provided frame is not a template specialization of StaticFrame<...>");
-
-    static constexpr bool kValue = true;
-
-    explicit AreSameFrames(const DynamicFrame& rhsFrame) noexcept: mValid(LhsFrame::name() == rhsFrame.name())
+    template<
+        typename Lhs = LhsFrame,
+        typename Rhs = RhsFrame,
+        typename = typename std::enable_if_t<
+            std::is_same_v<Lhs, DynamicFrame> or std::is_same_v<Rhs, DynamicFrame>>>
+    [[nodiscard]] bool value(int = 0) const noexcept
     {
+        return mValue;
     }
-
-    [[nodiscard]] bool value() const noexcept
-    {
-        return mValid;
-    }
-
 private:
-    const bool mValid;
+    bool mValue;
 };
 
-
-template<typename RhsFrame>
-class AreSameFrames<DynamicFrame, RhsFrame>
-{
-public:
-    static_assert(common::isSpecialization<RhsFrame, StaticFrame>,
-                  "Provided frame is not a template specialization of StaticFrame<...>");
-
-    static constexpr bool kValue = true;
-
-    explicit AreSameFrames(const DynamicFrame& lhsFrame) noexcept: mValid(lhsFrame.name() == RhsFrame::name())
-    {
-    }
-
-    [[nodiscard]] bool value() const noexcept
-    {
-        return mValid;
-    }
-
-private:
-    const bool mValid;
-};
-
-
-template<>
-class AreSameFrames<DynamicFrame, DynamicFrame>
-{
-public:
-    static constexpr bool kValue = true;
-
-    explicit AreSameFrames(const DynamicFrame& lhsFrame, const DynamicFrame& rhsFrame) noexcept:
-            mValid(lhsFrame == rhsFrame)
-    {
-    }
-
-    [[nodiscard]] bool value() const noexcept
-    {
-        return mValid;
-    }
-
-private:
-    const bool mValid;
-};
 
 } // End of namespace naksh::geometry.

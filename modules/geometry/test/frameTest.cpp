@@ -62,17 +62,17 @@ TEST(DynamicFrame, EqualityCheck)
 }
 
 
-TEST(AreSameFrames, StaticLhsStaticRhs)
+TEST(FramesEqual, StaticLhsStaticRhs)
 {
-    using MercuryMercury = AreSameFrames<StaticFrame<Mercury>, StaticFrame<Mercury>>;
+    using MercuryMercury = FramesEqual<StaticFrame<Mercury>, StaticFrame<Mercury>>;
     static_assert(MercuryMercury::kValue);
     EXPECT_TRUE(MercuryMercury::value());
 }
 
 
-TEST(AreSameFrames, StaticLhsDynamicRhs)
+TEST(FramesEqual, StaticLhsDynamicRhs)
 {
-    using MercuryDynamic = AreSameFrames<StaticFrame<Mercury>, DynamicFrame>;
+    using MercuryDynamic = FramesEqual<StaticFrame<Mercury>, DynamicFrame>;
     static_assert(MercuryDynamic::kValue);
     EXPECT_TRUE(MercuryDynamic::kValue);
 
@@ -84,9 +84,9 @@ TEST(AreSameFrames, StaticLhsDynamicRhs)
 }
 
 
-TEST(AreSameFrames, DynamicLhsStaticRhs)
+TEST(FramesEqual, DynamicLhsStaticRhs)
 {
-    using DynamicVenus = AreSameFrames<DynamicFrame, StaticFrame<Venus>>;
+    using DynamicVenus = FramesEqual<DynamicFrame, StaticFrame<Venus>>;
     static_assert(DynamicVenus::kValue);
     EXPECT_TRUE(DynamicVenus::kValue);
 
@@ -98,9 +98,9 @@ TEST(AreSameFrames, DynamicLhsStaticRhs)
 }
 
 
-TEST(AreSameFrames, DynamicLhsDynamicRhs)
+TEST(FramesEqual, DynamicLhsDynamicRhs)
 {
-    using DynamicDynamic = AreSameFrames<DynamicFrame, DynamicFrame>;
+    using DynamicDynamic = FramesEqual<DynamicFrame, DynamicFrame>;
     static_assert(DynamicDynamic::kValue);
     EXPECT_TRUE(DynamicDynamic::kValue);
 

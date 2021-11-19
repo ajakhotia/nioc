@@ -40,14 +40,11 @@ class ParentConceptTmpl<DynamicFrame>
 public:
     using ParentFrame = DynamicFrame;
 
-    explicit ParentConceptTmpl(ParentFrame parent) noexcept: mParentFrame(std::move(parent))
-            {
-            }
+    template<typename ParentFrameArgs>
+    explicit ParentConceptTmpl(ParentFrameArgs parentFrameArgs) noexcept: mParentFrame(std::move(parentFrameArgs))
+    {
+    }
 
-    explicit ParentConceptTmpl(std::string frameId) noexcept:
-            ParentConceptTmpl(ParentFrame(std::move(frameId)))
-            {
-            }
 
     virtual ~ParentConceptTmpl() = default;
 
@@ -68,14 +65,11 @@ class ChildConceptTmpl<DynamicFrame>
 public:
     using ChildFrame = DynamicFrame;
 
-    explicit ChildConceptTmpl(ChildFrame child) noexcept: mChildFrame(std::move(child))
-            {
-            }
+    template<typename ChildFrameArgs>
+    explicit ChildConceptTmpl(ChildFrameArgs childFrameArgs) noexcept: mChildFrame(std::move(childFrameArgs))
+    {
+    }
 
-    explicit ChildConceptTmpl(std::string frameId) noexcept:
-            ChildConceptTmpl(ChildFrame(std::move(frameId)))
-            {
-            }
 
     virtual ~ChildConceptTmpl() = default;
 
