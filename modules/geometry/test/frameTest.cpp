@@ -12,8 +12,10 @@
 
 namespace naksh::geometry
 {
+
 class Mercury;
 class Venus;
+
 
 TEST(StaticFrame, construction)
 {
@@ -57,6 +59,56 @@ TEST(DynamicFrame, EqualityCheck)
         EXPECT_FALSE(d1 == d3);
         EXPECT_TRUE(d1 != d3);
     }
+}
+
+
+TEST(AreSameFrames, StaticLhsStaticRhs)
+{
+    using MercuryMercury = AreSameFrames<StaticFrame<Mercury>, StaticFrame<Mercury>>;
+    static_assert(MercuryMercury::kValue);
+    EXPECT_TRUE(MercuryMercury::value());
+}
+
+
+TEST(AreSameFrames, StaticLhsDynamicRhs)
+{
+    using MercuryDynamic = AreSameFrames<StaticFrame<Mercury>, DynamicFrame>;
+    static_assert(MercuryDynamic::kValue);
+    EXPECT_TRUE(MercuryDynamic::kValue);
+
+    MercuryDynamic md1(DynamicFrame("naksh::geometry::Mercury"));
+    EXPECT_TRUE(md1.value());
+
+    MercuryDynamic md2(DynamicFrame("DynamicTortoise"));
+    EXPECT_FALSE(md2.value());
+}
+
+
+TEST(AreSameFrames, DynamicLhsStaticRhs)
+{
+    using DynamicVenus = AreSameFrames<DynamicFrame, StaticFrame<Venus>>;
+    static_assert(DynamicVenus::kValue);
+    EXPECT_TRUE(DynamicVenus::kValue);
+
+    DynamicVenus dv1(DynamicFrame("naksh::geometry::Venus"));
+    EXPECT_TRUE(dv1.value());
+
+    DynamicVenus dv2(DynamicFrame("DynamicSnail"));
+    EXPECT_FALSE(dv2.value());
+}
+
+
+TEST(AreSameFrames, DynamicLhsDynamicRhs)
+{
+    using DynamicDynamic = AreSameFrames<DynamicFrame, DynamicFrame>;
+    static_assert(DynamicDynamic::kValue);
+    EXPECT_TRUE(DynamicDynamic::kValue);
+
+    DynamicDynamic dd1(DynamicFrame("Neptune"), DynamicFrame("Neptune"));
+    EXPECT_TRUE(dd1.value());
+
+    DynamicDynamic dd2(DynamicFrame("Neptune"), DynamicFrame("Pluto"));
+    EXPECT_FALSE(dd2.value());
 }
 
 

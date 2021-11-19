@@ -89,4 +89,92 @@ bool operator==(const DynamicFrame& lhs, const DynamicFrame& rhs);
 bool operator!=(const DynamicFrame& lhs, const DynamicFrame& rhs);
 
 
+template<typename LhsFrame, typename RhsFrame>
+class AreSameFrames
+{
+public:
+    static_assert(common::isSpecialization<LhsFrame, StaticFrame>,
+            "Provided frame is not a template specialization of StaticFrame<...>");
+
+    static_assert(common::isSpecialization<RhsFrame, StaticFrame>,
+                  "Provided frame is not a template specialization of StaticFrame<...>");
+
+    static constexpr bool kValue = LhsFrame::name() == RhsFrame::name();
+
+    static_assert(std::is_same_v<LhsFrame, RhsFrame> == kValue,
+                  "Mismatch between the similarity of frame names and frame types");
+
+    [[nodiscard]] static constexpr bool value() noexcept
+    {
+        return kValue;
+    }
+};
+
+
+template<typename LhsFrame>
+class AreSameFrames<LhsFrame, DynamicFrame>
+{
+public:
+    static_assert(common::isSpecialization<LhsFrame, StaticFrame>,
+                  "Provided frame is not a template specialization of StaticFrame<...>");
+
+    static constexpr bool kValue = true;
+
+    explicit AreSameFrames(const DynamicFrame& rhsFrame) noexcept: mValid(LhsFrame::name() == rhsFrame.name())
+    {
+    }
+
+    [[nodiscard]] bool value() const noexcept
+    {
+        return mValid;
+    }
+
+private:
+    const bool mValid;
+};
+
+
+template<typename RhsFrame>
+class AreSameFrames<DynamicFrame, RhsFrame>
+{
+public:
+    static_assert(common::isSpecialization<RhsFrame, StaticFrame>,
+                  "Provided frame is not a template specialization of StaticFrame<...>");
+
+    static constexpr bool kValue = true;
+
+    explicit AreSameFrames(const DynamicFrame& lhsFrame) noexcept: mValid(lhsFrame.name() == RhsFrame::name())
+    {
+    }
+
+    [[nodiscard]] bool value() const noexcept
+    {
+        return mValid;
+    }
+
+private:
+    const bool mValid;
+};
+
+
+template<>
+class AreSameFrames<DynamicFrame, DynamicFrame>
+{
+public:
+    static constexpr bool kValue = true;
+
+    explicit AreSameFrames(const DynamicFrame& lhsFrame, const DynamicFrame& rhsFrame) noexcept:
+            mValid(lhsFrame == rhsFrame)
+    {
+    }
+
+    [[nodiscard]] bool value() const noexcept
+    {
+        return mValid;
+    }
+
+private:
+    const bool mValid;
+};
+
 } // End of namespace naksh::geometry.
