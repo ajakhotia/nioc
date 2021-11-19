@@ -19,7 +19,6 @@ template<
     typename ChildFrameId,
     typename ParentConcept = ParentConceptTmpl<ParentFrameId>,
     typename ChildConcept = ChildConceptTmpl<ChildFrameId>>
-
 class FrameReferences : public ParentConcept, public ChildConcept
 {
 public:
