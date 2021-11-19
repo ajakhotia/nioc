@@ -117,7 +117,8 @@ public:
         typename Rhs = RhsFrame,
         typename = typename std::enable_if_t<
             common::isSpecialization<Lhs, StaticFrame> and std::is_same_v<Rhs, DynamicFrame>>>
-    explicit FramesEqual(const Rhs& rhsFrame) noexcept: mValue(Lhs::name() == rhsFrame.name())
+    [[maybe_unused]] explicit FramesEqual(const Rhs& rhsFrame) noexcept:
+            mValue(Lhs::name() == rhsFrame.name())
     {
     }
 
@@ -127,7 +128,8 @@ public:
         typename Rhs = RhsFrame,
         typename = typename std::enable_if_t<
             std::is_same_v<Lhs, DynamicFrame> and common::isSpecialization<Rhs, StaticFrame>>>
-    explicit FramesEqual(const Lhs& lhsFrame, int = 0) noexcept: mValue(lhsFrame.name() == Rhs::name())
+    [[maybe_unused]] explicit FramesEqual(const Lhs& lhsFrame, int = 0) noexcept:
+            mValue(lhsFrame.name() == Rhs::name())
     {
     }
 
@@ -137,7 +139,8 @@ public:
         typename Rhs = RhsFrame,
         typename = typename std::enable_if_t<
             std::is_same_v<Lhs, DynamicFrame> and std::is_same_v<Rhs, DynamicFrame>>>
-    FramesEqual(const Lhs& lhsFrame, const Rhs& rhsFrame) noexcept: mValue(lhsFrame.name() == rhsFrame.name())
+    [[maybe_unused]] FramesEqual(const Lhs& lhsFrame, const Rhs& rhsFrame) noexcept:
+            mValue(lhsFrame.name() == rhsFrame.name())
     {
     }
 

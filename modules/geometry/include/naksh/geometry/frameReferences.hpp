@@ -47,7 +47,7 @@ public:
         typename ChildFrame = typename ChildConcept::ChildFrame,
         typename = typename std::enable_if_t<common::isSpecialization<ParentFrame, StaticFrame>>,
         typename = typename std::enable_if_t<std::is_same_v<ChildFrame, DynamicFrame>>>
-    explicit FrameReferences(ChildConceptArgs&& childId) noexcept:
+    [[maybe_unused]] explicit FrameReferences(ChildConceptArgs&& childId) noexcept:
             ParentConcept(), ChildConcept(std::forward<ChildConceptArgs>(childId))
     {
     }
@@ -64,7 +64,7 @@ public:
         typename ChildFrame = typename ChildConcept::ChildFrame,
         typename = typename std::enable_if_t<std::is_same_v<ParentFrame, DynamicFrame>>,
         typename = typename std::enable_if_t<common::isSpecialization<ChildFrame, StaticFrame>>>
-    explicit FrameReferences(ParentConceptArgs&& parentId, int = 0) noexcept:
+    [[maybe_unused]] explicit FrameReferences(ParentConceptArgs&& parentId, int = 0) noexcept:
             ParentConcept(std::forward<ParentConceptArgs>(parentId)), ChildConcept()
     {
     }
@@ -84,7 +84,7 @@ public:
         typename ChildFrame = typename ChildConcept::ChildFrame,
         typename = typename std::enable_if_t<std::is_same_v<ParentFrame, DynamicFrame>>,
         typename = typename std::enable_if_t<std::is_same_v<ChildFrame, DynamicFrame>>>
-    FrameReferences(ParentConceptArgs&& parentId, ChildConceptArgs&& childId) noexcept:
+    [[maybe_unused]] FrameReferences(ParentConceptArgs&& parentId, ChildConceptArgs&& childId) noexcept:
             ParentConcept(std::forward<ParentConceptArgs>(parentId)),
             ChildConcept(std::forward<ChildConceptArgs>(childId))
     {
