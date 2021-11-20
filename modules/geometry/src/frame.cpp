@@ -9,7 +9,7 @@
 namespace naksh::geometry
 {
 
-DynamicFrame::DynamicFrame(std::string frameId) noexcept : mFrameId(std::move(frameId))
+DynamicFrame::DynamicFrame(std::string frameId) noexcept: mFrameId(std::move(frameId))
 {
 }
 

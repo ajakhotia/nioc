@@ -18,6 +18,7 @@ class ParentConceptTmpl
 {
 public:
     using ParentFrame = StaticFrame<FrameId>;
+
     virtual ~ParentConceptTmpl() = default;
 };
 
@@ -29,6 +30,7 @@ class ChildConceptTmpl
 {
 public:
     using ChildFrame = StaticFrame<FrameId>;
+
     virtual ~ChildConceptTmpl() = default;
 };
 
@@ -81,7 +83,6 @@ public:
 private:
     ChildFrame mChildFrame;
 };
-
 
 
 } // End of namespace naksh::geometry.

@@ -95,8 +95,9 @@ TEST(FrameReferences, DynamicParentDynamicChild)
     }
 
     {
-        const DynamicFromDynamic dynamicFromDynamic(DynamicFrame("DynamicMars"),
-                                                    DynamicFrame("DynamicNeptune"));
+        const DynamicFromDynamic dynamicFromDynamic(
+            DynamicFrame("DynamicMars"),
+            DynamicFrame("DynamicNeptune"));
 
         EXPECT_EQ("DynamicMars", dynamicFromDynamic.parentFrame().name());
         EXPECT_EQ("DynamicNeptune", dynamicFromDynamic.childFrame().name());

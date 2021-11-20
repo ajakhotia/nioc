@@ -32,8 +32,9 @@ public:
 
     /// Assert that the FrameId is not a specialization of StaticFrame. This is
     /// done to avoid nesting specialization such as StaticFrame<StaticFrame<...>>.
-    static_assert(not(common::IsSpecialization<FrameId, StaticFrame>::value),
-                  "FrameId cannot be a specialization of the StaticFrame<> template."  );
+    static_assert(
+        not(common::IsSpecialization<FrameId, StaticFrame>::value),
+        "FrameId cannot be a specialization of the StaticFrame<> template.");
 
     /// Name identifying the reference frame. Used at run-time to evaluate
     /// frame compatibility if one of the operands is a dynamic frame.
@@ -60,9 +61,13 @@ public:
     explicit DynamicFrame(std::string frameId) noexcept;
 
     DynamicFrame(const DynamicFrame&) = default;
+
     DynamicFrame(DynamicFrame&&) noexcept = default;
+
     ~DynamicFrame() = default;
+
     DynamicFrame& operator=(const DynamicFrame&) = default;
+
     DynamicFrame& operator=(DynamicFrame&&) noexcept = default;
 
     /// @brief  Accessor for the name of the frame.
@@ -93,16 +98,18 @@ template<typename LhsFrame, typename RhsFrame>
 class FramesEqual
 {
 public:
-    static_assert(common::isSpecialization<LhsFrame, StaticFrame> or std::is_same_v<LhsFrame, DynamicFrame>,
-            "Provided LhsFrame is neither a specialization of StaticFrame<...> nor is a DynamicFrame");
+    static_assert(
+        common::isSpecialization<LhsFrame, StaticFrame> or std::is_same_v<LhsFrame, DynamicFrame>,
+        "Provided LhsFrame is neither a specialization of StaticFrame<...> nor is a DynamicFrame");
 
-    static_assert(common::isSpecialization<RhsFrame, StaticFrame> or std::is_same_v<RhsFrame, DynamicFrame>,
-            "Provided RhsFrame is neither a specialization of StaticFrame<...> nor is a DynamicFrame");
+    static_assert(
+        common::isSpecialization<RhsFrame, StaticFrame> or std::is_same_v<RhsFrame, DynamicFrame>,
+        "Provided RhsFrame is neither a specialization of StaticFrame<...> nor is a DynamicFrame");
 
     static constexpr bool kValue =
-            std::is_same_v<LhsFrame, DynamicFrame> or
-            std::is_same_v<RhsFrame, DynamicFrame> or
-            std::is_same_v<LhsFrame, RhsFrame>;
+        std::is_same_v<LhsFrame, DynamicFrame> or
+        std::is_same_v<RhsFrame, DynamicFrame> or
+        std::is_same_v<LhsFrame, RhsFrame>;
 
     template<
         typename Lhs = LhsFrame,
@@ -118,7 +125,7 @@ public:
         typename = typename std::enable_if_t<
             common::isSpecialization<Lhs, StaticFrame> and std::is_same_v<Rhs, DynamicFrame>>>
     [[maybe_unused]] explicit FramesEqual(const Rhs& rhsFrame) noexcept:
-            mValue(Lhs::name() == rhsFrame.name())
+        mValue(Lhs::name() == rhsFrame.name())
     {
     }
 
@@ -129,7 +136,7 @@ public:
         typename = typename std::enable_if_t<
             std::is_same_v<Lhs, DynamicFrame> and common::isSpecialization<Rhs, StaticFrame>>>
     [[maybe_unused]] explicit FramesEqual(const Lhs& lhsFrame, int = 0) noexcept:
-            mValue(lhsFrame.name() == Rhs::name())
+        mValue(lhsFrame.name() == Rhs::name())
     {
     }
 
@@ -140,7 +147,7 @@ public:
         typename = typename std::enable_if_t<
             std::is_same_v<Lhs, DynamicFrame> and std::is_same_v<Rhs, DynamicFrame>>>
     [[maybe_unused]] FramesEqual(const Lhs& lhsFrame, const Rhs& rhsFrame) noexcept:
-            mValue(lhsFrame.name() == rhsFrame.name())
+        mValue(lhsFrame.name() == rhsFrame.name())
     {
     }
 
@@ -168,6 +175,7 @@ public:
     {
         return mValue;
     }
+
 private:
     bool mValue;
 };
