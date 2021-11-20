@@ -65,7 +65,7 @@ TEST(DynamicFrame, EqualityCheck)
 TEST(FramesEqual, StaticLhsStaticRhs)
 {
     using MercuryMercury = FramesEqual<StaticFrame<Mercury>, StaticFrame<Mercury>>;
-    static_assert(MercuryMercury::kValue);
+    static_assert(MercuryMercury::value());
     EXPECT_TRUE(MercuryMercury::value());
 }
 
@@ -73,8 +73,6 @@ TEST(FramesEqual, StaticLhsStaticRhs)
 TEST(FramesEqual, StaticLhsDynamicRhs)
 {
     using MercuryDynamic = FramesEqual<StaticFrame<Mercury>, DynamicFrame>;
-    static_assert(MercuryDynamic::kValue);
-    EXPECT_TRUE(MercuryDynamic::kValue);
 
     MercuryDynamic md1(DynamicFrame("naksh::geometry::Mercury"));
     EXPECT_TRUE(md1.value());
@@ -87,8 +85,6 @@ TEST(FramesEqual, StaticLhsDynamicRhs)
 TEST(FramesEqual, DynamicLhsStaticRhs)
 {
     using DynamicVenus = FramesEqual<DynamicFrame, StaticFrame<Venus>>;
-    static_assert(DynamicVenus::kValue);
-    EXPECT_TRUE(DynamicVenus::kValue);
 
     DynamicVenus dv1(DynamicFrame("naksh::geometry::Venus"));
     EXPECT_TRUE(dv1.value());
@@ -101,8 +97,6 @@ TEST(FramesEqual, DynamicLhsStaticRhs)
 TEST(FramesEqual, DynamicLhsDynamicRhs)
 {
     using DynamicDynamic = FramesEqual<DynamicFrame, DynamicFrame>;
-    static_assert(DynamicDynamic::kValue);
-    EXPECT_TRUE(DynamicDynamic::kValue);
 
     DynamicDynamic dd1(DynamicFrame("Neptune"), DynamicFrame("Neptune"));
     EXPECT_TRUE(dd1.value());

@@ -106,10 +106,6 @@ public:
         common::isSpecialization<RhsFrame, StaticFrame> or std::is_same_v<RhsFrame, DynamicFrame>,
         "Provided RhsFrame is neither a specialization of StaticFrame<...> nor is a DynamicFrame");
 
-    static constexpr bool kValue =
-        std::is_same_v<LhsFrame, DynamicFrame> or
-        std::is_same_v<RhsFrame, DynamicFrame> or
-        std::is_same_v<LhsFrame, RhsFrame>;
 
     template<
         typename Lhs = LhsFrame,
@@ -162,7 +158,7 @@ public:
             common::isSpecialization<Lhs, StaticFrame> and common::isSpecialization<Rhs, StaticFrame>>>
     [[nodiscard]] static constexpr bool value() noexcept
     {
-        return kValue;
+        return std::is_same_v<Lhs, Rhs>;
     }
 
 
