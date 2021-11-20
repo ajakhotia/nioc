@@ -94,6 +94,11 @@ bool operator==(const DynamicFrame& lhs, const DynamicFrame& rhs);
 bool operator!=(const DynamicFrame& lhs, const DynamicFrame& rhs);
 
 
+/// @brief  Class to compute if two frames represents the same frame. The result is statically avaible
+///         if both arguments(LhsFrame and RhsFrame) are StaticFrame<...>. Otherwise, the result is
+///         computed at run-time.
+/// @tparam LhsFrame    LhsFrame type. Should be a StaticFrame<...> or DynamicFrame
+/// @tparam RhsFrame    RhsFrame type. Should be a StaticFrame<...> or DynamicFrame
 template<typename LhsFrame, typename RhsFrame>
 class FramesEqual
 {
@@ -107,6 +112,11 @@ public:
         "Provided RhsFrame is neither a specialization of StaticFrame<...> nor is a DynamicFrame");
 
 
+    /// @brief  Constructor for when both LhsFrame and RhsFrame are instances of StaticFrame.
+    ///         The constructor is deleted because there should not be a need to create an
+    ///         instance for this case. Calling the static ::value() method should be sufficient.
+    /// @tparam Lhs Alias of the LhsFrame.
+    /// @tparam Rhs Alias of the RhsFrame.
     template<
         typename Lhs = LhsFrame,
         typename Rhs = RhsFrame,
@@ -115,6 +125,10 @@ public:
     FramesEqual() noexcept = delete;
 
 
+    /// @brief  Constructor for the case when RhsFrame is a DynamicFrame.
+    /// @tparam Lhs Alias of the LhsFrame.
+    /// @tparam Rhs Alias of the RhsFrame.
+    /// @param rhsFrame Reference to an instance of the DynamicFrame.
     template<
         typename Lhs = LhsFrame,
         typename Rhs = RhsFrame,
@@ -126,6 +140,10 @@ public:
     }
 
 
+    /// @brief  Constructor for the case when LhsFrame is a DynamicFrame.
+    /// @tparam Lhs Alias of the LhsFrame.
+    /// @tparam Rhs Alias of the RhsFrame.
+    /// @param lhsFrame Reference to an instance of the DynamicFrame.
     template<
         typename Lhs = LhsFrame,
         typename Rhs = RhsFrame,
@@ -137,6 +155,11 @@ public:
     }
 
 
+    /// @brief  Constructor for the case when both LhsFrame and RhsFrame are DynamicFrame.
+    /// @tparam Lhs Alias of the LhsFrame.
+    /// @tparam Rhs Alias of the RhsFrame.
+    /// @param lhsFrame Reference to an instance of the DynamicFrame.
+    /// @param rhsFrame Reference to an instance of the DynamicFrame.
     template<
         typename Lhs = LhsFrame,
         typename Rhs = RhsFrame,
@@ -148,9 +171,16 @@ public:
     }
 
 
+    /// @brief  Default destructor.
     ~FramesEqual() = default;
 
 
+    /// @brief  Static version of value() to know at compile time if the LhsFrame and RhsFrame
+    ///         are equivalent. This method is activated only when both LhsFrame and RhsFrame
+    ///         are StaticFrame<...>.
+    /// @tparam Lhs Alias of the LhsFrame.
+    /// @tparam Rhs Alias of the RhsFrame.
+    /// @return true, if LhsFrame and RhsFrame represent the same frame. False otherwise.
     template<
         typename Lhs = LhsFrame,
         typename Rhs = RhsFrame,
@@ -162,6 +192,11 @@ public:
     }
 
 
+    /// @brief  Method to query of the argument frames represent the same frames at run-time.
+    ///         This method is activated when any of the LhsFrame or RhsFrame is/are a DynamicFrame.
+    /// @tparam Lhs Alias of the LhsFrame.
+    /// @tparam Rhs Alias of the RhsFrame.
+    /// @return True, if the argument frames represent the same frame. False otherwise.`
     template<
         typename Lhs = LhsFrame,
         typename Rhs = RhsFrame,
