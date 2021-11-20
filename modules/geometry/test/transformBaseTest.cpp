@@ -6,7 +6,7 @@
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "cert-err58-cpp"
 
-#include <naksh/geometry/frameReferences.hpp>
+#include <naksh/geometry/transformBase.hpp>
 #include <gtest/gtest.h>
 
 namespace naksh::geometry
@@ -16,9 +16,9 @@ class Saturn;
 class Jupiter;
 
 
-TEST(FrameReferences, StaticParentStaticChild)
+TEST(TransformBase, StaticParentStaticChild)
 {
-    using SaturnFromJupiter = FrameReferences<Saturn, Jupiter>;
+    using SaturnFromJupiter = TransformBase<Saturn, Jupiter>;
     EXPECT_NO_THROW(SaturnFromJupiter());
 
     static_assert(SaturnFromJupiter::ParentFrame::name() == "naksh::geometry::Saturn");
@@ -30,9 +30,9 @@ TEST(FrameReferences, StaticParentStaticChild)
 }
 
 
-TEST(FrameReferences, StaticParentDynamicChild)
+TEST(TransformBase, StaticParentDynamicChild)
 {
-    using SaturnFromDynamic = FrameReferences<Saturn, DynamicFrame>;
+    using SaturnFromDynamic = TransformBase<Saturn, DynamicFrame>;
     EXPECT_NO_THROW(SaturnFromDynamic("DynamicSaturn"));
 
     {
@@ -54,9 +54,9 @@ TEST(FrameReferences, StaticParentDynamicChild)
 }
 
 
-TEST(FrameReferences, DynamicParentStaticChild)
+TEST(TransformBase, DynamicParentStaticChild)
 {
-    using DynamicFromJupiter = FrameReferences<DynamicFrame, Jupiter>;
+    using DynamicFromJupiter = TransformBase<DynamicFrame, Jupiter>;
     EXPECT_NO_THROW(DynamicFromJupiter("DynamicMars"));
 
     {
@@ -78,9 +78,9 @@ TEST(FrameReferences, DynamicParentStaticChild)
 }
 
 
-TEST(FrameReferences, DynamicParentDynamicChild)
+TEST(TransformBase, DynamicParentDynamicChild)
 {
-    using DynamicFromDynamic = FrameReferences<DynamicFrame, DynamicFrame>;
+    using DynamicFromDynamic = TransformBase<DynamicFrame, DynamicFrame>;
     EXPECT_NO_THROW(DynamicFromDynamic("DynamicMars", "DynamicNeptune"));
 
     {

@@ -6,7 +6,7 @@
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "cert-err58-cpp"
 
-#include <naksh/geometry/frameReferences.hpp>
+#include <naksh/geometry/frameConcepts.hpp>
 #include <gtest/gtest.h>
 
 namespace naksh::geometry

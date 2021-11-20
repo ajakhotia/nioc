@@ -13,7 +13,7 @@ add_exported_library(
             PUBLIC
                 include/naksh/geometry/frame.hpp
                 include/naksh/geometry/frameConcepts.hpp
-                include/naksh/geometry/frameReferences.hpp
+                include/naksh/geometry/transformBase.hpp
         INCLUDE_DIRECTORIES
             ${CMAKE_CURRENT_SOURCE_DIR}/include
         LINK_LIBRARIES
