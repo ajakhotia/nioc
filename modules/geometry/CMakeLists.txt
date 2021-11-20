@@ -14,6 +14,7 @@ add_exported_library(
                 include/naksh/geometry/frame.hpp
                 include/naksh/geometry/frameConcepts.hpp
                 include/naksh/geometry/transform.hpp
+                include/naksh/geometry/compose.hpp
         INCLUDE_DIRECTORIES
             ${CMAKE_CURRENT_SOURCE_DIR}/include
         LINK_LIBRARIES
