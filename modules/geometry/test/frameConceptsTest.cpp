@@ -29,7 +29,15 @@ TEST(ParentConceptTmpl, DynamicConstruction)
 }
 
 
-TEST(ParentConceptTmpl, DynamicName)
+TEST(ParentConceptTmpl, StaticParentFrame)
+{
+    using ParentEarth = ParentConceptTmpl<Earth>;
+    static_assert(std::is_same_v<StaticFrame<Earth>, ParentEarth::ParentFrame>);
+    EXPECT_EQ(StaticFrame<Earth>::name(), ParentEarth::ParentFrame::name());
+}
+
+
+TEST(ParentConceptTmpl, DynamicParentFrame)
 {
     ParentConceptTmpl<DynamicFrame> p1("Test845");
     ParentConceptTmpl<DynamicFrame> p2(DynamicFrame("Test943"));
@@ -41,7 +49,7 @@ TEST(ParentConceptTmpl, DynamicName)
 
 TEST(ChildConceptTmpl, StaticConstruction)
 {
-    EXPECT_NO_THROW(ChildConceptTmpl<Earth>());
+    EXPECT_NO_THROW(ChildConceptTmpl<Mars>());
 }
 
 
@@ -52,7 +60,15 @@ TEST(ChildConceptTmpl, DynamicConstruction)
 }
 
 
-TEST(ChildConceptTmpl, DynamicName)
+TEST(ParentConceptTmpl, StaticChildFrame)
+{
+    using ChildMars = ChildConceptTmpl<Mars>;
+    static_assert(std::is_same_v<StaticFrame<Mars>, ChildMars::ChildFrame>);
+    EXPECT_EQ(StaticFrame<Mars>::name(), ChildMars::ChildFrame::name());
+}
+
+
+TEST(ChildConceptTmpl, DynamicChildFrame)
 {
     ChildConceptTmpl<DynamicFrame> p1("Test845");
     ChildConceptTmpl<DynamicFrame> p2(DynamicFrame("Test943"));
