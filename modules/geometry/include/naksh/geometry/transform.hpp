@@ -11,7 +11,7 @@ namespace naksh::geometry
 {
 
 
-/// @brief
+/// @brief  Base class to provide necessary interface for geometric transformation.
 /// @tparam ParentFrameId
 /// @tparam ChildFrameId
 template<
@@ -19,7 +19,7 @@ template<
     typename ChildFrameId,
     typename ParentConcept = ParentConceptTmpl<ParentFrameId>,
     typename ChildConcept = ChildConceptTmpl<ChildFrameId>>
-class TransformBase : public ParentConcept, public ChildConcept
+class Transform : public ParentConcept, public ChildConcept
 {
 public:
 
@@ -31,7 +31,7 @@ public:
         typename ChildFrame = typename ChildConcept::ChildFrame,
         typename = typename std::enable_if_t<common::isSpecialization<ParentFrame, StaticFrame>>,
         typename = typename std::enable_if_t<common::isSpecialization<ChildFrame, StaticFrame>>>
-    TransformBase() noexcept: ParentConcept(), ChildConcept()
+    Transform() noexcept: ParentConcept(), ChildConcept()
     {
     }
 
@@ -47,7 +47,7 @@ public:
         typename ChildFrame = typename ChildConcept::ChildFrame,
         typename = typename std::enable_if_t<common::isSpecialization<ParentFrame, StaticFrame>>,
         typename = typename std::enable_if_t<std::is_same_v<ChildFrame, DynamicFrame>>>
-    [[maybe_unused]] explicit TransformBase(ChildConceptArgs&& childId) noexcept:
+    [[maybe_unused]] explicit Transform(ChildConceptArgs&& childId) noexcept:
         ParentConcept(), ChildConcept(std::forward<ChildConceptArgs>(childId))
     {
     }
@@ -64,7 +64,7 @@ public:
         typename ChildFrame = typename ChildConcept::ChildFrame,
         typename = typename std::enable_if_t<std::is_same_v<ParentFrame, DynamicFrame>>,
         typename = typename std::enable_if_t<common::isSpecialization<ChildFrame, StaticFrame>>>
-    [[maybe_unused]] explicit TransformBase(ParentConceptArgs&& parentId, int = 0) noexcept:
+    [[maybe_unused]] explicit Transform(ParentConceptArgs&& parentId, int = 0) noexcept:
         ParentConcept(std::forward<ParentConceptArgs>(parentId)), ChildConcept()
     {
     }
@@ -84,7 +84,7 @@ public:
         typename ChildFrame = typename ChildConcept::ChildFrame,
         typename = typename std::enable_if_t<std::is_same_v<ParentFrame, DynamicFrame>>,
         typename = typename std::enable_if_t<std::is_same_v<ChildFrame, DynamicFrame>>>
-    [[maybe_unused]] TransformBase(ParentConceptArgs&& parentId, ChildConceptArgs&& childId) noexcept:
+    [[maybe_unused]] Transform(ParentConceptArgs&& parentId, ChildConceptArgs&& childId) noexcept:
         ParentConcept(std::forward<ParentConceptArgs>(parentId)),
         ChildConcept(std::forward<ChildConceptArgs>(childId))
     {
@@ -92,7 +92,7 @@ public:
 
 
     /// @brief Default virtual destructor.
-    virtual ~TransformBase() = default;
+    virtual ~Transform() = default;
 };
 
 
