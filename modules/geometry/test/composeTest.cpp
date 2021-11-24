@@ -38,7 +38,7 @@ TEST(assertFrameEqual, StaticLhsDynamicRhs)
 
     EXPECT_THROW(
         (assertFrameEqual<StaticFrame<Sun>, DynamicFrame>(DynamicFrame("Bloop"))),
-        TransformCompositionException);
+        FrameCompositionException);
 }
 
 
@@ -49,7 +49,7 @@ TEST(assertFrameEqual, DynamicLhsStaticRhs)
 
     EXPECT_THROW(
         (assertFrameEqual<DynamicFrame, StaticFrame<AlphaCentauri>>(DynamicFrame("Bloop"))),
-        TransformCompositionException);
+        FrameCompositionException);
 }
 
 
@@ -64,7 +64,7 @@ TEST(assertFrameEqual, DynamicLhsDynamicRhs)
         (assertFrameEqual<DynamicFrame, DynamicFrame>(
             DynamicFrame("Bloop"),
             DynamicFrame("Bleep"))),
-        TransformCompositionException);
+        FrameCompositionException);
 }
 
 } // End of namespace helpers.
@@ -75,7 +75,7 @@ TEST(ComposeTransform, StaticStaticStaticStatic)
     FrameReferences<StaticFrame<Sun>, StaticFrame<Uranus>> lhs;
     FrameReferences<StaticFrame<Uranus>, StaticFrame<Pluto>> rhs;
 
-    const auto result = composeTransform(lhs, rhs);
+    const auto result = composeFrameReferences(lhs, rhs);
     static_assert(std::is_same_v<typename decltype(result)::ParentFrame, StaticFrame<Sun>>);
     static_assert(std::is_same_v<typename decltype(result)::ChildFrame, StaticFrame<Pluto>>);
 }
@@ -86,7 +86,7 @@ TEST(ComposeTransform, StaticStaticStaticDynamic)
     FrameReferences<StaticFrame<Sun>, StaticFrame<Uranus>> lhs;
     FrameReferences<StaticFrame<Uranus>, DynamicFrame> rhs("milkyWay");
 
-    const auto result = composeTransform(lhs, rhs);
+    const auto result = composeFrameReferences(lhs, rhs);
     static_assert(std::is_same_v<typename decltype(result)::ParentFrame, StaticFrame<Sun>>);
     static_assert(std::is_same_v<typename decltype(result)::ChildFrame, DynamicFrame>);
 

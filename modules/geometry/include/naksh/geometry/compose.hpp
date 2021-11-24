@@ -18,7 +18,7 @@ namespace naksh::geometry
 
 /// @brief  Error thrown when a mis-match of frame ids is detected during transform
 ///         composition at run-time.
-class TransformCompositionException : public std::runtime_error
+class FrameCompositionException : public std::runtime_error
 {
 public:
     /// Inherit all constructors from std::runtime_error.
@@ -27,13 +27,13 @@ public:
     /// @brief  Convenience constructor to appropriately build error message from frame names.
     /// @param lhsFrameName
     /// @param rhsFrameName
-    TransformCompositionException(const std::string & lhsFrameName, const std::string& rhsFrameName) noexcept:
-        TransformCompositionException(
+    FrameCompositionException(const std::string & lhsFrameName, const std::string& rhsFrameName) noexcept:
+        FrameCompositionException(
             "Composed transforms with mismatched inner frames. Lhs child frame[" +
             lhsFrameName + "] does not match the rhs parent frame[" + rhsFrameName + "].")
     {
         assert(lhsFrameName != rhsFrameName &&
-            "Detected creation of TransformCompositionException but with compatible frame ids. "
+            "Detected creation of FrameCompositionException but with compatible frame ids. "
             "This likely a programming error.");
     }
 };
@@ -67,7 +67,7 @@ inline void assertFrameEqual(const RhsFrame& rhsFrame)
 {
     if(LhsFrame::name() != rhsFrame.name())
     {
-        throw TransformCompositionException(std::string(LhsFrame::name()), rhsFrame.name());
+        throw FrameCompositionException(std::string(LhsFrame::name()), rhsFrame.name());
     }
 }
 
@@ -84,7 +84,7 @@ inline void assertFrameEqual(const LhsFrame& lhsFrame)
 {
     if(lhsFrame.name() != RhsFrame::name())
     {
-        throw TransformCompositionException(lhsFrame.name(), std::string(RhsFrame::name()));
+        throw FrameCompositionException(lhsFrame.name(), std::string(RhsFrame::name()));
     }
 }
 
@@ -102,7 +102,7 @@ inline void assertFrameEqual(const LhsFrame& lhsFrame, const RhsFrame& rhsFrame)
 {
     if(lhsFrame.name() != rhsFrame.name())
     {
-        throw TransformCompositionException(lhsFrame.name(), rhsFrame.name());
+        throw FrameCompositionException(lhsFrame.name(), rhsFrame.name());
     }
 }
 
@@ -111,23 +111,24 @@ inline void assertFrameEqual(const LhsFrame& lhsFrame, const RhsFrame& rhsFrame)
 
 
 /// @brief  Composes transforms together and returns appropriate result. Throws
-///         TransformCompositionException if the transform are not composable,
+///         FrameCompositionException if the transform are not composable,
 ///         i.e the ChildFrame of Lhs does not match the ParentFrame of Rhs.
-/// @tparam LhsTransform    Type of the Lhs.
-/// @tparam RhsTransform    Type of the Rhs.
-/// @param lhsTransform     Instance of the Lhs.
-/// @param rhsTransform     Instance of the Rhs.
+/// @tparam LhsFrameReferences    Type of the Lhs.
+/// @tparam RhsFrameReferences    Type of the Rhs.
+/// @param lhsFrameReferences     Instance of the Lhs.
+/// @param rhsFrameReferences     Instance of the Rhs.
 /// @return FrameReferences that are a result of the composition.
-template<typename LhsTransform, typename RhsTransform>
-decltype(auto) composeTransform(const LhsTransform& lhsTransform, const RhsTransform& rhsTransform)
+template<typename LhsFrameReferences, typename RhsFrameReferences>
+decltype(auto) composeFrameReferences(
+    const LhsFrameReferences& lhsFrameReferences, const RhsFrameReferences& rhsFrameReferences)
 {
     std::apply(
-        helpers::assertFrameEqual<typename LhsTransform::ChildFrame, typename RhsTransform::ParentFrame>,
-        std::tuple_cat(lhsTransform.childFrameAsTuple(), rhsTransform.parentFrameAsTuple()));
+        helpers::assertFrameEqual<typename LhsFrameReferences::ChildFrame, typename RhsFrameReferences::ParentFrame>,
+        std::tuple_cat(lhsFrameReferences.childFrameAsTuple(), rhsFrameReferences.parentFrameAsTuple()));
 
     return std::make_from_tuple<
-        FrameReferences<typename LhsTransform::ParentFrame, typename RhsTransform::ChildFrame>>(
-            std::tuple_cat(lhsTransform.parentFrameAsTuple(), rhsTransform.childFrameAsTuple()));
+        FrameReferences<typename LhsFrameReferences::ParentFrame, typename RhsFrameReferences::ChildFrame>>(
+            std::tuple_cat(lhsFrameReferences.parentFrameAsTuple(), rhsFrameReferences.childFrameAsTuple()));
 }
 
 
