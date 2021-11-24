@@ -72,8 +72,8 @@ TEST(assertFrameEqual, DynamicLhsDynamicRhs)
 
 TEST(ComposeTransform, StaticStaticStaticStatic)
 {
-    Transform<StaticFrame<Sun>, StaticFrame<Uranus>> lhs;
-    Transform<StaticFrame<Uranus>, StaticFrame<Pluto>> rhs;
+    FrameReferences<StaticFrame<Sun>, StaticFrame<Uranus>> lhs;
+    FrameReferences<StaticFrame<Uranus>, StaticFrame<Pluto>> rhs;
 
     const auto result = composeTransform(lhs, rhs);
     static_assert(std::is_same_v<typename decltype(result)::ParentFrame, StaticFrame<Sun>>);
@@ -83,8 +83,8 @@ TEST(ComposeTransform, StaticStaticStaticStatic)
 
 TEST(ComposeTransform, StaticStaticStaticDynamic)
 {
-    Transform<StaticFrame<Sun>, StaticFrame<Uranus>> lhs;
-    Transform<StaticFrame<Uranus>, DynamicFrame> rhs("milkyWay");
+    FrameReferences<StaticFrame<Sun>, StaticFrame<Uranus>> lhs;
+    FrameReferences<StaticFrame<Uranus>, DynamicFrame> rhs("milkyWay");
 
     const auto result = composeTransform(lhs, rhs);
     static_assert(std::is_same_v<typename decltype(result)::ParentFrame, StaticFrame<Sun>>);

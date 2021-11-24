@@ -5,7 +5,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include "transform.hpp"
+#include "frameReferences.hpp"
 #include <naksh/common/typeTraits.hpp>
 #include <string>
 #include <cassert>
@@ -117,7 +117,7 @@ inline void assertFrameEqual(const LhsFrame& lhsFrame, const RhsFrame& rhsFrame)
 /// @tparam RhsTransform    Type of the Rhs.
 /// @param lhsTransform     Instance of the Lhs.
 /// @param rhsTransform     Instance of the Rhs.
-/// @return Transform that is a result of the composition.
+/// @return FrameReferences that are a result of the composition.
 template<typename LhsTransform, typename RhsTransform>
 decltype(auto) composeTransform(const LhsTransform& lhsTransform, const RhsTransform& rhsTransform)
 {
@@ -126,7 +126,7 @@ decltype(auto) composeTransform(const LhsTransform& lhsTransform, const RhsTrans
         std::tuple_cat(lhsTransform.childFrameAsTuple(), rhsTransform.parentFrameAsTuple()));
 
     return std::make_from_tuple<
-        Transform<typename LhsTransform::ParentFrame, typename RhsTransform::ChildFrame>>(
+        FrameReferences<typename LhsTransform::ParentFrame, typename RhsTransform::ChildFrame>>(
             std::tuple_cat(lhsTransform.parentFrameAsTuple(), rhsTransform.childFrameAsTuple()));
 }
 
