@@ -6,6 +6,8 @@
 #pragma once
 
 #include "frameConcepts.hpp"
+#include <naksh/common/typeTraits.hpp>
+#include <type_traits>
 
 namespace naksh::geometry
 {
