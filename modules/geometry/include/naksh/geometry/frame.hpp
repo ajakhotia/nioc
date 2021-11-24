@@ -36,10 +36,6 @@ public:
         not(common::isSpecialization<FrameId, StaticFrame>),
         "FrameId cannot be a specialization of the StaticFrame<> template.");
 
-    /// Name identifying the reference frame. Used at run-time to evaluate
-    /// frame compatibility if one of the operands is a dynamic frame.
-    static constexpr const auto kFrameName = common::prettyName<FrameId>();
-
     /// Deleted destructor to prevent runtime instantiation for a static frame
     ~StaticFrame() = delete;
 
@@ -49,6 +45,11 @@ public:
     {
         return kFrameName;
     }
+
+private:
+    /// Name identifying the reference frame. Used at run-time to evaluate
+    /// frame compatibility if one of the operands is a dynamic frame.
+    static constexpr const auto kFrameName = common::prettyName<FrameId>();
 };
 
 
