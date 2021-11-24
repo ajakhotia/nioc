@@ -18,6 +18,7 @@ namespace naksh::geometry
 class TransformCompositionException : public std::runtime_error
 {
 public:
+    /// Inherit all constructors from std::runtime_error.
     using std::runtime_error::runtime_error;
 
     /// @brief  Convenience constructor to appropriately build error message from frame names.
@@ -29,7 +30,7 @@ public:
             lhsFrameName + "] does not match the rhs parent frame[" + rhsFrameName + "].")
     {
         assert(lhsFrameName != rhsFrameName &&
-            "Detected creation of TransformCompositionException but with compatible frame. "
+            "Detected creation of TransformCompositionException but with compatible frame ids. "
             "This likely a programming error.");
     }
 };
@@ -54,7 +55,7 @@ inline void assertFrameEqual(const RhsFrame& rhsFrame)
 {
     if(LhsFrame::name() != rhsFrame.name())
     {
-        throw TransformCompositionException(LhsFrame::name(), rhsFrame.name());
+        throw TransformCompositionException(std::string(LhsFrame::name()), rhsFrame.name());
     }
 }
 
@@ -66,7 +67,7 @@ inline void assertFrameEqual(const LhsFrame& lhsFrame)
 {
     if(lhsFrame.name() != RhsFrame::name())
     {
-        throw TransformCompositionException(lhsFrame.name(), RhsFrame::name());
+        throw TransformCompositionException(lhsFrame.name(), std::string(RhsFrame::name()));
     }
 }
 

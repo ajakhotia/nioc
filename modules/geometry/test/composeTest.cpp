@@ -13,57 +13,61 @@ namespace naksh::geometry
 {
 
 class Sun;
-class AlphaCenturi;
+class AlphaCentauri;
 class Uranus;
 class Pluto;
 
+namespace helpers
+{
 
-//TEST(FramesEqual, StaticLhsStaticRhs)
-//{
-//    using MercuryMercury = FramesEqual<StaticFrame<Mercury>, StaticFrame<Mercury>>;
-//    EXPECT_TRUE(MercuryMercury::kStaticallyEqual);
-//
-//    // Ill-legal code - won't compile.
-//    //using MercuryVenus = FramesEqual<StaticFrame<Mercury>, StaticFrame<Venus>>;
-//    //EXPECT_FALSE(MercuryVenus::kStaticEqual);
-//}
-//
-//
-//TEST(FramesEqual, StaticLhsDynamicRhs)
-//{
-//    using MercuryDynamic = FramesEqual<StaticFrame<Mercury>, DynamicFrame>;
-//
-//    MercuryDynamic md1(DynamicFrame("naksh::geometry::Mercury"));
-//    EXPECT_TRUE(md1.value());
-//
-//    MercuryDynamic md2(DynamicFrame("DynamicTortoise"));
-//    EXPECT_FALSE(md2.value());
-//}
-//
-//
-//TEST(FramesEqual, DynamicLhsStaticRhs)
-//{
-//    using DynamicVenus = FramesEqual<DynamicFrame, StaticFrame<Venus>>;
-//
-//    DynamicVenus dv1(DynamicFrame("naksh::geometry::Venus"));
-//    EXPECT_TRUE(dv1.value());
-//
-//    DynamicVenus dv2(DynamicFrame("DynamicSnail"));
-//    EXPECT_FALSE(dv2.value());
-//}
-//
-//
-//TEST(FramesEqual, DynamicLhsDynamicRhs)
-//{
-//    using DynamicDynamic = FramesEqual<DynamicFrame, DynamicFrame>;
-//
-//    DynamicDynamic dd1(DynamicFrame("Neptune"), DynamicFrame("Neptune"));
-//    EXPECT_TRUE(dd1.value());
-//
-//    DynamicDynamic dd2(DynamicFrame("Neptune"), DynamicFrame("Pluto"));
-//    EXPECT_FALSE(dd2.value());
-//}
+TEST(assertFrameEqual, StaticLhsStaticRhs)
+{
+    EXPECT_NO_THROW((
+        assertFrameEqual<StaticFrame<Sun>, StaticFrame<Sun>>()
+        ));
 
+    // Ill-legal code - won't compile.
+    // helpers::assertFrameEqual<StaticFrame<Sun>, StaticFrame<AlphaCentauri>>();
+}
+
+
+TEST(assertFrameEqual, StaticLhsDynamicRhs)
+{
+    EXPECT_NO_THROW(
+        (assertFrameEqual<StaticFrame<Sun>, DynamicFrame>(DynamicFrame("naksh::geometry::Sun"))));
+
+    EXPECT_THROW(
+        (assertFrameEqual<StaticFrame<Sun>, DynamicFrame>(DynamicFrame("Bloop"))),
+        TransformCompositionException);
+}
+
+
+TEST(assertFrameEqual, DynamicLhsStaticRhs)
+{
+    EXPECT_NO_THROW(
+        (assertFrameEqual<DynamicFrame, StaticFrame<Sun>>(DynamicFrame("naksh::geometry::Sun"))));
+
+    EXPECT_THROW(
+        (assertFrameEqual<DynamicFrame, StaticFrame<AlphaCentauri>>(DynamicFrame("Bloop"))),
+        TransformCompositionException);
+}
+
+
+TEST(assertFrameEqual, DynamicLhsDynamicRhs)
+{
+    EXPECT_NO_THROW(
+        (assertFrameEqual<DynamicFrame, DynamicFrame>(
+            DynamicFrame("naksh::geometry::Sun"),
+            DynamicFrame("naksh::geometry::Sun"))));
+
+    EXPECT_THROW(
+        (assertFrameEqual<DynamicFrame, DynamicFrame>(
+            DynamicFrame("Bloop"),
+            DynamicFrame("Bleep"))),
+        TransformCompositionException);
+}
+
+} // End of namespace helpers.
 
 
 TEST(ComposeTransform, StaticStaticStaticStatic)
