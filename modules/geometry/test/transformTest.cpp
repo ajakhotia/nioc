@@ -18,7 +18,7 @@ class Jupiter;
 
 TEST(Transform, StaticParentStaticChild)
 {
-    using SaturnFromJupiter = Transform<Saturn, Jupiter>;
+    using SaturnFromJupiter = Transform<StaticFrame<Saturn>, StaticFrame<Jupiter>>;
     EXPECT_NO_THROW(SaturnFromJupiter());
 
     static_assert(SaturnFromJupiter::ParentFrame::name() == "naksh::geometry::Saturn");
@@ -32,7 +32,7 @@ TEST(Transform, StaticParentStaticChild)
 
 TEST(Transform, StaticParentDynamicChild)
 {
-    using SaturnFromDynamic = Transform<Saturn, DynamicFrame>;
+    using SaturnFromDynamic = Transform<StaticFrame<Saturn>, DynamicFrame>;
     EXPECT_NO_THROW(SaturnFromDynamic("DynamicSaturn"));
 
     {
@@ -56,7 +56,7 @@ TEST(Transform, StaticParentDynamicChild)
 
 TEST(Transform, DynamicParentStaticChild)
 {
-    using DynamicFromJupiter = Transform<DynamicFrame, Jupiter>;
+    using DynamicFromJupiter = Transform<DynamicFrame, StaticFrame<Jupiter>>;
     EXPECT_NO_THROW(DynamicFromJupiter("DynamicMars"));
 
     {

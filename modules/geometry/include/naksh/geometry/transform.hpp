@@ -12,23 +12,24 @@ namespace naksh::geometry
 
 
 /// @brief  Base class to provide necessary interface for geometric transformation.
-/// @tparam ParentFrameId
-/// @tparam ChildFrameId
+/// @tparam ParentFrame
+/// @tparam ChildFrame
 template<
-    typename ParentFrameId,
-    typename ChildFrameId,
-    typename ParentConcept = ParentConceptTmpl<ParentFrameId>,
-    typename ChildConcept = ChildConceptTmpl<ChildFrameId>>
+    typename ParentFrame_,
+    typename ChildFrame_,
+    typename ParentConcept = ParentConceptTmpl<ParentFrame_>,
+    typename ChildConcept = ChildConceptTmpl<ChildFrame_>>
 class Transform : public ParentConcept, public ChildConcept
 {
 public:
+    using SelfType = Transform<ParentFrame_, ChildFrame_>;
 
     /// @brief  Constructor for when both parent and child frame id's are known statically.
     /// @tparam ParentFrame
     /// @tparam ChildFrame
     template<
-        typename ParentFrame = typename ParentConcept::ParentFrame,
-        typename ChildFrame = typename ChildConcept::ChildFrame,
+        typename ParentFrame = typename SelfType::ParentFrame,
+        typename ChildFrame = typename SelfType::ChildFrame,
         typename = typename std::enable_if_t<common::isSpecialization<ParentFrame, StaticFrame>>,
         typename = typename std::enable_if_t<common::isSpecialization<ChildFrame, StaticFrame>>>
     Transform() noexcept: ParentConcept(), ChildConcept()
@@ -43,8 +44,8 @@ public:
     /// @tparam ChildFrame
     template<
         typename ChildConceptArgs,
-        typename ParentFrame = typename ParentConcept::ParentFrame,
-        typename ChildFrame = typename ChildConcept::ChildFrame,
+        typename ParentFrame = typename SelfType::ParentFrame,
+        typename ChildFrame = typename SelfType::ChildFrame,
         typename = typename std::enable_if_t<common::isSpecialization<ParentFrame, StaticFrame>>,
         typename = typename std::enable_if_t<std::is_same_v<ChildFrame, DynamicFrame>>>
     [[maybe_unused]] explicit Transform(ChildConceptArgs&& childId) noexcept:
@@ -60,8 +61,8 @@ public:
     /// @tparam ChildFrame
     template<
         typename ParentConceptArgs,
-        typename ParentFrame = typename ParentConcept::ParentFrame,
-        typename ChildFrame = typename ChildConcept::ChildFrame,
+        typename ParentFrame = typename SelfType::ParentFrame,
+        typename ChildFrame = typename SelfType::ChildFrame,
         typename = typename std::enable_if_t<std::is_same_v<ParentFrame, DynamicFrame>>,
         typename = typename std::enable_if_t<common::isSpecialization<ChildFrame, StaticFrame>>>
     [[maybe_unused]] explicit Transform(ParentConceptArgs&& parentId, int = 0) noexcept:
@@ -80,8 +81,8 @@ public:
     template<
         typename ParentConceptArgs,
         typename ChildConceptArgs,
-        typename ParentFrame = typename ParentConcept::ParentFrame,
-        typename ChildFrame = typename ChildConcept::ChildFrame,
+        typename ParentFrame = typename SelfType::ParentFrame,
+        typename ChildFrame = typename SelfType::ChildFrame,
         typename = typename std::enable_if_t<std::is_same_v<ParentFrame, DynamicFrame>>,
         typename = typename std::enable_if_t<std::is_same_v<ChildFrame, DynamicFrame>>>
     [[maybe_unused]] Transform(ParentConceptArgs&& parentId, ChildConceptArgs&& childId) noexcept:

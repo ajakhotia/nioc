@@ -12,26 +12,42 @@ namespace naksh::geometry
 
 
 /// @brief  A class representing the concept of a parent frame.
-/// @tparam FrameId Compile time identity of the frame.
-template<typename FrameId>
+/// @tparam ParentFrame_ Compile time identity of the frame.
+template<typename ParentFrame_>
 class ParentConceptTmpl
 {
 public:
-    using ParentFrame = StaticFrame<FrameId>;
+    using ParentFrame = ParentFrame_;
+
+    static_assert(common::isSpecialization<ParentFrame , StaticFrame>,
+        "Parent frame is not a template specialization of StaticFrame<> class.");
 
     virtual ~ParentConceptTmpl() = default;
+
+    [[nodiscard]] decltype(auto) parentFrameAsTuple() const noexcept
+    {
+        return std::make_tuple();
+    }
 };
 
 
 /// @brief  A class representing the concept of a child frame.
-/// @tparam FrameId Compile time identity of the frame.
-template<typename FrameId>
+/// @tparam ChildFrame_ Compile time identity of the frame.
+template<typename ChildFrame_>
 class ChildConceptTmpl
 {
 public:
-    using ChildFrame = StaticFrame<FrameId>;
+    using ChildFrame = ChildFrame_;
+
+    static_assert(common::isSpecialization<ChildFrame , StaticFrame>,
+                  "Child frame is not a template specialization of StaticFrame<> class.");
 
     virtual ~ChildConceptTmpl() = default;
+
+    [[nodiscard]] decltype(auto) childFrameAsTuple() const noexcept
+    {
+        return std::make_tuple();
+    }
 };
 
 
@@ -47,12 +63,16 @@ public:
     {
     }
 
-
     virtual ~ParentConceptTmpl() = default;
 
     [[nodiscard]] const ParentFrame& parentFrame() const noexcept
     {
         return mParentFrame;
+    }
+
+    [[nodiscard]] decltype(auto) parentFrameAsTuple() const noexcept
+    {
+        return std::make_tuple(std::cref(mParentFrame));
     }
 
 private:
@@ -78,6 +98,11 @@ public:
     [[nodiscard]] const ChildFrame& childFrame() const noexcept
     {
         return mChildFrame;
+    }
+
+    [[nodiscard]] decltype(auto) childFrameAsTuple() const noexcept
+    {
+        return std::make_tuple(std::cref(mChildFrame));
     }
 
 private:

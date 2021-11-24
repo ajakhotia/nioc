@@ -18,7 +18,7 @@ class Mars;
 
 TEST(ParentConceptTmpl, StaticConstruction)
 {
-    EXPECT_NO_THROW(ParentConceptTmpl<Earth>());
+    EXPECT_NO_THROW(ParentConceptTmpl<StaticFrame<Earth>>());
 }
 
 
@@ -31,7 +31,7 @@ TEST(ParentConceptTmpl, DynamicConstruction)
 
 TEST(ParentConceptTmpl, StaticParentFrame)
 {
-    using ParentEarth = ParentConceptTmpl<Earth>;
+    using ParentEarth = ParentConceptTmpl<StaticFrame<Earth>>;
     static_assert(std::is_same_v<StaticFrame<Earth>, ParentEarth::ParentFrame>);
     EXPECT_EQ(StaticFrame<Earth>::name(), ParentEarth::ParentFrame::name());
 }
@@ -49,7 +49,7 @@ TEST(ParentConceptTmpl, DynamicParentFrame)
 
 TEST(ChildConceptTmpl, StaticConstruction)
 {
-    EXPECT_NO_THROW(ChildConceptTmpl<Mars>());
+    EXPECT_NO_THROW(ChildConceptTmpl<StaticFrame<Mars>>());
 }
 
 
@@ -62,7 +62,7 @@ TEST(ChildConceptTmpl, DynamicConstruction)
 
 TEST(ParentConceptTmpl, StaticChildFrame)
 {
-    using ChildMars = ChildConceptTmpl<Mars>;
+    using ChildMars = ChildConceptTmpl<StaticFrame<Mars>>;
     static_assert(std::is_same_v<StaticFrame<Mars>, ChildMars::ChildFrame>);
     EXPECT_EQ(StaticFrame<Mars>::name(), ChildMars::ChildFrame::name());
 }

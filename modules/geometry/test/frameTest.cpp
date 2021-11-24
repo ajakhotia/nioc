@@ -20,7 +20,7 @@ class Venus;
 TEST(StaticFrame, construction)
 {
     // A static frame cannot be constructed as one should never need to.
-    //EXPECT_NO_THROW(StaticFrame<Mercury>());
+    // EXPECT_NO_THROW(StaticFrame<Mercury>());
 }
 
 
@@ -59,50 +59,6 @@ TEST(DynamicFrame, EqualityCheck)
         EXPECT_FALSE(d1 == d3);
         EXPECT_TRUE(d1 != d3);
     }
-}
-
-
-TEST(FramesEqual, StaticLhsStaticRhs)
-{
-    using MercuryMercury = FramesEqual<StaticFrame<Mercury>, StaticFrame<Mercury>>;
-    static_assert(MercuryMercury::value());
-    EXPECT_TRUE(MercuryMercury::value());
-}
-
-
-TEST(FramesEqual, StaticLhsDynamicRhs)
-{
-    using MercuryDynamic = FramesEqual<StaticFrame<Mercury>, DynamicFrame>;
-
-    MercuryDynamic md1(DynamicFrame("naksh::geometry::Mercury"));
-    EXPECT_TRUE(md1.value());
-
-    MercuryDynamic md2(DynamicFrame("DynamicTortoise"));
-    EXPECT_FALSE(md2.value());
-}
-
-
-TEST(FramesEqual, DynamicLhsStaticRhs)
-{
-    using DynamicVenus = FramesEqual<DynamicFrame, StaticFrame<Venus>>;
-
-    DynamicVenus dv1(DynamicFrame("naksh::geometry::Venus"));
-    EXPECT_TRUE(dv1.value());
-
-    DynamicVenus dv2(DynamicFrame("DynamicSnail"));
-    EXPECT_FALSE(dv2.value());
-}
-
-
-TEST(FramesEqual, DynamicLhsDynamicRhs)
-{
-    using DynamicDynamic = FramesEqual<DynamicFrame, DynamicFrame>;
-
-    DynamicDynamic dd1(DynamicFrame("Neptune"), DynamicFrame("Neptune"));
-    EXPECT_TRUE(dd1.value());
-
-    DynamicDynamic dd2(DynamicFrame("Neptune"), DynamicFrame("Pluto"));
-    EXPECT_FALSE(dd2.value());
 }
 
 
