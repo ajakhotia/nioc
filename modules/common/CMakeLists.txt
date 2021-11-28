@@ -14,7 +14,8 @@ add_exported_library(
         HEADERS
             INTERFACE
                 include/naksh/common/locked.hpp
-        include/naksh/common/typeTraits.hpp
+                include/naksh/common/typeTraits.hpp
+                include/naksh/common/cacheManager.hpp
 
         INCLUDE_DIRECTORIES
             ${CMAKE_CURRENT_SOURCE_DIR}/include
