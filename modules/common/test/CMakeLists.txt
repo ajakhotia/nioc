@@ -1,7 +1,7 @@
 find_package(GTest REQUIRED)
 include(GoogleTest)
 
-add_executable(commonTest lockTest.cpp typeTraitsTest.cpp)
+add_executable(commonTest lockTest.cpp typeTraitsTest.cpp cacheManagerTest.cpp)
 target_link_libraries(commonTest Naksh::common GTest::GTest GTest::Main)
 
 target_compile_options(commonTest PRIVATE
