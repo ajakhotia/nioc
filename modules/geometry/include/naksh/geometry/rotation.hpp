@@ -69,36 +69,82 @@ public:
     }
 
 
-    inline decltype(auto) x() const noexcept { return cDerived().cParameters().x(); }
+    /// @brief
+    /// @return
+    inline decltype(auto) x() const noexcept
+    {
+        return cDerived().cParameters().x();
+    }
 
-    inline decltype(auto) y() const noexcept { return cDerived().cParameters().y(); }
 
-    inline decltype(auto) z() const noexcept { return cDerived().cParameters().z(); }
+    /// @brief
+    /// @return
+    inline decltype(auto) y() const noexcept
+    {
+        return cDerived().cParameters().y();
+    }
 
 
-    inline decltype(auto) x() noexcept { return derived().parameters().x(); }
+    /// @brief
+    /// @return
+    inline decltype(auto) z() const noexcept
+    {
+        return cDerived().cParameters().z();
+    }
 
-    inline decltype(auto) y() noexcept { return derived().parameters().y(); }
 
-    inline decltype(auto) z() noexcept { return derived().parameters().z(); }
+    /// @brief
+    /// @return
+    inline decltype(auto) x() noexcept
+    {
+        return derived().parameters().x();
+    }
 
+
+    /// @brief
+    /// @return
+    inline decltype(auto) y() noexcept
+    {
+        return derived().parameters().y();
+    }
+
+
+    /// @brief
+    /// @return
+    inline decltype(auto) z() noexcept
+    {
+        return derived().parameters().z();
+    }
+
+
+    /// @brief
+    /// @return
     inline decltype(auto) angle() const noexcept
     {
         using Scalar = typename Derived::Scalar;
         return Scalar(4) * std::atan(cDerived().cParameters().norm());
     }
 
+    /// @brief
+    /// @return
     inline decltype(auto) axis() const noexcept
     {
         return cDerived().cParameters().normalized().eval();
     }
 
+
+    /// @brief
+    /// @return
     inline decltype(auto) inverse() const
     {
         return Rotation3<typename Derived::Scalar>(
             typename Derived::Scalar(-1) * cDerived().cParameters());
     }
 
+
+    /// @brief
+    /// @param rhsBase
+    /// @return
     inline decltype(auto) operator*(const Mrp3& rhsBase) const
     {
         using Scalar = typename Derived::Scalar;
@@ -118,7 +164,6 @@ public:
              lhsNorm2 * rhsNorm2 -
              Scalar(2) * lhsMrp.dot(rhsMrp)));
     }
-
 
 protected:
     Mrp3() = default;
