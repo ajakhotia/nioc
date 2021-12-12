@@ -17,7 +17,7 @@ namespace
 
 std::string gTestCacheMessage;
 
-class TestCache : public CacheBase<int>
+class TestCache
 {
 public:
     explicit TestCache(int value) : mCached(value)
@@ -25,7 +25,7 @@ public:
         gTestCacheMessage = "Created cache for: " + std::to_string(mCached);
     }
 
-    [[nodiscard]] bool valid(const int& value) const noexcept override
+    [[nodiscard]] bool validate(const int& value) const noexcept
     {
         return value == mCached;
     }
@@ -83,7 +83,7 @@ private:
 
 TEST(TestCache, construction)
 {
-    EXPECT_NO_THROW(const auto testCache = TestCache(7));
+    EXPECT_NO_THROW(TestCache(7));
     EXPECT_EQ(gTestCacheMessage, "Created cache for: 7");
 }
 
@@ -92,8 +92,8 @@ TEST(TestCache, valid)
 {
     const auto testCache = TestCache(13);
     EXPECT_EQ(gTestCacheMessage, "Created cache for: 13");
-    EXPECT_TRUE(testCache.valid(13));
-    EXPECT_FALSE(testCache.valid(0));
+    EXPECT_TRUE(testCache.validate(13));
+    EXPECT_FALSE(testCache.validate(0));
 }
 
 

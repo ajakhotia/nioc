@@ -11,31 +11,6 @@ namespace naksh::common
 {
 
 
-/// @brief  Base class to implement a cache to be managed by CacheManager.
-/// @tparam ControlParameter_   Parameter type to the valid(...) that determines
-///                             whether or not the cache is valid for re-use.
-template<typename ControlParameter_>
-class CacheBase
-{
-public:
-    using ControlParameter = ControlParameter_;
-
-    CacheBase() = default;
-
-    CacheBase(const CacheBase&) = default;
-
-    CacheBase(CacheBase&&) noexcept = default;
-
-    virtual ~CacheBase() = default;
-
-    CacheBase& operator=(const CacheBase&) = default;
-
-    CacheBase& operator=(CacheBase&&) noexcept = default;
-
-    [[nodiscard]] virtual bool valid(const ControlParameter& controlParameter) const noexcept = 0;
-};
-
-
 /// @brief  Manages an implementation of CacheBase. This class hides the cache implementation
 ///         privately and checks for the validity of the cache and resets if the check return
 ///         false.
@@ -45,10 +20,6 @@ template<typename Cache>
 class CacheManager
 {
 public:
-    static_assert(
-        std::is_base_of_v<CacheBase<typename Cache::ControlParameter>, Cache>,
-        "Cache type must derive from CacheBase for use with CacheManager.");
-
     CacheManager(): mCacheOpt(std::nullopt)
     {
     }
@@ -67,7 +38,7 @@ public:
     template<typename... Args>
     Cache& access(Args&&... args)
     {
-        if(not mCacheOpt || not mCacheOpt->valid(args...))
+        if(not mCacheOpt || not mCacheOpt->validate(args...))
         {
             mCacheOpt = std::make_optional<Cache>(std::forward<Args>(args)...);
         }

@@ -1,5 +1,4 @@
 find_package(Eigen3 REQUIRED)
-find_package(Boost REQUIRED COMPONENTS headers)
 
 add_exported_library(
         TARGET
@@ -24,7 +23,6 @@ add_exported_library(
         LINK_LIBRARIES
             PUBLIC      Naksh::common
             INTERFACE   Eigen3::Eigen
-            INTERFACE   Boost::headers
         COMPILE_FEATURES
             PUBLIC cxx_std_17
         COMPILE_OPTIONS
