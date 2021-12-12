@@ -159,6 +159,11 @@ private:
 };
 
 
+/// @brief  Stream insertion operator for Mrp3<>
+/// @tparam Rotation    CRTP template parameter.
+/// @param  stream       Output stream.
+/// @param  mrp3         Input instance.
+/// @return Modified stream.
 template<typename Rotation>
 std::ostream& operator<<(std::ostream& stream, const Mrp3<Rotation>& mrp3)
 {
