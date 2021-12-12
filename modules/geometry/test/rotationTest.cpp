@@ -141,6 +141,7 @@ TEST(ConstMapOfRotation3, construction)
     EXPECT_EQ(0.1, map.x());
 }
 
+
 } // End of namespace naksh::geometry.
 
 #pragma clang diagnostic pop

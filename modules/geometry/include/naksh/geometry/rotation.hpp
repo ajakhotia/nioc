@@ -31,8 +31,10 @@ class Rotation3;
 ///         2(2k + 1) * pi properly. Do not use this class for representing
 ///         generic rotations. Eigen::Quaternion are better suited for that.
 ///         This representation is useful for parametrizing rotation that are
-///         corrective in nature and linger around 0.0 rads rotation magnitude
-///         in optimization problems.
+///         corrective in nature and have a small angle of rotation. This
+///         parametrization appears to be stable for rotations with angle
+///         lesser than 1.77 radians in magnitude.
+///
 ///
 ///         Reading:
 ///             https://link.springer.com/article/10.1007/s10851-017-0765-x#Abs1
