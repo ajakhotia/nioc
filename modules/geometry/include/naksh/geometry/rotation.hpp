@@ -162,7 +162,8 @@ private:
 template<typename Rotation>
 std::ostream& operator<<(std::ostream& stream, const Mrp3<Rotation>& mrp3)
 {
-    static const auto ioFormat = Eigen::IOFormat(Eigen::FullPrecision,
+    static const auto ioFormat = Eigen::IOFormat(
+        Eigen::FullPrecision,
         0, ", ", "\n", "", "", "[", "]");
 
     stream << mrp3.cDerived().cParameters().transpose().format(ioFormat);
@@ -225,13 +226,14 @@ public:
     /// @param quaternion   Quaternion representing the rotation. The
     ///                     is normalized before use.
     explicit Rotation3(const Quaternion& quaternion):
-        Rotation3(std::invoke(
-            [](const Quaternion& normalizedQuaternion)
-            {
-                assert(normalizedQuaternion.norm() == Scalar(1));
-                return (normalizedQuaternion.vec() / (Scalar(1) + normalizedQuaternion.w())).eval();
-            },
-            quaternion.normalized()))
+        Rotation3(
+            std::invoke(
+                [](const Quaternion& normalizedQuaternion)
+                {
+                    assert(normalizedQuaternion.norm() == Scalar(1));
+                    return (normalizedQuaternion.vec() / (Scalar(1) + normalizedQuaternion.w())).eval();
+                },
+                quaternion.normalized()))
     {
     }
 
