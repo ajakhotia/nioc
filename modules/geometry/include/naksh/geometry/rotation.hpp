@@ -125,6 +125,7 @@ public:
         return Scalar(4) * std::atan(cDerived().cParameters().norm());
     }
 
+
     /// @brief
     /// @return
     inline decltype(auto) axis() const noexcept
@@ -179,6 +180,7 @@ protected:
     Mrp3& operator=(Mrp3&&) noexcept = default;
 
 private:
+
     /// @brief  Statically casts self to derived type.
     /// @return ConstRef to the derived type.
     inline constexpr const Derived& cDerived() const noexcept
@@ -309,10 +311,18 @@ public:
     Rotation3& operator=(Rotation3&&) noexcept = default;
 
 
+    /// @brief
+    /// @return
     inline const Parameters& cParameters() const noexcept { return mParameters; }
 
+
+    /// @brief
+    /// @return
     inline const Parameters& parameters() const noexcept { return cParameters(); }
 
+
+    /// @brief
+    /// @return
     inline Parameters& parameters() noexcept { return mParameters; }
 
 private:
@@ -349,6 +359,9 @@ public:
 
     using Parameters = Map<Vector3, options_>;
 
+
+    /// @brief
+    /// @param ptr
     explicit Map(Scalar* ptr): mParameters(ptr) {}
 
     Map(const Map&) = default;
@@ -361,10 +374,19 @@ public:
 
     Map& operator=(Map&&) noexcept = default;
 
+
+    /// @brief
+    /// @return
     inline const Parameters& cParameters() const noexcept { return mParameters; }
 
+
+    /// @brief
+    /// @return
     inline const Parameters& parameters() const noexcept { return cParameters(); }
 
+
+    /// @brief
+    /// @return
     inline Parameters& parameters() noexcept { return mParameters; }
 
 private:
@@ -398,6 +420,9 @@ public:
 
     using Parameters = Map<const Vector3, options_>;
 
+
+    /// @brief
+    /// @param ptr
     explicit Map(const Scalar* ptr): mParameters(ptr) {}
 
     Map(const Map&) = default;
@@ -410,8 +435,14 @@ public:
 
     Map& operator=(Map&&) noexcept = default;
 
+
+    /// @brief
+    /// @return
     inline const Parameters& cParameters() const noexcept { return mParameters; }
 
+
+    /// @brief
+    /// @return
     inline const Parameters& parameters() const noexcept { return cParameters(); }
 
 private:
