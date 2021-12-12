@@ -280,13 +280,12 @@ private:
 ///
 /// @tparam options_    Options to convey storage alignment.
 ///
-/// @tparam StrideType  Type denoting strides for the storage.
-template<typename Scalar_, int options_, typename StrideType>
-class Eigen::Map<naksh::geometry::Rotation3<Scalar_>, options_, StrideType> :
-    public naksh::geometry::Mrp3<Map<naksh::geometry::Rotation3<Scalar_>, options_, StrideType>>
+template<typename Scalar_, int options_>
+class Eigen::Map<naksh::geometry::Rotation3<Scalar_>, options_> :
+    public naksh::geometry::Mrp3<Map<naksh::geometry::Rotation3<Scalar_>, options_>>
 {
 public:
-    using Base = naksh::geometry::Mrp3<Map<naksh::geometry::Rotation3<Scalar_>, options_, StrideType>>;
+    using Base = naksh::geometry::Mrp3<Map<naksh::geometry::Rotation3<Scalar_>, options_>>;
 
     static constexpr auto kDimensions = Base::kDimensions;
 
@@ -296,7 +295,7 @@ public:
 
     using Matrix3 [[maybe_unused]] = Matrix<Scalar, kDimensions, kDimensions>;
 
-    using Parameters = Map<Vector3, options_, StrideType>;
+    using Parameters = Map<Vector3, options_>;
 
     explicit Map(Scalar* ptr): mParameters(ptr) {}
 
@@ -330,13 +329,12 @@ private:
 ///
 /// @tparam options_    Options to convey storage alignment.
 ///
-/// @tparam StrideType  Type denoting strides for the storage.
-template<typename Scalar_, int options_, typename StrideType>
-class Eigen::Map<const naksh::geometry::Rotation3<Scalar_>, options_, StrideType> :
-    public naksh::geometry::Mrp3<Map<const naksh::geometry::Rotation3<Scalar_>, options_, StrideType>>
+template<typename Scalar_, int options_>
+class Eigen::Map<const naksh::geometry::Rotation3<Scalar_>, options_> :
+    public naksh::geometry::Mrp3<Map<const naksh::geometry::Rotation3<Scalar_>, options_>>
 {
 public:
-    using Base = naksh::geometry::Mrp3<Map<const naksh::geometry::Rotation3<Scalar_>, options_, StrideType>>;
+    using Base = naksh::geometry::Mrp3<Map<const naksh::geometry::Rotation3<Scalar_>, options_>>;
 
     static constexpr auto kDimensions = Base::kDimensions;
 
@@ -346,7 +344,7 @@ public:
 
     using Matrix3 [[maybe_unused]] = Matrix<Scalar, kDimensions, kDimensions>;
 
-    using Parameters = Map<const Vector3, options_, StrideType>;
+    using Parameters = Map<const Vector3, options_>;
 
     explicit Map(const Scalar* ptr): mParameters(ptr) {}
 
