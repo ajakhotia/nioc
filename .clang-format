@@ -1,24 +1,24 @@
 ---
 Language: Cpp
 # BasedOnStyle: GNU
-AccessModifierOffset: -2
+AccessModifierOffset: -4
 AlignAfterOpenBracket: Align
-AlignConsecutiveMacros: None
 AlignConsecutiveAssignments: None
 AlignConsecutiveBitFields: None
 AlignConsecutiveDeclarations: None
+AlignConsecutiveMacros: None
 AlignEscapedNewlines: Right
 AlignOperands: Align
 AlignTrailingComments: true
 AllowAllArgumentsOnNextLine: true
 AllowAllConstructorInitializersOnNextLine: true
 AllowAllParametersOfDeclarationOnNextLine: true
-AllowShortEnumsOnASingleLine: true
 AllowShortBlocksOnASingleLine: Never
 AllowShortCaseLabelsOnASingleLine: false
+AllowShortEnumsOnASingleLine: true
 AllowShortFunctionsOnASingleLine: All
-AllowShortLambdasOnASingleLine: All
 AllowShortIfStatementsOnASingleLine: Never
+AllowShortLambdasOnASingleLine: All
 AllowShortLoopsOnASingleLine: false
 AlwaysBreakAfterDefinitionReturnType: All
 AlwaysBreakAfterReturnType: AllDefinitions
@@ -28,34 +28,35 @@ AttributeMacros:
   - __capability
 BinPackArguments: true
 BinPackParameters: true
+BitFieldColonSpacing: Both
 BraceWrapping:
   AfterCaseLabel: true
   AfterClass: true
   AfterControlStatement: Always
   AfterEnum: true
+  AfterExternBlock: true
   AfterFunction: true
   AfterNamespace: true
   AfterObjCDeclaration: true
   AfterStruct: true
   AfterUnion: true
-  AfterExternBlock: true
   BeforeCatch: true
   BeforeElse: true
   BeforeLambdaBody: false
   BeforeWhile: true
   IndentBraces: true
   SplitEmptyFunction: true
-  SplitEmptyRecord: true
   SplitEmptyNamespace: true
-BreakBeforeBinaryOperators: All
-BreakBeforeConceptDeclarations: true
-BreakBeforeBraces: GNU
-BreakBeforeInheritanceComma: false
-BreakInheritanceList: BeforeColon
-BreakBeforeTernaryOperators: true
-BreakConstructorInitializersBeforeComma: false
-BreakConstructorInitializers: BeforeColon
+  SplitEmptyRecord: true
 BreakAfterJavaFieldAnnotations: false
+BreakBeforeBinaryOperators: All
+BreakBeforeBraces: GNU
+BreakBeforeConceptDeclarations: true
+BreakBeforeInheritanceComma: false
+BreakBeforeTernaryOperators: true
+BreakConstructorInitializers: BeforeColon
+BreakConstructorInitializersBeforeComma: false
+BreakInheritanceList: BeforeColon
 BreakStringLiterals: true
 ColumnLimit: 79
 CommentPragmas: '^ IWYU pragma:'
@@ -74,8 +75,6 @@ ForEachMacros:
   - foreach
   - Q_FOREACH
   - BOOST_FOREACH
-StatementAttributeLikeMacros:
-  - Q_EMIT
 IncludeBlocks: Preserve
 IncludeCategories:
   - Regex: '^"(llvm|llvm-c|clang|clang-c)/'
@@ -92,11 +91,11 @@ IncludeCategories:
     CaseSensitive: false
 IncludeIsMainRegex: '(Test)?$'
 IncludeIsMainSourceRegex: ''
-IndentCaseLabels: false
 IndentCaseBlocks: false
+IndentCaseLabels: false
+IndentExternBlock: AfterExternBlock
 IndentGotoLabels: true
 IndentPPDirectives: None
-IndentExternBlock: AfterExternBlock
 IndentRequires: false
 IndentWidth: 2
 IndentWrappedFunctionNames: false
@@ -120,8 +119,8 @@ PenaltyBreakFirstLessLess: 120
 PenaltyBreakString: 1000
 PenaltyBreakTemplateDeclaration: 10
 PenaltyExcessCharacter: 1000000
-PenaltyReturnTypeOnItsOwnLine: 60
 PenaltyIndentedWhitespace: 0
+PenaltyReturnTypeOnItsOwnLine: 60
 PointerAlignment: Right
 ReflowComments: true
 SortIncludes: true
@@ -130,26 +129,27 @@ SortUsingDeclarations: true
 SpaceAfterCStyleCast: false
 SpaceAfterLogicalNot: false
 SpaceAfterTemplateKeyword: true
+SpaceAroundPointerQualifiers: Default
 SpaceBeforeAssignmentOperators: true
 SpaceBeforeCaseColon: false
 SpaceBeforeCpp11BracedList: false
 SpaceBeforeCtorInitializerColon: true
 SpaceBeforeInheritanceColon: true
 SpaceBeforeParens: Always
-SpaceAroundPointerQualifiers: Default
 SpaceBeforeRangeBasedForLoopColon: true
+SpaceBeforeSquareBrackets: false
 SpaceInEmptyBlock: false
 SpaceInEmptyParentheses: false
 SpacesBeforeTrailingComments: 1
 SpacesInAngles: false
+SpacesInCStyleCastParentheses: false
 SpacesInConditionalStatement: false
 SpacesInContainerLiterals: true
-SpacesInCStyleCastParentheses: false
 SpacesInParentheses: false
 SpacesInSquareBrackets: false
-SpaceBeforeSquareBrackets: false
-BitFieldColonSpacing: Both
 Standard: c++03
+StatementAttributeLikeMacros:
+  - Q_EMIT
 StatementMacros:
   - Q_UNUSED
   - QT_REQUIRE_VERSION
