@@ -99,8 +99,6 @@ CheckOptions:
         value: 'true'
     -   key: bugprone-suspicious-missing-comma.SizeThreshold
         value: '5'
-    -   key: readability-identifier-naming.IgnoreFailedSplit
-        value: 'false'
     -   key: hicpp-multiway-paths-covered.WarnOnMissingElse
         value: 'false'
     -   key: readability-qualified-auto.AddConstToQualified
@@ -214,7 +212,7 @@ CheckOptions:
     -   key: misc-definitions-in-headers.UseHeaderFileExtension
         value: 'true'
     -   key: misc-throw-by-value-catch-by-reference.MaxSize
-        value: '-1'
+        value: '0'
     -   key: cppcoreguidelines-avoid-magic-numbers.IgnorePowersOf2IntegerValues
         value: 'false'
     -   key: google-readability-namespace-comments.SpacesBeforeComments
@@ -239,8 +237,6 @@ CheckOptions:
         value: '800'
     -   key: hicpp-use-noexcept.ReplacementString
         value: ''
-    -   key: readability-identifier-naming.IgnoreMainLikeFunctions
-        value: 'false'
     -   key: cppcoreguidelines-init-variables.MathHeader
         value: '<math.h>'
     -   key: google-readability-function-size.StatementThreshold
@@ -285,10 +281,8 @@ CheckOptions:
         value: 'L;LL;LU;LLU'
     -   key: bugprone-narrowing-conversions.WarnOnFloatingPointNarrowingConversion
         value: 'true'
-    -   key: readability-identifier-naming.GetConfigPerFile
-        value: 'true'
     -   key: cert-err61-cpp.MaxSize
-        value: '-1'
+        value: '0'
     -   key: hicpp-member-init.UseAssignment
         value: 'false'
     -   key: modernize-use-default-member-init.UseAssignment
@@ -315,8 +309,6 @@ CheckOptions:
         value: '0'
     -   key: readability-redundant-smartptr-get.IgnoreMacros
         value: 'true'
-    -   key: readability-identifier-naming.AggressiveDependentMemberLookup
-        value: 'false'
     -   key: cert-err61-cpp.WarnOnLargeObjects
         value: 'false'
     -   key: modernize-use-emplace.TupleTypes
@@ -350,7 +342,7 @@ CheckOptions:
     -   key: bugprone-suspicious-string-compare.StringCompareLikeFunctions
         value: ''
     -   key: cert-err09-cpp.MaxSize
-        value: '-1'
+        value: '0'
     -   key: hicpp-use-equals-default.IgnoreMacros
         value: 'true'
     -   key: modernize-use-noexcept.ReplacementString
@@ -515,4 +507,14 @@ CheckOptions:
         value: '0'
     -   key: cert-msc32-c.DisallowedSeedTypes
         value: 'time_t,std::time_t'
+    -   key: readability-identifier-naming.IgnoreMainLikeFunctions
+        value: 'false'
+    -   key: readability-identifier-naming.AggressiveDependentMemberLookup
+        value: 'false'
+    -   key: readability-identifier-naming.GetConfigPerFile
+        value: 'true'
+    -   key: readability-identifier-naming.IgnoreFailedSplit
+        value: 'false'
+    -   key: readability-identifier-naming.ClassCase
+        value: CamelCase
 ...
