@@ -3,7 +3,7 @@ Checks: 'clang-diagnostic-*,clang-analyzer-*,*'
 WarningsAsErrors: ''
 HeaderFilterRegex: ''
 AnalyzeTemporaryDtors: false
-FormatStyle: none
+FormatStyle: file
 User: ajakhotia
 CheckOptions:
   - key: cppcoreguidelines-no-malloc.Reallocations
