@@ -44,7 +44,7 @@ template<typename Derived>
 class Mrp3
 {
 public:
-    static constexpr auto kDimensions = 3u;
+    static constexpr auto kDimensions = 3U;
 
     /// @brief  Provides pointer access to underlying storage.
     /// @return const Scalar* pointing to the underlying storage. The
