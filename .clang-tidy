@@ -13,12 +13,17 @@ Checks: '
     openmp-*,
     performance-*,
     portability-*,
-    readability-*
+    readability-*,
 '
-WarningsAsErrors: ''
-HeaderFilterRegex: ''
+
+WarningsAsErrors: '
+    clang-diagnostic-*,
+    clang-analyzer-*,
+'
+
+HeaderFilterRegex: ".*\.capnp\.c\+\+|.*\.capnp\.h|.*\/gtest\/.*\.h"
 AnalyzeTemporaryDtors: false
-FormatStyle: none
+FormatStyle: file
 User: ajakhotia
 CheckOptions:
     -   key: cppcoreguidelines-no-malloc.Reallocations

@@ -39,7 +39,7 @@ TEST(ExampleTest, MoveConstruction)
     const auto e2 = std::move(e1);
 
     EXPECT_EQ(e2.name(), "yetAnotherExample");
-    EXPECT_EQ(e1.name(), "");
+    EXPECT_EQ(e1.name(), ""); // NOLINT(clang-analyzer-cplusplus.Move)
 }
 
 } // End of namespace naksh::example.
