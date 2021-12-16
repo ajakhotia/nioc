@@ -21,7 +21,8 @@ WarningsAsErrors: '
     clang-analyzer-*,
 '
 
-HeaderFilterRegex: ".*\.capnp\.c\+\+|.*\.capnp\.h|.*\/gtest\/.*\.h"
+HeaderFilterRegex: '.*'
+
 AnalyzeTemporaryDtors: false
 FormatStyle: file
 User: ajakhotia
