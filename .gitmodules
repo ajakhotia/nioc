@@ -1,3 +1,0 @@
-[submodule "external/cmakeUtilities"]
-	path = external/cmakeUtilities
-	url = git@github.com:ajakhotia/cmakeUtilities.git
