@@ -9,8 +9,6 @@
 #include <Eigen/Geometry>
 #include <ostream>
 
-namespace naksh::geometry
-{
 
 /// @brief  Provide access to pi in a modern C++ style.
 /// @tparam Scalar  Scalar type to use.
@@ -18,9 +16,28 @@ template<typename Scalar>
 constexpr const auto kPi = Scalar(M_PI);
 
 
+namespace naksh::geometry
+{
+
+/// Forward declare Rotation3
 template<typename Scalar_ = double>
 class Rotation3;
 
+} // End of namespace naksh::geometry.
+
+
+/// Forward declare Eigen::Map for Rotation3.
+template<typename Scalar_, int mapOptions_>
+class Eigen::Map<naksh::geometry::Rotation3<Scalar_>, mapOptions_>;
+
+
+/// Forward declare Eigen::Map for const Rotation3.
+template<typename Scalar_, int mapOptions_>
+class Eigen::Map<const naksh::geometry::Rotation3<Scalar_>, mapOptions_>;
+
+
+namespace naksh::geometry
+{
 
 /// @brief  Abstract rotation representation that leverages modified
 ///         rodrigues parametrisation. This representation has the benefits
@@ -32,7 +49,7 @@ class Rotation3;
 ///         generic rotations. Eigen::Quaternion are better suited for that.
 ///         This representation is useful for parametrizing rotation that are
 ///         corrective in nature and have a small angle of rotation. This
-///         parametrization appears to be stable for rotations with angle
+///         parametrization appears to be stable for rotations with angles
 ///         lesser than 1.77 radians in magnitude.
 ///
 ///
@@ -302,6 +319,26 @@ public:
     }
 
 
+    /// @brief
+    /// @tparam options
+    /// @param rhs
+    template<int mapOptions>
+    explicit Rotation3(const Eigen::Map<naksh::geometry::Rotation3<Scalar>, mapOptions>& rhs):
+        mParameters(rhs.cParameters())
+    {
+    }
+
+
+    /// @brief
+    /// @tparam options
+    /// @param rhs
+    template<int mapOptions>
+    explicit Rotation3(const Eigen::Map<const naksh::geometry::Rotation3<Scalar>, mapOptions>& rhs):
+        mParameters(rhs.cParameters())
+    {
+    }
+
+
     Rotation3(const Rotation3&) = default;
 
     Rotation3(Rotation3&&) noexcept = default;
@@ -342,14 +379,14 @@ private:
 ///
 /// @tparam Scalar_     Floating type to use.
 ///
-/// @tparam options_    Options to convey storage alignment.
+/// @tparam mapOptions_ Options to convey storage alignment.
 ///
-template<typename Scalar_, int options_>
-class Eigen::Map<naksh::geometry::Rotation3<Scalar_>, options_> :
-    public naksh::geometry::Mrp3<Map<naksh::geometry::Rotation3<Scalar_>, options_>>
+template<typename Scalar_, int mapOptions_>
+class Eigen::Map<naksh::geometry::Rotation3<Scalar_>, mapOptions_> :
+    public naksh::geometry::Mrp3<Map<naksh::geometry::Rotation3<Scalar_>, mapOptions_>>
 {
 public:
-    using Base = naksh::geometry::Mrp3<Map<naksh::geometry::Rotation3<Scalar_>, options_>>;
+    using Base = naksh::geometry::Mrp3<Map<naksh::geometry::Rotation3<Scalar_>, mapOptions_>>;
 
     static constexpr auto kDimensions = Base::kDimensions;
 
@@ -359,7 +396,7 @@ public:
 
     using Matrix3 [[maybe_unused]] = Matrix<Scalar, kDimensions, kDimensions>;
 
-    using Parameters = Map<Vector3, options_>;
+    using Parameters = Map<Vector3, mapOptions_>;
 
 
     /// @brief
@@ -403,14 +440,14 @@ private:
 ///
 /// @tparam Scalar_     Floating type to use.
 ///
-/// @tparam options_    Options to convey storage alignment.
+/// @tparam mapOptions_ Options to convey storage alignment.
 ///
-template<typename Scalar_, int options_>
-class Eigen::Map<const naksh::geometry::Rotation3<Scalar_>, options_> :
-    public naksh::geometry::Mrp3<Map<const naksh::geometry::Rotation3<Scalar_>, options_>>
+template<typename Scalar_, int mapOptions_>
+class Eigen::Map<const naksh::geometry::Rotation3<Scalar_>, mapOptions_> :
+    public naksh::geometry::Mrp3<Map<const naksh::geometry::Rotation3<Scalar_>, mapOptions_>>
 {
 public:
-    using Base = naksh::geometry::Mrp3<Map<const naksh::geometry::Rotation3<Scalar_>, options_>>;
+    using Base = naksh::geometry::Mrp3<Map<const naksh::geometry::Rotation3<Scalar_>, mapOptions_>>;
 
     static constexpr auto kDimensions = Base::kDimensions;
 
@@ -420,7 +457,7 @@ public:
 
     using Matrix3 [[maybe_unused]] = Matrix<Scalar, kDimensions, kDimensions>;
 
-    using Parameters = Map<const Vector3, options_>;
+    using Parameters = Map<const Vector3, mapOptions_>;
 
 
     /// @brief
