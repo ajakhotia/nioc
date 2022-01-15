@@ -175,14 +175,15 @@ public:
         const auto lhsNorm2 = lhsMrp.squaredNorm();
         const auto rhsNorm2 = rhsMrp.squaredNorm();
 
-        return Rotation3<Scalar>(
-            ((Scalar(1) - rhsNorm2) * lhsMrp +
-             (Scalar(1) - lhsNorm2) * rhsMrp +
-             Scalar(2) * lhsMrp.cross(rhsMrp))
-            /
-            (Scalar(1) +
-             lhsNorm2 * rhsNorm2 -
-             Scalar(2) * lhsMrp.dot(rhsMrp)));
+        const auto vec = (Scalar(1) - rhsNorm2) * lhsMrp +
+                         (Scalar(1) - lhsNorm2) * rhsMrp +
+                         Scalar(2) * lhsMrp.cross(rhsMrp);
+
+        const auto scale = Scalar(1) +
+                           lhsNorm2 * rhsNorm2 -
+                           Scalar(2) * lhsMrp.dot(rhsMrp);
+
+        return Rotation3<Scalar>(vec / scale);
     }
 
 protected:
@@ -302,7 +303,9 @@ public:
                 [](const Quaternion& normalizedQuaternion)
                 {
                     assert(normalizedQuaternion.norm() == Scalar(1));
-                    return (normalizedQuaternion.vec() / (Scalar(1) + normalizedQuaternion.w())).eval();
+                    return (
+                        normalizedQuaternion.vec() /
+                        (Scalar(1) + normalizedQuaternion.w())).eval();
                 },
                 quaternion.normalized()))
     {
@@ -428,6 +431,15 @@ public:
     /// @return
     inline Parameters& parameters() noexcept { return mParameters; }
 
+
+    /// @brief  Implicitly convert to Rotation3<> type
+    /// @return Rotation3<> representing same rotation.
+    /// NOLINTNEXTLINE (google-explicit-constructor)
+    operator naksh::geometry::Rotation3<Scalar>() const noexcept
+    {
+        return naksh::geometry::Rotation3<Scalar>(mParameters);
+    }
+
 private:
     Parameters mParameters;
 };
@@ -483,6 +495,15 @@ public:
     /// @brief
     /// @return
     inline const Parameters& parameters() const noexcept { return cParameters(); }
+
+
+    /// @brief  Implicitly convert to Rotation3<> type
+    /// @return Rotation3<> representing same rotation.
+    /// NOLINTNEXTLINE (google-explicit-constructor)
+    operator naksh::geometry::Rotation3<Scalar>() const noexcept
+    {
+        return naksh::geometry::Rotation3<Scalar>(mParameters);
+    }
 
 private:
     Parameters mParameters;

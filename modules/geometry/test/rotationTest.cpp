@@ -141,6 +141,18 @@ TEST(ConstMapOfRotation3, construction)
     EXPECT_EQ(0.1, map.x());
 }
 
+TEST(Assignment, RotationAndMap)
+{
+    std::array<double, 3> data = {0.1, 0.2, 0.3};
+    Eigen::Map<Rotation3<double>> map(data.data());
+    Eigen::Map<const Rotation3<double>> constMap(data.data());
+    Rotation3<double> rot3(kPi<double>/2.0, Eigen::Vector3d::UnitZ());
+    Rotation3<double> rot4(kPi<double>/2.0, Eigen::Vector3d::UnitZ());
+
+    rot3 = map;
+    rot4 = constMap;
+}
+
 
 } // End of namespace naksh::geometry.
 
