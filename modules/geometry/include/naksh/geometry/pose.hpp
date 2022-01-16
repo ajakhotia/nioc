@@ -44,7 +44,17 @@ public:
     }
 
 protected:
+    Se3() noexcept = default;
 
+    Se3(const Se3&) noexcept = default;
+
+    Se3(Se3&&) noexcept = default;
+
+    ~Se3() noexcept = default;
+
+    Se3& operator=(const Se3&) noexcept = default;
+
+    Se3& operator=(Se3&&) noexcept = default;
 };
 
 
@@ -95,11 +105,23 @@ public:
 
     using Vector3Map = Eigen::Map<Vector3>;
 
+    using QuaternionConstMap = Eigen::Map<const Quaternion>;
 
+    using Vector3ConstMap = Eigen::Map<const Vector3>;
+
+
+    /// @brief
+    /// @param orientation
+    /// @param position
     Pose(const Quaternion& orientation, const Vector3& position):
-        mParameters(makeParameterArray(orientation, position)),
-        mOrientationMap(mParameters.data()),
-        mPositionMap(mParameters.data() + 4U)
+        mParameters(makeParameterArray(orientation.normalized(), position))
+    {
+    }
+
+    /// @brief
+    /// @param parameters
+    explicit Pose(const std::array<Scalar, kNumParams>& parameters) noexcept:
+        mParameters(parameters)
     {
     }
 
@@ -113,17 +135,17 @@ public:
 
     Pose& operator=(Pose&&) noexcept = default;
 
-    const QuaternionMap& cOrientation() const noexcept { return mOrientationMap; }
+    QuaternionConstMap cOrientation() const noexcept { return {mParameters.data()}; }
 
-    const Vector3Map& cPosition() const noexcept { return mPositionMap; }
+    Vector3ConstMap cPosition() const noexcept { return {mParameters.data() + 4U}; }
 
-    const QuaternionMap& orientation() const noexcept { return cOrientation(); }
+    QuaternionConstMap orientation() const noexcept { return cOrientation(); }
 
-    const Vector3Map& position() const noexcept { return cPosition(); }
+    Vector3ConstMap position() const noexcept { return cPosition(); }
 
-    QuaternionMap& orientation() noexcept { return mOrientationMap; }
+    QuaternionMap orientation() noexcept { return {mParameters.data()}; }
 
-    Vector3Map& position() noexcept { return mPositionMap; }
+    Vector3Map position() noexcept { return {mParameters.data() + 4U}; }
 
 
 private:
@@ -136,10 +158,6 @@ private:
     }
 
     Parameters mParameters;
-
-    QuaternionMap mOrientationMap;
-
-    Vector3Map mPositionMap;
 };
 
 } // End of namespace naksh::geometry.
@@ -167,6 +185,10 @@ public:
 
     using Vector3Map = Eigen::Map<Vector3>;
 
+    using QuaternionConstMap = Eigen::Map<const Quaternion>;
+
+    using Vector3ConstMap = Eigen::Map<const Vector3>;
+
 
     explicit Map(Scalar* storageArrayPtr):
         mOrientationMap(storageArrayPtr),
@@ -184,13 +206,13 @@ public:
 
     Map& operator=(Map&&) noexcept = default;
 
-    const QuaternionMap& cOrientation() const noexcept { return mOrientationMap; }
+    const QuaternionConstMap& cOrientation() const noexcept { return mOrientationMap; }
 
-    const Vector3Map& cPosition() const noexcept { return mPositionMap; }
+    const Vector3ConstMap& cPosition() const noexcept { return mPositionMap; }
 
-    const QuaternionMap& orientation() const noexcept { return cOrientation(); }
+    const QuaternionConstMap& orientation() const noexcept { return cOrientation(); }
 
-    const Vector3Map& position() const noexcept { return cPosition(); }
+    const Vector3ConstMap& position() const noexcept { return cPosition(); }
 
     QuaternionMap& orientation() noexcept { return mOrientationMap; }
 
@@ -221,9 +243,9 @@ public:
 
     using Vector3 = Eigen::Vector3<Scalar>;
 
-    using QuaternionMap = Eigen::Map<const Quaternion>;
+    using QuaternionConstMap = Eigen::Map<const Quaternion>;
 
-    using Vector3Map = Eigen::Map<const Vector3>;
+    using Vector3ConstMap = Eigen::Map<const Vector3>;
 
     explicit Map(const Scalar* storageArrayPtr):
         mOrientationMap(storageArrayPtr),
@@ -241,16 +263,16 @@ public:
 
     Map& operator=(Map&&) noexcept = default;
 
-    const QuaternionMap& cOrientation() const noexcept { return mOrientationMap; }
+    const QuaternionConstMap& cOrientation() const noexcept { return mOrientationMap; }
 
-    const Vector3Map& cPosition() const noexcept { return mPositionMap; }
+    const Vector3ConstMap& cPosition() const noexcept { return mPositionMap; }
 
-    const QuaternionMap& orientation() const noexcept { return cOrientation(); }
+    const QuaternionConstMap& orientation() const noexcept { return cOrientation(); }
 
-    const Vector3Map& position() const noexcept { return cPosition(); }
+    const Vector3ConstMap& position() const noexcept { return cPosition(); }
 
 private:
-    QuaternionMap mOrientationMap;
+    QuaternionConstMap mOrientationMap;
 
-    Vector3Map mPositionMap;
+    Vector3ConstMap mPositionMap;
 };
