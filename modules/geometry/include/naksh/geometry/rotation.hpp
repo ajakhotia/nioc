@@ -48,9 +48,7 @@ namespace naksh::geometry
 ///         2(2k + 1) * pi properly. Do not use this class for representing
 ///         generic rotations. Eigen::Quaternion are better suited for that.
 ///         This representation is useful for parametrizing rotation that are
-///         corrective in nature and have a small angle of rotation. This
-///         parametrization appears to be stable for rotations with angles
-///         lesser than 1.77 radians in magnitude.
+///         corrective in nature and have a small angle of rotation.
 ///
 ///
 ///         Reading:
@@ -62,6 +60,30 @@ class Mrp3
 {
 public:
     static constexpr auto kDimensions = 3U;
+
+    /// @brief  Statically casts self to derived type.
+    /// @return ConstRef to the derived type.
+    inline constexpr const Derived& cDerived() const noexcept
+    {
+        return static_cast<const Derived&>(*this);
+    }
+
+
+    /// @brief  Statically casts self to derived type.
+    /// @return ConstRef to the derived type.
+    inline constexpr const Derived& derived() const noexcept
+    {
+        return cDerived();
+    }
+
+
+    /// @brief  Statically casts self to derived type.
+    /// @return NonConstRef to the derived type.
+    inline constexpr Derived& derived() noexcept
+    {
+        return static_cast<Derived&>(*this);
+    }
+
 
     /// @brief  Provides pointer access to underlying storage.
     /// @return const Scalar* pointing to the underlying storage. The
@@ -198,48 +220,22 @@ protected:
     Mrp3& operator=(const Mrp3&) noexcept = default;
 
     Mrp3& operator=(Mrp3&&) noexcept = default;
-
-private:
-
-    /// @brief  Statically casts self to derived type.
-    /// @return ConstRef to the derived type.
-    inline constexpr const Derived& cDerived() const noexcept
-    {
-        return static_cast<const Derived&>(*this);
-    }
-
-
-    /// @brief  Statically casts self to derived type.
-    /// @return ConstRef to the derived type.
-    inline constexpr const Derived& derived() const noexcept
-    {
-        return cDerived();
-    }
-
-
-    /// @brief  Statically casts self to derived type.
-    /// @return NonConstRef to the derived type.
-    inline constexpr Derived& derived() noexcept
-    {
-        return static_cast<Derived&>(*this);
-    }
 };
 
 
 /// @brief  Stream insertion operator for Mrp3<>
-/// @tparam Rotation    CRTP template parameter.
-/// @param  stream       Output stream.
-/// @param  mrp3         Input instance.
+/// @tparam Derived CRTP template parameter.
+/// @param  stream  Output stream.
+/// @param  mrp3    Input instance.
 /// @return Modified stream.
-template<typename Rotation>
-std::ostream& operator<<(std::ostream& stream, const Mrp3<Rotation>& mrp3)
+template<typename Derived>
+std::ostream& operator<<(std::ostream& stream, const Mrp3<Derived>& mrp3)
 {
     static const auto ioFormat = Eigen::IOFormat(
         Eigen::FullPrecision,
         0, ", ", "\n", "", "", "[", "]");
 
     stream << mrp3.cDerived().cParameters().transpose().format(ioFormat);
-
     return stream;
 }
 
@@ -320,27 +316,6 @@ public:
     explicit Rotation3(const AngleAxis& angleAxis): Rotation3(angleAxis.angle(), angleAxis.axis())
     {
     }
-
-
-    /// @brief
-    /// @tparam options
-    /// @param rhs
-    template<int mapOptions>
-    explicit Rotation3(const Eigen::Map<naksh::geometry::Rotation3<Scalar>, mapOptions>& rhs):
-        mParameters(rhs.cParameters())
-    {
-    }
-
-
-    /// @brief
-    /// @tparam options
-    /// @param rhs
-    template<int mapOptions>
-    explicit Rotation3(const Eigen::Map<const naksh::geometry::Rotation3<Scalar>, mapOptions>& rhs):
-        mParameters(rhs.cParameters())
-    {
-    }
-
 
     Rotation3(const Rotation3&) = default;
 

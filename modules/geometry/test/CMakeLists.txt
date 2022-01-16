@@ -6,7 +6,8 @@ add_executable(geometryTest
         frameConceptsTest.cpp
         frameReferencesTest.cpp
         composeTest.cpp
-        rotationTest.cpp)
+        rotationTest.cpp
+        poseTest.cpp)
 
 target_link_libraries(geometryTest Naksh::geometry GTest::GTest GTest::Main)
 
