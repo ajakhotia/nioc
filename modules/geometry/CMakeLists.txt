@@ -19,6 +19,7 @@ add_exported_library(
                 include/naksh/geometry/compose.hpp
                 include/naksh/geometry/rotation.hpp
                 include/naksh/geometry/pose.hpp
+                include/naksh/geometry/rigidTransform.hpp
         INCLUDE_DIRECTORIES
             ${CMAKE_CURRENT_SOURCE_DIR}/include
         LINK_LIBRARIES
