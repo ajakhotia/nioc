@@ -7,6 +7,7 @@
 #pragma ide diagnostic ignored "cert-err58-cpp"
 
 #include <naksh/geometry/rotation.hpp>
+#include <naksh/geometry/constants.hpp>
 #include <gtest/gtest.h>
 
 
@@ -94,7 +95,30 @@ TEST(Rotation3, data)
 
 TEST(Rotation3, components)
 {
+    Rotation3<double> test({0.2, 0.3, 0.5});
+    EXPECT_EQ(0.2, test.x());
+    EXPECT_EQ(0.3, test.y());
+    EXPECT_EQ(0.5, test.z());
 
+    test.x() = 0.7;
+    EXPECT_EQ(0.7, test.x());
+    test.y() = 0.11;
+    EXPECT_EQ(0.11, test.y());
+    test.z() = 0.13;
+    EXPECT_EQ(0.13, test.z());
+
+    const Rotation3<double> constTest({0.2, 0.3, 0.5});
+    EXPECT_EQ(0.2, constTest.x());
+    EXPECT_EQ(0.3, constTest.y());
+    EXPECT_EQ(0.5, constTest.z());
+
+    // Operations below are illegal as constTest is const qualified.
+    //constTest.x() = 0.7;
+    //EXPECT_EQ(0.7, test.x());
+    //constTest.y() = 0.11;
+    //EXPECT_EQ(0.11, test.y());
+    //constTest.z() = 0.13;
+    //EXPECT_EQ(0.13, test.z());
 }
 
 

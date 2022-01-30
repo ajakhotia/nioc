@@ -13,20 +13,21 @@ add_exported_library(
             src/frame.cpp
         HEADERS
             PUBLIC
+                include/naksh/geometry/compose.hpp
+                include/naksh/geometry/constants.hpp
                 include/naksh/geometry/frame.hpp
                 include/naksh/geometry/frameConcepts.hpp
                 include/naksh/geometry/frameReferences.hpp
-                include/naksh/geometry/compose.hpp
-                include/naksh/geometry/rotation.hpp
                 include/naksh/geometry/pose.hpp
                 include/naksh/geometry/rigidTransform.hpp
+                include/naksh/geometry/rotation.hpp
         INCLUDE_DIRECTORIES
             ${CMAKE_CURRENT_SOURCE_DIR}/include
         LINK_LIBRARIES
             PUBLIC      Naksh::common
             INTERFACE   Eigen3::Eigen
         COMPILE_FEATURES
-            PUBLIC cxx_std_17
+            PUBLIC cxx_std_20
         COMPILE_OPTIONS
             PRIVATE
                 $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
