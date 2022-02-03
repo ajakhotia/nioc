@@ -61,6 +61,13 @@ function(add_exported_library)
             "${MULTI_VALUE_ARGUMENTS}"
             ${ARGN})
 
+    if((AEL_PARAM_TYPE) AND (NOT AEL_PARAM_TYPE STREQUAL "INTERFACE"))
+        message(AUTHOR_WARNING "Prefer to not specify TYPE for libraries other "
+                "than for those which are pure INTERFACE / header-only. This "
+                "allows the user to request SHARED / STATIC builds using the "
+                "-DBUILD_SHARED_LIBS:BOOL=ON/OFF on the commandline as "
+                "necessary.")
+    endif()
 
     add_library(${AEL_PARAM_TARGET} ${AEL_PARAM_TYPE})
 

@@ -3,8 +3,6 @@ find_package(CapnProto REQUIRED)
 capnproto_generate_library(
         TARGET
             messagesIdl
-        TYPE
-            SHARED
         NAMESPACE
             Naksh::
         EXPORT
@@ -25,8 +23,6 @@ capnproto_generate_library(
 add_exported_library(
         TARGET
             messages
-        TYPE
-            SHARED
         NAMESPACE
             Naksh::
         EXPORT

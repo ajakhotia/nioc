@@ -4,8 +4,6 @@ find_package(spdlog REQUIRED)
 capnproto_generate_library(
         TARGET
             loggerIdl
-        TYPE
-            SHARED
         NAMESPACE
             Naksh::
         EXPORT
@@ -25,8 +23,6 @@ capnproto_generate_library(
 add_exported_library(
         TARGET
             logger
-        TYPE
-            SHARED
         NAMESPACE
             Naksh::
         EXPORT

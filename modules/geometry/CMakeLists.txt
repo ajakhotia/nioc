@@ -3,8 +3,6 @@ find_package(Eigen3 REQUIRED)
 add_exported_library(
         TARGET
             geometry
-        TYPE
-            SHARED
         NAMESPACE
             Naksh::
         EXPORT
