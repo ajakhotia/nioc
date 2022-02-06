@@ -40,8 +40,7 @@ private:
 
     const size_t mFileSize;
 
-    //std::unordered_map<size_t, Channel> mChannelMap;
-
+    // std::unordered_map<size_t, Channel> mChannelMap;
 };
 
-}
+} // namespace naksh::logger

@@ -13,9 +13,8 @@ capnproto_generate_library(
         COMPILE_FEATURES
             PUBLIC cxx_std_17
         COMPILE_OPTIONS
-            PRIVATE
-                $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
-                $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
+            PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
+            PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
         COMPILE_DEFINITIONS
             "")
 
@@ -30,21 +29,18 @@ add_exported_library(
         SOURCES
             src/logger.cpp
         HEADERS
-            PUBLIC
-                include/naksh/logger/logger.hpp
+            PUBLIC include/naksh/logger/logger.hpp
         INCLUDE_DIRECTORIES
             ${CMAKE_CURRENT_SOURCE_DIR}/include
         LINK_LIBRARIES
-            PRIVATE
-                Naksh::loggerIdl
-                spdlog::spdlog
-                Boost::iostreams
+            PRIVATE Boost::iostreams
+            PRIVATE Naksh::loggerIdl
+            PRIVATE spdlog::spdlog
         COMPILE_FEATURES
             PUBLIC cxx_std_17
         COMPILE_OPTIONS
-            PRIVATE
-                $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
-                $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
+            PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
+            PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
         COMPILE_DEFINITIONS
             "")
 

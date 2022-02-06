@@ -7,11 +7,10 @@
 #pragma ide diagnostic ignored "cert-err58-cpp"
 
 #include <boost/iostreams/device/mapped_file.hpp>
-
-#include <gtest/gtest.h>
 #include <cmath>
-#include <fstream>
 #include <filesystem>
+#include <fstream>
+#include <gtest/gtest.h>
 
 namespace naksh::logger
 {
@@ -20,7 +19,7 @@ namespace
 
 constexpr const long int kNumBytes = 1024 * 1024;
 
-} // End of anonymous namespace.
+}
 
 
 TEST(LoggerBoostUsageExample, MMapFileWriting)
@@ -36,7 +35,7 @@ TEST(LoggerBoostUsageExample, MMapFileWriting)
 
         bio::mapped_file file(mappedFileParams);
 
-        for(auto& byte : file)
+        for(auto& byte: file)
         {
             byte = 'a';
         }
@@ -71,6 +70,6 @@ TEST(LoggerBoostUsageExample, SerialFileWrite)
 }
 
 
-} // End of namespace naksh::logger.
+} // namespace naksh::logger
 
 #pragma clang diagnostic pop

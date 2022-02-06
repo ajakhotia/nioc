@@ -5,8 +5,8 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include <naksh/logger/logger.hpp>
-#include <spdlog/spdlog.h>
 #include <spdlog/fmt/chrono.h>
+#include <spdlog/spdlog.h>
 
 namespace naksh::logger
 {
@@ -22,8 +22,8 @@ std::string timeNowAsFormattedString()
     std::string timeString;
 
     fmt::format_to(std::back_inserter(timeString),
-            "{:%Y-%m-%dT%H:%M:%S%z}",
-            fmt::localtime(system_clock::now()));
+                   "{:%Y-%m-%dT%H:%M:%S%z}",
+                   fmt::localtime(system_clock::now()));
 
     return timeString;
 }
@@ -35,14 +35,15 @@ fs::path checkAndSetupLogDirectory(fs::path logRoot)
 
     if(fs::exists(logRoot))
     {
-        spdlog::warn("[logger] Directory or file {} exists already. Contents will be cleared.", logRoot.string());
+        spdlog::warn("[logger] Directory or file {} exists already. Contents will be cleared.",
+                     logRoot.string());
         fs::remove_all(logRoot);
     }
 
     if(not fs::create_directories(logRoot))
     {
-        throw std::runtime_error("[Logger::Logger] Unable to create root directory for log at "
-                                 + logRoot.string());
+        throw std::runtime_error("[Logger::Logger] Unable to create root directory for log at " +
+                                 logRoot.string());
     }
 
     return logRoot;
@@ -53,8 +54,7 @@ fs::path checkAndSetupLogDirectory(fs::path logRoot)
 
 
 Logger::Logger(std::filesystem::path logRoot, const size_t fileSize):
-        mLogDirectory(checkAndSetupLogDirectory(std::move(logRoot))),
-        mFileSize(fileSize)
+    mLogDirectory(checkAndSetupLogDirectory(std::move(logRoot))), mFileSize(fileSize)
 {
     spdlog::info("[Logger] Logging to {}.", mLogDirectory.string());
 }
@@ -64,7 +64,6 @@ void Logger::write(const size_t /* channelId */,
                    const size_t /* bufferLength */,
                    const void* /* bufferPtr */)
 {
-
 }
 
 } // End of namespace naksh::logger

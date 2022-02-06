@@ -6,8 +6,8 @@
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "cert-err58-cpp"
 
-#include <naksh/logger/logger.hpp>
 #include <gtest/gtest.h>
+#include <naksh/logger/logger.hpp>
 
 namespace naksh::logger
 {
@@ -17,6 +17,6 @@ TEST(LoggerTest, ConstructionTest)
     Logger logger;
 }
 
-} // End of namespace naksh::logger.
+} // namespace naksh::logger
 
 #pragma clang diagnostic pop
