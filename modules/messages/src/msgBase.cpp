@@ -4,8 +4,8 @@
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include <naksh/messages/msgBase.hpp>
 #include <capnp/message.h>
+#include <naksh/messages/msgBase.hpp>
 
 namespace naksh::messages
 {
@@ -15,4 +15,4 @@ MsgBase::MsgBase() = default;
 MsgBase::~MsgBase() = default;
 
 
-} // End of namespace naksh::messages.
+} // namespace naksh::messages

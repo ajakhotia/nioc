@@ -12,7 +12,7 @@ namespace naksh::messages
 
 
 template<typename SerializableType_>
-class Msg final : public MsgBase
+class Msg final: public MsgBase
 {
 public:
     using SerializableType = SerializableType_;
@@ -29,7 +29,6 @@ public:
     }
 
 private:
-
 };
 
-} // End of namespace naksh::messages.
+} // namespace naksh::messages

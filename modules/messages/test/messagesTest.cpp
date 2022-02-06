@@ -6,9 +6,9 @@
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "cert-err58-cpp"
 
+#include <gtest/gtest.h>
 #include <naksh/messages/idl/sample1.capnp.h>
 #include <naksh/messages/msg.hpp>
-#include <gtest/gtest.h>
 
 namespace naksh::messages
 {
@@ -24,6 +24,6 @@ TEST(MessagesTest, MessageIdentityChecks)
     EXPECT_EQ(baseRef.msgHandle(), Msg<Sample1>::kMsgHandle);
 }
 
-} // End of namespace naksh::messages.
+} // namespace naksh::messages
 
 #pragma clang diagnostic pop

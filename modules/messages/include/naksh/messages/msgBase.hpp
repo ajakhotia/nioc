@@ -21,9 +21,7 @@ public:
 
 protected:
     MsgBase();
-
-
 };
 
 
-} // End of namespace naksh::messages.
+} // namespace naksh::messages
