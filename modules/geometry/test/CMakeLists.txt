@@ -5,7 +5,6 @@ add_executable(geometryTest
         frameTest.cpp
         frameConceptsTest.cpp
         frameReferencesTest.cpp
-        composeTest.cpp
         rotationTest.cpp
         poseTest.cpp
         rigidTransformTest.cpp)

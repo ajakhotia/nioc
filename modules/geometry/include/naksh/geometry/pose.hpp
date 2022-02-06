@@ -6,6 +6,7 @@
 #pragma once
 
 #include "traits.hpp"
+
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <span>
@@ -102,7 +103,7 @@ public:
     /// @return Pose<> object representing the inverse.
     Pose<Scalar> inverse() const
     {
-        return Pose<Scalar>(*this).invert();
+        return Pose<Scalar>(derived()).invert();
     }
 
 
@@ -113,9 +114,9 @@ public:
     Derived& invert()
     {
         const auto inverseOrientation = orientation().inverse();
-        const auto inversePosition = Scalar(-1) * inverseOrientation() * position();
+        const auto inversePosition = Scalar(-1) * (inverseOrientation * position());
         *this = Pose<Scalar>(inverseOrientation, inversePosition);
-        return *this;
+        return derived();
     }
 
 
@@ -321,8 +322,11 @@ public:
         if(parameters.size() != kNumParams)
         {
             throw std::invalid_argument("[Eigen::Map<geometry::Pose>] Provided span is "
-                "of incorrect size(" + std::to_string(parameters.size()) + "). Required "
-                "size is " + std::to_string(kNumParams) + ".");
+                                        "of incorrect size(" +
+                                        std::to_string(parameters.size()) +
+                                        "). Required "
+                                        "size is " +
+                                        std::to_string(kNumParams) + ".");
         }
         Base::orientation().normalize();
     }
@@ -380,14 +384,18 @@ public:
         if(parameters.size() != kNumParams)
         {
             throw std::invalid_argument("[Eigen::Map<const geometry::Pose>] Provided span is "
-                "of incorrect size(" + std::to_string(parameters.size()) + "). Required "
-                "size is " + std::to_string(kNumParams) + ".");
+                                        "of incorrect size(" +
+                                        std::to_string(parameters.size()) +
+                                        "). Required "
+                                        "size is " +
+                                        std::to_string(kNumParams) + ".");
         }
 
         if(std::abs(Base::cOrientation().norm() - Scalar(1)) >
            std::numeric_limits<Scalar>::epsilon())
         {
-            throw std::invalid_argument("[Eigen::Map<const geometry::Pose>] The quaternion "
+            throw std::invalid_argument(
+                "[Eigen::Map<const geometry::Pose>] The quaternion "
                 "portion of the passed parameters is not unit norm. Cannot proceed.");
         }
     }
@@ -452,4 +460,4 @@ struct Traits<Eigen::Map<const Pose<Scalar_>>>
 };
 
 
-} // End of namespace naksh::geometry.
+} // namespace naksh::geometry
