@@ -6,8 +6,8 @@
 #pragma once
 
 #include <boost/type_index/ctti_type_index.hpp>
-#include <type_traits>
 #include <string_view>
+#include <type_traits>
 
 
 namespace naksh::common
@@ -19,8 +19,8 @@ namespace naksh::common
 ///         TemplateType, hence, the inheritance from the std::false_type.
 /// @tparam InstanceType    Type of the instance to be checked. Eg: std::vector<int>.
 /// @tparam TemplateType    Type of the template. Eg: std::vector.
-template<typename InstanceType, template <typename ...> typename TemplateType>
-struct IsSpecialization : public std::false_type
+template<typename InstanceType, template<typename...> typename TemplateType>
+struct IsSpecialization: public std::false_type
 {
 };
 
@@ -35,8 +35,8 @@ struct IsSpecialization : public std::false_type
 ///                         The ... is for other parameter that may be needed
 ///                         by the template, such as allocator type in case of
 ///                         std::vector<>.
-template< template<typename ...> typename TemplateType, typename ...Args>
-struct IsSpecialization<TemplateType<Args...>, TemplateType> : public std::true_type
+template<template<typename...> typename TemplateType, typename... Args>
+struct IsSpecialization<TemplateType<Args...>, TemplateType>: public std::true_type
 {
 };
 
@@ -44,7 +44,7 @@ struct IsSpecialization<TemplateType<Args...>, TemplateType> : public std::true_
 /// @brief  A helper to variable check semantics for @class IsSpecialization.
 /// @tparam InstanceType    Type of the instance. Eg: std::vector<int>
 /// @tparam TemplateType    Type of the template. Eg: std::vector.
-template<typename InstanceType, template <typename...> typename TemplateType>
+template<typename InstanceType, template<typename...> typename TemplateType>
 inline constexpr bool isSpecialization = IsSpecialization<InstanceType, TemplateType>::value;
 
 
@@ -57,10 +57,8 @@ inline constexpr bool isSpecialization = IsSpecialization<InstanceType, Template
 template<typename Type>
 constexpr std::string_view prettyName() noexcept
 {
-    const auto name = std::string_view(
-            boost::typeindex::ctti_type_index::type_id<Type>().name());
-
+    const auto name = std::string_view(boost::typeindex::ctti_type_index::type_id<Type>().name());
     return name.substr(0, name.size() - 1);
 }
 
-} // End of namespace naksh::common.
+} // namespace naksh::common

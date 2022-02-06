@@ -70,9 +70,7 @@ public:
     /// @param  args    Parameter pack to be forwarded as arguments to the
     ///                 constructor of the underlying value a.k.a Locked::mLockedValue
     template<typename... Args>
-    explicit Locked(Args&& ... args):
-            mMutex{},
-            mLockedValue{std::forward<Args>(args)...}
+    explicit Locked(Args&&... args): mMutex{}, mLockedValue{std::forward<Args>(args)...}
     {
     }
 
@@ -207,9 +205,7 @@ public:
     Locked& operator=(OtherType&& other)
     {
         execute([other = std::forward<OtherType>(other)](auto& value) mutable
-                {
-                    value = std::move(other);
-                });
+                { value = std::move(other); });
 
         return *this;
     }
@@ -412,4 +408,4 @@ constexpr bool operator>=(const Other& otherValue, const Locked<ValueType>& lock
 }
 
 
-} // End of namespace naksh::common.
+} // namespace naksh::common

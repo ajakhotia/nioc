@@ -20,9 +20,7 @@ template<typename Cache>
 class CacheManager
 {
 public:
-    CacheManager(): mCacheOpt(std::nullopt)
-    {
-    }
+    CacheManager(): mCacheOpt(std::nullopt) {}
 
     CacheManager(const CacheManager&) = default;
 
@@ -51,4 +49,4 @@ private:
 };
 
 
-} // End of namespace naksh::common.
+} // namespace naksh::common

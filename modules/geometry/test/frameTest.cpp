@@ -7,7 +7,6 @@
 #pragma ide diagnostic ignored "cert-err58-cpp"
 
 #include <naksh/geometry/frame.hpp>
-#include <boost/type_index.hpp>
 #include <gtest/gtest.h>
 
 namespace naksh::geometry

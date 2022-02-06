@@ -6,10 +6,10 @@
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "cert-err58-cpp"
 
-#include <naksh/common/typeTraits.hpp>
-#include <gtest/gtest.h>
-#include <vector>
 #include <deque>
+#include <gtest/gtest.h>
+#include <naksh/common/typeTraits.hpp>
+#include <vector>
 
 namespace naksh::common
 {
@@ -41,6 +41,6 @@ TEST(TypeTraits, prettyName)
 }
 
 
-} // End of namespace naksh::common.
+} // namespace naksh::common
 
 #pragma clang diagnostic pop

@@ -6,9 +6,9 @@
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "cert-err58-cpp"
 
-#include <naksh/common/cacheManager.hpp>
-#include <gtest/gtest.h>
 #include <cmath>
+#include <gtest/gtest.h>
+#include <naksh/common/cacheManager.hpp>
 
 namespace naksh::common
 {
@@ -20,7 +20,7 @@ std::string gTestCacheMessage;
 class TestCache
 {
 public:
-    explicit TestCache(int value) : mCached(value)
+    explicit TestCache(int value): mCached(value)
     {
         gTestCacheMessage = "Created cache for: " + std::to_string(mCached);
     }
@@ -32,7 +32,7 @@ public:
 
     int squareArea()
     {
-        if (not mSquare)
+        if(not mSquare)
         {
             gTestCacheMessage = "Computing for value: " + std::to_string(mCached);
             mSquare = std::pow(mCached, 2);
@@ -55,10 +55,7 @@ private:
 class TestClass
 {
 public:
-    explicit TestClass(int value) : mValue(value)
-    {
-
-    }
+    explicit TestClass(int value): mValue(value) {}
 
     int squareArea() const
     {
@@ -193,6 +190,6 @@ TEST(Caching, squareArea)
 }
 
 
-} // End of namespace naksh::common.
+} // namespace naksh::common
 
 #pragma clang diagnostic pop

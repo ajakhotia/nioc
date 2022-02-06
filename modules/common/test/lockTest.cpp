@@ -6,8 +6,8 @@
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "cert-err58-cpp"
 
-#include <naksh/common/locked.hpp>
 #include <gtest/gtest.h>
+#include <naksh/common/locked.hpp>
 
 namespace naksh::common
 {
@@ -15,7 +15,10 @@ namespace
 {
 
 // A lambda function to extract value from pointer types.
-const auto valueExtractorHelper = [](const auto& value) { return *value; };
+const auto valueExtractorHelper = [](const auto& value)
+{
+    return *value;
+};
 
 } // End of anonymous namespace.
 
@@ -104,28 +107,48 @@ TEST(CommonTest, LockedNonConstExecution)
     // Pass by l-value reference.
     {
         Locked<int> locked(7);
-        const auto valueCopy = locked.execute([](auto& value) { value += 9; return value; });
+        const auto valueCopy = locked.execute(
+            [](auto& value)
+            {
+                value += 9;
+                return value;
+            });
         EXPECT_EQ(16, valueCopy);
     }
 
     // Pass by forwarding reference.
     {
         Locked<int> locked(7);
-        const auto valueCopy = locked.execute([](auto&& value) { value += 9; return value; });
+        const auto valueCopy = locked.execute(
+            [](auto&& value)
+            {
+                value += 9;
+                return value;
+            });
         EXPECT_EQ(16, valueCopy);
     }
 
     // Pass by l-value reference. Using the non-const operator().
     {
         Locked<int> locked(7);
-        const auto valueCopy = locked([](auto& value) { value += 9; return value; });
+        const auto valueCopy = locked(
+            [](auto& value)
+            {
+                value += 9;
+                return value;
+            });
         EXPECT_EQ(16, valueCopy);
     }
 
     // Pass by forwarding reference. Using the non-const operator() overload
     {
         Locked<int> locked(7);
-        const auto valueCopy = locked([](auto&& value) { value += 9; return value; });
+        const auto valueCopy = locked(
+            [](auto&& value)
+            {
+                value += 9;
+                return value;
+            });
         EXPECT_EQ(16, valueCopy);
     }
 }
@@ -143,7 +166,6 @@ TEST(CommonTest, LockedCopyAssignment)
 
 TEST(CommonTest, LockedMoveAssignment)
 {
-
     Locked<std::unique_ptr<int>> locked;
     EXPECT_EQ(nullptr, locked);
 
@@ -261,6 +283,6 @@ TEST(CommonTest, LockedGreaterThanOrEqualCheck)
     EXPECT_TRUE(14 >= locked);
 }
 
-} // End of namespace naksh::common.
+} // namespace naksh::common
 
 #pragma clang diagnostic pop
