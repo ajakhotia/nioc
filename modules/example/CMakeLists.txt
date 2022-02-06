@@ -18,9 +18,9 @@ add_library(Naksh::example ALIAS example)
     (BUILD_INTERFACE) and post-install(INSTALL_INTERFACE) reference to this
      library. This is done below using generator expressions. ]]
 target_include_directories(example
-    PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include>)
+        PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+            $<INSTALL_INTERFACE:include>)
 
 
 #[[ Let the build system know that the "example" library and its dependees need

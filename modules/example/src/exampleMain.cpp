@@ -5,8 +5,9 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "examplePrivateHeader.hpp"
-#include <naksh/example/example.hpp>
+
 #include <cassert>
+#include <naksh/example/example.hpp>
 
 auto main() -> int
 {
