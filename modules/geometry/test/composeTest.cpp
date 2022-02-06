@@ -6,8 +6,8 @@
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "cert-err58-cpp"
 
-#include <naksh/geometry/compose.hpp>
 #include <gtest/gtest.h>
+#include <naksh/geometry/compose.hpp>
 
 namespace naksh::geometry
 {
@@ -22,12 +22,9 @@ namespace helpers
 
 TEST(assertFrameEqual, StaticLhsStaticRhs)
 {
-    EXPECT_NO_THROW((
-        assertFrameEqual<StaticFrame<Sun>, StaticFrame<Sun>>()
-        ));
+    EXPECT_NO_THROW((assertFrameEqual<StaticFrame<Sun>, StaticFrame<Sun>>()));
 
-    // Ill-legal code - won't compile.
-    // helpers::assertFrameEqual<StaticFrame<Sun>, StaticFrame<AlphaCentauri>>();
+    static_assert(noexcept(assertFrameEqual<StaticFrame<Sun>, StaticFrame<Sun>>));
 }
 
 
@@ -36,9 +33,10 @@ TEST(assertFrameEqual, StaticLhsDynamicRhs)
     EXPECT_NO_THROW(
         (assertFrameEqual<StaticFrame<Sun>, DynamicFrame>(DynamicFrame("naksh::geometry::Sun"))));
 
-    EXPECT_THROW(
-        (assertFrameEqual<StaticFrame<Sun>, DynamicFrame>(DynamicFrame("Bloop"))),
-        FrameCompositionException);
+    EXPECT_THROW((assertFrameEqual<StaticFrame<Sun>, DynamicFrame>(DynamicFrame("Bloop"))),
+                 FrameCompositionException);
+
+    static_assert(not noexcept(assertFrameEqual<StaticFrame<Sun>, DynamicFrame>(DynamicFrame(""))));
 }
 
 
@@ -50,21 +48,22 @@ TEST(assertFrameEqual, DynamicLhsStaticRhs)
     EXPECT_THROW(
         (assertFrameEqual<DynamicFrame, StaticFrame<AlphaCentauri>>(DynamicFrame("Bloop"))),
         FrameCompositionException);
+
+    static_assert(not noexcept(assertFrameEqual<DynamicFrame, StaticFrame<Sun>>(DynamicFrame(""))));
 }
 
 
 TEST(assertFrameEqual, DynamicLhsDynamicRhs)
 {
-    EXPECT_NO_THROW(
-        (assertFrameEqual<DynamicFrame, DynamicFrame>(
-            DynamicFrame("naksh::geometry::Sun"),
-            DynamicFrame("naksh::geometry::Sun"))));
+    EXPECT_NO_THROW((assertFrameEqual<DynamicFrame, DynamicFrame>(
+        DynamicFrame("naksh::geometry::Sun"), DynamicFrame("naksh::geometry::Sun"))));
 
-    EXPECT_THROW(
-        (assertFrameEqual<DynamicFrame, DynamicFrame>(
-            DynamicFrame("Bloop"),
-            DynamicFrame("Bleep"))),
-        FrameCompositionException);
+    EXPECT_THROW((assertFrameEqual<DynamicFrame, DynamicFrame>(DynamicFrame("Bloop"),
+                                                               DynamicFrame("Bleep"))),
+                 FrameCompositionException);
+
+    static_assert(not noexcept(
+        assertFrameEqual<DynamicFrame, DynamicFrame>(DynamicFrame(""), DynamicFrame(""))));
 }
 
 } // End of namespace helpers.
@@ -72,27 +71,37 @@ TEST(assertFrameEqual, DynamicLhsDynamicRhs)
 
 TEST(ComposeTransform, StaticStaticStaticStatic)
 {
-    FrameReferences<StaticFrame<Sun>, StaticFrame<Uranus>> lhs;
-    FrameReferences<StaticFrame<Uranus>, StaticFrame<Pluto>> rhs;
+    using SunFromUranusFrames = FrameReferences<StaticFrame<Sun>, StaticFrame<Uranus>>;
+    using UranusFromPlutoFrames = FrameReferences<StaticFrame<Uranus>, StaticFrame<Pluto>>;
 
+    SunFromUranusFrames lhs;
+    UranusFromPlutoFrames rhs;
+
+    EXPECT_NO_THROW(composeFrameReferences(lhs, rhs));
     const auto result = composeFrameReferences(lhs, rhs);
-    static_assert(std::is_same_v<typename decltype(result)::ParentFrame, StaticFrame<Sun>>);
-    static_assert(std::is_same_v<typename decltype(result)::ChildFrame, StaticFrame<Pluto>>);
+
+    using ResultType = decltype(result);
+    static_assert(std::is_same_v<typename ResultType::ParentFrame, StaticFrame<Sun>>);
+    static_assert(std::is_same_v<typename ResultType::ChildFrame, StaticFrame<Pluto>>);
 }
 
 
 TEST(ComposeTransform, StaticStaticStaticDynamic)
 {
-    FrameReferences<StaticFrame<Sun>, StaticFrame<Uranus>> lhs;
-    FrameReferences<StaticFrame<Uranus>, DynamicFrame> rhs("milkyWay");
+    using SunFromUranusFrames = FrameReferences<StaticFrame<Sun>, StaticFrame<Uranus>>;
+    using UranusFromDynaimcFrames = FrameReferences<StaticFrame<Uranus>, DynamicFrame>;
 
+    SunFromUranusFrames lhs;
+    UranusFromDynaimcFrames rhs("milkyWay");
+
+    EXPECT_NO_THROW(composeFrameReferences(lhs, rhs));
     const auto result = composeFrameReferences(lhs, rhs);
-    static_assert(std::is_same_v<typename decltype(result)::ParentFrame, StaticFrame<Sun>>);
-    static_assert(std::is_same_v<typename decltype(result)::ChildFrame, DynamicFrame>);
 
+    using ResultType = decltype(result);
+    static_assert(std::is_same_v<typename ResultType::ParentFrame, StaticFrame<Sun>>);
+    static_assert(std::is_same_v<typename ResultType::ChildFrame, DynamicFrame>);
     EXPECT_EQ(result.childFrame().name(), "milkyWay");
 }
-
 
 } // End of namespace naksh::geometry.
 

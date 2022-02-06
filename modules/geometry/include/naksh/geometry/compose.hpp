@@ -119,7 +119,8 @@ inline void assertFrameEqual(const LhsFrame& lhsFrame, const RhsFrame& rhsFrame)
 /// @param rhsFrameReferences     Instance of the Rhs.
 /// @return FrameReferences that are a result of the composition.
 template<typename LhsFrameReferences, typename RhsFrameReferences>
-FrameReferences<typename LhsFrameReferences::ParentFrame, typename RhsFrameReferences::ChildFrame>
+constexpr FrameReferences<typename LhsFrameReferences::ParentFrame,
+                          typename RhsFrameReferences::ChildFrame>
 composeFrameReferences(const LhsFrameReferences& lhsFrameReferences,
                        const RhsFrameReferences& rhsFrameReferences)
 {
