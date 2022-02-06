@@ -24,25 +24,15 @@ class FrameCompositionException: public std::runtime_error
 public:
     /// Inherit all constructors from std::runtime_error.
     using std::runtime_error::runtime_error;
-
-    /// @brief  Convenience constructor to appropriately build error message from frame names.
-    /// @param lhsFrameName
-    /// @param rhsFrameName
-    FrameCompositionException(const std::string& lhsFrameName,
-                              const std::string& rhsFrameName):
-        FrameCompositionException(
-            "Composed transforms with mismatched inner frames. Lhs child frame[" + lhsFrameName +
-            "] does not match the rhs parent frame[" + rhsFrameName + "].")
-    {
-        assert(lhsFrameName != rhsFrameName &&
-               "Detected creation of FrameCompositionException but with compatible frame ids. "
-               "This likely a programming error.");
-    }
 };
 
 
 namespace helpers
 {
+
+std::string frameCompositionErrorMessage(const std::string& lhsFrameName,
+                                         const std::string& rhsFrameName);
+
 
 /// @brief  Asserts equality of lhs and rhs frame for the case when both are
 ///         instances of StaticFrame<>. Because the equality is evaluable at
@@ -72,7 +62,8 @@ inline void assertFrameEqual(const RhsFrame& rhsFrame)
 {
     if(LhsFrame::name() != rhsFrame.name())
     {
-        throw FrameCompositionException(std::string(LhsFrame::name()), rhsFrame.name());
+        auto msg = frameCompositionErrorMessage(std::string(LhsFrame::name()), rhsFrame.name());
+        throw FrameCompositionException(std::move(msg));
     }
 }
 
@@ -90,7 +81,8 @@ inline void assertFrameEqual(const LhsFrame& lhsFrame)
 {
     if(lhsFrame.name() != RhsFrame::name())
     {
-        throw FrameCompositionException(lhsFrame.name(), std::string(RhsFrame::name()));
+        auto msg = frameCompositionErrorMessage(lhsFrame.name(), std::string(RhsFrame::name()));
+        throw FrameCompositionException(std::move(msg));
     }
 }
 
@@ -109,7 +101,8 @@ inline void assertFrameEqual(const LhsFrame& lhsFrame, const RhsFrame& rhsFrame)
 {
     if(lhsFrame.name() != rhsFrame.name())
     {
-        throw FrameCompositionException(lhsFrame.name(), rhsFrame.name());
+        auto msg = frameCompositionErrorMessage(lhsFrame.name(), rhsFrame.name());
+        throw FrameCompositionException(std::move(msg));
     }
 }
 

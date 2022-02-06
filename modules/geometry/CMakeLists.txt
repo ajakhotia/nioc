@@ -9,6 +9,7 @@ add_exported_library(
             nakshTargets
         SOURCES
             src/frame.cpp
+            src/compose.cpp
         HEADERS
             PUBLIC
                 include/naksh/geometry/compose.hpp
