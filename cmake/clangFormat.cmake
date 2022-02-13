@@ -9,8 +9,8 @@ function(add_clang_format)
             "${MULTI_VALUE_ARGUMENTS}"
             ${ARGN})
 
-    find_program(CLANG_FORMAT clang-format-${ACF_PARAM_VERSION})
-    find_program(XARGS xargs)
+    find_program(CLANG_FORMAT clang-format-${ACF_PARAM_VERSION} NO_CACHE)
+    find_program(XARGS xargs NO_CACHE)
 
     if(CLANG_FORMAT)
         message(STATUS "Found clang-format program for version "
@@ -20,7 +20,7 @@ function(add_clang_format)
             message(SEND_ERROR "Unable to find clang-format for version "
                     "${ACF_PARAM_VERSION}.")
         else()
-            message(NOTICE "Unable to find clang-format for version "
+            message(STATUS "Unable to find clang-format for version "
                     "${ACF_PARAM_VERSION}. Skipping setting up the formatting "
                     "target ${ACF_PARAM_TARGET}.")
         endif()
@@ -32,7 +32,7 @@ function(add_clang_format)
         if(ACF_PARAM_REQUIRED)
             message(SEND_ERROR "Unable to find xargs")
         else()
-            message(NOTICE "Unable to find xargs. Skipping setting up the "
+            message(STATUS "Unable to find xargs. Skipping setting up the "
                     "formatting target ${ACF_PARAM_TARGET}.")
         endif()
     endif()
