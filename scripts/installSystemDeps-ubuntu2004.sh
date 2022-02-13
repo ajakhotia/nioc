@@ -19,4 +19,5 @@ apt-get update && apt-get install -y    \
     g++-11                              \
     gcc-10                              \
     gcc-11                              \
+    ninja-build                         \
     || exit 1
