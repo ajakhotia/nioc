@@ -13,7 +13,6 @@ namespace naksh::geometry
 {
 namespace
 {
-
 class Alpha;
 class Gamma;
 class Echo;

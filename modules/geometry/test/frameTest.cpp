@@ -6,12 +6,11 @@
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "cert-err58-cpp"
 
-#include <naksh/geometry/frame.hpp>
 #include <gtest/gtest.h>
+#include <naksh/geometry/frame.hpp>
 
 namespace naksh::geometry
 {
-
 class Mercury;
 class Venus;
 
@@ -61,6 +60,6 @@ TEST(DynamicFrame, EqualityCheck)
 }
 
 
-} // End of namespace naksh::messages.
+} // namespace naksh::geometry
 
 #pragma clang diagnostic pop

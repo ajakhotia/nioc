@@ -14,7 +14,6 @@ namespace naksh::common
 {
 namespace
 {
-
 std::string gTestCacheMessage;
 
 class TestCache

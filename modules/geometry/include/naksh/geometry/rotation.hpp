@@ -11,7 +11,6 @@
 
 namespace naksh::geometry
 {
-
 /// Forward declare Rotation3
 template<typename Scalar_ = double>
 class Rotation3;
@@ -31,7 +30,6 @@ class Eigen::Map<const naksh::geometry::Rotation3<Scalar_>, mapOptions_>;
 
 namespace naksh::geometry
 {
-
 /// @brief  Abstract rotation representation that leverages modified
 ///         rodrigues parametrisation. This representation has the benefits
 ///         of being compact. i.e. number of parameters equal number of degrees
@@ -172,8 +170,8 @@ public:
     /// @return
     inline decltype(auto) inverse() const
     {
-        return Rotation3<typename Derived::Scalar>(
-            typename Derived::Scalar(-1) * cDerived().cParameters());
+        return Rotation3<typename Derived::Scalar>(typename Derived::Scalar(-1) *
+                                                   cDerived().cParameters());
     }
 
 
@@ -190,13 +188,10 @@ public:
         const auto lhsNorm2 = lhsMrp.squaredNorm();
         const auto rhsNorm2 = rhsMrp.squaredNorm();
 
-        const auto vec = (Scalar(1) - rhsNorm2) * lhsMrp +
-                         (Scalar(1) - lhsNorm2) * rhsMrp +
+        const auto vec = (Scalar(1) - rhsNorm2) * lhsMrp + (Scalar(1) - lhsNorm2) * rhsMrp +
                          Scalar(2) * lhsMrp.cross(rhsMrp);
 
-        const auto scale = Scalar(1) +
-                           lhsNorm2 * rhsNorm2 -
-                           Scalar(2) * lhsMrp.dot(rhsMrp);
+        const auto scale = Scalar(1) + lhsNorm2 * rhsNorm2 - Scalar(2) * lhsMrp.dot(rhsMrp);
 
         return Rotation3<Scalar>(vec / scale);
     }
@@ -224,9 +219,8 @@ protected:
 template<typename Derived>
 std::ostream& operator<<(std::ostream& stream, const Mrp3<Derived>& mrp3)
 {
-    static const auto ioFormat = Eigen::IOFormat(
-        Eigen::FullPrecision,
-        0, ", ", "\n", "", "", "[", "]");
+    static const auto ioFormat =
+        Eigen::IOFormat(Eigen::FullPrecision, 0, ", ", "\n", "", "", "[", "]");
 
     stream << mrp3.cDerived().cParameters().transpose().format(ioFormat);
     return stream;
@@ -238,7 +232,7 @@ std::ostream& operator<<(std::ostream& stream, const Mrp3<Derived>& mrp3)
 ///
 /// @tparam Scalar_ Floating type to use.
 template<typename Scalar_>
-class Rotation3 : public Mrp3<Rotation3<Scalar_>>
+class Rotation3: public Mrp3<Rotation3<Scalar_>>
 {
 public:
     using Base = Mrp3<Rotation3<Scalar_>>;
@@ -263,10 +257,7 @@ public:
     ///
     /// @param parameters   Modified rodrigues parameters laid out at
     ///                     {x, y, z} components.
-    explicit Rotation3(const Vector3& parameters):
-        mParameters(parameters)
-    {
-    }
+    explicit Rotation3(const Vector3& parameters): mParameters(parameters) {}
 
 
     /// @brief  Constructs a Rotation3 equivalent to a rotation by angle
@@ -287,16 +278,13 @@ public:
     /// @param quaternion   Quaternion representing the rotation. The
     ///                     is normalized before use.
     explicit Rotation3(const Quaternion& quaternion):
-        Rotation3(
-            std::invoke(
-                [](const Quaternion& normalizedQuaternion)
-                {
-                    assert(normalizedQuaternion.norm() == Scalar(1));
-                    return (
-                        normalizedQuaternion.vec() /
-                        (Scalar(1) + normalizedQuaternion.w())).eval();
-                },
-                quaternion.normalized()))
+        Rotation3(std::invoke(
+            [](const Quaternion& normalizedQuaternion)
+            {
+                assert(normalizedQuaternion.norm() == Scalar(1));
+                return (normalizedQuaternion.vec() / (Scalar(1) + normalizedQuaternion.w())).eval();
+            },
+            quaternion.normalized()))
     {
     }
 
@@ -323,17 +311,26 @@ public:
 
     /// @brief
     /// @return
-    inline const Parameters& cParameters() const noexcept { return mParameters; }
+    inline const Parameters& cParameters() const noexcept
+    {
+        return mParameters;
+    }
 
 
     /// @brief
     /// @return
-    inline const Parameters& parameters() const noexcept { return cParameters(); }
+    inline const Parameters& parameters() const noexcept
+    {
+        return cParameters();
+    }
 
 
     /// @brief
     /// @return
-    inline Parameters& parameters() noexcept { return mParameters; }
+    inline Parameters& parameters() noexcept
+    {
+        return mParameters;
+    }
 
 private:
     Parameters mParameters;
@@ -353,7 +350,7 @@ private:
 /// @tparam mapOptions_ Options to convey storage alignment.
 ///
 template<typename Scalar_, int mapOptions_>
-class Eigen::Map<naksh::geometry::Rotation3<Scalar_>, mapOptions_> :
+class Eigen::Map<naksh::geometry::Rotation3<Scalar_>, mapOptions_>:
     public naksh::geometry::Mrp3<Map<naksh::geometry::Rotation3<Scalar_>, mapOptions_>>
 {
 public:
@@ -387,17 +384,26 @@ public:
 
     /// @brief
     /// @return
-    inline const Parameters& cParameters() const noexcept { return mParameters; }
+    inline const Parameters& cParameters() const noexcept
+    {
+        return mParameters;
+    }
 
 
     /// @brief
     /// @return
-    inline const Parameters& parameters() const noexcept { return cParameters(); }
+    inline const Parameters& parameters() const noexcept
+    {
+        return cParameters();
+    }
 
 
     /// @brief
     /// @return
-    inline Parameters& parameters() noexcept { return mParameters; }
+    inline Parameters& parameters() noexcept
+    {
+        return mParameters;
+    }
 
 
     /// @brief  Implicitly convert to Rotation3<> type
@@ -423,7 +429,7 @@ private:
 /// @tparam mapOptions_ Options to convey storage alignment.
 ///
 template<typename Scalar_, int mapOptions_>
-class Eigen::Map<const naksh::geometry::Rotation3<Scalar_>, mapOptions_> :
+class Eigen::Map<const naksh::geometry::Rotation3<Scalar_>, mapOptions_>:
     public naksh::geometry::Mrp3<Map<const naksh::geometry::Rotation3<Scalar_>, mapOptions_>>
 {
 public:
@@ -457,12 +463,18 @@ public:
 
     /// @brief
     /// @return
-    inline const Parameters& cParameters() const noexcept { return mParameters; }
+    inline const Parameters& cParameters() const noexcept
+    {
+        return mParameters;
+    }
 
 
     /// @brief
     /// @return
-    inline const Parameters& parameters() const noexcept { return cParameters(); }
+    inline const Parameters& parameters() const noexcept
+    {
+        return cParameters();
+    }
 
 
     /// @brief  Implicitly convert to Rotation3<> type

@@ -13,7 +13,6 @@
 
 namespace naksh::geometry
 {
-
 /// @brief Forward declaration of the pose class.
 template<typename>
 class Pose;
@@ -432,7 +431,6 @@ private:
 
 namespace naksh::geometry
 {
-
 /// @brief
 /// @tparam Scalar_
 template<typename Scalar_>

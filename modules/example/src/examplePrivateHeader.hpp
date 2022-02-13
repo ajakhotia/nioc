@@ -7,7 +7,6 @@
 
 namespace naksh::example
 {
-
 class PrivateExample
 {
 public:

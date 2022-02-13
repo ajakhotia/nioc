@@ -9,7 +9,6 @@
 
 namespace naksh::example
 {
-
 class Example
 {
 public:

@@ -6,16 +6,15 @@
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "cert-err58-cpp"
 
-#include <naksh/geometry/rotation.hpp>
-#include <naksh/geometry/constants.hpp>
 #include <gtest/gtest.h>
+#include <naksh/geometry/constants.hpp>
+#include <naksh/geometry/rotation.hpp>
 
 
 namespace naksh::geometry
 {
 namespace
 {
-
 void expect_eq(const Eigen::Vector3d& lhs, const Eigen::Vector3d& rhs)
 {
     EXPECT_DOUBLE_EQ(lhs.x(), rhs.x());
@@ -81,16 +80,10 @@ TEST(Rotation3, construction)
 }
 
 
-TEST(Rotation3, parameters)
-{
-
-}
+TEST(Rotation3, parameters) {}
 
 
-TEST(Rotation3, data)
-{
-
-}
+TEST(Rotation3, data) {}
 
 
 TEST(Rotation3, components)
@@ -113,37 +106,25 @@ TEST(Rotation3, components)
     EXPECT_EQ(0.5, constTest.z());
 
     // Operations below are illegal as constTest is const qualified.
-    //constTest.x() = 0.7;
-    //EXPECT_EQ(0.7, test.x());
-    //constTest.y() = 0.11;
-    //EXPECT_EQ(0.11, test.y());
-    //constTest.z() = 0.13;
-    //EXPECT_EQ(0.13, test.z());
+    // constTest.x() = 0.7;
+    // EXPECT_EQ(0.7, test.x());
+    // constTest.y() = 0.11;
+    // EXPECT_EQ(0.11, test.y());
+    // constTest.z() = 0.13;
+    // EXPECT_EQ(0.13, test.z());
 }
 
 
-TEST(Rotation3, angle)
-{
-
-}
+TEST(Rotation3, angle) {}
 
 
-TEST(Rotation3, axis)
-{
-
-}
+TEST(Rotation3, axis) {}
 
 
-TEST(Rotation3, inverse)
-{
-
-}
+TEST(Rotation3, inverse) {}
 
 
-TEST(Rotation3, composition)
-{
-
-}
+TEST(Rotation3, composition) {}
 
 
 TEST(MapOfRotation3, construction)
@@ -154,7 +135,6 @@ TEST(MapOfRotation3, construction)
     EXPECT_EQ(0.1, map.x());
     data[0] = 0.4;
     EXPECT_EQ(0.4, map.x());
-
 }
 
 
@@ -170,8 +150,8 @@ TEST(Assignment, RotationAndMap)
     std::array<double, 3> data = {0.1, 0.2, 0.3};
     Eigen::Map<Rotation3<double>> map(data.data());
     Eigen::Map<const Rotation3<double>> constMap(data.data());
-    Rotation3<double> rot3(kPi<double>/2.0, Eigen::Vector3d::UnitZ());
-    Rotation3<double> rot4(kPi<double>/2.0, Eigen::Vector3d::UnitZ());
+    Rotation3<double> rot3(kPi<double> / 2.0, Eigen::Vector3d::UnitZ());
+    Rotation3<double> rot4(kPi<double> / 2.0, Eigen::Vector3d::UnitZ());
 
     rot3 = map;
     rot4 = constMap;

@@ -9,7 +9,6 @@
 
 namespace naksh::messages
 {
-
 class MsgBase
 {
 public:

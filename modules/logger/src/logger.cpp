@@ -12,7 +12,6 @@ namespace naksh::logger
 {
 namespace
 {
-
 namespace fs = std::filesystem;
 using std::chrono::system_clock;
 

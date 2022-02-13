@@ -16,7 +16,6 @@ namespace naksh::logger
 {
 namespace
 {
-
 constexpr const long int kNumBytes = 1024 * 1024;
 
 }

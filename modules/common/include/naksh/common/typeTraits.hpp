@@ -12,7 +12,6 @@
 
 namespace naksh::common
 {
-
 /// @brief  SFINAE based helper type to determine if the InstanceType is template
 ///         specialization of the TemplateType. This declaration represents the
 ///         general case when an InstanceType is not actually a specialization of

@@ -9,7 +9,6 @@
 
 namespace naksh::messages
 {
-
 MsgBase::MsgBase() = default;
 
 MsgBase::~MsgBase() = default;

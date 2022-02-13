@@ -12,7 +12,6 @@
 
 namespace naksh::messages
 {
-
 TEST(MessagesTest, MessageIdentityChecks)
 {
     static_assert(Msg<Sample1>::kMsgHandle == Sample1::_capnpPrivate::typeId);

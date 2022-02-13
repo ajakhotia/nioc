@@ -11,7 +11,6 @@
 
 namespace naksh::logger
 {
-
 TEST(LoggerTest, ConstructionTest)
 {
     Logger logger;

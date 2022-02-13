@@ -12,7 +12,6 @@
 
 namespace naksh::geometry
 {
-
 /// @brief  Base class to provide necessary interface for geometric transformation.
 /// @tparam ParentFrame
 /// @tparam ChildFrame
@@ -38,8 +37,10 @@ public:
     }
 
 
-    /// @brief  Constructor for when the parent frame is known statically but the child frame is dynamic.
-    /// @tparam ChildConceptArgs    Argument type to initialize the child frame. Typically this is either a
+    /// @brief  Constructor for when the parent frame is known statically but the child frame is
+    /// dynamic.
+    /// @tparam ChildConceptArgs    Argument type to initialize the child frame. Typically this is
+    /// either a
     ///                             std::string("...") or DynamicFrame("...")
     /// @tparam ParentFrame
     /// @tparam ChildFrame
@@ -55,9 +56,10 @@ public:
     }
 
 
-    /// @brief  Constructor for when the parent frame is dynamic but the child frame is known statically.
-    /// @tparam ParentConceptArgs   Argument type to initialize the parent frame. Typically this is either a
-    ///                             std::string("...") or DynamicFrame("...")
+    /// @brief  Constructor for when the parent frame is dynamic but the child frame is known
+    ///         statically.
+    /// @tparam ParentConceptArgs   Argument type to initialize the parent frame. Typically this is
+    ///                             either a std::string("...") or DynamicFrame("...")
     /// @tparam ParentFrame
     /// @tparam ChildFrame
     template<
@@ -73,10 +75,10 @@ public:
 
 
     /// @brief  Constructor for when both the parent and the child frame are known dynamically.
-    /// @tparam ParentConceptArgs   Argument type to initialize the parent frame. Typically this is either a
-    ///                             std::string("...") or DynamicFrame("...")
-    /// @tparam ChildConceptArgs    Argument type to initialize the child frame. Typically this is either a
-    ///                             std::string("...") or DynamicFrame("...")
+    /// @tparam ParentConceptArgs   Argument type to initialize the parent frame. Typically this is
+    ///                             either a std::string("...") or DynamicFrame("...")
+    /// @tparam ChildConceptArgs    Argument type to initialize the child frame. Typically this is
+    ///                             either a std::string("...") or DynamicFrame("...")
     /// @tparam ParentFrame
     /// @tparam ChildFrame
     template<typename ParentConceptArgs,
@@ -110,7 +112,6 @@ public:
 
 namespace helpers
 {
-
 std::string frameCompositionErrorMessage(const std::string& lhsFrameName,
                                          const std::string& rhsFrameName);
 

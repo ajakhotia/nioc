@@ -9,7 +9,6 @@
 
 namespace naksh::common
 {
-
 /// @Class      Locked
 /// @brief      A utility to protect a non-atomic type from access contention.
 ///
@@ -41,16 +40,21 @@ namespace naksh::common
 ///
 ///             - Pro-tip:
 ///                 To make code easy and more readable, leverage placeholder type
-///                 specifier to define the lambdas as in examples below.
+///                 specifier(auto) to define the lambdas as in examples below.
 ///
 ///                 Read only / const versions:
-///                     Access by const-reference:  [](const auto& value){ doSomething(); return somethingOrNot(); }
-///                     Access by const-value:      [](const auto value){ doSomething(); return somethingOrNot(); }
-///                     Access by value:            [](auto value){ doSomething(); return somethingOrNot(); }
+///                     Access by const-reference:
+///                         [](const auto& value){ doSomething(); return somethingOrNot(); }
+///                     Access by const-value:
+///                         [](const auto value){ doSomething(); return somethingOrNot(); }
+///                     Access by value:
+///                         [](auto value){ doSomething(); return somethingOrNot(); }
 ///
 ///                 Read write / non-const versions:
-///                     Access by l-reference:      [](auto& value){ doSomething(); return somethingOrNot(); }
-///                     Access by r-reference:      [](auto&& value){ doSomething(); return somethingOrNot(); }
+///                     Access by l-reference:
+///                         [](auto& value){ doSomething(); return somethingOrNot(); }
+///                     Access by r-reference:
+///                         [](auto&& value){ doSomething(); return somethingOrNot(); }
 ///
 /// @tparam     ValueType_  Type of the underlying variable. Any const qualifiers
 ///                         specifiers are discarded.
@@ -329,8 +333,8 @@ constexpr bool operator<(const Other& otherValue, const Locked<ValueType>& locke
 /// @tparam Other       Type of the other operand that is comparable with ValueType.
 /// @param  lockedValue LHS operand.
 /// @param  otherValue  RHS operand.
-/// @return true if the underlying value of the lockedValue is lesser than or equal to the otherValue,
-///         false otherwise.
+/// @return true if the underlying value of the lockedValue is lesser than or equal to the
+///         otherValue, false otherwise.
 template<typename ValueType, typename Other>
 constexpr bool operator<=(const Locked<ValueType>& lockedValue, const Other& otherValue)
 {
@@ -343,8 +347,8 @@ constexpr bool operator<=(const Locked<ValueType>& lockedValue, const Other& oth
 /// @tparam ValueType   Type of the other operand that is comparable with ValueType.
 /// @param  otherValue  LHS operand.
 /// @param  lockedValue RHS operand.
-/// @return true if the otherValue is lesser than or equal to the underlying value of the lockedValue,
-///         false otherwise.
+/// @return true if the otherValue is lesser than or equal to the underlying value of the
+///         lockedValue, false otherwise.
 template<typename Other, typename ValueType>
 constexpr bool operator<=(const Other& otherValue, const Locked<ValueType>& lockedValue)
 {
@@ -399,8 +403,8 @@ constexpr bool operator>=(const Locked<ValueType>& lockedValue, const Other& oth
 /// @tparam ValueType   Type of the other operand that is comparable with ValueType.
 /// @param  otherValue  LHS operand.
 /// @param  lockedValue RHS operand.
-/// @return true if the otherValue is greater than or equal to the underlying value of the lockedValue,
-///         false otherwise.
+/// @return true if the otherValue is greater than or equal to the underlying value of the
+///         lockedValue, false otherwise.
 template<typename Other, typename ValueType>
 constexpr bool operator>=(const Other& otherValue, const Locked<ValueType>& lockedValue)
 {

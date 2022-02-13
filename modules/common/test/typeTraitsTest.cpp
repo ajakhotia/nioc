@@ -13,7 +13,6 @@
 
 namespace naksh::common
 {
-
 TEST(TypeTraits, IsSpecialization)
 {
     static_assert(IsSpecialization<std::vector<int>, std::vector>::value);

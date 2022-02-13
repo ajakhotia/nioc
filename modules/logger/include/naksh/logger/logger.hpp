@@ -10,8 +10,6 @@
 
 namespace naksh::logger
 {
-
-
 class Logger
 {
 public:

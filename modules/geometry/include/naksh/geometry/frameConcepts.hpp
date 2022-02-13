@@ -6,12 +6,11 @@
 #pragma once
 
 #include "frame.hpp"
+
 #include <naksh/common/typeTraits.hpp>
 
 namespace naksh::geometry
 {
-
-
 /// @brief  A class representing the concept of a parent frame.
 /// @tparam ParentFrame_ Compile time identity of the frame.
 template<typename ParentFrame_>
@@ -20,8 +19,8 @@ class ParentConceptTmpl
 public:
     using ParentFrame = ParentFrame_;
 
-    static_assert(common::isSpecialization<ParentFrame , StaticFrame>,
-        "Parent frame is not a template specialization of StaticFrame<> class.");
+    static_assert(common::isSpecialization<ParentFrame, StaticFrame>,
+                  "Parent frame is not a template specialization of StaticFrame<> class.");
 
     virtual ~ParentConceptTmpl() = default;
 
@@ -40,7 +39,7 @@ class ChildConceptTmpl
 public:
     using ChildFrame = ChildFrame_;
 
-    static_assert(common::isSpecialization<ChildFrame , StaticFrame>,
+    static_assert(common::isSpecialization<ChildFrame, StaticFrame>,
                   "Child frame is not a template specialization of StaticFrame<> class.");
 
     virtual ~ChildConceptTmpl() = default;
@@ -60,7 +59,8 @@ public:
     using ParentFrame = DynamicFrame;
 
     template<typename ParentFrameArgs>
-    explicit ParentConceptTmpl(ParentFrameArgs parentFrameArgs) noexcept: mParentFrame(std::move(parentFrameArgs))
+    explicit ParentConceptTmpl(ParentFrameArgs parentFrameArgs) noexcept:
+        mParentFrame(std::move(parentFrameArgs))
     {
     }
 
@@ -89,7 +89,8 @@ public:
     using ChildFrame = DynamicFrame;
 
     template<typename ChildFrameArgs>
-    explicit ChildConceptTmpl(ChildFrameArgs childFrameArgs) noexcept: mChildFrame(std::move(childFrameArgs))
+    explicit ChildConceptTmpl(ChildFrameArgs childFrameArgs) noexcept:
+        mChildFrame(std::move(childFrameArgs))
     {
     }
 

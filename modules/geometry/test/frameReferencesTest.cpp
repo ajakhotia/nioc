@@ -11,7 +11,6 @@
 
 namespace naksh::geometry
 {
-
 class AlphaCentauri;
 class Jupiter;
 class Pluto;
@@ -41,7 +40,7 @@ TEST(FrameReferences, StaticParentDynamicChild)
 
     {
         static_assert(SaturnFromDynamic::ParentFrame::name() == "naksh::geometry::Saturn");
-        //static_assert(SaturnFromDynamic::ChildFrame::name() == "");
+        // static_assert(SaturnFromDynamic::ChildFrame::name() == "");
     }
 
     {
@@ -64,7 +63,7 @@ TEST(FrameReferences, DynamicParentStaticChild)
     EXPECT_NO_THROW(DynamicFromJupiter("DynamicMars"));
 
     {
-        //static_assert(DynamicFromJupiter::ParentFrame::name() == "");
+        // static_assert(DynamicFromJupiter::ParentFrame::name() == "");
         static_assert(DynamicFromJupiter::ChildFrame::name() == "naksh::geometry::Jupiter");
     }
 
@@ -88,8 +87,8 @@ TEST(FrameReferences, DynamicParentDynamicChild)
     EXPECT_NO_THROW(DynamicFromDynamic("DynamicMars", "DynamicNeptune"));
 
     {
-        //static_assert(DynamicFromDynamic::ParentFrame::name() == "");
-        //static_assert(DynamicFromDynamic::ChildFrame::name() == "");
+        // static_assert(DynamicFromDynamic::ParentFrame::name() == "");
+        // static_assert(DynamicFromDynamic::ChildFrame::name() == "");
     }
 
     {
@@ -110,7 +109,6 @@ TEST(FrameReferences, DynamicParentDynamicChild)
 
 namespace helpers
 {
-
 TEST(assertFrameEqual, StaticLhsStaticRhs)
 {
     EXPECT_NO_THROW((assertFrameEqual<StaticFrame<Sun>, StaticFrame<Sun>>()));

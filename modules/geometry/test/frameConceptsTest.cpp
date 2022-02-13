@@ -6,12 +6,11 @@
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "cert-err58-cpp"
 
-#include <naksh/geometry/frameConcepts.hpp>
 #include <gtest/gtest.h>
+#include <naksh/geometry/frameConcepts.hpp>
 
 namespace naksh::geometry
 {
-
 class Earth;
 class Mars;
 

@@ -10,7 +10,6 @@
 
 namespace naksh::geometry
 {
-
 template<typename ParentFrame, typename ChildFrame, typename Scalar_ = double>
 class RigidTransform: public FrameReferences<ParentFrame, ChildFrame>
 {

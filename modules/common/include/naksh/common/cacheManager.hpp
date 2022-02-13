@@ -9,8 +9,6 @@
 
 namespace naksh::common
 {
-
-
 /// @brief  Manages an implementation of CacheBase. This class hides the cache implementation
 ///         privately and checks for the validity of the cache and resets if the check return
 ///         false.

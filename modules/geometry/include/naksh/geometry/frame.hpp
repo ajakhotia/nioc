@@ -10,13 +10,12 @@
 
 namespace naksh::geometry
 {
-
-
 /// @brief  A class representing a static reference frame.
 ///
 ///         @usage
 ///             You may either declare (definition is not required) a new type or use an already
-///             existing type that meaningfully represents the frame of reference. Eg. LeftCamera, IMUDriver, etc.
+///             existing type that meaningfully represents the frame of reference. Eg. LeftCamera,
+///             IMUDriver, etc.
 ///
 ///             class World;
 ///
@@ -32,9 +31,8 @@ public:
 
     /// Assert that the FrameId is not a specialization of StaticFrame. This is
     /// done to avoid nesting specialization such as StaticFrame<StaticFrame<...>>.
-    static_assert(
-        not(common::isSpecialization<FrameId, StaticFrame>),
-        "FrameId cannot be a specialization of the StaticFrame<> template.");
+    static_assert(not(common::isSpecialization<FrameId, StaticFrame>),
+                  "FrameId cannot be a specialization of the StaticFrame<> template.");
 
     /// Deleted destructor to prevent runtime instantiation for a static frame
     ~StaticFrame() = delete;

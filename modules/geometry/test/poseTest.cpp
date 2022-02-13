@@ -16,7 +16,6 @@ namespace naksh::geometry
 {
 namespace
 {
-
 const auto kAngleAxisD1 = Eigen::AngleAxisd(kPi<double> / 2.0, Eigen::Vector3d::UnitZ());
 const auto kAngleAxisF1 = Eigen::AngleAxisf(kPi<float> / 2.f, Eigen::Vector3f::UnitZ());
 const auto kQuaternionD1 = Eigen::Quaterniond(kAngleAxisD1);
@@ -107,7 +106,7 @@ TEST(Pose, ConstructionFromParamterSpan)
         const std::array<double, 7> paramArray = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7};
         auto paramSpan = std::span(paramArray.data(), paramArray.size());
 
-        //EXPECT_NO_THROW((Pose<double>(paramSpan)));
+        // EXPECT_NO_THROW((Pose<double>(paramSpan)));
 
         const Pose<double> test(paramSpan);
         poseParamCheck(test, paramArray, test_info_->name());
@@ -117,7 +116,7 @@ TEST(Pose, ConstructionFromParamterSpan)
         std::array<float, 7> paramArray = {0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f};
         auto paramSpan = std::span<float>(paramArray.data(), paramArray.size());
 
-        //EXPECT_NO_THROW((Pose<float>(paramSpan)));
+        // EXPECT_NO_THROW((Pose<float>(paramSpan)));
 
         const Pose<float> test(paramSpan);
         poseParamCheck(test, paramArray, test_info_->name());
@@ -127,7 +126,7 @@ TEST(Pose, ConstructionFromParamterSpan)
         std::array<double, 6> paramArray = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6};
         auto paramSpan = std::span(paramArray.data(), paramArray.size());
 
-        //EXPECT_THROW((Pose<double>(paramSpan)), std::invalid_argument);
+        // EXPECT_THROW((Pose<double>(paramSpan)), std::invalid_argument);
     }
 }
 

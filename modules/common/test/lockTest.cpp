@@ -13,7 +13,6 @@ namespace naksh::common
 {
 namespace
 {
-
 // A lambda function to extract value from pointer types.
 const auto valueExtractorHelper = [](const auto& value)
 {

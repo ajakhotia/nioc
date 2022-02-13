@@ -9,8 +9,6 @@
 
 namespace naksh::messages
 {
-
-
 template<typename SerializableType_>
 class Msg final: public MsgBase
 {

@@ -11,7 +11,6 @@
 
 namespace naksh::example
 {
-
 TEST(ExampleTest, Construction)
 {
     const Example example("TestExample");

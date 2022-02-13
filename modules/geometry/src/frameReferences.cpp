@@ -8,7 +8,6 @@
 
 namespace naksh::geometry::helpers
 {
-
 std::string frameCompositionErrorMessage(const std::string& lhsFrameName,
                                          const std::string& rhsFrameName)
 {

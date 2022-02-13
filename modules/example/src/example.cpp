@@ -26,7 +26,6 @@
 
 namespace naksh::example
 {
-
 Example::Example(): mName()
 {
     // PrivateExample type declared and defined in the private header examplePrivateHeader.hpp
