@@ -15,6 +15,8 @@ if((TARGET GTest::GTest) AND (TARGET GTest::Main))
     include(CTest)
 endif()
 
+include(cmake/clangFormat.cmake)
+add_clang_format(TARGET nakshClangFormat VERSION 12)
 
 include(cmake/exportedTargets.cmake)
 include(cmake/capnprotoGenerate.cmake)
