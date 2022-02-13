@@ -54,6 +54,4 @@ function(add_clang_format)
             COMMENT
                 "Formatting files in ${PROJECT_SOURCE_DIR} using clang format at
                 : ${CLANG_FORMAT}")
-
-
 endfunction()
