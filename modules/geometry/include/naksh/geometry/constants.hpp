@@ -1,0 +1,13 @@
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Copyright (c) 2022.                                                                             /
+// Project  : Naksh                                                                                /
+// Author   : Anurag Jakhotia                                                                      /
+////////////////////////////////////////////////////////////////////////////////////////////////////
+#pragma once
+
+#include <cmath>
+
+/// @brief  Provide access to pi in a modern C++ style.
+/// @tparam Scalar  Scalar type to use.
+template<typename Scalar>
+constexpr const auto kPi = Scalar(M_PI);

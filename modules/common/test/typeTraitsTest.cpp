@@ -1,0 +1,45 @@
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Copyright (c) 2021.                                                                             /
+// Project  : Naksh                                                                                /
+// Author   : Anurag Jakhotia                                                                      /
+////////////////////////////////////////////////////////////////////////////////////////////////////
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "cert-err58-cpp"
+
+#include <deque>
+#include <gtest/gtest.h>
+#include <naksh/common/typeTraits.hpp>
+#include <vector>
+
+namespace naksh::common
+{
+TEST(TypeTraits, IsSpecialization)
+{
+    static_assert(IsSpecialization<std::vector<int>, std::vector>::value);
+    static_assert(not(IsSpecialization<std::vector<int>, std::deque>::value));
+    static_assert(isSpecialization<std::vector<int>, std::vector>);
+    static_assert(not(isSpecialization<std::vector<int>, std::deque>));
+
+    EXPECT_TRUE(bool(IsSpecialization<std::vector<int>, std::vector>::value));
+    EXPECT_FALSE(bool(IsSpecialization<std::vector<int>, std::deque>::value));
+    EXPECT_TRUE(bool(isSpecialization<std::vector<int>, std::vector>));
+    EXPECT_FALSE(bool(isSpecialization<std::vector<int>, std::deque>));
+}
+
+
+class TestType;
+class AnotherTestType;
+
+
+TEST(TypeTraits, prettyName)
+{
+    static_assert("naksh::common::TestType" == prettyName<TestType>());
+    static_assert("naksh::common::TestType" != prettyName<AnotherTestType>());
+    EXPECT_EQ("naksh::common::TestType", prettyName<TestType>());
+    EXPECT_NE("naksh::common::TestType", prettyName<AnotherTestType>());
+}
+
+
+} // namespace naksh::common
+
+#pragma clang diagnostic pop

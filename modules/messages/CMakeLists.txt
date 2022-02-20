@@ -1,27 +1,50 @@
 find_package(CapnProto REQUIRED)
 
-naksh_capnproto_generate_cpp(Naksh:: messagesIdl
-        include/naksh/messages/idl/sample1.capnp
-        include/naksh/messages/idl/sample2.capnp)
+capnproto_generate_library(
+        TARGET
+            messagesIdl
+        NAMESPACE
+            Naksh::
+        EXPORT
+            nakshTargets
+        SCHEMA_FILES
+            include/naksh/messages/idl/sample1.capnp
+            include/naksh/messages/idl/sample2.capnp
+        COMPILE_FEATURES
+            PUBLIC cxx_std_17
+        COMPILE_OPTIONS
+            PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
+            PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
+        COMPILE_DEFINITIONS
+            "")
 
-add_library(messages SHARED src/messageBase.cpp)
-add_library(Naksh::messages ALIAS messages)
 
-target_include_directories(messages PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include>)
-
-target_compile_features(messages PUBLIC cxx_std_17)
-target_link_libraries(messages PUBLIC CapnProto::capnp CapnProto::kj)
+add_exported_library(
+        TARGET
+            messages
+        NAMESPACE
+            Naksh::
+        EXPORT
+            nakshTargets
+        SOURCES
+            src/msgBase.cpp
+        HEADERS
+            PUBLIC include/naksh/messages/msg.hpp
+            PUBLIC include/naksh/messages/msgBase.hpp
+        INCLUDE_DIRECTORIES
+            ${CMAKE_CURRENT_SOURCE_DIR}/include
+        LINK_LIBRARIES
+            PRIVATE CapnProto::capnp
+            PRIVATE CapnProto::kj
+        COMPILE_FEATURES
+            PUBLIC cxx_std_17
+        COMPILE_OPTIONS
+            PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
+            PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
+        COMPILE_DEFINITIONS
+            "")
 
 
 if(BUILD_TESTING)
     add_subdirectory(test)
 endif()
-
-
-install(DIRECTORY include/
-        DESTINATION include
-        FILES_MATCHING PATTERN "*.hpp")
-
-install(TARGETS messages EXPORT nakshTargets)

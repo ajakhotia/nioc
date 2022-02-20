@@ -1,20 +1,16 @@
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2021.                                                                                                 /
-// Project  : Naksh                                                                                                    /
-// Author   : Anurag Jakhotia                                                                                          /
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Copyright (c) 2021.                                                                             /
+// Project  : Naksh                                                                                /
+// Author   : Anurag Jakhotia                                                                      /
+////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
 namespace naksh::example
 {
-
 class PrivateExample
 {
 public:
-    explicit PrivateExample(const int value): mValue(value)
-    {
-    }
+    explicit PrivateExample(const int value): mValue(value) {}
 
     PrivateExample(const PrivateExample&) = default;
 
@@ -35,4 +31,4 @@ private:
     int mValue;
 };
 
-} // End of namespace naksh::example.
+} // namespace naksh::example

@@ -1,6 +1,33 @@
-find_package(CapnProto REQUIRED)
+include(${CMAKE_CURRENT_LIST_DIR}/exportedTargets.cmake)
 
-function(naksh_capnproto_generate_cpp TARGET_NAMESPACE TARGET_NAME)
+function(capnproto_generate_library)
+
+    set(OPTIONS_ARGUMENTS "")
+
+    set(SINGLE_VALUE_ARGUMENTS
+            TARGET
+            TYPE
+            NAMESPACE
+            EXPORT)
+
+    set(MULTI_VALUE_ARGUMENTS
+            SCHEMA_FILES
+            COMPILE_FEATURES
+            COMPILE_OPTIONS
+            COMPILE_DEFINITIONS)
+
+    cmake_parse_arguments("CGL_PARAM"
+            "${OPTIONS_ARGUMENTS}"
+            "${SINGLE_VALUE_ARGUMENTS}"
+            "${MULTI_VALUE_ARGUMENTS}"
+            ${ARGN})
+
+    if(NOT CGL_PARAM_SCHEMA_FILES)
+        message(FATAL_ERROR "No schema files were provided. Skipping generation.")
+    endif()
+
+    # Locate the Cap'n proto package
+    find_package(CapnProto REQUIRED)
 
     # Acquire the paths to capnp tool, run-time library and interface directory.
     get_target_property(CAPNP_TOOL_PATH CapnProto::capnp_tool LOCATION)
@@ -10,7 +37,7 @@ function(naksh_capnproto_generate_cpp TARGET_NAMESPACE TARGET_NAME)
     get_filename_component(CAPNP_PATH ${CAPNP_TOOL_PATH} DIRECTORY)
     get_filename_component(CAPNP_LIBRARY_PATH ${CAPNP_TOOL_RUNTIME_LIBRARY_PATH} DIRECTORY)
 
-    foreach(SCHEMA_FILE_PATH ${ARGN})
+    foreach(SCHEMA_FILE_PATH ${CGL_PARAM_SCHEMA_FILES})
 
         # Build absolute and relative paths from the current source directory to the schema file.
         get_filename_component(SCHEMA_FILE_ABSOLUTE_PATH ${SCHEMA_FILE_PATH} ABSOLUTE)
@@ -37,6 +64,7 @@ function(naksh_capnproto_generate_cpp TARGET_NAMESPACE TARGET_NAME)
                     LD_LIBRARY_PATH=${CAPNP_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}
                     ${CAPNP_TOOL_PATH}
                     compile
+                    --no-standard-import
                     --import-path=${CAPNP_INTERFACE_DIRECTORY}
                     --output=c++:${CMAKE_CURRENT_BINARY_DIR}/include
                     --src-prefix=${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -50,25 +78,34 @@ function(naksh_capnproto_generate_cpp TARGET_NAMESPACE TARGET_NAME)
                     "Compiling capnp schema at ${SCHEMA_FILE_ABSOLUTE_PATH}"
                 VERBATIM)
 
-        list(APPEND SCHEMA_SOURCE_FILENAME_LIST ${SCHEMA_SOURCE_FILENAME})
+        file(RELATIVE_PATH SCHEMA_HEADER_RELATIVE_PATH ${CMAKE_CURRENT_BINARY_DIR} ${SCHEMA_HEADER_FILENAME})
 
+        list(APPEND SCHEMA_SOURCE_FILENAME_LIST ${SCHEMA_SOURCE_FILENAME})
+        list(APPEND SCHEMA_HEADER_FILENAME_LIST ${SCHEMA_HEADER_RELATIVE_PATH})
     endforeach()
 
-    # Build a shared library from the generated code.
-    add_library(${TARGET_NAME} SHARED ${SCHEMA_SOURCE_FILENAME_LIST})
-    add_library(${TARGET_NAMESPACE}${TARGET_NAME} ALIAS ${TARGET_NAME})
-
-    target_include_directories(${TARGET_NAME} PUBLIC
-            $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
-            $<INSTALL_INTERFACE:include>)
-
-    target_link_libraries(${TARGET_NAME} PUBLIC CapnProto::capnp)
-
-
-    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/
-            DESTINATION include
-            FILES_MATCHING PATTERN "*.capnp.h")
-
-    install(TARGETS ${TARGET_NAME} EXPORT nakshTargets)
+    add_exported_library(
+            TARGET
+                ${CGL_PARAM_TARGET}
+            TYPE
+                ${CGL_PARAM_TYPE}
+            NAMESPACE
+                ${CGL_PARAM_NAMESPACE}
+            EXPORT
+                ${CGL_PARAM_EXPORT}
+            SOURCES
+                ${SCHEMA_SOURCE_FILENAME_LIST}
+            HEADERS
+                PUBLIC ${SCHEMA_HEADER_FILENAME_LIST}
+            INCLUDE_DIRECTORIES
+                ${CMAKE_CURRENT_BINARY_DIR}/include
+            LINK_LIBRARIES
+                PUBLIC CapnProto::capnp
+            COMPILE_FEATURES
+                ${CGL_PARAM_COMPILE_FEATURES}
+            COMPILE_OPTIONS
+                ${CGL_PARAM_COMPILE_OPTIONS}
+            COMPILE_DEFINITIONS
+                ${CGL_PARAM_COMPILE_DEFINITIONS})
 
 endfunction()
