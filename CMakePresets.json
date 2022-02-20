@@ -73,7 +73,7 @@
             "cacheVariables": {
                 "CMAKE_PREFIX_PATH": {
                     "type": "LIST",
-                    "value": "$env{HOME}/usr"
+                    "value": "$env{HOME}/usr/gnu-11"
                 },
                 "CMAKE_INSTALL_PREFIX": {
                     "type": "PATH",
