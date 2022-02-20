@@ -33,6 +33,11 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${naksh_SOURCE_DIR})
     add_subdirectory(external)
 endif()
 
+find_program(CLANG_TIDY clang-tidy-14 REQUIRED NO_CACHE)
+
+if(CLANG_TIDY)
+    message(STATUS "Found clang-tidy at ${CLANG_TIDY}")
+endif()
 
 add_subdirectory(modules)
 add_subdirectory(docker)
