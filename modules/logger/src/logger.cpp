@@ -55,7 +55,8 @@ fs::path checkAndSetupLogDirectory(fs::path logRoot)
 Logger::Logger(std::filesystem::path logRoot, const size_t fileSize):
     mLogDirectory(checkAndSetupLogDirectory(std::move(logRoot))), mFileSize(fileSize)
 {
-    spdlog::info("[Logger] Logging to {}.", mLogDirectory.string());
+    spdlog::info(
+        "[Logger] Logging to {} with unit file size {}.", mLogDirectory.string(), mFileSize);
 }
 
 
