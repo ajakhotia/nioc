@@ -1,7 +1,6 @@
 ---
 Checks: '
     clang-diagnostic-*,
-    -clang-diagnostic-c++17-extensions,
     clang-analyzer-*,
     android-*,
     bugprone-*,

@@ -37,7 +37,7 @@ add_exported_library(
             PRIVATE Naksh::loggerIdl
             PRIVATE spdlog::spdlog
         COMPILE_FEATURES
-            PUBLIC cxx_std_17
+            PUBLIC cxx_std_20
         COMPILE_OPTIONS
             PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
             PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
