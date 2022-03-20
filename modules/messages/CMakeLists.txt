@@ -13,8 +13,9 @@ capnproto_generate_library(
         COMPILE_FEATURES
             PUBLIC cxx_std_17
         COMPILE_OPTIONS
-            PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
+            PRIVATE $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
             PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
+            PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
         COMPILE_DEFINITIONS
             "")
 
@@ -39,8 +40,9 @@ add_exported_library(
         COMPILE_FEATURES
             PUBLIC cxx_std_17
         COMPILE_OPTIONS
-            PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
+            PRIVATE $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
             PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
+            PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
         COMPILE_DEFINITIONS
             "")
 

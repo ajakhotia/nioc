@@ -1,3 +1,7 @@
+if(NOT BUILD_SHARED_LIBS)
+    set(Boost_USE_STATIC_RUNTIME ON)
+endif()
+
 find_package(Boost REQUIRED COMPONENTS iostreams)
 find_package(spdlog REQUIRED)
 
@@ -13,8 +17,9 @@ capnproto_generate_library(
         COMPILE_FEATURES
             PUBLIC cxx_std_17
         COMPILE_OPTIONS
-            PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
+            PRIVATE $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
             PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
+            PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
         COMPILE_DEFINITIONS
             "")
 
@@ -39,8 +44,9 @@ add_exported_library(
         COMPILE_FEATURES
             PUBLIC cxx_std_20
         COMPILE_OPTIONS
-            PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
+            PRIVATE $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
             PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
+            PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
         COMPILE_DEFINITIONS
             "")
 
