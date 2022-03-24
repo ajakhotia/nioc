@@ -15,12 +15,14 @@ class Logger
 public:
     static constexpr auto kDefaultFileSize = 128ULL * 1024ULL * 1024ULL;
 
+    using ChannelId = std::uint64_t;
+
     /// @brief Constructor
     /// @param logRoot      Root directory to store the log at. The log is written to a child
     ///                     directory with the local date and time as the directory name.
     ///
     /// @param fileSize     Size of files allocated to store the data.
-    explicit Logger(std::filesystem::path logRoot = "/tmp/unnamedNakshLogs",
+    explicit Logger(std::filesystem::path logRoot = "/tmp/nakshLogs",
                     size_t fileSize = kDefaultFileSize);
 
     Logger(const Logger&) = delete;
@@ -40,7 +42,7 @@ private:
 
     const size_t mFileSize;
 
-    // std::unordered_map<size_t, Channel> mChannelMap;
+    // std::unordered_map<ChannelId, Channel> mChannelMap;
 };
 
 } // namespace naksh::logger

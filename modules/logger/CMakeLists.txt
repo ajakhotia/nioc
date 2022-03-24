@@ -6,49 +6,51 @@ find_package(Boost REQUIRED COMPONENTS iostreams)
 find_package(spdlog REQUIRED)
 
 capnproto_generate_library(
-        TARGET
-            loggerIdl
-        NAMESPACE
-            Naksh::
-        EXPORT
-            nakshTargets
-        SCHEMA_FILES
-            include/naksh/logger/idl/frame.capnp
-        COMPILE_FEATURES
-            PUBLIC cxx_std_17
-        COMPILE_OPTIONS
-            PRIVATE $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
-            PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
+    TARGET
+        loggerIdl
+    NAMESPACE
+        Naksh::
+    EXPORT
+        nakshTargets
+    SCHEMA_FILES
+        include/naksh/logger/idl/frame.capnp
+    COMPILE_FEATURES
+        PUBLIC cxx_std_17
+    COMPILE_OPTIONS
+        PRIVATE $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
+        PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
             PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
-        COMPILE_DEFINITIONS
-            "")
+    COMPILE_DEFINITIONS
+        "")
 
 
 add_exported_library(
-        TARGET
-            logger
-        NAMESPACE
-            Naksh::
-        EXPORT
-            nakshTargets
-        SOURCES
-            src/logger.cpp
-        HEADERS
-            PUBLIC include/naksh/logger/logger.hpp
-        INCLUDE_DIRECTORIES
-            ${CMAKE_CURRENT_SOURCE_DIR}/include
-        LINK_LIBRARIES
-            PRIVATE Boost::iostreams
-            PRIVATE Naksh::loggerIdl
-            PRIVATE spdlog::spdlog
-        COMPILE_FEATURES
-            PUBLIC cxx_std_20
-        COMPILE_OPTIONS
-            PRIVATE $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
-            PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
-            PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
-        COMPILE_DEFINITIONS
-            "")
+    TARGET
+        logger
+    NAMESPACE
+        Naksh::
+    EXPORT
+        nakshTargets
+    SOURCES
+        src/logger.cpp
+        src/channel.cpp
+    HEADERS
+        PUBLIC include/naksh/logger/channel.hpp
+        PUBLIC include/naksh/logger/logger.hpp
+    INCLUDE_DIRECTORIES
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+    LINK_LIBRARIES
+        PRIVATE Boost::iostreams
+        PRIVATE Naksh::loggerIdl
+        PRIVATE spdlog::spdlog
+    COMPILE_FEATURES
+        PUBLIC cxx_std_20
+    COMPILE_OPTIONS
+        PRIVATE $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
+        PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
+        PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
+    COMPILE_DEFINITIONS
+        "")
 
 if(CLANG_TIDY)
     set_target_properties(logger PROPERTIES CXX_CLANG_TIDY ${CLANG_TIDY})
