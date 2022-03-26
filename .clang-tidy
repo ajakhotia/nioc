@@ -15,6 +15,7 @@ Checks: '
     performance-*,
     portability-*,
     readability-*,
+    -readability-redundant-member-init,
 '
 
 WarningsAsErrors: '

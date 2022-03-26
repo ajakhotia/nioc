@@ -39,18 +39,48 @@ fs::path checkAndSetupLogDirectory(fs::path logRoot)
 } // End of anonymous namespace.
 
 
-Logger::Logger(std::filesystem::path logRoot, const size_t fileSize):
-    mLogDirectory(checkAndSetupLogDirectory(std::move(logRoot))), mFileSize(fileSize)
+Logger::Logger(std::filesystem::path logRoot, const size_t maxFileSizeInBytes):
+    mLogDirectory(checkAndSetupLogDirectory(std::move(logRoot))),
+    mMaxFileSizeInBytes(maxFileSizeInBytes),
+    mLockedChannelPtrMap()
 {
-    spdlog::info(
-        "[Logger] Logging to {} with unit file size {}.", mLogDirectory.string(), mFileSize);
+    spdlog::info("[Logger] Logging to {} with unit file size {}.",
+                 mLogDirectory.string(),
+                 mMaxFileSizeInBytes);
 }
 
 
-void Logger::write(const size_t /* channelId */,
-                   const size_t /* bufferLength */,
-                   const void* /* bufferPtr */)
+void Logger::write(const ChannelId channelId, const std::span<const std::byte>& data)
 {
+    auto& lockedChannel = acquireChannel(channelId);
+    lockedChannel([&](Channel& channel) { channel.writeFrame(data); });
 }
+
+
+void Logger::write(ChannelId channelId, const std::vector<std::span<const std::byte>>& data)
+{
+    auto& lockedChannel = acquireChannel(channelId);
+    lockedChannel([&](Channel& channel) { channel.writeFrame(data); });
+}
+
+
+Logger::LockedChannel& Logger::acquireChannel(ChannelId channelId)
+{
+    return mLockedChannelPtrMap(
+        [&](ChannelPtrMap& channelPtrMap) -> LockedChannel&
+        {
+            if(not channelPtrMap.contains(channelId))
+            {
+                channelPtrMap.try_emplace(
+                    channelId,
+                    std::make_unique<LockedChannel>(
+                        mLogDirectory / toHexString(channelId),
+                        mMaxFileSizeInBytes));
+            }
+
+            return *channelPtrMap.at(channelId);
+        });
+}
+
 
 } // End of namespace naksh::logger

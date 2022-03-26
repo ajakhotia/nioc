@@ -8,6 +8,7 @@
 #include <chrono>
 #include <fstream>
 #include <span>
+#include <spdlog/fmt/fmt.h>
 #include <vector>
 
 namespace naksh::logger
@@ -37,6 +38,17 @@ std::string timeAsFormattedString(std::chrono::system_clock::time_point timePoin
 /// @param  paddingChar     The character used to pad the input. [Default: '0' (Zero)]
 /// @return The padded string.
 std::string padString(const std::string& input, uint64_t paddedLength, char paddingChar = '0');
+
+
+/// @brief  Converts an integer to a sting in hexadecimal form(0x.....).
+/// @tparam Integer The integer type.
+/// @param  integer Input.
+/// @return A string containing the integer represented in hexadecimal form.
+template<typename Integer>
+std::string toHexString(const Integer integer)
+{
+    return fmt::format("0x{:x}", integer);
+}
 
 
 /// @brief  Checks if the files has required amount of space before reaching the max size.
