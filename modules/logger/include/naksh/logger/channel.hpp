@@ -5,10 +5,10 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include <cstddef>
-#include <cstdint>
 #include <filesystem>
 #include <fstream>
+#include <span>
+#include <vector>
 
 namespace naksh::logger
 {
@@ -16,10 +16,12 @@ namespace naksh::logger
 class Channel
 {
 public:
-    static constexpr auto kDefaultRolloverLimitBytes = 128ULL * 1024ULL * 1024ULL;
+    static constexpr auto kDefaultMaxFileSizeInBytes = 128ULL * 1024ULL * 1024ULL;
+
+    using ConstByteSpan = std::span<const std::byte>;
 
     explicit Channel(std::filesystem::path logRoot,
-                     std::size_t rollOverLimitBytes = kDefaultRolloverLimitBytes);
+                     std::size_t maxFileSizeInBytes = kDefaultMaxFileSizeInBytes);
 
     Channel(const Channel&) = delete;
 
@@ -31,20 +33,24 @@ public:
 
     Channel& operator=(Channel&&) noexcept = default;
 
-    void write(size_t bufferLength, const void* bufferPtr);
+    void write(const ConstByteSpan& data);
+
+    void write(const std::vector<ConstByteSpan>& dataCollection);
 
 private:
     std::filesystem::path mLogRoot;
 
-    std::size_t mRollOverLimitBytes;
+    std::ofstream mIndexFile;
 
-    std::size_t mRollCounter;
+    std::size_t mMaxFileSizeInBytes;
+
+    ssize_t mRollCounter;
 
     std::ofstream mActiveLogRoll;
 
-    void advanceLogRoll();
+    void rollAndIndex(std::size_t requiredSizeInBytes);
 
-    bool rollHasSpace(size_t spaceRequired);
+    std::filesystem::path nextRollFilePath();
 };
 
 } // namespace naksh::logger

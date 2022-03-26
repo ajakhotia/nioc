@@ -2,7 +2,7 @@ if(NOT BUILD_SHARED_LIBS)
     set(Boost_USE_STATIC_RUNTIME ON)
 endif()
 
-find_package(Boost REQUIRED COMPONENTS iostreams)
+find_package(Boost REQUIRED COMPONENTS headers iostreams)
 find_package(spdlog REQUIRED)
 
 capnproto_generate_library(
@@ -34,12 +34,14 @@ add_exported_library(
     SOURCES
         src/logger.cpp
         src/channel.cpp
+        src/utils.cpp
     HEADERS
         PUBLIC include/naksh/logger/channel.hpp
         PUBLIC include/naksh/logger/logger.hpp
     INCLUDE_DIRECTORIES
         ${CMAKE_CURRENT_SOURCE_DIR}/include
     LINK_LIBRARIES
+        PRIVATE Boost::headers
         PRIVATE Boost::iostreams
         PRIVATE Naksh::loggerIdl
         PRIVATE spdlog::spdlog
