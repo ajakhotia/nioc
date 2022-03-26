@@ -4,8 +4,9 @@
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#include "utils.hpp"
+
 #include <naksh/logger/logger.hpp>
-#include <spdlog/fmt/chrono.h>
 #include <spdlog/spdlog.h>
 
 namespace naksh::logger
@@ -13,24 +14,10 @@ namespace naksh::logger
 namespace
 {
 namespace fs = std::filesystem;
-using std::chrono::system_clock;
-
-
-std::string timeNowAsFormattedString()
-{
-    std::string timeString;
-
-    fmt::format_to(std::back_inserter(timeString),
-                   "{:%Y-%m-%dT%H:%M:%S%z}",
-                   fmt::localtime(system_clock::now()));
-
-    return timeString;
-}
-
 
 fs::path checkAndSetupLogDirectory(fs::path logRoot)
 {
-    logRoot /= (timeNowAsFormattedString());
+    logRoot /= (timeAsFormattedString(std::chrono::system_clock::now()));
 
     if(fs::exists(logRoot))
     {

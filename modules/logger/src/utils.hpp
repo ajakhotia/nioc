@@ -5,6 +5,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
+#include <chrono>
 #include <fstream>
 #include <span>
 #include <vector>
@@ -20,6 +21,12 @@ static constexpr auto kRollFileNameExtension = ".nio";
 
 /// Name of the index file within a channel.
 static constexpr auto kIndexFileName = "index";
+
+
+/// @brief  Converts a system_clock time_point to date-time string formatted per ISO 8601
+/// @param  timePoint   Time point to be converted.
+/// @return Date-time string.
+std::string timeAsFormattedString(std::chrono::system_clock::time_point timePoint);
 
 
 /// @brief  Pads the input string such that the output string is paddedLength long. If the size of

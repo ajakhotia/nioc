@@ -7,9 +7,20 @@
 
 #include <boost/endian.hpp>
 #include <numeric>
+#include <spdlog/fmt/chrono.h>
 
 namespace naksh::logger
 {
+
+std::string timeAsFormattedString(std::chrono::system_clock::time_point timePoint)
+{
+    std::string timeString;
+
+    fmt::format_to(
+        std::back_inserter(timeString), "{:%Y-%m-%dT%H:%M:%S%z}", fmt::localtime(timePoint));
+
+    return timeString;
+}
 
 
 std::string padString(const std::string& input, const uint64_t paddedLength, const char paddingChar)
