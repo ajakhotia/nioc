@@ -13,29 +13,80 @@
 
 namespace naksh::logger
 {
+namespace fs = std::filesystem;
+
 namespace
 {
-constexpr const auto kTestLogDirectoryName = "/tmp/testChannel0x5832651q";
+
+const auto kTestLogDirectoryPath = fs::path("/tmp/testChannel0x5832651q");
+constexpr auto kDataSize = 20;
+constexpr auto kFrameSize = kDataSize + sizeof(uint64_t);
+constexpr auto kMaxFileSizeInBytes = 256;
+constexpr auto kDataIotaStart = 65; // Corresponds to character A in ASCII
+constexpr auto kNumFramesToWrite = 256UL;
+
+
+std::vector<char> generateTestDataFrame()
+{
+    std::vector<char> data(kDataSize);
+    std::iota(data.begin(), data.end(), kDataIotaStart);
+    return data;
+}
 
 }
 
 
-TEST(channelTest, ConstructionTest)
+TEST(Channel, construction)
 {
-    std::filesystem::remove_all(kTestLogDirectoryName);
+    fs::remove_all(kTestLogDirectoryPath);
 
-    std::vector<char> data(20);
-    std::iota(data.begin(), data.end(), 63);
+    EXPECT_NO_THROW((Channel(kTestLogDirectoryPath, kMaxFileSizeInBytes)));
+    EXPECT_THROW((Channel(kTestLogDirectoryPath)), std::logic_error);
 
-    Channel channel(kTestLogDirectoryName, 2560);
-    for(size_t ii = 0U; ii < 257; ++ii)
+    fs::remove_all(kTestLogDirectoryPath);
+    EXPECT_NO_THROW((Channel(kTestLogDirectoryPath)));
+
+    fs::remove_all(kTestLogDirectoryPath);
+}
+
+
+TEST(Channel, rollAndIndexFileSizeChecks)
+{
+    fs::remove_all(kTestLogDirectoryPath);
+
+    // Create a channel and write frames to it.
     {
-        std::cout << "Iter: " << ii << std::endl;
-        channel.write(std::as_bytes(std::span(data)));
+        Channel channel(kTestLogDirectoryPath, kMaxFileSizeInBytes);
+
+        const auto data = generateTestDataFrame();
+        for(size_t ii = 0U; ii < kNumFramesToWrite; ++ii)
+        {
+            channel.writeFrame(std::as_bytes(std::span(data)));
+        }
     }
 
-    ssize_t inter = 7;
-    std::cout << sizeof(inter) << std::endl;
+    const auto numFramesPerFullFile = kMaxFileSizeInBytes / kFrameSize;
+    const auto expectedFullFileSize = numFramesPerFullFile * kFrameSize;
+    const auto numFramesInLastFile = kNumFramesToWrite % numFramesPerFullFile;
+    const auto expectedLastFileSize = numFramesInLastFile * kFrameSize;
+    const auto expectedIndexFileSize = kNumFramesToWrite * 2 * sizeof(uint64_t);
+
+    std::vector<fs::directory_entry> directoryEntries;
+    for(const auto& entity : fs::directory_iterator(kTestLogDirectoryPath))
+    {
+        directoryEntries.emplace_back(entity);
+    }
+
+    std::sort(directoryEntries.begin(), directoryEntries.end());
+
+    EXPECT_EQ(fs::file_size(directoryEntries.front()), expectedIndexFileSize);
+    for(const auto& item : std::span(std::next(directoryEntries.begin()), std::prev(directoryEntries.end())))
+    {
+        EXPECT_EQ(fs::file_size(item), expectedFullFileSize);
+    }
+    EXPECT_EQ(fs::file_size(directoryEntries.back()), expectedLastFileSize);
+
+    fs::remove_all(kTestLogDirectoryPath);
 }
 
 

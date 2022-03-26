@@ -33,9 +33,9 @@ public:
 
     Channel& operator=(Channel&&) noexcept = default;
 
-    void write(const ConstByteSpan& data);
+    void writeFrame(const ConstByteSpan& data);
 
-    void write(const std::vector<ConstByteSpan>& dataCollection);
+    void writeFrame(const std::vector<ConstByteSpan>& dataCollection);
 
 private:
     std::filesystem::path mLogRoot;

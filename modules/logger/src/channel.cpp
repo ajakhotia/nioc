@@ -52,14 +52,14 @@ Channel::Channel(std::filesystem::path logRoot, const std::size_t maxFileSizeInB
 }
 
 
-void Channel::write(const ConstByteSpan& data)
+void Channel::writeFrame(const ConstByteSpan& data)
 {
     rollAndIndex(data.size_bytes());
     writeToFile(mActiveLogRoll, data);
 }
 
 
-void Channel::write(const std::vector<ConstByteSpan>& dataCollection)
+void Channel::writeFrame(const std::vector<ConstByteSpan>& dataCollection)
 {
     rollAndIndex(computeTotalSizeInBytes(dataCollection));
     for(const auto& data: dataCollection)
@@ -100,8 +100,12 @@ void Channel::rollAndIndex(std::size_t requiredSizeInBytes)
 
 std::filesystem::path Channel::nextRollFilePath()
 {
+    const auto rollId = std::to_string(++mRollCounter);
+    static constexpr const auto kPadding = 20UL;
     return mLogRoot /
-           (kRollFileNamePrefix + std::to_string(++mRollCounter) + kRollFileNameExtension);
+           (kRollFileNamePrefix +
+            std::string(kPadding - std::min(kPadding, rollId.size()), '0') + rollId
+            + kRollFileNameExtension);
 }
 
 
