@@ -5,6 +5,7 @@ find_package(Boost REQUIRED COMPONENTS iostreams)
 
 add_executable(loggerTest boostMMapExampleTest.cpp loggerTest.cpp channelTest.cpp)
 
+target_include_directories(loggerTest PRIVATE ../src)
 target_link_libraries(loggerTest Naksh::logger Boost::iostreams GTest::GTest GTest::Main)
 
 target_compile_options(loggerTest PRIVATE

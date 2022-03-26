@@ -15,11 +15,6 @@ namespace naksh::logger
 namespace
 {
 
-constexpr auto kRollFileNamePrefix = "roll";
-constexpr auto kRollFileNameExtension = ".nio";
-constexpr auto kIndexFileName = "index.nio";
-
-
 std::filesystem::path setupLogRoot(std::filesystem::path logRoot)
 {
     namespace fs = std::filesystem;
@@ -100,12 +95,9 @@ void Channel::rollAndIndex(std::size_t requiredSizeInBytes)
 
 std::filesystem::path Channel::nextRollFilePath()
 {
-    const auto rollId = std::to_string(++mRollCounter);
-    static constexpr const auto kPadding = 20UL;
-    return mLogRoot /
-           (kRollFileNamePrefix +
-            std::string(kPadding - std::min(kPadding, rollId.size()), '0') + rollId
-            + kRollFileNameExtension);
+    static constexpr auto kPadding = 20UL;
+    return mLogRoot / (kRollFileNamePrefix + padString(std::to_string(++mRollCounter), kPadding) +
+                       kRollFileNameExtension);
 }
 
 

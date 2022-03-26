@@ -12,6 +12,26 @@
 namespace naksh::logger
 {
 
+/// Prefix of a data roll within a channel.
+static constexpr auto kRollFileNamePrefix = "roll";
+
+/// File extension of a data roll within a channel.
+static constexpr auto kRollFileNameExtension = ".nio";
+
+/// Name of the index file within a channel.
+static constexpr auto kIndexFileName = "index";
+
+
+/// @brief  Pads the input string such that the output string is paddedLength long. If the size of
+///         the input is already greater than or equal to the paddedLength, then no padding is
+///         performed.
+/// @param  input           Input string.
+/// @param  paddedLength    Length of the output string.
+/// @param  paddingChar     The character used to pad the input. [Default: '0' (Zero)]
+/// @return The padded string.
+std::string padString(const std::string& input, uint64_t paddedLength, char paddingChar = '0');
+
+
 /// @brief  Checks if the files has required amount of space before reaching the max size.
 /// @param  file                Reference to the file in question.
 /// @param  spaceRequired       Space required by the client.

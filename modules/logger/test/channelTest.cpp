@@ -6,6 +6,8 @@
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "cert-err58-cpp"
 
+#include "utils.hpp"
+
 #include <gtest/gtest.h>
 #include <iostream>
 #include <naksh/logger/channel.hpp>
@@ -33,7 +35,7 @@ std::vector<char> generateTestDataFrame()
     return data;
 }
 
-}
+} // namespace
 
 
 TEST(Channel, construction)
@@ -72,23 +74,29 @@ TEST(Channel, rollAndIndexFileSizeChecks)
     const auto expectedIndexFileSize = kNumFramesToWrite * 2 * sizeof(uint64_t);
 
     std::vector<fs::directory_entry> directoryEntries;
-    for(const auto& entity : fs::directory_iterator(kTestLogDirectoryPath))
+    for(const auto& entity: fs::directory_iterator(kTestLogDirectoryPath))
     {
         directoryEntries.emplace_back(entity);
     }
 
     std::sort(directoryEntries.begin(), directoryEntries.end());
 
+    // We expect that the first file in this list to be the index file.
+    EXPECT_EQ(directoryEntries.front().path(), kTestLogDirectoryPath / kIndexFileName);
     EXPECT_EQ(fs::file_size(directoryEntries.front()), expectedIndexFileSize);
-    for(const auto& item : std::span(std::next(directoryEntries.begin()), std::prev(directoryEntries.end())))
+
+    const auto rollSpan =
+        std::span(std::next(directoryEntries.begin()), std::prev(directoryEntries.end()));
+
+    for(const auto& item: rollSpan)
     {
         EXPECT_EQ(fs::file_size(item), expectedFullFileSize);
     }
+
     EXPECT_EQ(fs::file_size(directoryEntries.back()), expectedLastFileSize);
 
     fs::remove_all(kTestLogDirectoryPath);
 }
-
 
 } // namespace naksh::logger
 

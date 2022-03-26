@@ -11,6 +11,13 @@
 namespace naksh::logger
 {
 
+
+std::string padString(const std::string& input, const uint64_t paddedLength, const char paddingChar)
+{
+    return std::string(paddedLength - std::min(paddedLength, input.size()), paddingChar) + input;
+}
+
+
 bool fileHasSpace(std::ofstream& file, const size_t spaceRequired, const size_t maxFileSizeInBytes)
 {
     if(spaceRequired > maxFileSizeInBytes)
