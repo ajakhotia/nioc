@@ -5,6 +5,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
+#include <mutex>
 #include <shared_mutex>
 
 namespace naksh::common
@@ -156,7 +157,7 @@ public:
     template<typename Operation>
     decltype(auto) execute(Operation&& operation)
     {
-        std::lock_guard exclusiveLock(mMutex);
+        std::scoped_lock exclusiveLock(mMutex);
         return operation(mLockedValue);
     }
 

@@ -3,9 +3,19 @@ include(GoogleTest)
 
 find_package(Boost REQUIRED COMPONENTS iostreams)
 
-add_executable(loggerTest boostMMapExampleTest.cpp loggerTest.cpp)
+add_executable(loggerTest
+    boostMMapExampleTest.cpp
+    channelTest.cpp
+    loggerTest.cpp
+    utilsTest.cpp)
 
-target_link_libraries(loggerTest Naksh::logger Boost::iostreams GTest::GTest GTest::Main)
+target_include_directories(loggerTest PRIVATE ../src)
+
+target_link_libraries(loggerTest
+    Boost::iostreams
+    GTest::GTest
+    GTest::Main
+    Naksh::logger)
 
 target_compile_options(loggerTest PRIVATE
         $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>

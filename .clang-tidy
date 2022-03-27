@@ -10,10 +10,12 @@ Checks: '
     misc-*,
     modernize-*,
     -modernize-use-trailing-return-type,
+    -modernize-use-default-member-init,
     openmp-*,
     performance-*,
     portability-*,
     readability-*,
+    -readability-redundant-member-init,
 '
 
 WarningsAsErrors: '

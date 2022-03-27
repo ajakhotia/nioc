@@ -40,8 +40,9 @@ target_compile_features(example PUBLIC cxx_std_17)
         fail compilation if it sees any pragmas for Clang or MSVC(and
         vice-versa). We explicitly disable this with -Wno-unknown-pragmas. ]]
 target_compile_options(example PRIVATE
-        $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
-        $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>)
+        PRIVATE $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
+        PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
+        PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>)
 
 
 #[[ Add and executable and its alias. Same reasons as above.]]
@@ -81,8 +82,9 @@ target_compile_features(exampleMain PRIVATE cxx_std_17)
         fail compilation if it sees any pragmas for Clang or MSVC(and
         vice-versa). We explicitly disable this with -Wno-unknown-pragmas. ]]
 target_compile_options(exampleMain PRIVATE
-        $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
-        $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>)
+        PRIVATE $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
+        PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
+        PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>)
 
 
 #[[ Add unit-tests conditionally. A user may-not always want to build unit-tests

@@ -22,7 +22,7 @@ const auto valueExtractorHelper = [](const auto& value)
 } // End of anonymous namespace.
 
 
-TEST(CommonTest, LockedConstruction)
+TEST(Locked, LockedConstruction)
 {
     // Default construction of trivial type.
     {
@@ -62,7 +62,7 @@ TEST(CommonTest, LockedConstruction)
 }
 
 
-TEST(CommonTest, LockedConstExecution)
+TEST(Locked, LockedConstExecution)
 {
     // With cExecute.
     {
@@ -101,7 +101,7 @@ TEST(CommonTest, LockedConstExecution)
 }
 
 
-TEST(CommonTest, LockedNonConstExecution)
+TEST(Locked, LockedNonConstExecution)
 {
     // Pass by l-value reference.
     {
@@ -153,7 +153,7 @@ TEST(CommonTest, LockedNonConstExecution)
 }
 
 
-TEST(CommonTest, LockedCopyAssignment)
+TEST(Locked, LockedCopyAssignment)
 {
     Locked<int> locked(12);
     EXPECT_EQ(12, locked);
@@ -163,7 +163,7 @@ TEST(CommonTest, LockedCopyAssignment)
 }
 
 
-TEST(CommonTest, LockedMoveAssignment)
+TEST(Locked, LockedMoveAssignment)
 {
     Locked<std::unique_ptr<int>> locked;
     EXPECT_EQ(nullptr, locked);
@@ -182,7 +182,7 @@ TEST(CommonTest, LockedMoveAssignment)
 }
 
 
-TEST(CommonTest, LockedCopyExtraction)
+TEST(Locked, LockedCopyExtraction)
 {
     Locked<int> locked(12);
     const auto extractedValue = locked.copy();
@@ -192,7 +192,7 @@ TEST(CommonTest, LockedCopyExtraction)
 }
 
 
-TEST(CommonTest, LockedMoveExtraction)
+TEST(Locked, LockedMoveExtraction)
 {
     Locked<std::unique_ptr<int>> locked(std::make_unique<int>(13));
 
@@ -203,7 +203,7 @@ TEST(CommonTest, LockedMoveExtraction)
 }
 
 
-TEST(CommonTest, LockedEqualityCheck)
+TEST(Locked, LockedEqualityCheck)
 {
     Locked<int> locked(13);
 
@@ -215,7 +215,7 @@ TEST(CommonTest, LockedEqualityCheck)
 }
 
 
-TEST(CommonTest, LockedInEqualityCheck)
+TEST(Locked, LockedInEqualityCheck)
 {
     Locked<int> locked(13);
 
@@ -227,7 +227,7 @@ TEST(CommonTest, LockedInEqualityCheck)
 }
 
 
-TEST(CommonTest, LockedLesserThanCheck)
+TEST(Locked, LockedLesserThanCheck)
 {
     Locked<int> locked(13);
 
@@ -241,7 +241,7 @@ TEST(CommonTest, LockedLesserThanCheck)
 }
 
 
-TEST(CommonTest, LockedLesserThanOrEqualCheck)
+TEST(Locked, LockedLesserThanOrEqualCheck)
 {
     Locked<int> locked(13);
 
@@ -255,7 +255,7 @@ TEST(CommonTest, LockedLesserThanOrEqualCheck)
 }
 
 
-TEST(CommonTest, LockedGreaterThanCheck)
+TEST(Locked, LockedGreaterThanCheck)
 {
     Locked<int> locked(13);
 
@@ -269,7 +269,7 @@ TEST(CommonTest, LockedGreaterThanCheck)
 }
 
 
-TEST(CommonTest, LockedGreaterThanOrEqualCheck)
+TEST(Locked, LockedGreaterThanOrEqualCheck)
 {
     Locked<int> locked(13);
 

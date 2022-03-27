@@ -4,8 +4,11 @@
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#include "utils.hpp"
+
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
 #include <naksh/logger/logger.hpp>
-#include <spdlog/fmt/chrono.h>
 #include <spdlog/spdlog.h>
 
 namespace naksh::logger
@@ -13,24 +16,11 @@ namespace naksh::logger
 namespace
 {
 namespace fs = std::filesystem;
-using std::chrono::system_clock;
-
-
-std::string timeNowAsFormattedString()
-{
-    std::string timeString;
-
-    fmt::format_to(std::back_inserter(timeString),
-                   "{:%Y-%m-%dT%H:%M:%S%z}",
-                   fmt::localtime(system_clock::now()));
-
-    return timeString;
-}
-
 
 fs::path checkAndSetupLogDirectory(fs::path logRoot)
 {
-    logRoot /= (timeNowAsFormattedString());
+    logRoot /= (timeAsFormattedString(std::chrono::system_clock::now())) + "_" +
+               boost::uuids::to_string(boost::uuids::random_generator_pure()());
 
     if(fs::exists(logRoot))
     {
@@ -52,17 +42,55 @@ fs::path checkAndSetupLogDirectory(fs::path logRoot)
 } // End of anonymous namespace.
 
 
-Logger::Logger(std::filesystem::path logRoot, const size_t fileSize):
-    mLogDirectory(checkAndSetupLogDirectory(std::move(logRoot))), mFileSize(fileSize)
+Logger::Logger(std::filesystem::path logRoot, const size_t maxFileSizeInBytes):
+    mLogDirectory(checkAndSetupLogDirectory(std::move(logRoot))),
+    mMaxFileSizeInBytes(maxFileSizeInBytes),
+    mLockedIndexFile(mLogDirectory / kIndexFileName),
+    mLockedChannelPtrMap()
 {
-    spdlog::info("[Logger] Logging to {}.", mLogDirectory.string());
+    spdlog::info("[Logger] Logging to {} with unit file size {}.",
+                 mLogDirectory.string(),
+                 mMaxFileSizeInBytes);
 }
 
 
-void Logger::write(const size_t /* channelId */,
-                   const size_t /* bufferLength */,
-                   const void* /* bufferPtr */)
+void Logger::write(const ChannelId channelId, const std::span<const std::byte>& data)
 {
+    mLockedIndexFile([&](std::ofstream& index) { writeToFile(index, channelId); });
+    auto& lockedChannel = acquireChannel(channelId);
+    lockedChannel([&](Channel& channel) { channel.writeFrame(data); });
+}
+
+
+void Logger::write(const ChannelId channelId, const std::vector<std::span<const std::byte>>& data)
+{
+    mLockedIndexFile([&](std::ofstream& index) { writeToFile(index, channelId); });
+    auto& lockedChannel = acquireChannel(channelId);
+    lockedChannel([&](Channel& channel) { channel.writeFrame(data); });
+}
+
+
+Logger::LockedChannel& Logger::acquireChannel(const ChannelId channelId)
+{
+    return mLockedChannelPtrMap(
+        [&](ChannelPtrMap& channelPtrMap) -> LockedChannel&
+        {
+            if(not channelPtrMap.contains(channelId))
+            {
+                channelPtrMap.try_emplace(
+                    channelId,
+                    std::make_unique<LockedChannel>(mLogDirectory / toHexString(channelId),
+                                                    mMaxFileSizeInBytes));
+            }
+
+            return *channelPtrMap.at(channelId);
+        });
+}
+
+
+const std::filesystem::path& Logger::path() const noexcept
+{
+    return mLogDirectory;
 }
 
 } // End of namespace naksh::logger

@@ -6,8 +6,8 @@ console message. Use spdlog for such console logging.
 
 ## Log Structure
 A log contains the following:
-* A sub-directory per channel / type.
-  * The sub-directory for a channel / type will be identified using the same identifier as
+* A subdirectory per channel / type.
+  * The subdirectory for a channel / type will be identified using the same identifier as
     that of the channel / type
   * Each of the above directories will contain files of size no more than 100 MB to host 
     the data of a given channel / type in the exact same order as perceived by the system
