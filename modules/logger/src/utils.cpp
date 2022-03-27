@@ -33,7 +33,7 @@ bool fileHasSpace(std::ofstream& file, const size_t spaceRequired, const size_t 
 {
     if(spaceRequired > maxFileSizeInBytes)
     {
-        throw std::invalid_argument("[logger::Channel] Space requested on a file is greater max "
+        throw std::invalid_argument("[logger::Channel] Space requested on a file is greater than "
                                     "the maximum allowed size of the file. This is an impossible "
                                     "constraint to satisfy.");
     }

@@ -45,6 +45,7 @@ fs::path checkAndSetupLogDirectory(fs::path logRoot)
 Logger::Logger(std::filesystem::path logRoot, const size_t maxFileSizeInBytes):
     mLogDirectory(checkAndSetupLogDirectory(std::move(logRoot))),
     mMaxFileSizeInBytes(maxFileSizeInBytes),
+    mLockedIndexFile(mLogDirectory / kIndexFileName),
     mLockedChannelPtrMap()
 {
     spdlog::info("[Logger] Logging to {} with unit file size {}.",
@@ -55,6 +56,7 @@ Logger::Logger(std::filesystem::path logRoot, const size_t maxFileSizeInBytes):
 
 void Logger::write(const ChannelId channelId, const std::span<const std::byte>& data)
 {
+    mLockedIndexFile([&](std::ofstream& index) { writeToFile(index, channelId); });
     auto& lockedChannel = acquireChannel(channelId);
     lockedChannel([&](Channel& channel) { channel.writeFrame(data); });
 }
@@ -62,6 +64,7 @@ void Logger::write(const ChannelId channelId, const std::span<const std::byte>& 
 
 void Logger::write(const ChannelId channelId, const std::vector<std::span<const std::byte>>& data)
 {
+    mLockedIndexFile([&](std::ofstream& index) { writeToFile(index, channelId); });
     auto& lockedChannel = acquireChannel(channelId);
     lockedChannel([&](Channel& channel) { channel.writeFrame(data); });
 }

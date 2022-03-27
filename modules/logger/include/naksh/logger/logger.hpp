@@ -56,6 +56,8 @@ private:
 
     const size_t mMaxFileSizeInBytes;
 
+    common::Locked<std::ofstream> mLockedIndexFile;
+
     common::Locked<ChannelPtrMap> mLockedChannelPtrMap;
 
     LockedChannel& acquireChannel(ChannelId channelId);

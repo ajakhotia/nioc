@@ -79,17 +79,21 @@ void Channel::rollAndIndex(std::size_t requiredSizeInBytes)
 
     // Write the index of the roll and the position of the upcoming data blob w.r.t to the start
     // of the roll to the index file.
-    writeToFile(mIndexFile, static_cast<size_t>(mRollCounter));
     const auto position = mActiveLogRoll.tellp();
 
-    if(position < 0)
+    if(position >= 0)
+    {
+        // Write the roll id and position to the index file
+        writeToFile(mIndexFile, static_cast<size_t>(mRollCounter));
+        writeToFile(mIndexFile, position);
+
+        // Write the size of the upcoming data blob to the current roll.
+        writeToFile(mActiveLogRoll, requiredSizeInBytes);
+    }
+    else
     {
         throw std::runtime_error("[Channel::index] Unable to retrieve the write position");
     }
-    writeToFile(mIndexFile, position);
-
-    // Write the size of the upcoming data blob to the current roll.
-    writeToFile(mActiveLogRoll, requiredSizeInBytes);
 }
 
 
