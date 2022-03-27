@@ -6,6 +6,8 @@
 
 #include "utils.hpp"
 
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
 #include <naksh/logger/logger.hpp>
 #include <spdlog/spdlog.h>
 
@@ -17,7 +19,8 @@ namespace fs = std::filesystem;
 
 fs::path checkAndSetupLogDirectory(fs::path logRoot)
 {
-    logRoot /= (timeAsFormattedString(std::chrono::system_clock::now()));
+    logRoot /= (timeAsFormattedString(std::chrono::system_clock::now())) + "_" +
+               boost::uuids::to_string(boost::uuids::random_generator_pure()());
 
     if(fs::exists(logRoot))
     {
