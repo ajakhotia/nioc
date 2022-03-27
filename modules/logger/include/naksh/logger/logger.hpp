@@ -12,12 +12,13 @@
 #include <span>
 #include <unordered_map>
 
-
 namespace naksh::logger
 {
 class Logger
 {
 public:
+    static constexpr auto kDefaultLogPath = "/tmp/nakshLogs";
+
     static constexpr auto kDefaultMaxFileSizeInBytes = 128ULL * 1024ULL * 1024ULL;
 
     using ChannelId = std::uint64_t;
@@ -31,7 +32,7 @@ public:
     ///                     directory with the local date and time as the directory name.
     ///
     /// @param fileSize     Size of files allocated to store the data.
-    explicit Logger(std::filesystem::path logRoot = "/tmp/nakshLogs",
+    explicit Logger(std::filesystem::path logRoot = kDefaultLogPath,
                     size_t maxFileSizeInBytes = kDefaultMaxFileSizeInBytes);
 
     Logger(const Logger&) = delete;
@@ -47,6 +48,8 @@ public:
     void write(size_t channelId, const std::span<const std::byte>& data);
 
     void write(ChannelId channelId, const std::vector<std::span<const std::byte>>& data);
+
+    const std::filesystem::path& path() const noexcept;
 
 private:
     const std::filesystem::path mLogDirectory;

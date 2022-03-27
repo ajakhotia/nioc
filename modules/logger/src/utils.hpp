@@ -51,6 +51,25 @@ std::string toHexString(const Integer integer)
 }
 
 
+/// @brief  Converts a vaild hex string to an integer. The string must start with 0x.
+/// @tparam Integer     Integer type to return.
+/// @param  hexString   Input hex string
+/// @return Equivalent integer.
+template<typename Integer>
+Integer hexStringToInteger(const std::string& hexString)
+{
+    static constexpr auto kHexPrefix = "0x";
+    static constexpr auto kHexBase = 16U;
+    if(not hexString.starts_with(kHexPrefix))
+    {
+        throw std::invalid_argument("[Logger::hexStringToInteger] Provided input does not start " +
+                                    std::string(kHexPrefix) + " prefix.");
+    }
+
+    return std::stoull(hexString, nullptr, kHexBase);
+}
+
+
 /// @brief  Checks if the files has required amount of space before reaching the max size.
 /// @param  file                Reference to the file in question.
 /// @param  spaceRequired       Space required by the client.

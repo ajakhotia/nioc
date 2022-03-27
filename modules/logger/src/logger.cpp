@@ -57,14 +57,14 @@ void Logger::write(const ChannelId channelId, const std::span<const std::byte>& 
 }
 
 
-void Logger::write(ChannelId channelId, const std::vector<std::span<const std::byte>>& data)
+void Logger::write(const ChannelId channelId, const std::vector<std::span<const std::byte>>& data)
 {
     auto& lockedChannel = acquireChannel(channelId);
     lockedChannel([&](Channel& channel) { channel.writeFrame(data); });
 }
 
 
-Logger::LockedChannel& Logger::acquireChannel(ChannelId channelId)
+Logger::LockedChannel& Logger::acquireChannel(const ChannelId channelId)
 {
     return mLockedChannelPtrMap(
         [&](ChannelPtrMap& channelPtrMap) -> LockedChannel&
@@ -73,14 +73,18 @@ Logger::LockedChannel& Logger::acquireChannel(ChannelId channelId)
             {
                 channelPtrMap.try_emplace(
                     channelId,
-                    std::make_unique<LockedChannel>(
-                        mLogDirectory / toHexString(channelId),
-                        mMaxFileSizeInBytes));
+                    std::make_unique<LockedChannel>(mLogDirectory / toHexString(channelId),
+                                                    mMaxFileSizeInBytes));
             }
 
             return *channelPtrMap.at(channelId);
         });
 }
 
+
+const std::filesystem::path& Logger::path() const noexcept
+{
+    return mLogDirectory;
+}
 
 } // End of namespace naksh::logger
