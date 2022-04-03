@@ -23,6 +23,9 @@ static constexpr auto kRollFileNameExtension = ".nio";
 /// Name of the index file within a channel.
 static constexpr auto kIndexFileName = "index";
 
+/// Name of the sequence file in a log.
+static constexpr auto kSequenceFileName = "sequence";
+
 
 /// @brief  Converts a system_clock time_point to date-time string formatted per ISO 8601
 /// @param  timePoint   Time point to be converted.

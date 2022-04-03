@@ -18,10 +18,7 @@ Checks: '
     -readability-redundant-member-init,
 '
 
-WarningsAsErrors: '
-    clang-diagnostic-*,
-    clang-analyzer-*,
-'
+WarningsAsErrors: ''
 
 HeaderFilterRegex: '.*'
 
