@@ -29,7 +29,9 @@ std::string padString(const std::string& input, const uint64_t paddedLength, con
 }
 
 
-bool fileHasSpace(std::ofstream& file, const size_t spaceRequired, const size_t maxFileSizeInBytes)
+bool fileHasSpace(std::ofstream& file,
+                  const std::uint64_t spaceRequired,
+                  const std::uint64_t maxFileSizeInBytes)
 {
     if(spaceRequired > maxFileSizeInBytes)
     {
@@ -42,18 +44,18 @@ bool fileHasSpace(std::ofstream& file, const size_t spaceRequired, const size_t 
 }
 
 
-size_t computeTotalSizeInBytes(const std::vector<std::span<const std::byte>>& dataCollection)
+std::uint64_t computeTotalSizeInBytes(const std::vector<std::span<const std::byte>>& dataCollection)
 {
     return std::accumulate(
         dataCollection.begin(),
         dataCollection.end(),
-        size_t(0),
-        [](const size_t accumulatedSize, const std::span<const std::byte>& data) -> size_t
+        std::uint64_t(0),
+        [](const std::uint64_t accumulatedSize, const std::span<const std::byte>& data)
         { return accumulatedSize + data.size_bytes(); });
 }
 
 
-void writeToFile(std::ofstream& file, uint64_t integer)
+void writeToFile(std::ofstream& file, std::uint64_t integer)
 {
     boost::endian::native_to_little_inplace(integer);
 

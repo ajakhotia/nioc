@@ -37,11 +37,11 @@ std::filesystem::path setupLogRoot(std::filesystem::path logRoot)
 } // namespace
 
 
-Channel::Channel(std::filesystem::path logRoot, const std::size_t maxFileSizeInBytes):
+Channel::Channel(std::filesystem::path logRoot, const std::uint64_t maxFileSizeInBytes):
     mLogRoot(setupLogRoot(std::move(logRoot))),
     mIndexFile(mLogRoot / kIndexFileName),
     mMaxFileSizeInBytes(maxFileSizeInBytes),
-    mRollCounter(-1),
+    mRollCounter(std::numeric_limits<std::uint64_t>::max()),
     mActiveLogRoll(nextRollFilePath())
 {
 }
@@ -64,7 +64,7 @@ void Channel::writeFrame(const std::vector<ConstByteSpan>& dataCollection)
 }
 
 
-void Channel::rollAndIndex(std::size_t requiredSizeInBytes)
+void Channel::rollAndIndex(std::uint64_t requiredSizeInBytes)
 {
     if(requiredSizeInBytes == 0U)
     {
@@ -84,7 +84,7 @@ void Channel::rollAndIndex(std::size_t requiredSizeInBytes)
     if(position >= 0)
     {
         // Write the roll id and position to the index file
-        writeToFile(mIndexFile, static_cast<size_t>(mRollCounter));
+        writeToFile(mIndexFile, mRollCounter);
         writeToFile(mIndexFile, position);
 
         // Write the size of the upcoming data blob to the current roll.

@@ -54,7 +54,7 @@ std::string toHexString(const Integer integer)
 }
 
 
-/// @brief  Converts a vaild hex string to an integer. The string must start with 0x.
+/// @brief  Converts a valid hex string to an integer. The string must start with 0x.
 /// @tparam Integer     Integer type to return.
 /// @param  hexString   Input hex string
 /// @return Equivalent integer.
@@ -78,19 +78,22 @@ Integer hexStringToInteger(const std::string& hexString)
 /// @param  spaceRequired       Space required by the client.
 /// @param  maxFileSizeInBytes  Maximum allowable size of the file.
 /// @return True if the required space is available. False otherwise.
-bool fileHasSpace(std::ofstream& file, size_t spaceRequired, size_t maxFileSizeInBytes);
+bool fileHasSpace(std::ofstream& file,
+                  std::uint64_t spaceRequired,
+                  std::uint64_t maxFileSizeInBytes);
 
 
 /// @brief  Compute the sum of the length of each byte span in the collection.
 /// @param  dataCollection A collection of ConstByteSpan.
 /// @return Total size in bytes.
-size_t computeTotalSizeInBytes(const std::vector<std::span<const std::byte>>& dataCollection);
+std::uint64_t
+computeTotalSizeInBytes(const std::vector<std::span<const std::byte>>& dataCollection);
 
 
 /// @brief  Writes a uint64_t to a file in little-endian format.
 /// @param  file File to write to.
 /// @param  integer Value to be written.
-void writeToFile(std::ofstream& file, uint64_t integer);
+void writeToFile(std::ofstream& file, std::uint64_t integer);
 
 
 /// @brief  Write a span of bytes to a file.

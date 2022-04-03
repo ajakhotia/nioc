@@ -7,8 +7,9 @@
 #pragma ide diagnostic ignored "cert-err58-cpp"
 
 #include "utils.hpp"
-#include <naksh/logger/channelReader.hpp>
+
 #include <gtest/gtest.h>
+#include <naksh/logger/channelReader.hpp>
 
 namespace naksh::logger
 {
