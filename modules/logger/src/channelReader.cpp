@@ -23,7 +23,7 @@ ChannelReader::ChannelReader(std::filesystem::path logRoot):
 
 ChannelReader::iterator ChannelReader::begin() const
 {
-    return {mIndexFilePtr};
+    return iterator{mIndexFilePtr};
 }
 
 
