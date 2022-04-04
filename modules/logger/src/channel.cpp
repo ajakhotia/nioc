@@ -50,7 +50,7 @@ Channel::Channel(std::filesystem::path logRoot, const std::uint64_t maxFileSizeI
 void Channel::writeFrame(const ConstByteSpan& data)
 {
     const auto sizeInBytes = data.size_bytes();
-    rollAndIndex(sizeInBytes);
+    rollCheckAndIndex(sizeInBytes);
 
     // Write the size and the blob to the current roll.
     writeToFile(mActiveLogRoll, sizeInBytes);
@@ -67,7 +67,7 @@ void Channel::writeFrame(const ConstByteSpan& data)
 void Channel::writeFrame(const std::vector<ConstByteSpan>& dataCollection)
 {
     const auto sizeInBytes = computeTotalSizeInBytes(dataCollection);
-    rollAndIndex(sizeInBytes);
+    rollCheckAndIndex(sizeInBytes);
 
     // Write the size and the blob to the current roll.
     writeToFile(mActiveLogRoll, sizeInBytes);
@@ -84,7 +84,7 @@ void Channel::writeFrame(const std::vector<ConstByteSpan>& dataCollection)
 }
 
 
-void Channel::rollAndIndex(const std::uint64_t requiredSizeInBytes)
+void Channel::rollCheckAndIndex(const std::uint64_t requiredSizeInBytes)
 {
     if(requiredSizeInBytes == 0U)
     {

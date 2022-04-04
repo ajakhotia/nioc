@@ -48,7 +48,7 @@ private:
 
     std::ofstream mActiveLogRoll;
 
-    void rollAndIndex(std::uint64_t requiredSizeInBytes);
+    void rollCheckAndIndex(std::uint64_t requiredSizeInBytes);
 
     std::filesystem::path nextRollFilePath();
 };
