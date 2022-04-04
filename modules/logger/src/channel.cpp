@@ -49,22 +49,42 @@ Channel::Channel(std::filesystem::path logRoot, const std::uint64_t maxFileSizeI
 
 void Channel::writeFrame(const ConstByteSpan& data)
 {
-    rollAndIndex(data.size_bytes());
+    const auto sizeInBytes = data.size_bytes();
+    rollAndIndex(sizeInBytes);
+
+    // Write the size and the blob to the current roll.
+    writeToFile(mActiveLogRoll, sizeInBytes);
     writeToFile(mActiveLogRoll, data);
+
+    // Check if the file is still good.
+    if(not mActiveLogRoll.good())
+    {
+        throw std::runtime_error("[Logger::utils] Unable to cleanly write to the file.");
+    }
 }
 
 
 void Channel::writeFrame(const std::vector<ConstByteSpan>& dataCollection)
 {
-    rollAndIndex(computeTotalSizeInBytes(dataCollection));
+    const auto sizeInBytes = computeTotalSizeInBytes(dataCollection);
+    rollAndIndex(sizeInBytes);
+
+    // Write the size and the blob to the current roll.
+    writeToFile(mActiveLogRoll, sizeInBytes);
     for(const auto& data: dataCollection)
     {
         writeToFile(mActiveLogRoll, data);
     }
+
+    // Check if the file is still good.
+    if(not mActiveLogRoll.good())
+    {
+        throw std::runtime_error("[Logger::utils] Unable to cleanly write to the file.");
+    }
 }
 
 
-void Channel::rollAndIndex(std::uint64_t requiredSizeInBytes)
+void Channel::rollAndIndex(const std::uint64_t requiredSizeInBytes)
 {
     if(requiredSizeInBytes == 0U)
     {
@@ -79,16 +99,10 @@ void Channel::rollAndIndex(std::uint64_t requiredSizeInBytes)
 
     // Write the index of the roll and the position of the upcoming data blob w.r.t to the start
     // of the roll to the index file.
-    const auto position = mActiveLogRoll.tellp();
-
-    if(position >= 0)
+    if(const auto position = mActiveLogRoll.tellp(); position >= 0)
     {
-        // Write the roll id and position to the index file
-        writeToFile(mIndexFile, mRollCounter);
-        writeToFile(mIndexFile, position);
-
-        // Write the size of the upcoming data blob to the current roll.
-        writeToFile(mActiveLogRoll, requiredSizeInBytes);
+        // Create and write an IndexEntry to the index file.
+        writeToFile(mIndexFile, IndexEntry{mRollCounter, static_cast<std::uint64_t>(position)});
     }
     else
     {
@@ -99,8 +113,8 @@ void Channel::rollAndIndex(std::uint64_t requiredSizeInBytes)
 
 std::filesystem::path Channel::nextRollFilePath()
 {
-    static constexpr auto kPadding = 20UL;
-    return mLogRoot / (kRollFileNamePrefix + padString(std::to_string(++mRollCounter), kPadding) +
+    return mLogRoot / (kRollFileNamePrefix +
+                       padString(std::to_string(++mRollCounter), kPaddedRollNumberLength) +
                        kRollFileNameExtension);
 }
 

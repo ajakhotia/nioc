@@ -40,54 +40,44 @@ public:
 
     ChannelReader& operator=(ChannelReader&&) = default;
 
+    [[nodiscard]] iterator begin() const;
+
 private:
     std::filesystem::path mLogRoot;
 
-    std::shared_ptr<boost::iostreams::mapped_file_source> mIndexFile;
+    std::shared_ptr<boost::iostreams::mapped_file_source> mIndexFilePtr;
 };
 
 
-//class ChannelReader::iterator: public std::random_access_iterator_tag
-//{
-//public:
-//    using iterator_concept = std::random_access_iterator_tag;
-//
-//    using value_type = MemoryCrate;
-//
-//    using pointer = MemoryCrate*;
-//
-//    using reference = MemoryCrate&;
-//
-//    using const_reference = const MemoryCrate&;
-//
-//    iterator(std::shared_ptr<boost::iostreams::mapped_file_source> indexFile, std::uint64_t index);
-//
-//    iterator(const iterator&) = default;
-//
-//    iterator(iterator&&) = default;
-//
-//    ~iterator() = default;
-//
-//    iterator& operator=(const iterator&) = default;
-//
-//    iterator& operator=(iterator&&) = default;
-//
-//    MemoryCrate operator*() const;
-//
-//    MemoryCrate* operator->() const;
-//
-//    iterator& operator++();
-//
-//    iterator operator++(int);
-//
-//    iterator& operator--();
-//
-//    iterator operator--(int);
-//
-//private:
-//    std::shared_ptr<boost::iostreams::mapped_file_source> mIndexFile;
-//
-//    std::shared_ptr<boost::iostreams::mapped_file_source> mActiveLogRoll;
-//};
+class ChannelReader::iterator: public std::random_access_iterator_tag
+{
+public:
+    using iterator_concept = std::random_access_iterator_tag;
+
+    using value_type = MemoryCrate;
+
+    using pointer = MemoryCrate*;
+
+    using reference = MemoryCrate&;
+
+    using const_reference = const MemoryCrate&;
+
+    explicit iterator(std::shared_ptr<boost::iostreams::mapped_file_source> indexFilePtr);
+
+    iterator(const iterator&) = default;
+
+    iterator(iterator&&) = default;
+
+    ~iterator() = default;
+
+    iterator& operator=(const iterator&) = default;
+
+    iterator& operator=(iterator&&) = default;
+
+private:
+    std::shared_ptr<boost::iostreams::mapped_file_source> mIndexFilePtr;
+
+    std::shared_ptr<boost::iostreams::mapped_file_source> mActiveLogRollPtr;
+};
 
 } // namespace naksh::logger

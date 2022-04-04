@@ -20,11 +20,30 @@ static constexpr auto kRollFileNamePrefix = "roll";
 /// File extension of a data roll within a channel.
 static constexpr auto kRollFileNameExtension = ".nio";
 
+/// Length of the padded roll number string.
+static constexpr auto kPaddedRollNumberLength = 20UL;
+
 /// Name of the index file within a channel.
 static constexpr auto kIndexFileName = "index";
 
 /// Name of the sequence file in a log.
 static constexpr auto kSequenceFileName = "sequence";
+
+
+/// @brief  A structure that represents an entry in the sequence file of a log.
+struct SequenceEntry
+{
+    std::uint64_t mChannelId;
+};
+
+
+/// @brief  A structure that represents an entry in the index file of a channel.
+struct IndexEntry
+{
+    std::uint64_t mRollId;
+
+    std::uint64_t mRollPosition;
+};
 
 
 /// @brief  Converts a system_clock time_point to date-time string formatted per ISO 8601
@@ -94,6 +113,18 @@ computeTotalSizeInBytes(const std::vector<std::span<const std::byte>>& dataColle
 /// @param  file File to write to.
 /// @param  integer Value to be written.
 void writeToFile(std::ofstream& file, std::uint64_t integer);
+
+
+/// @brief  Writes an SequenceEntry to a file in little-endian format.
+/// @param  file File to write to.
+/// @param  indexEntry Value to be written.
+void writeToFile(std::ofstream& file, const SequenceEntry& sequenceEntry);
+
+
+/// @brief  Writes an IndexEntry to a file in little-endian format.
+/// @param  file File to write to.
+/// @param  indexEntry Value to be written.
+void writeToFile(std::ofstream& file, const IndexEntry& indexEntry);
 
 
 /// @brief  Write a span of bytes to a file.

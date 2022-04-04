@@ -61,12 +61,19 @@ void writeToFile(std::ofstream& file, std::uint64_t integer)
 
     // Suppress clang-tidy: NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     file.write(reinterpret_cast<const char*>(&integer), sizeof(integer));
+}
 
-    // Check if the file is still good.
-    if(not file.good())
-    {
-        throw std::runtime_error("[Logger::utils] Unable to cleanly write to the file.");
-    }
+
+void writeToFile(std::ofstream& file, const SequenceEntry& sequenceEntry)
+{
+    writeToFile(file, sequenceEntry.mChannelId);
+}
+
+
+void writeToFile(std::ofstream& file, const IndexEntry& indexEntry)
+{
+    writeToFile(file, indexEntry.mRollId);
+    writeToFile(file, indexEntry.mRollPosition);
 }
 
 
@@ -74,12 +81,6 @@ void writeToFile(std::ofstream& file, const std::span<const std::byte>& data)
 {
     // Suppress clang-tidy: NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
     file.write(reinterpret_cast<const char*>(data.data()), std::ssize(data));
-
-    // Check if the file is still good.
-    if(not file.good())
-    {
-        throw std::runtime_error("[Logger::utils] Unable to cleanly write to the file.");
-    }
 }
 
 } // namespace naksh::logger

@@ -16,32 +16,38 @@ using ChannelId = uint64_t;
 
 ChannelReader::ChannelReader(std::filesystem::path logRoot):
     mLogRoot(std::move(logRoot)),
-    mIndexFile(std::make_shared<bio::mapped_file_source>(logRoot / kIndexFileName))
+    mIndexFilePtr(std::make_shared<bio::mapped_file_source>(logRoot / kIndexFileName))
 {
 }
 
 
-//ChannelReader::iterator::iterator(std::shared_ptr<boost::iostreams::mapped_file_source> indexFile):
-//    mIndexFile(std::move(indexFile))
-//{
-//}
+ChannelReader::iterator ChannelReader::begin() const
+{
+    return {mIndexFilePtr};
+}
+
+
+ChannelReader::iterator::iterator(std::shared_ptr<bio::mapped_file_source> indexFilePtr):
+    mIndexFilePtr(std::move(indexFilePtr))
+{
+}
+
+
+// MemoryCrate ChannelReader::iterator::operator*() const {}
 //
 //
-//MemoryCrate ChannelReader::iterator::operator*() const {}
+// MemoryCrate* ChannelReader::iterator::operator->() const {}
 //
 //
-//MemoryCrate* ChannelReader::iterator::operator->() const {}
+// ChannelReader::iterator ChannelReader::iterator::operator++(int) {}
 //
 //
-//ChannelReader::iterator ChannelReader::iterator::operator++(int) {}
+// ChannelReader::iterator& ChannelReader::iterator::operator++() {}
 //
 //
-//ChannelReader::iterator& ChannelReader::iterator::operator++() {}
+// ChannelReader::iterator ChannelReader::iterator::operator--(int) {}
 //
 //
-//ChannelReader::iterator ChannelReader::iterator::operator--(int) {}
-//
-//
-//ChannelReader::iterator& ChannelReader::iterator::operator--() {}
+// ChannelReader::iterator& ChannelReader::iterator::operator--() {}
 
 } // namespace naksh::logger
