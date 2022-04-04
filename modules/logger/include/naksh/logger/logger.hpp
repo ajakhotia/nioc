@@ -56,7 +56,7 @@ private:
 
     const size_t mMaxFileSizeInBytes;
 
-    common::Locked<std::ofstream> mLockedIndexFile;
+    common::Locked<std::ofstream> mLockedSequenceFile;
 
     common::Locked<ChannelPtrMap> mLockedChannelPtrMap;
 

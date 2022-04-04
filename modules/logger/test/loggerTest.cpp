@@ -55,15 +55,27 @@ TEST(Logger, writeSpan)
 
     for(const auto& entity: fs::recursive_directory_iterator(logPath))
     {
+        if(fs::is_directory(entity))
+        {
+            continue;
+        }
+
         const auto& entityPathString = entity.path().string();
-        if(entityPathString.ends_with(kIndexFileName))
+        if(entityPathString.ends_with(kSequenceFileName))
         {
             EXPECT_EQ(fs::file_size(entity), 16);
         }
-
-        if(entityPathString.ends_with(kRollFileNameExtension))
+        else if(entityPathString.ends_with(kIndexFileName))
+        {
+            EXPECT_EQ(fs::file_size(entity), 16);
+        }
+        else if(entityPathString.ends_with(kRollFileNameExtension))
         {
             EXPECT_EQ(fs::file_size(entity), data.size() + sizeof(uint64_t));
+        }
+        else
+        {
+            throw std::logic_error("Unexpected file type encountered: " + entityPathString);
         }
     }
 }
@@ -95,15 +107,27 @@ TEST(Logger, writeCollectionOfSpan)
 
     for(const auto& entity: fs::recursive_directory_iterator(logPath))
     {
+        if(fs::is_directory(entity))
+        {
+            continue;
+        }
+
         const auto& entityPathString = entity.path().string();
-        if(entityPathString.ends_with(kIndexFileName))
+        if(entityPathString.ends_with(kSequenceFileName))
         {
             EXPECT_EQ(fs::file_size(entity), 16);
         }
-
-        if(entityPathString.ends_with(kRollFileNameExtension))
+        else if(entityPathString.ends_with(kIndexFileName))
+        {
+            EXPECT_EQ(fs::file_size(entity), 16);
+        }
+        else if(entityPathString.ends_with(kRollFileNameExtension))
         {
             EXPECT_EQ(fs::file_size(entity), totalSize + sizeof(uint64_t));
+        }
+        else
+        {
+            throw std::logic_error("Unexpected file type encountered: " + entityPathString);
         }
     }
 }
