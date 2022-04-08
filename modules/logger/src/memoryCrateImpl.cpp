@@ -3,33 +3,18 @@
 // Project  : Naksh                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-#pragma once
 
-#include <filesystem>
-#include <span>
+#include "memoryCrateImpl.hpp"
 
 namespace naksh::logger
 {
 
 
-class ChannelReader
-{
-public:
-    explicit ChannelReader(std::filesystem::path logRoot);
+MemoryCrate::MemoryCrateImpl::MemoryCrateImpl() {}
 
-    ChannelReader(const ChannelReader&) = delete;
 
-    ChannelReader(ChannelReader&& channelReader) noexcept;
+std::span<const std::byte> MemoryCrate::MemoryCrateImpl::span() const {}
 
-    ~ChannelReader();
-
-    ChannelReader& operator=(const ChannelReader&) = delete;
-
-    ChannelReader& operator=(ChannelReader&& channelReader) noexcept;
-
-private:
-    class ChannelReaderImpl;
-    std::unique_ptr<ChannelReaderImpl> mChannelReaderImpl;
-};
+MemoryCrate::ChannelId MemoryCrate::MemoryCrateImpl::channelId() const {}
 
 } // namespace naksh::logger

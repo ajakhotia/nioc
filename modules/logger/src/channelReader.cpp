@@ -4,50 +4,20 @@
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "utils.hpp"
-
-#include <naksh/logger/channelReader.hpp>
+#include "channelReaderImpl.hpp"
 
 namespace naksh::logger
 {
-namespace bio = boost::iostreams;
-using ChannelId = uint64_t;
-
 
 ChannelReader::ChannelReader(std::filesystem::path logRoot):
-    mLogRoot(std::move(logRoot)),
-    mIndexFilePtr(std::make_shared<bio::mapped_file_source>(logRoot / kIndexFileName))
+    mChannelReaderImpl(std::make_unique<ChannelReaderImpl>(std::move(logRoot)))
 {
 }
 
+ChannelReader::ChannelReader(ChannelReader&& channelReader) noexcept = default;
 
-ChannelReader::iterator ChannelReader::begin() const
-{
-    return iterator{mIndexFilePtr};
-}
+ChannelReader::~ChannelReader() = default;
 
-
-ChannelReader::iterator::iterator(std::shared_ptr<bio::mapped_file_source> indexFilePtr):
-    mIndexFilePtr(std::move(indexFilePtr))
-{
-}
-
-
-// MemoryCrate ChannelReader::iterator::operator*() const {}
-//
-//
-// MemoryCrate* ChannelReader::iterator::operator->() const {}
-//
-//
-// ChannelReader::iterator ChannelReader::iterator::operator++(int) {}
-//
-//
-// ChannelReader::iterator& ChannelReader::iterator::operator++() {}
-//
-//
-// ChannelReader::iterator ChannelReader::iterator::operator--(int) {}
-//
-//
-// ChannelReader::iterator& ChannelReader::iterator::operator--() {}
+ChannelReader& ChannelReader::operator=(ChannelReader&& channelReader) noexcept = default;
 
 } // namespace naksh::logger

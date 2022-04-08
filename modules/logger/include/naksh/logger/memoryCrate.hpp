@@ -5,31 +5,37 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include <filesystem>
+#include <memory>
 #include <span>
 
 namespace naksh::logger
 {
 
-
-class ChannelReader
+class MemoryCrate
 {
 public:
-    explicit ChannelReader(std::filesystem::path logRoot);
+    using ChannelId = std::uint64_t;
 
-    ChannelReader(const ChannelReader&) = delete;
+    MemoryCrate();
 
-    ChannelReader(ChannelReader&& channelReader) noexcept;
+    MemoryCrate(const MemoryCrate&);
 
-    ~ChannelReader();
+    MemoryCrate(MemoryCrate&&) noexcept;
 
-    ChannelReader& operator=(const ChannelReader&) = delete;
+    ~MemoryCrate();
 
-    ChannelReader& operator=(ChannelReader&& channelReader) noexcept;
+    MemoryCrate& operator=(const MemoryCrate&);
+
+    MemoryCrate& operator=(MemoryCrate&&) noexcept;
+
+    [[nodiscard]] std::span<const std::byte> span() const;
+
+    [[nodiscard]] ChannelId channelId() const;
 
 private:
-    class ChannelReaderImpl;
-    std::unique_ptr<ChannelReaderImpl> mChannelReaderImpl;
+    class MemoryCrateImpl;
+    std::shared_ptr<MemoryCrateImpl> mMemoryCrateImpl;
 };
+
 
 } // namespace naksh::logger
