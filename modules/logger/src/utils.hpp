@@ -133,4 +133,10 @@ void writeToFile(std::ofstream& file, const IndexEntry& indexEntry);
 void writeToFile(std::ofstream& file, const std::span<const std::byte>& data);
 
 
+/// @brief  Builds the log roll file name from rollId.
+/// @param  rollId  Integer identifying the roll.
+/// @return std::string containing the name for the roll.
+std::string buildRollName(const std::uint64_t rollId);
+
+
 } // namespace naksh::logger

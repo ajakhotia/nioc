@@ -83,4 +83,12 @@ void writeToFile(std::ofstream& file, const std::span<const std::byte>& data)
     file.write(reinterpret_cast<const char*>(data.data()), std::ssize(data));
 }
 
+
+std::string buildRollName(const std::uint64_t rollId)
+{
+    return kRollFileNamePrefix + padString(std::to_string(rollId), kPaddedRollNumberLength) +
+           kRollFileNameExtension;
+}
+
+
 } // namespace naksh::logger

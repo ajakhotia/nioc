@@ -113,9 +113,7 @@ void Channel::rollCheckAndIndex(const std::uint64_t requiredSizeInBytes)
 
 std::filesystem::path Channel::nextRollFilePath()
 {
-    return mLogRoot / (kRollFileNamePrefix +
-                       padString(std::to_string(++mRollCounter), kPaddedRollNumberLength) +
-                       kRollFileNameExtension);
+    return mLogRoot / buildRollName(++mRollCounter);
 }
 
 
