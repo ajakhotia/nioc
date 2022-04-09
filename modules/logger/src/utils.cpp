@@ -5,6 +5,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #include "utils.hpp"
 
+#include <bit>
 #include <boost/endian.hpp>
 #include <numeric>
 #include <spdlog/fmt/chrono.h>
@@ -26,6 +27,13 @@ std::string timeAsFormattedString(std::chrono::system_clock::time_point timePoin
 std::string padString(const std::string& input, const uint64_t paddedLength, const char paddingChar)
 {
     return std::string(paddedLength - std::min(paddedLength, input.size()), paddingChar) + input;
+}
+
+
+std::string buildRollName(const std::uint64_t rollId)
+{
+    return kRollFileNamePrefix + padString(std::to_string(rollId), kPaddedRollNumberLength) +
+           kRollFileNameExtension;
 }
 
 
@@ -55,40 +63,59 @@ std::uint64_t computeTotalSizeInBytes(const std::vector<std::span<const std::byt
 }
 
 
-void writeToFile(std::ofstream& file, std::uint64_t integer)
+template<>
+void ReadWriteUtil<SequenceEntry>::write(std::ostream& stream, SequenceEntry value)
 {
-    boost::endian::native_to_little_inplace(integer);
+    boost::endian::native_to_little_inplace(value.mChannelId);
+    stream.write(std::bit_cast<const char*>(&value), sizeof(value));
+}
 
-    // Suppress clang-tidy: NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    file.write(reinterpret_cast<const char*>(&integer), sizeof(integer));
+template<>
+SequenceEntry ReadWriteUtil<SequenceEntry>::read(const char* ptr, std::uint64_t /*unused*/)
+{
+    auto value = *std::bit_cast<const SequenceEntry*>(ptr);
+    boost::endian::little_to_native_inplace(value.mChannelId);
+    return value;
 }
 
 
-void writeToFile(std::ofstream& file, const SequenceEntry& sequenceEntry)
+template<>
+void ReadWriteUtil<IndexEntry>::write(std::ostream& stream, IndexEntry value)
 {
-    writeToFile(file, sequenceEntry.mChannelId);
+    boost::endian::native_to_little_inplace(value.mRollId);
+    boost::endian::native_to_little_inplace(value.mRollPosition);
+    boost::endian::native_to_little_inplace(value.mDataSize);
+
+    stream.write(std::bit_cast<const char*>(&value), sizeof(value));
+}
+
+template<>
+IndexEntry ReadWriteUtil<IndexEntry>::read(const char* ptr, const std::uint64_t /*unused*/)
+{
+    auto value = *std::bit_cast<const IndexEntry*>(ptr);
+
+    boost::endian::little_to_native_inplace(value.mRollId);
+    boost::endian::little_to_native_inplace(value.mRollPosition);
+    boost::endian::little_to_native_inplace(value.mDataSize);
+    return value;
 }
 
 
-void writeToFile(std::ofstream& file, const IndexEntry& indexEntry)
+template<>
+void ReadWriteUtil<std::span<const std::byte>>::write(std::ostream& stream,
+                                                      std::span<const std::byte> value)
 {
-    writeToFile(file, indexEntry.mRollId);
-    writeToFile(file, indexEntry.mRollPosition);
+    stream.write(std::bit_cast<const char*>(value.data()), std::ssize(value));
 }
 
 
-void writeToFile(std::ofstream& file, const std::span<const std::byte>& data)
+template<>
+std::span<const std::byte> ReadWriteUtil<std::span<const std::byte>>::read(const char* ptr,
+                                                                           const std::uint64_t size)
 {
-    // Suppress clang-tidy: NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    file.write(reinterpret_cast<const char*>(data.data()), std::ssize(data));
+    return std::as_bytes(std::span(ptr, size));
 }
 
-
-std::string buildRollName(const std::uint64_t rollId)
-{
-    return kRollFileNamePrefix + padString(std::to_string(rollId), kPaddedRollNumberLength) +
-           kRollFileNameExtension;
-}
 
 
 } // namespace naksh::logger

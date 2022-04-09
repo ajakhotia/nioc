@@ -53,8 +53,7 @@ void Channel::writeFrame(const ConstByteSpan& data)
     rollCheckAndIndex(sizeInBytes);
 
     // Write the size and the blob to the current roll.
-    writeToFile(mActiveLogRoll, sizeInBytes);
-    writeToFile(mActiveLogRoll, data);
+    ReadWriteUtil<std::span<const std::byte>>::write(mActiveLogRoll, data);
 
     // Check if the file is still good.
     if(not mActiveLogRoll.good())
@@ -70,10 +69,9 @@ void Channel::writeFrame(const std::vector<ConstByteSpan>& dataCollection)
     rollCheckAndIndex(sizeInBytes);
 
     // Write the size and the blob to the current roll.
-    writeToFile(mActiveLogRoll, sizeInBytes);
     for(const auto& data: dataCollection)
     {
-        writeToFile(mActiveLogRoll, data);
+        ReadWriteUtil<std::span<const std::byte>>::write(mActiveLogRoll, data);
     }
 
     // Check if the file is still good.
@@ -102,7 +100,10 @@ void Channel::rollCheckAndIndex(const std::uint64_t requiredSizeInBytes)
     if(const auto position = mActiveLogRoll.tellp(); position >= 0)
     {
         // Create and write an IndexEntry to the index file.
-        writeToFile(mIndexFile, IndexEntry{mRollCounter, static_cast<std::uint64_t>(position)});
+        ReadWriteUtil<IndexEntry>::write(mIndexFile,
+                   {.mRollId = mRollCounter,
+                    .mRollPosition = static_cast<std::uint64_t>(position),
+                    .mDataSize = requiredSizeInBytes});
     }
     else
     {

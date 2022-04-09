@@ -43,6 +43,8 @@ struct IndexEntry
     std::uint64_t mRollId;
 
     std::uint64_t mRollPosition;
+
+    std::uint64_t mDataSize;
 };
 
 
@@ -60,6 +62,12 @@ std::string timeAsFormattedString(std::chrono::system_clock::time_point timePoin
 /// @param  paddingChar     The character used to pad the input. [Default: '0' (Zero)]
 /// @return The padded string.
 std::string padString(const std::string& input, uint64_t paddedLength, char paddingChar = '0');
+
+
+/// @brief  Builds the log roll file name from rollId.
+/// @param  rollId  Integer identifying the roll.
+/// @return std::string containing the name for the roll.
+std::string buildRollName(std::uint64_t rollId);
 
 
 /// @brief  Converts an integer to a sting in hexadecimal form(0x.....).
@@ -109,34 +117,15 @@ std::uint64_t
 computeTotalSizeInBytes(const std::vector<std::span<const std::byte>>& dataCollection);
 
 
-/// @brief  Writes a uint64_t to a file in little-endian format.
-/// @param  file File to write to.
-/// @param  integer Value to be written.
-void writeToFile(std::ofstream& file, std::uint64_t integer);
+/// @brief  Struct used to provide read/write functionality for a give type.
+/// @tparam ValueType
+template<typename ValueType>
+struct ReadWriteUtil
+{
+    static void write(std::ostream& stream, ValueType value);
 
-
-/// @brief  Writes an SequenceEntry to a file in little-endian format.
-/// @param  file File to write to.
-/// @param  indexEntry Value to be written.
-void writeToFile(std::ofstream& file, const SequenceEntry& sequenceEntry);
-
-
-/// @brief  Writes an IndexEntry to a file in little-endian format.
-/// @param  file File to write to.
-/// @param  indexEntry Value to be written.
-void writeToFile(std::ofstream& file, const IndexEntry& indexEntry);
-
-
-/// @brief  Write a span of bytes to a file.
-/// @param  file    File to write to.
-/// @param  data    Span of bytes.
-void writeToFile(std::ofstream& file, const std::span<const std::byte>& data);
-
-
-/// @brief  Builds the log roll file name from rollId.
-/// @param  rollId  Integer identifying the roll.
-/// @return std::string containing the name for the roll.
-std::string buildRollName(std::uint64_t rollId);
+    static ValueType read(const char* ptr, std::uint64_t size = sizeof(ValueType));
+};
 
 
 } // namespace naksh::logger

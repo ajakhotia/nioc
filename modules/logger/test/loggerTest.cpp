@@ -67,11 +67,11 @@ TEST(Logger, writeSpan)
         }
         else if(entityPathString.ends_with(kIndexFileName))
         {
-            EXPECT_EQ(fs::file_size(entity), 16);
+            EXPECT_EQ(fs::file_size(entity), 24);
         }
         else if(entityPathString.ends_with(kRollFileNameExtension))
         {
-            EXPECT_EQ(fs::file_size(entity), data.size() + sizeof(uint64_t));
+            EXPECT_EQ(fs::file_size(entity), data.size());
         }
         else
         {
@@ -119,11 +119,11 @@ TEST(Logger, writeCollectionOfSpan)
         }
         else if(entityPathString.ends_with(kIndexFileName))
         {
-            EXPECT_EQ(fs::file_size(entity), 16);
+            EXPECT_EQ(fs::file_size(entity), 24);
         }
         else if(entityPathString.ends_with(kRollFileNameExtension))
         {
-            EXPECT_EQ(fs::file_size(entity), totalSize + sizeof(uint64_t));
+            EXPECT_EQ(fs::file_size(entity), totalSize);
         }
         else
         {

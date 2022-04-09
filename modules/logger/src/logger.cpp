@@ -57,8 +57,9 @@ Logger::Logger(std::filesystem::path logRoot, const size_t maxFileSizeInBytes):
 void Logger::write(const ChannelId channelId, const std::span<const std::byte>& data)
 {
     // TODO: This can be improved to use fewer locks and avoid race conditions.
-    mLockedSequenceFile([&](std::ofstream& sequenceFile)
-                        { writeToFile(sequenceFile, SequenceEntry{channelId}); });
+    mLockedSequenceFile(
+        [&](std::ofstream& sequenceFile) {
+            ReadWriteUtil<SequenceEntry>::write(sequenceFile, SequenceEntry{channelId}); });
 
     auto& lockedChannel = acquireChannel(channelId);
     lockedChannel([&](Channel& channel) { channel.writeFrame(data); });
@@ -68,8 +69,9 @@ void Logger::write(const ChannelId channelId, const std::span<const std::byte>& 
 void Logger::write(const ChannelId channelId, const std::vector<std::span<const std::byte>>& data)
 {
     // TODO: This can be improved to use fewer locks and avoid race conditions.
-    mLockedSequenceFile([&](std::ofstream& sequenceFile)
-                        { writeToFile(sequenceFile, SequenceEntry{channelId}); });
+    mLockedSequenceFile(
+        [&](std::ofstream& sequenceFile) {
+            ReadWriteUtil<SequenceEntry>::write(sequenceFile, SequenceEntry{channelId}); });
 
     auto& lockedChannel = acquireChannel(channelId);
     lockedChannel([&](Channel& channel) { channel.writeFrame(data); });
