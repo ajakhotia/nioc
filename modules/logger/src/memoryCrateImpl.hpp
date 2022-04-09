@@ -5,6 +5,9 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
+#include "utils.hpp"
+
+#include <boost/iostreams/device/mapped_file.hpp>
 #include <naksh/logger/memoryCrate.hpp>
 
 namespace naksh::logger
@@ -14,7 +17,11 @@ namespace naksh::logger
 class MemoryCrate::MemoryCrateImpl
 {
 public:
-    MemoryCrateImpl();
+    using MappedFile = boost::iostreams::mapped_file_source;
+
+    using MappedFilePtr = std::shared_ptr<MappedFile>;
+
+    MemoryCrateImpl(MappedFilePtr mappedFilePtr, const IndexEntry& index);
 
     MemoryCrateImpl(const MemoryCrateImpl&) = default;
 
@@ -26,9 +33,12 @@ public:
 
     MemoryCrateImpl& operator=(MemoryCrateImpl&&) = default;
 
-    [[nodiscard]] std::span<const std::byte> span() const;
+    [[nodiscard]] const std::span<const std::byte>& span() const noexcept;
 
-    [[nodiscard]] ChannelId channelId() const;
+private:
+    MappedFilePtr mMappedFilePtr;
+
+    std::span<const std::byte> mSpan;
 };
 
 

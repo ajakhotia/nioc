@@ -10,28 +10,25 @@
 namespace naksh::logger
 {
 
-MemoryCrate::MemoryCrate(): mMemoryCrateImpl(std::make_unique<MemoryCrate::MemoryCrateImpl>()) {}
+MemoryCrate::MemoryCrate(std::shared_ptr<MemoryCrateImpl> memoryCrateImplPtr):
+    mMemoryCrateImplPtr(std::move(memoryCrateImplPtr))
+{
+}
 
-MemoryCrate::MemoryCrate(const MemoryCrate&) = default;
+MemoryCrate::MemoryCrate(const MemoryCrate& memoryCrate) = default;
 
-MemoryCrate::MemoryCrate(MemoryCrate&&) noexcept = default;
+MemoryCrate::MemoryCrate(MemoryCrate&& memoryCrate) noexcept = default;
 
 MemoryCrate::~MemoryCrate() = default;
 
-MemoryCrate& MemoryCrate::operator=(MemoryCrate&&) noexcept = default;
+MemoryCrate& MemoryCrate::operator=(MemoryCrate&& memoryCrate) noexcept = default;
 
-MemoryCrate& MemoryCrate::operator=(const MemoryCrate&) = default;
+MemoryCrate& MemoryCrate::operator=(const MemoryCrate& memoryCrate) = default;
 
 
 std::span<const std::byte> MemoryCrate::span() const
 {
-    return mMemoryCrateImpl->span();
-}
-
-
-MemoryCrate::ChannelId MemoryCrate::channelId() const
-{
-    return mMemoryCrateImpl->channelId();
+    return mMemoryCrateImplPtr->span();
 }
 
 
