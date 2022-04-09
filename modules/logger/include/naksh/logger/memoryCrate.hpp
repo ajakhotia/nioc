@@ -16,25 +16,24 @@ class MemoryCrate
 public:
     using ChannelId = std::uint64_t;
 
-    MemoryCrate();
+    class MemoryCrateImpl;
 
-    MemoryCrate(const MemoryCrate&);
+    explicit MemoryCrate(std::shared_ptr<MemoryCrateImpl> memoryCrateImplPtr);
 
-    MemoryCrate(MemoryCrate&&) noexcept;
+    MemoryCrate(const MemoryCrate& memoryCrate);
+
+    MemoryCrate(MemoryCrate&& memoryCrate) noexcept;
 
     ~MemoryCrate();
 
-    MemoryCrate& operator=(const MemoryCrate&);
+    MemoryCrate& operator=(const MemoryCrate& memoryCrate);
 
-    MemoryCrate& operator=(MemoryCrate&&) noexcept;
+    MemoryCrate& operator=(MemoryCrate&& memoryCrate) noexcept;
 
     [[nodiscard]] std::span<const std::byte> span() const;
 
-    [[nodiscard]] ChannelId channelId() const;
-
 private:
-    class MemoryCrateImpl;
-    std::shared_ptr<MemoryCrateImpl> mMemoryCrateImpl;
+    std::shared_ptr<MemoryCrateImpl> mMemoryCrateImplPtr;
 };
 
 
