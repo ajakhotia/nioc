@@ -14,8 +14,6 @@ namespace naksh::logger
 class MemoryCrate
 {
 public:
-    using ChannelId = std::uint64_t;
-
     class MemoryCrateImpl;
 
     explicit MemoryCrate(std::shared_ptr<MemoryCrateImpl> memoryCrateImplPtr);
