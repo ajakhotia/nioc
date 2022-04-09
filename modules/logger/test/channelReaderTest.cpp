@@ -16,7 +16,7 @@ namespace naksh::logger
 
 TEST(ChannelReader, construction)
 {
-    EXPECT_THROW((ChannelReader("/foo")), std::runtime_error);
+    EXPECT_THROW((ChannelReader("/foo")), std::invalid_argument);
 }
 
 } // namespace naksh::logger

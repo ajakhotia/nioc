@@ -101,9 +101,9 @@ void Channel::rollCheckAndIndex(const std::uint64_t requiredSizeInBytes)
     {
         // Create and write an IndexEntry to the index file.
         ReadWriteUtil<IndexEntry>::write(mIndexFile,
-                   {.mRollId = mRollCounter,
-                    .mRollPosition = static_cast<std::uint64_t>(position),
-                    .mDataSize = requiredSizeInBytes});
+                                         {.mRollId = mRollCounter,
+                                          .mRollPosition = static_cast<std::uint64_t>(position),
+                                          .mDataSize = requiredSizeInBytes});
     }
     else
     {

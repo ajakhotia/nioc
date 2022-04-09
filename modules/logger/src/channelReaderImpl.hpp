@@ -39,9 +39,14 @@ public:
 
     ChannelReaderImpl& operator=(ChannelReaderImpl&&) = delete;
 
+    [[nodiscard]] MemoryCrate read();
 
 private:
     std::filesystem::path mLogRoot;
+
+    MappedFile mIndexFile;
+
+    std::uint64_t mNextReadIndex;
 
     boost::circular_buffer<MappedLogRoll> mLogRollBuffer;
 

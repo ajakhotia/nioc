@@ -68,7 +68,6 @@ TEST(LoggerUtils, hexStringToInteger)
 }
 
 
-
 TEST(LoggerUtils, computeTotalSizeInBytes)
 {
     const auto data = generateData();
@@ -79,7 +78,6 @@ TEST(LoggerUtils, computeTotalSizeInBytes)
 
     EXPECT_EQ(numRepetitions * data.size(), computeTotalSizeInBytes(spanCollection));
 }
-
 
 
 TEST(LoggerUtils, ReadWriteUtilSequenceEntry)

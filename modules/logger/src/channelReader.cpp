@@ -20,4 +20,11 @@ ChannelReader::~ChannelReader() = default;
 
 ChannelReader& ChannelReader::operator=(ChannelReader&& channelReader) noexcept = default;
 
+
+MemoryCrate ChannelReader::read()
+{
+    return mChannelReaderImpl->read();
+}
+
+
 } // namespace naksh::logger

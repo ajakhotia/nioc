@@ -6,18 +6,57 @@
 
 #include "channelReaderImpl.hpp"
 
+#include "memoryCrateImpl.hpp"
 
 namespace naksh::logger
 {
+namespace fs = std::filesystem;
+
 namespace
 {
 constexpr const auto kLogRollBufferSize = 5UL;
 
+fs::path validatePath(fs::path logRoot)
+{
+    if(not fs::exists(logRoot))
+    {
+        throw std::invalid_argument("[ChannelReader::ChannelReader] Directory " + logRoot.string() +
+                                    " does not exist.");
+    }
+
+    return logRoot;
 }
 
+} // namespace
+
+
 ChannelReader::ChannelReaderImpl::ChannelReaderImpl(std::filesystem::path logRoot):
-    mLogRoot(std::move(logRoot)), mLogRollBuffer(kLogRollBufferSize)
+    mLogRoot(validatePath(std::move(logRoot))),
+    mIndexFile(mLogRoot / kIndexFileName),
+    mNextReadIndex(0ULL),
+    mLogRollBuffer(kLogRollBufferSize)
 {
+}
+
+
+MemoryCrate ChannelReader::ChannelReaderImpl::read()
+{
+    const auto indexPtrOffset = mNextReadIndex * sizeof(IndexEntry);
+
+    if(indexPtrOffset > mIndexFile.size())
+    {
+        throw std::runtime_error("Reached end of file");
+    }
+
+    ++mNextReadIndex;
+
+    const auto index =
+        ReadWriteUtil<IndexEntry>::read(std::next(mIndexFile.begin(), ssize_t(indexPtrOffset)));
+
+    auto logRollPtr = acquireLogRoll(index.mRollId);
+
+    return MemoryCrate{
+        std::make_shared<MemoryCrate::MemoryCrateImpl>(std::move(logRollPtr), index)};
 }
 
 

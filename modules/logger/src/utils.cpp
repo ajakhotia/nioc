@@ -117,5 +117,4 @@ std::span<const std::byte> ReadWriteUtil<std::span<const std::byte>>::read(const
 }
 
 
-
 } // namespace naksh::logger

@@ -5,8 +5,9 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
+#include "memoryCrate.hpp"
+
 #include <filesystem>
-#include <span>
 
 namespace naksh::logger
 {
@@ -26,6 +27,8 @@ public:
     ChannelReader& operator=(const ChannelReader&) = delete;
 
     ChannelReader& operator=(ChannelReader&& channelReader) noexcept;
+
+    [[nodiscard]] MemoryCrate read();
 
 private:
     class ChannelReaderImpl;

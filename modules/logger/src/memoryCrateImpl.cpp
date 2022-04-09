@@ -19,7 +19,7 @@ ConstByteSpan retrieveSpan(const MappedFile& mappedFile, const IndexEntry& index
     return ReadWriteUtil<ConstByteSpan>::read(dataPtr, indexEntry.mDataSize);
 }
 
-}
+} // namespace
 
 
 MemoryCrate::MemoryCrateImpl::MemoryCrateImpl(MappedFilePtr mappedFilePtr, const IndexEntry& index):
