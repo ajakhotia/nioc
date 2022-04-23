@@ -9,7 +9,6 @@
 #include "utils.hpp"
 
 #include <gtest/gtest.h>
-#include <iostream>
 #include <naksh/logger/channel.hpp>
 #include <numeric>
 

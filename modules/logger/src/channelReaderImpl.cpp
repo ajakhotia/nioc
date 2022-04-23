@@ -43,7 +43,7 @@ MemoryCrate ChannelReader::ChannelReaderImpl::read()
 {
     const auto indexPtrOffset = mNextReadIndex * sizeof(IndexEntry);
 
-    if(indexPtrOffset > mIndexFile.size())
+    if(indexPtrOffset >= mIndexFile.size())
     {
         throw std::runtime_error("Reached end of file");
     }
