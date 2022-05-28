@@ -8,6 +8,7 @@ add_executable(loggerTest
     channelTest.cpp
     channelReaderTest.cpp
     loggerTest.cpp
+    logReaderTest.cpp
     utilsTest.cpp)
 
 target_include_directories(loggerTest PRIVATE ../src)

@@ -72,7 +72,7 @@ TEST(ChannelReader, read)
                 auto readSpan = crate.span();
 
                 EXPECT_EQ(readSpan.size(), dataAsBytes.size());
-                for(auto ii = 0ULL; ii < readSpan.size(); ii++)
+                for(auto ii = 0ULL; ii < readSpan.size(); ++ii)
                 {
                     EXPECT_EQ(readSpan[ii], dataAsBytes[ii]);
                 }
@@ -80,7 +80,8 @@ TEST(ChannelReader, read)
         }
         catch(const std::runtime_error& error)
         {
-            if(error.what() == std::string("Reached end of file"))
+            if(error.what() == std::string("Reached end of index file at ") +
+                                   (kTestChannelDirectoryPath / "index").string())
             {
                 EXPECT_EQ(numFramesRead, kNumFramesToWrite);
             }
