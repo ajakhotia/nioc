@@ -45,7 +45,8 @@ MemoryCrate ChannelReader::ChannelReaderImpl::read()
 
     if(indexPtrOffset >= mIndexFile.size())
     {
-        throw std::runtime_error("Reached end of file");
+        throw std::runtime_error("Reached end of index file at " +
+                                 (mLogRoot / kIndexFileName).string());
     }
 
     ++mNextReadIndex;

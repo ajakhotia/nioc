@@ -37,11 +37,13 @@ add_exported_library(
         src/channelReaderImpl.cpp
         src/logger.cpp
         src/logReader.cpp
+        src/logReaderImpl.cpp
         src/memoryCrate.cpp
         src/memoryCrateImpl.cpp
         src/utils.cpp
     HEADERS
         PRIVATE src/channelReaderImpl.hpp
+        PRIVATE src/logReaderImpl.hpp
         PRIVATE src/memoryCrateImpl.hpp
         PRIVATE src/utils.hpp
         PUBLIC include/naksh/logger/channel.hpp

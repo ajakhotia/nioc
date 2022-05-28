@@ -3,29 +3,13 @@
 // Project  : Naksh                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#include "logReaderImpl.hpp"
+
 #include <naksh/logger/logReader.hpp>
 
 namespace naksh::logger
 {
-namespace fs = std::filesystem;
-
-
-namespace
-{
-
-fs::path validatePath(fs::path logRoot)
-{
-    if(not fs::exists(logRoot))
-    {
-        throw std::invalid_argument("[LogReader::LogReader] Directory " + logRoot.string() +
-                                    " does not exist.");
-    }
-
-    return logRoot;
-}
-
-} // namespace
-
 
 LogEntry::LogEntry(const ChannelId channelId, MemoryCrate memoryCrate):
     mChannelId(channelId),
@@ -34,10 +18,37 @@ LogEntry::LogEntry(const ChannelId channelId, MemoryCrate memoryCrate):
 }
 
 
-LogReader::LogReader(std::filesystem::path logRoot): mLogRoot(validatePath(std::move(logRoot))) {}
+LogEntry::ChannelId LogEntry::channelId() const noexcept
+{
+    return mChannelId;
+}
 
 
-LogEntry LogReader::read() {}
+std::span<const std::byte> LogEntry::span() const noexcept
+{
+    return mMemoryCrate.span();
+}
+
+
+LogReader::LogReader(std::filesystem::path logRoot):
+    mLogReaderImpl(std::make_unique<LogReaderImpl>(std::move(logRoot)))
+{
+}
+
+
+LogReader::LogReader(LogReader&&) noexcept = default;
+
+
+LogReader::~LogReader() = default;
+
+
+LogReader& LogReader::operator=(LogReader&&) noexcept = default;
+
+
+LogEntry LogReader::read()
+{
+    return mLogReaderImpl->read();
+}
 
 
 } // namespace naksh::logger
