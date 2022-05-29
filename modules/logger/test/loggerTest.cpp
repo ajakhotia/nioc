@@ -32,8 +32,8 @@ std::vector<char> generateData()
 TEST(Logger, construction)
 {
     EXPECT_NO_THROW(Logger logger);
-    EXPECT_NO_THROW(Logger logger(fs::temp_directory_path() / "nakshUnitTestLogs",
-                                  1024UL * 1024UL));
+    EXPECT_NO_THROW(
+        Logger logger(fs::temp_directory_path() / "nakshUnitTestLogs", 1024UL * 1024UL));
 }
 
 

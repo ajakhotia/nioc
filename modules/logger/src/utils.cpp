@@ -116,4 +116,16 @@ std::span<const std::byte> ReadWriteUtil<std::span<const std::byte>>::read(const
 }
 
 
+std::filesystem::path validatePath(std::filesystem::path&& path)
+{
+    if(not std::filesystem::exists(path))
+    {
+        throw std::invalid_argument("[Logger::utils] Directory " + path.string() +
+                                    " does not exist.");
+    }
+
+    return path;
+}
+
+
 } // namespace naksh::logger

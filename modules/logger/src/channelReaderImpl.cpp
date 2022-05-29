@@ -15,16 +15,6 @@ namespace
 {
 constexpr const auto kLogRollBufferSize = 5UL;
 
-fs::path validatePath(fs::path logRoot)
-{
-    if(not fs::exists(logRoot))
-    {
-        throw std::invalid_argument("[ChannelReader::ChannelReader] Directory " + logRoot.string() +
-                                    " does not exist.");
-    }
-
-    return logRoot;
-}
 
 } // namespace
 

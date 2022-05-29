@@ -22,9 +22,9 @@ public:
     ///                     directory with the local date and time as the directory name.
     ///
     /// @param fileSize     Size of files allocated to store the data.
-    explicit Logger(
-        std::filesystem::path logRoot = std::filesystem::temp_directory_path() / "nakshLogs",
-        size_t maxFileSizeInBytes = kDefaultMaxFileSizeInBytes);
+    explicit Logger(std::filesystem::path logRoot = std::filesystem::temp_directory_path() /
+                                                    "nakshLogs",
+                    size_t maxFileSizeInBytes = kDefaultMaxFileSizeInBytes);
 
     Logger(const Logger&) = delete;
 

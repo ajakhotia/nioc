@@ -6,6 +6,7 @@
 #pragma once
 
 #include <chrono>
+#include <filesystem>
 #include <fstream>
 #include <span>
 #include <spdlog/fmt/fmt.h>
@@ -126,6 +127,10 @@ struct ReadWriteUtil
 
     static ValueType read(const char* ptr, std::uint64_t size = sizeof(ValueType));
 };
+
+
+/// @brief  Ensure that the input path exists and returns the same.
+std::filesystem::path validatePath(std::filesystem::path&& path);
 
 
 } // namespace naksh::logger

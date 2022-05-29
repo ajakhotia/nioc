@@ -9,24 +9,6 @@
 
 namespace naksh::logger
 {
-namespace fs = std::filesystem;
-
-namespace
-{
-
-fs::path validatePath(fs::path logRoot)
-{
-    if(not fs::exists(logRoot))
-    {
-        throw std::invalid_argument("[LogReader::LogReader] Directory " + logRoot.string() +
-                                    " does not exist.");
-    }
-
-    return logRoot;
-}
-
-} // namespace
-
 
 LogReader::LogReaderImpl::LogReaderImpl(std::filesystem::path logRoot):
     mLogRoot(validatePath(std::move(logRoot))),
