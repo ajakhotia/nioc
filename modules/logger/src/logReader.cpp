@@ -10,24 +10,6 @@
 namespace naksh::logger
 {
 
-LogEntry::LogEntry(const ChannelId channelId, MemoryCrate memoryCrate):
-    mChannelId(channelId),
-    mMemoryCrate(std::move(memoryCrate))
-{
-}
-
-
-ChannelId LogEntry::channelId() const noexcept
-{
-    return mChannelId;
-}
-
-
-std::span<const std::byte> LogEntry::span() const noexcept
-{
-    return mMemoryCrate.span();
-}
-
 
 LogReader::LogReader(std::filesystem::path logRoot):
     mLogReaderImpl(std::make_unique<LogReaderImpl>(std::move(logRoot)))

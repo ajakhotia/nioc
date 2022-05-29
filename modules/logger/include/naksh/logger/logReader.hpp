@@ -12,26 +12,8 @@
 namespace naksh::logger
 {
 
-class LogEntry
+struct LogEntry
 {
-public:
-    LogEntry(ChannelId channelId, MemoryCrate memoryCrate);
-
-    LogEntry(const LogEntry&) = default;
-
-    LogEntry(LogEntry&&) noexcept = default;
-
-    ~LogEntry() = default;
-
-    LogEntry& operator=(const LogEntry&) = default;
-
-    LogEntry& operator=(LogEntry&&) = default;
-
-    [[nodiscard]] ChannelId channelId() const noexcept;
-
-    [[nodiscard]] std::span<const std::byte> span() const noexcept;
-
-private:
     ChannelId mChannelId;
 
     MemoryCrate mMemoryCrate;

@@ -63,25 +63,25 @@ TEST(LogReader, read)
 
     {
         const auto logEntry = logReader.read();
-        EXPECT_EQ(channelA, logEntry.channelId());
-        expectSpanEqual(dataAAsBytes, logEntry.span());
+        EXPECT_EQ(channelA, logEntry.mChannelId);
+        expectSpanEqual(dataAAsBytes, logEntry.mMemoryCrate.span());
     }
 
     {
         const auto logEntry = logReader.read();
-        EXPECT_EQ(channelB, logEntry.channelId());
-        expectSpanEqual(dataBAsBytes, logEntry.span());
+        EXPECT_EQ(channelB, logEntry.mChannelId);
+        expectSpanEqual(dataBAsBytes, logEntry.mMemoryCrate.span());
     }
     {
         const auto logEntry = logReader.read();
-        EXPECT_EQ(channelA, logEntry.channelId());
-        expectSpanEqual(dataAAsBytes, logEntry.span());
+        EXPECT_EQ(channelA, logEntry.mChannelId);
+        expectSpanEqual(dataAAsBytes, logEntry.mMemoryCrate.span());
     }
 
     {
         const auto logEntry = logReader.read();
-        EXPECT_EQ(channelB, logEntry.channelId());
-        expectSpanEqual(dataBAsBytes, logEntry.span());
+        EXPECT_EQ(channelB, logEntry.mChannelId);
+        expectSpanEqual(dataBAsBytes, logEntry.mMemoryCrate.span());
     }
 
     EXPECT_THROW(logReader.read(), std::runtime_error);
