@@ -17,7 +17,7 @@ LogEntry::LogEntry(const ChannelId channelId, MemoryCrate memoryCrate):
 }
 
 
-LogEntry::ChannelId LogEntry::channelId() const noexcept
+ChannelId LogEntry::channelId() const noexcept
 {
     return mChannelId;
 }

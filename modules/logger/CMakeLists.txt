@@ -50,6 +50,7 @@ add_exported_library(
         PRIVATE src/loggerImpl.hpp
         PRIVATE src/memoryCrateImpl.hpp
         PRIVATE src/utils.hpp
+        PUBLIC include/naksh/logger/defines.hpp
         PUBLIC include/naksh/logger/logReader.hpp
         PUBLIC include/naksh/logger/logger.hpp
         PUBLIC include/naksh/logger/memoryCrate.hpp
@@ -58,15 +59,15 @@ add_exported_library(
     LINK_LIBRARIES
         PRIVATE Boost::headers
         PRIVATE Boost::iostreams
+        PRIVATE Naksh::common
         PRIVATE Naksh::loggerIdl
         PRIVATE spdlog::spdlog
-        PUBLIC Naksh::common
     COMPILE_FEATURES
         PUBLIC cxx_std_20
     COMPILE_OPTIONS
-        #PRIVATE $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
-        #PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
-        #PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
+        PRIVATE $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
+        PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
+        PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
     COMPILE_DEFINITIONS
         "")
 

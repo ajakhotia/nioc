@@ -5,6 +5,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
+#include "defines.hpp"
 #include <filesystem>
 #include <span>
 #include <vector>
@@ -14,19 +15,16 @@ namespace naksh::logger
 class Logger
 {
 public:
-    static constexpr auto kDefaultLogPath = "/tmp/nakshLogs";
-
     static constexpr auto kDefaultMaxFileSizeInBytes = 128ULL * 1024ULL * 1024ULL;
-
-    using ChannelId = std::uint64_t;
 
     /// @brief Constructor
     /// @param logRoot      Root directory to store the log at. The log is written to a child
     ///                     directory with the local date and time as the directory name.
     ///
     /// @param fileSize     Size of files allocated to store the data.
-    explicit Logger(std::filesystem::path logRoot = kDefaultLogPath,
-                    size_t maxFileSizeInBytes = kDefaultMaxFileSizeInBytes);
+    explicit Logger(
+        std::filesystem::path logRoot = std::filesystem::temp_directory_path() / "nakshLogs",
+        size_t maxFileSizeInBytes = kDefaultMaxFileSizeInBytes);
 
     Logger(const Logger&) = delete;
 

@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include <filesystem>
+#include "defines.hpp"
+#include "memoryCrate.hpp"
 #include <memory>
-#include <naksh/logger/memoryCrate.hpp>
 
 namespace naksh::logger
 {
@@ -15,8 +15,6 @@ namespace naksh::logger
 class LogEntry
 {
 public:
-    using ChannelId = std::uint64_t;
-
     LogEntry(ChannelId channelId, MemoryCrate memoryCrate);
 
     LogEntry(const LogEntry&) = default;

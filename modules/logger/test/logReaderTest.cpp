@@ -34,7 +34,7 @@ const auto dataBAsBytes = std::as_bytes(std::span(dataB));
 
 fs::path createLog()
 {
-    Logger logger(Logger::kDefaultLogPath);
+    Logger logger;
 
     logger.write(channelA, dataAAsBytes);
     logger.write(channelB, dataBAsBytes);

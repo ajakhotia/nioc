@@ -18,8 +18,6 @@ namespace naksh::logger
 class LogReader::LogReaderImpl
 {
 public:
-    using ChannelId = LogEntry::ChannelId;
-
     explicit LogReaderImpl(std::filesystem::path logRoot);
 
     LogReaderImpl(const LogReaderImpl&) = delete;

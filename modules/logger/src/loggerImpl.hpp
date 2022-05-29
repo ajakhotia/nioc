@@ -16,19 +16,11 @@ namespace naksh::logger
 class Logger::LoggerImpl
 {
 public:
-    using ChannelId = std::uint64_t;
-
     using LockedChannel = common::Locked<Channel>;
 
     using ChannelPtrMap = std::unordered_map<ChannelId, std::unique_ptr<LockedChannel>>;
 
-    /// @brief Constructor
-    /// @param logRoot      Root directory to store the log at. The log is written to a child
-    ///                     directory with the local date and time as the directory name.
-    ///
-    /// @param fileSize     Size of files allocated to store the data.
-    explicit LoggerImpl(std::filesystem::path logRoot = kDefaultLogPath,
-                        size_t maxFileSizeInBytes = kDefaultMaxFileSizeInBytes);
+    explicit LoggerImpl(std::filesystem::path logRoot, size_t maxFileSizeInBytes);
 
     LoggerImpl(const LoggerImpl&) = delete;
 
