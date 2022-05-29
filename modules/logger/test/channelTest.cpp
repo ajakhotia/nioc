@@ -6,11 +6,10 @@
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "cert-err58-cpp"
 
-#include "utils.hpp"
-
+#include <channel.hpp>
 #include <gtest/gtest.h>
-#include <naksh/logger/channel.hpp>
 #include <numeric>
+#include <utils.hpp>
 
 namespace naksh::logger
 {

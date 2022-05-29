@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
+#include "channelReader.hpp"
 #include <boost/iostreams/device/mapped_file.hpp>
 #include <naksh/common/locked.hpp>
-#include <naksh/logger/channelReader.hpp>
 #include <naksh/logger/logReader.hpp>
 #include <unordered_map>
 

@@ -5,12 +5,9 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include "channel.hpp"
-
 #include <filesystem>
-#include <naksh/common/locked.hpp>
 #include <span>
-#include <unordered_map>
+#include <vector>
 
 namespace naksh::logger
 {
@@ -23,10 +20,6 @@ public:
 
     using ChannelId = std::uint64_t;
 
-    using LockedChannel = common::Locked<Channel>;
-
-    using ChannelPtrMap = std::unordered_map<ChannelId, std::unique_ptr<LockedChannel>>;
-
     /// @brief Constructor
     /// @param logRoot      Root directory to store the log at. The log is written to a child
     ///                     directory with the local date and time as the directory name.
@@ -37,30 +30,23 @@ public:
 
     Logger(const Logger&) = delete;
 
-    Logger(Logger&&) = delete;
+    Logger(Logger&& rhs) noexcept;
 
-    ~Logger() = default;
+    ~Logger();
 
     Logger& operator=(const Logger&) = delete;
 
-    Logger& operator=(Logger&&) = delete;
+    Logger& operator=(Logger&&) noexcept = delete;
 
     void write(size_t channelId, const std::span<const std::byte>& data);
 
     void write(ChannelId channelId, const std::vector<std::span<const std::byte>>& data);
 
-    const std::filesystem::path& path() const noexcept;
+    [[nodiscard]] const std::filesystem::path& path() const noexcept;
 
 private:
-    const std::filesystem::path mLogDirectory;
-
-    const size_t mMaxFileSizeInBytes;
-
-    common::Locked<std::ofstream> mLockedSequenceFile;
-
-    common::Locked<ChannelPtrMap> mLockedChannelPtrMap;
-
-    LockedChannel& acquireChannel(ChannelId channelId);
+    class LoggerImpl;
+    std::unique_ptr<LoggerImpl> mLoggerImpl;
 };
 
 } // namespace naksh::logger

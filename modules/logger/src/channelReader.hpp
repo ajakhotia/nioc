@@ -5,9 +5,8 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include "memoryCrate.hpp"
-
 #include <filesystem>
+#include <naksh/logger/memoryCrate.hpp>
 
 namespace naksh::logger
 {

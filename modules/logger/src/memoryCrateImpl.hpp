@@ -6,7 +6,6 @@
 #pragma once
 
 #include "utils.hpp"
-
 #include <boost/iostreams/device/mapped_file.hpp>
 #include <naksh/logger/memoryCrate.hpp>
 

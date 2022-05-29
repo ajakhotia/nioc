@@ -4,9 +4,8 @@
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#include "channel.hpp"
 #include "utils.hpp"
-
-#include <naksh/logger/channel.hpp>
 #include <numeric>
 #include <spdlog/spdlog.h>
 

@@ -7,7 +7,6 @@
 #pragma ide diagnostic ignored "cert-err58-cpp"
 
 #include "utils.hpp"
-
 #include <gtest/gtest.h>
 #include <naksh/logger/logger.hpp>
 #include <naksh/logger/logReader.hpp>

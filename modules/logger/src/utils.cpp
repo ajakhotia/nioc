@@ -4,7 +4,6 @@
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #include "utils.hpp"
-
 #include <bit>
 #include <boost/endian.hpp>
 #include <numeric>

@@ -5,11 +5,10 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
+#include "channelReader.hpp"
 #include "utils.hpp"
-
 #include <boost/circular_buffer.hpp>
 #include <boost/iostreams/device/mapped_file.hpp>
-#include <naksh/logger/channelReader.hpp>
 
 namespace naksh::logger
 {

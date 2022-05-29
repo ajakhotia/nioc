@@ -6,12 +6,11 @@
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "cert-err58-cpp"
 
+#include "channelReader.hpp"
+#include "channel.hpp"
 #include "utils.hpp"
-
 #include <filesystem>
 #include <gtest/gtest.h>
-#include <naksh/logger/channel.hpp>
-#include <naksh/logger/channelReader.hpp>
 #include <numeric>
 
 namespace fs = std::filesystem;

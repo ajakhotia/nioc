@@ -35,21 +35,23 @@ add_exported_library(
         src/channel.cpp
         src/channelReader.cpp
         src/channelReaderImpl.cpp
-        src/logger.cpp
         src/logReader.cpp
         src/logReaderImpl.cpp
+        src/logger.cpp
+        src/loggerImpl.cpp
         src/memoryCrate.cpp
         src/memoryCrateImpl.cpp
         src/utils.cpp
     HEADERS
+        PRIVATE src/channel.hpp
+        PRIVATE src/channelReader.hpp
         PRIVATE src/channelReaderImpl.hpp
         PRIVATE src/logReaderImpl.hpp
+        PRIVATE src/loggerImpl.hpp
         PRIVATE src/memoryCrateImpl.hpp
         PRIVATE src/utils.hpp
-        PUBLIC include/naksh/logger/channel.hpp
-        PUBLIC include/naksh/logger/channelReader.hpp
-        PUBLIC include/naksh/logger/logger.hpp
         PUBLIC include/naksh/logger/logReader.hpp
+        PUBLIC include/naksh/logger/logger.hpp
         PUBLIC include/naksh/logger/memoryCrate.hpp
     INCLUDE_DIRECTORIES
         ${CMAKE_CURRENT_SOURCE_DIR}/include
