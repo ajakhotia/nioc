@@ -21,7 +21,7 @@ public:
     using ConstByteSpan = std::span<const std::byte>;
 
     explicit Channel(std::filesystem::path logRoot,
-                     std::size_t maxFileSizeInBytes = kDefaultMaxFileSizeInBytes);
+                     std::uint64_t maxFileSizeInBytes = kDefaultMaxFileSizeInBytes);
 
     Channel(const Channel&) = delete;
 
@@ -42,13 +42,13 @@ private:
 
     std::ofstream mIndexFile;
 
-    std::size_t mMaxFileSizeInBytes;
+    std::uint64_t mMaxFileSizeInBytes;
 
-    ssize_t mRollCounter;
+    std::uint64_t mRollCounter;
 
     std::ofstream mActiveLogRoll;
 
-    void rollAndIndex(std::size_t requiredSizeInBytes);
+    void rollCheckAndIndex(std::uint64_t requiredSizeInBytes);
 
     std::filesystem::path nextRollFilePath();
 };

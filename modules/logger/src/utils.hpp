@@ -6,6 +6,7 @@
 #pragma once
 
 #include <chrono>
+#include <filesystem>
 #include <fstream>
 #include <span>
 #include <spdlog/fmt/fmt.h>
@@ -20,8 +21,32 @@ static constexpr auto kRollFileNamePrefix = "roll";
 /// File extension of a data roll within a channel.
 static constexpr auto kRollFileNameExtension = ".nio";
 
+/// Length of the padded roll number string.
+static constexpr auto kPaddedRollNumberLength = 20UL;
+
 /// Name of the index file within a channel.
 static constexpr auto kIndexFileName = "index";
+
+/// Name of the sequence file in a log.
+static constexpr auto kSequenceFileName = "sequence";
+
+
+/// @brief  A structure that represents an entry in the sequence file of a log.
+struct SequenceEntry
+{
+    std::uint64_t mChannelId;
+};
+
+
+/// @brief  A structure that represents an entry in the index file of a channel.
+struct IndexEntry
+{
+    std::uint64_t mRollId;
+
+    std::uint64_t mRollPosition;
+
+    std::uint64_t mDataSize;
+};
 
 
 /// @brief  Converts a system_clock time_point to date-time string formatted per ISO 8601
@@ -40,6 +65,12 @@ std::string timeAsFormattedString(std::chrono::system_clock::time_point timePoin
 std::string padString(const std::string& input, uint64_t paddedLength, char paddingChar = '0');
 
 
+/// @brief  Builds the log roll file name from rollId.
+/// @param  rollId  Integer identifying the roll.
+/// @return std::string containing the name for the roll.
+std::string buildRollName(std::uint64_t rollId);
+
+
 /// @brief  Converts an integer to a sting in hexadecimal form(0x.....).
 /// @tparam Integer The integer type.
 /// @param  integer Input.
@@ -51,7 +82,7 @@ std::string toHexString(const Integer integer)
 }
 
 
-/// @brief  Converts a vaild hex string to an integer. The string must start with 0x.
+/// @brief  Converts a valid hex string to an integer. The string must start with 0x.
 /// @tparam Integer     Integer type to return.
 /// @param  hexString   Input hex string
 /// @return Equivalent integer.
@@ -75,25 +106,31 @@ Integer hexStringToInteger(const std::string& hexString)
 /// @param  spaceRequired       Space required by the client.
 /// @param  maxFileSizeInBytes  Maximum allowable size of the file.
 /// @return True if the required space is available. False otherwise.
-bool fileHasSpace(std::ofstream& file, size_t spaceRequired, size_t maxFileSizeInBytes);
+bool fileHasSpace(std::ofstream& file,
+                  std::uint64_t spaceRequired,
+                  std::uint64_t maxFileSizeInBytes);
 
 
 /// @brief  Compute the sum of the length of each byte span in the collection.
 /// @param  dataCollection A collection of ConstByteSpan.
 /// @return Total size in bytes.
-size_t computeTotalSizeInBytes(const std::vector<std::span<const std::byte>>& dataCollection);
+std::uint64_t
+computeTotalSizeInBytes(const std::vector<std::span<const std::byte>>& dataCollection);
 
 
-/// @brief  Writes a uint64_t to a file in little-endian format.
-/// @param  file File to write to.
-/// @param  integer Value to be written.
-void writeToFile(std::ofstream& file, uint64_t integer);
+/// @brief  Struct used to provide read/write functionality for a give type.
+/// @tparam ValueType
+template<typename ValueType>
+struct ReadWriteUtil
+{
+    static void write(std::ostream& stream, ValueType value);
+
+    static ValueType read(const char* ptr, std::uint64_t size = sizeof(ValueType));
+};
 
 
-/// @brief  Write a span of bytes to a file.
-/// @param  file    File to write to.
-/// @param  data    Span of bytes.
-void writeToFile(std::ofstream& file, const std::span<const std::byte>& data);
+/// @brief  Ensure that the input path exists and returns the same.
+std::filesystem::path validatePath(std::filesystem::path&& path);
 
 
 } // namespace naksh::logger

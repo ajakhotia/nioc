@@ -22,7 +22,8 @@ public:
 
     template<typename... FrameRefParams>
     explicit RigidTransform(const PoseS& pose, FrameRefParams&&... frameRefParams):
-        CoordinateFrames(std::forward<FrameRefParams>(frameRefParams)...), mPose(pose)
+        CoordinateFrames(std::forward<FrameRefParams>(frameRefParams)...),
+        mPose(pose)
     {
     }
 

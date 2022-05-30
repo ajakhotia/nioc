@@ -6,12 +6,10 @@
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "cert-err58-cpp"
 
-#include "utils.hpp"
-
+#include <channel.hpp>
 #include <gtest/gtest.h>
-#include <iostream>
-#include <naksh/logger/channel.hpp>
 #include <numeric>
+#include <utils.hpp>
 
 namespace naksh::logger
 {
@@ -22,7 +20,6 @@ namespace
 
 const auto kTestLogDirectoryPath = fs::path("/tmp/testChannel0x5832651q");
 constexpr auto kDataSize = 20;
-constexpr auto kFrameSize = kDataSize + sizeof(uint64_t);
 constexpr auto kMaxFileSizeInBytes = 256;
 constexpr auto kDataIotaStart = 65; // Corresponds to character A in ASCII
 constexpr auto kNumFramesToWrite = 256UL;
@@ -67,11 +64,11 @@ TEST(Channel, rollAndIndexFileSizeChecks)
         }
     }
 
-    const auto numFramesPerFullFile = kMaxFileSizeInBytes / kFrameSize;
-    const auto expectedFullFileSize = numFramesPerFullFile * kFrameSize;
+    const auto numFramesPerFullFile = kMaxFileSizeInBytes / kDataSize;
+    const auto expectedFullFileSize = numFramesPerFullFile * kDataSize;
     const auto numFramesInLastFile = kNumFramesToWrite % numFramesPerFullFile;
-    const auto expectedLastFileSize = numFramesInLastFile * kFrameSize;
-    const auto expectedIndexFileSize = kNumFramesToWrite * 2 * sizeof(uint64_t);
+    const auto expectedLastFileSize = numFramesInLastFile * kDataSize;
+    const auto expectedIndexFileSize = kNumFramesToWrite * 3 * sizeof(uint64_t);
 
     std::vector<fs::directory_entry> directoryEntries;
     for(const auto& entity: fs::directory_iterator(kTestLogDirectoryPath))

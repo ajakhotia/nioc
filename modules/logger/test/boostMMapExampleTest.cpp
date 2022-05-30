@@ -16,7 +16,7 @@ namespace naksh::logger
 {
 namespace
 {
-constexpr const long int kNumBytes = 1024 * 1024;
+constexpr const auto kNumBytes = 1024ULL * 1024ULL;
 
 }
 
@@ -24,16 +24,17 @@ constexpr const long int kNumBytes = 1024 * 1024;
 TEST(LoggerBoostUsageExample, MMapFileWriting)
 {
     namespace bio = boost::iostreams;
+    std::filesystem::remove_all("/tmp/mmapFileWriting.txt");
+
+    bio::mapped_file_params mappedFileParams;
+    mappedFileParams.new_file_size = kNumBytes;
+    mappedFileParams.path = "/tmp/mmapFileWriting.txt";
+    mappedFileParams.flags = bio::mapped_file::mapmode::readwrite;
+
+    bio::mapped_file file(mappedFileParams);
 
     const auto tic = std::clock();
     {
-        bio::mapped_file_params mappedFileParams;
-        mappedFileParams.new_file_size = kNumBytes;
-        mappedFileParams.path = "/tmp/mmapFileWriting.txt";
-        mappedFileParams.flags = bio::mapped_file::mapmode::readwrite;
-
-        bio::mapped_file file(mappedFileParams);
-
         for(auto& byte: file)
         {
             byte = 'a';
@@ -50,12 +51,15 @@ TEST(LoggerBoostUsageExample, MMapFileWriting)
 
 TEST(LoggerBoostUsageExample, SerialFileWrite)
 {
+    std::filesystem::remove_all("/tmp/serialFileWriting.txt");
+
     // Create a file and  write 'a' to it.
+    std::ofstream file("/tmp/serialFileWriting.txt");
+
     const auto tic = std::clock();
     {
-        std::ofstream file("/tmp/serialFileWriting.txt");
 
-        for(long int i = 0; i < kNumBytes; ++i)
+        for(auto i = 0ULL; i < kNumBytes; ++i)
         {
             file << 'a';
         }

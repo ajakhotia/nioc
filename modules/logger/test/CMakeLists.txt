@@ -6,7 +6,9 @@ find_package(Boost REQUIRED COMPONENTS iostreams)
 add_executable(loggerTest
     boostMMapExampleTest.cpp
     channelTest.cpp
+    channelReaderTest.cpp
     loggerTest.cpp
+    logReaderTest.cpp
     utilsTest.cpp)
 
 target_include_directories(loggerTest PRIVATE ../src)

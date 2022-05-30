@@ -33,19 +33,35 @@ add_exported_library(
         nakshTargets
     SOURCES
         src/channel.cpp
+        src/channelReader.cpp
+        src/channelReader.cpp
+        src/logReader.cpp
+        src/logReaderImpl.cpp
         src/logger.cpp
+        src/loggerImpl.cpp
+        src/memoryCrate.cpp
+        src/memoryCrateImpl.cpp
         src/utils.cpp
     HEADERS
-        PUBLIC include/naksh/logger/channel.hpp
+        PRIVATE src/channel.hpp
+        PRIVATE src/channelReader.hpp
+        PRIVATE src/channelReader.hpp
+        PRIVATE src/logReaderImpl.hpp
+        PRIVATE src/loggerImpl.hpp
+        PRIVATE src/memoryCrateImpl.hpp
+        PRIVATE src/utils.hpp
+        PUBLIC include/naksh/logger/defines.hpp
+        PUBLIC include/naksh/logger/logReader.hpp
         PUBLIC include/naksh/logger/logger.hpp
+        PUBLIC include/naksh/logger/memoryCrate.hpp
     INCLUDE_DIRECTORIES
         ${CMAKE_CURRENT_SOURCE_DIR}/include
     LINK_LIBRARIES
         PRIVATE Boost::headers
         PRIVATE Boost::iostreams
+        PRIVATE Naksh::common
         PRIVATE Naksh::loggerIdl
         PRIVATE spdlog::spdlog
-        PUBLIC Naksh::common
     COMPILE_FEATURES
         PUBLIC cxx_std_20
     COMPILE_OPTIONS

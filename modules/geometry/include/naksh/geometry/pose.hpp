@@ -6,7 +6,6 @@
 #pragma once
 
 #include "traits.hpp"
-
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <span>
