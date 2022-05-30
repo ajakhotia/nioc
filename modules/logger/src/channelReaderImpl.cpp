@@ -9,7 +9,6 @@
 
 namespace naksh::logger
 {
-namespace fs = std::filesystem;
 
 namespace
 {
