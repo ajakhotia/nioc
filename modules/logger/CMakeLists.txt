@@ -34,7 +34,7 @@ add_exported_library(
     SOURCES
         src/channel.cpp
         src/channelReader.cpp
-        src/channelReaderImpl.cpp
+        src/channelReader.cpp
         src/logReader.cpp
         src/logReaderImpl.cpp
         src/logger.cpp
@@ -45,7 +45,7 @@ add_exported_library(
     HEADERS
         PRIVATE src/channel.hpp
         PRIVATE src/channelReader.hpp
-        PRIVATE src/channelReaderImpl.hpp
+        PRIVATE src/channelReader.hpp
         PRIVATE src/logReaderImpl.hpp
         PRIVATE src/loggerImpl.hpp
         PRIVATE src/memoryCrateImpl.hpp
