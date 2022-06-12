@@ -18,11 +18,11 @@ add-apt-repository -y ppa:ubuntu-toolchain-r/test || exit 1
 
 # Add repository for latest CMake.
 wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null |             \
-    gpg --dearmor - | sudo tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null
+    gpg --dearmor - | sudo tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null || exit 1
 
 echo 'deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] '     \
     'https://apt.kitware.com/ubuntu/ focal main' |                          \
-    sudo tee /etc/apt/sources.list.d/kitware.list >/dev/null
+    sudo tee /etc/apt/sources.list.d/kitware.list >/dev/null || exit 1
 
 
 # Install required apt packages.
