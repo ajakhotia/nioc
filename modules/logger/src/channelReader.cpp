@@ -49,8 +49,7 @@ MemoryCrate ChannelReader::read()
 }
 
 
-ChannelReader::MappedFilePtr
-ChannelReader::acquireLogRoll(const std::uint64_t rollId)
+ChannelReader::MappedFilePtr ChannelReader::acquireLogRoll(const std::uint64_t rollId)
 {
     const auto iter = std::find_if(mLogRollBuffer.begin(),
                                    mLogRollBuffer.end(),

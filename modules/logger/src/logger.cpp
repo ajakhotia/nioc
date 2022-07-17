@@ -10,7 +10,7 @@
 namespace naksh::logger
 {
 
-Logger::Logger(std::filesystem::path logRoot, const size_t maxFileSizeInBytes):
+Logger::Logger(std::filesystem::path logRoot, const std::size_t maxFileSizeInBytes):
     mLoggerImpl(std::make_unique<LoggerImpl>(std::move(logRoot), maxFileSizeInBytes))
 {
 }
@@ -21,12 +21,12 @@ Logger::Logger(Logger&& rhs) noexcept = default;
 Logger::~Logger() = default;
 
 
-void Logger::write(size_t channelId, const std::span<const std::byte>& data)
+void Logger::write(const ChannelId channelId, const std::span<const std::byte>& data)
 {
     mLoggerImpl->write(channelId, data);
 }
 
-void Logger::write(ChannelId channelId, const std::vector<std::span<const std::byte>>& data)
+void Logger::write(const ChannelId channelId, const std::vector<std::span<const std::byte>>& data)
 {
     mLoggerImpl->write(channelId, data);
 }

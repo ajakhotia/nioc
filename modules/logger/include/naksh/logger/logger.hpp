@@ -24,7 +24,7 @@ public:
     /// @param fileSize     Size of files allocated to store the data.
     explicit Logger(std::filesystem::path logRoot = std::filesystem::temp_directory_path() /
                                                     "nakshLogs",
-                    size_t maxFileSizeInBytes = kDefaultMaxFileSizeInBytes);
+                    std::size_t maxFileSizeInBytes = kDefaultMaxFileSizeInBytes);
 
     Logger(const Logger&) = delete;
 
@@ -36,7 +36,7 @@ public:
 
     Logger& operator=(Logger&&) noexcept = delete;
 
-    void write(size_t channelId, const std::span<const std::byte>& data);
+    void write(ChannelId channelId, const std::span<const std::byte>& data);
 
     void write(ChannelId channelId, const std::vector<std::span<const std::byte>>& data);
 
