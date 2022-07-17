@@ -58,7 +58,6 @@ TEST(LoggerBoostUsageExample, SerialFileWrite)
 
     const auto tic = std::clock();
     {
-
         for(auto i = 0ULL; i < kNumBytes; ++i)
         {
             file << 'a';

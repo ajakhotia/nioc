@@ -39,7 +39,7 @@ fs::path checkAndSetupLogDirectory(fs::path logRoot)
 } // End of anonymous namespace.
 
 
-Logger::LoggerImpl::LoggerImpl(std::filesystem::path logRoot, const size_t maxFileSizeInBytes):
+Logger::LoggerImpl::LoggerImpl(std::filesystem::path logRoot, const std::size_t maxFileSizeInBytes):
     mLogDirectory(checkAndSetupLogDirectory(std::move(logRoot))),
     mMaxFileSizeInBytes(maxFileSizeInBytes),
     mLockedSequenceFile(mLogDirectory / kSequenceFileName),

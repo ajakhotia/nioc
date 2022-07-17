@@ -20,7 +20,7 @@ public:
 
     using ChannelPtrMap = std::unordered_map<ChannelId, std::unique_ptr<LockedChannel>>;
 
-    explicit LoggerImpl(std::filesystem::path logRoot, size_t maxFileSizeInBytes);
+    explicit LoggerImpl(std::filesystem::path logRoot, std::size_t maxFileSizeInBytes);
 
     LoggerImpl(const LoggerImpl&) = delete;
 
@@ -32,16 +32,16 @@ public:
 
     LoggerImpl& operator=(LoggerImpl&&) noexcept = delete;
 
-    void write(size_t channelId, const std::span<const std::byte>& data);
+    void write(ChannelId channelId, const std::span<const std::byte>& data);
 
     void write(ChannelId channelId, const std::vector<std::span<const std::byte>>& data);
 
-    const std::filesystem::path& path() const noexcept;
+    [[nodiscard]] const std::filesystem::path& path() const noexcept;
 
 private:
     const std::filesystem::path mLogDirectory;
 
-    const size_t mMaxFileSizeInBytes;
+    const std::size_t mMaxFileSizeInBytes;
 
     common::Locked<std::ofstream> mLockedSequenceFile;
 

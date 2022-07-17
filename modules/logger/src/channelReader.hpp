@@ -6,9 +6,9 @@
 #pragma once
 
 #include "utils.hpp"
-#include <naksh/logger/memoryCrate.hpp>
 #include <boost/circular_buffer.hpp>
 #include <boost/iostreams/device/mapped_file.hpp>
+#include <naksh/logger/memoryCrate.hpp>
 
 namespace naksh::logger
 {
