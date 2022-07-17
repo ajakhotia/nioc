@@ -72,6 +72,7 @@ TEST(LogReader, read)
         EXPECT_EQ(channelB, logEntry.mChannelId);
         expectSpanEqual(dataBAsBytes, logEntry.mMemoryCrate.span());
     }
+
     {
         const auto logEntry = logReader.read();
         EXPECT_EQ(channelA, logEntry.mChannelId);
