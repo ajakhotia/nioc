@@ -127,7 +127,10 @@ function(add_exported_library)
     endif()
 
     # The trailing / is important to avoid having install path that look like <prefix>/include/include.
-    install(DIRECTORY ${AEL_PARAM_INCLUDE_DIRECTORIES}/ TYPE INCLUDE)
+    install(DIRECTORY ${AEL_PARAM_INCLUDE_DIRECTORIES}/ TYPE INCLUDE
+            PATTERN "*.capnp" EXCLUDE
+            PATTERN "*.capnp.c++" EXCLUDE)
+
     install(TARGETS ${AEL_PARAM_TARGET} EXPORT ${AEL_PARAM_EXPORT})
 
 endfunction()
