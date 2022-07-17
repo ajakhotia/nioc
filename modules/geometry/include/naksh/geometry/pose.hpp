@@ -112,8 +112,8 @@ public:
     Derived& invert()
     {
         const auto inverseOrientation = orientation().inverse();
-        const auto inversePosition = Scalar(-1) * (inverseOrientation * position());
-        *this = Pose<Scalar>(inverseOrientation, inversePosition);
+        const auto negativeInversePosition = inverseOrientation * position();
+        *this = Pose<Scalar>(inverseOrientation, Scalar(-1) * negativeInversePosition);
         return derived();
     }
 
