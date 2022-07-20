@@ -19,6 +19,14 @@
                 "BUILD_TESTING": {
                     "type": "BOOL",
                     "value": true
+                },
+                "CMAKE_INSTALL_PREFIX": {
+                    "type": "PATH",
+                    "value": "$env{HOME}/opt/${presetName}"
+                },
+                "CMAKE_MAKE_PROGRAM": {
+                    "type": "FILEPATH",
+                    "value": "/usr/bin/ninja"
                 }
             },
             "hidden": true
@@ -68,317 +76,54 @@
             "hidden": true
         },
         {
-            "name": "ciPrefixes",
-            "displayName": "ciPrefixes",
+            "name": "ci-static-prefix",
+            "displayName": "ci-static-prefix",
+            "inherits": ["static"],
             "cacheVariables": {
                 "CMAKE_PREFIX_PATH": {
                     "type": "LIST",
-                    "value": "$env{HOME}/usr/gnu-11"
-                },
-                "CMAKE_INSTALL_PREFIX": {
-                    "type": "PATH",
-                    "value": "$env{HOME}/opt/${presetName}"
+                    "value": "$env{HOME}/usr/static"
                 }
             },
             "hidden": true
         },
-
         {
-            "name": "gnu-10-static-debug",
-            "displayName": "gnu-10-static-debug",
-            "toolchainFile": "${sourceDir}/toolchains/gnu-10-ubuntu2004.cmake",
-            "inherits": ["ninja", "static", "debug"],
-            "binaryDir": "${sourceDir}/build/${presetName}",
+            "name": "ci-shared-prefix",
+            "displayName": "ci-shared-prefix",
+            "inherits": ["shared"],
+            "cacheVariables": {
+                "CMAKE_PREFIX_PATH": {
+                    "type": "LIST",
+                    "value": "$env{HOME}/usr/shared"
+                }
+            },
             "hidden": true
         },
         {
-            "name": "gnu-10-static-release",
-            "displayName": "gnu-10-static-release",
-            "toolchainFile": "${sourceDir}/toolchains/gnu-10-ubuntu2004.cmake",
-            "inherits": ["ninja", "static", "release"],
+            "name": "ci-gnu-12-static-debug",
+            "displayName": "ci-gnu-12-static-debug",
+            "toolchainFile": "${sourceDir}/toolchains/gnu-12.cmake",
+            "inherits": ["ninja", "ci-static-prefix", "debug"],
             "binaryDir": "${sourceDir}/build/${presetName}",
             "hidden": true
-        },
-        {
-            "name": "gnu-10-shared-debug",
-            "displayName": "gnu-10-shared-debug",
-            "toolchainFile": "${sourceDir}/toolchains/gnu-10-ubuntu2004.cmake",
-            "inherits": ["ninja", "shared", "debug"],
-            "binaryDir": "${sourceDir}/build/${presetName}",
-            "hidden": true
-        },
-        {
-            "name": "gnu-10-shared-release",
-            "displayName": "gnu-10-shared-release",
-            "toolchainFile": "${sourceDir}/toolchains/gnu-10-ubuntu2004.cmake",
-            "inherits": ["ninja", "shared", "release"],
-            "binaryDir": "${sourceDir}/build/${presetName}",
-            "hidden": true
-        },
-
-        {
-            "name": "gnu-11-static-debug",
-            "displayName": "gnu-11-static-debug",
-            "toolchainFile": "${sourceDir}/toolchains/gnu-11-ubuntu2004.cmake",
-            "inherits": ["ninja", "static", "debug"],
-            "binaryDir": "${sourceDir}/build/${presetName}",
-            "hidden": true
-        },
-        {
-            "name": "gnu-11-static-release",
-            "displayName": "gnu-11-static-release",
-            "toolchainFile": "${sourceDir}/toolchains/gnu-11-ubuntu2004.cmake",
-            "inherits": ["ninja", "static", "release"],
-            "binaryDir": "${sourceDir}/build/${presetName}",
-            "hidden": true
-        },
-        {
-            "name": "gnu-11-shared-debug",
-            "displayName": "gnu-11-shared-debug",
-            "toolchainFile": "${sourceDir}/toolchains/gnu-11-ubuntu2004.cmake",
-            "inherits": ["ninja", "shared", "debug"],
-            "binaryDir": "${sourceDir}/build/${presetName}",
-            "hidden": true
-        },
-        {
-            "name": "gnu-11-shared-release",
-            "displayName": "gnu-10-shared-release",
-            "toolchainFile": "${sourceDir}/toolchains/gnu-11-ubuntu2004.cmake",
-            "inherits": ["ninja", "shared", "release"],
-            "binaryDir": "${sourceDir}/build/${presetName}",
-            "hidden": true
-        },
-
-        {
-            "name": "clang-12-static-debug",
-            "displayName": "clang-12-static-debug",
-            "toolchainFile": "${sourceDir}/toolchains/clang-12-ubuntu2004.cmake",
-            "inherits": ["ninja", "static", "debug"],
-            "binaryDir": "${sourceDir}/build/${presetName}",
-            "hidden": true
-        },
-        {
-            "name": "clang-12-static-release",
-            "displayName": "clang-12-static-release",
-            "toolchainFile": "${sourceDir}/toolchains/clang-12-ubuntu2004.cmake",
-            "inherits": ["ninja", "static", "release"],
-            "binaryDir": "${sourceDir}/build/${presetName}",
-            "hidden": true
-        },
-        {
-            "name": "clang-12-shared-debug",
-            "displayName": "clang-12-shared-debug",
-            "toolchainFile": "${sourceDir}/toolchains/clang-12-ubuntu2004.cmake",
-            "inherits": ["ninja", "shared", "debug"],
-            "binaryDir": "${sourceDir}/build/${presetName}",
-            "hidden": true
-        },
-        {
-            "name": "clang-12-shared-release",
-            "displayName": "clang-12-shared-release",
-            "toolchainFile": "${sourceDir}/toolchains/clang-12-ubuntu2004.cmake",
-            "inherits": ["ninja", "shared", "release"],
-            "binaryDir": "${sourceDir}/build/${presetName}",
-            "hidden": true
-        },
-
-        {
-            "name": "clang-14-static-debug",
-            "displayName": "clang-14-static-debug",
-            "toolchainFile": "${sourceDir}/toolchains/clang-14-ubuntu2004.cmake",
-            "inherits": ["ninja", "static", "debug"],
-            "binaryDir": "${sourceDir}/build/${presetName}",
-            "hidden": true
-        },
-        {
-            "name": "clang-14-static-release",
-            "displayName": "clang-14-static-release",
-            "toolchainFile": "${sourceDir}/toolchains/clang-14-ubuntu2004.cmake",
-            "inherits": ["ninja", "static", "release"],
-            "binaryDir": "${sourceDir}/build/${presetName}",
-            "hidden": true
-        },
-        {
-            "name": "clang-14-shared-debug",
-            "displayName": "clang-14-shared-debug",
-            "toolchainFile": "${sourceDir}/toolchains/clang-14-ubuntu2004.cmake",
-            "inherits": ["ninja", "shared", "debug"],
-            "binaryDir": "${sourceDir}/build/${presetName}",
-            "hidden": true
-        },
-        {
-            "name": "clang-14-shared-release",
-            "displayName": "clang-14-shared-release",
-            "toolchainFile": "${sourceDir}/toolchains/clang-14-ubuntu2004.cmake",
-            "inherits": ["ninja", "shared", "release"],
-            "binaryDir": "${sourceDir}/build/${presetName}",
-            "hidden": true
-        },
-
-        {
-            "name": "ci-gnu-10-static-debug",
-            "displayName": "ci-gnu-10-static-debug",
-            "inherits": ["ciPrefixes", "gnu-10-static-debug"]
-        },
-        {
-            "name": "ci-gnu-10-static-release",
-            "displayName": "ci-gnu-10-static-release",
-            "inherits": ["ciPrefixes", "gnu-10-static-release"]
-        },
-        {
-            "name": "ci-gnu-10-shared-debug",
-            "displayName": "ci-gnu-10-static-debug",
-            "inherits": ["ciPrefixes", "gnu-10-shared-debug"]
-        },
-        {
-            "name": "ci-gnu-10-shared-release",
-            "displayName": "ci-gnu-10-static-release",
-            "inherits": ["ciPrefixes", "gnu-10-shared-release"]
-        },
-
-        {
-            "name": "ci-gnu-11-static-debug",
-            "displayName": "ci-gnu-11-static-debug",
-            "inherits": ["ciPrefixes", "gnu-11-static-debug"]
-        },
-        {
-            "name": "ci-gnu-11-static-release",
-            "displayName": "ci-gnu-11-static-release",
-            "inherits": ["ciPrefixes", "gnu-11-static-release"]
-        },
-        {
-            "name": "ci-gnu-11-shared-debug",
-            "displayName": "ci-gnu-11-static-debug",
-            "inherits": ["ciPrefixes", "gnu-11-shared-debug"]
-        },
-        {
-            "name": "ci-gnu-11-shared-release",
-            "displayName": "ci-gnu-11-static-release",
-            "inherits": ["ciPrefixes", "gnu-11-shared-release"]
-        },
-
-        {
-            "name": "ci-clang-12-static-debug",
-            "displayName": "ci-clang-12-static-debug",
-            "inherits": ["ciPrefixes", "clang-12-static-debug"]
-        },
-        {
-            "name": "ci-clang-12-static-release",
-            "displayName": "ci-clang-12-static-release",
-            "inherits": ["ciPrefixes", "clang-12-static-release"]
-        },
-        {
-            "name": "ci-clang-12-shared-debug",
-            "displayName": "ci-clang-12-static-debug",
-            "inherits": ["ciPrefixes", "clang-12-shared-debug"]
-        },
-        {
-            "name": "ci-clang-12-shared-release",
-            "displayName": "ci-clang-12-static-release",
-            "inherits": ["ciPrefixes", "clang-12-shared-release"]
-        },
-
-        {
-            "name": "ci-clang-14-static-debug",
-            "displayName": "ci-clang-14-static-debug",
-            "inherits": ["ciPrefixes", "clang-14-static-debug"]
-        },
-        {
-            "name": "ci-clang-14-static-release",
-            "displayName": "ci-clang-14-static-release",
-            "inherits": ["ciPrefixes", "clang-14-static-release"]
-        },
-        {
-            "name": "ci-clang-14-shared-debug",
-            "displayName": "ci-clang-14-static-debug",
-            "inherits": ["ciPrefixes", "clang-14-shared-debug"]
         },
         {
             "name": "ci-clang-14-shared-release",
-            "displayName": "ci-clang-14-static-release",
-            "inherits": ["ciPrefixes", "clang-14-shared-release"]
+            "displayName": "ci-clang-14-shared-release",
+            "toolchainFile": "${sourceDir}/toolchains/clang-14.cmake",
+            "inherits": ["ninja", "ci-shared-prefix", "release"],
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "hidden": true
         }
     ],
 
     "buildPresets": [
         {
-            "name": "ci-gnu-10-static-debug",
-            "displayName": "ci-gnu-10-static-debug",
-            "configurePreset": "ci-gnu-10-static-debug"
-        },
-        {
-            "name": "ci-gnu-10-static-release",
-            "displayName": "ci-gnu-10-static-release",
-            "configurePreset": "ci-gnu-10-static-release"
-        },
-        {
-            "name": "ci-gnu-10-shared-debug",
-            "displayName": "ci-gnu-10-shared-debug",
-            "configurePreset": "ci-gnu-10-shared-debug"
-        },
-        {
-            "name": "ci-gnu-10-shared-release",
-            "displayName": "ci-gnu-10-shared-release",
-            "configurePreset": "ci-gnu-10-shared-release"
+            "name": "ci-gnu-12-static-debug",
+            "displayName": "ci-gnu-12-static-debug",
+            "configurePreset": "ci-gnu-12-static-debug"
         },
 
-        {
-            "name": "ci-gnu-11-static-debug",
-            "displayName": "ci-gnu-11-static-debug",
-            "configurePreset": "ci-gnu-11-static-debug"
-        },
-        {
-            "name": "ci-gnu-11-static-release",
-            "displayName": "ci-gnu-11-static-release",
-            "configurePreset": "ci-gnu-11-static-release"
-        },
-        {
-            "name": "ci-gnu-11-shared-debug",
-            "displayName": "ci-gnu-11-shared-debug",
-            "configurePreset": "ci-gnu-11-shared-debug"
-        },
-        {
-            "name": "ci-gnu-11-shared-release",
-            "displayName": "ci-gnu-11-shared-release",
-            "configurePreset": "ci-gnu-11-shared-release"
-        },
-
-        {
-            "name": "ci-clang-12-static-debug",
-            "displayName": "ci-clang-12-static-debug",
-            "configurePreset": "ci-clang-12-static-debug"
-        },
-        {
-            "name": "ci-clang-12-static-release",
-            "displayName": "ci-clang-12-static-release",
-            "configurePreset": "ci-clang-12-static-release"
-        },
-        {
-            "name": "ci-clang-12-shared-debug",
-            "displayName": "ci-clang-12-shared-debug",
-            "configurePreset": "ci-clang-12-shared-debug"
-        },
-        {
-            "name": "ci-clang-12-shared-release",
-            "displayName": "ci-clang-12-shared-release",
-            "configurePreset": "ci-clang-12-shared-release"
-        },
-
-        {
-            "name": "ci-clang-14-static-debug",
-            "displayName": "ci-clang-14-static-debug",
-            "configurePreset": "ci-clang-14-static-debug"
-        },
-        {
-            "name": "ci-clang-14-static-release",
-            "displayName": "ci-clang-14-static-release",
-            "configurePreset": "ci-clang-14-static-release"
-        },
-        {
-            "name": "ci-clang-14-shared-debug",
-            "displayName": "ci-clang-14-shared-debug",
-            "configurePreset": "ci-clang-14-shared-debug"
-        },
         {
             "name": "ci-clang-14-shared-release",
             "displayName": "ci-clang-14-shared-release",
