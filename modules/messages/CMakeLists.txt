@@ -37,6 +37,8 @@ add_exported_library(
         LINK_LIBRARIES
             PRIVATE CapnProto::capnp
             PRIVATE CapnProto::kj
+            PUBLIC Naksh::logger
+            PUBLIC Naksh::loggerIdl
         COMPILE_FEATURES
             PUBLIC cxx_std_17
         COMPILE_OPTIONS
