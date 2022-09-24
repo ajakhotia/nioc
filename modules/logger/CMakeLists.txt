@@ -9,9 +9,9 @@ capnproto_generate_library(
     TARGET
         loggerIdl
     NAMESPACE
-        Naksh::
+        nioc::
     EXPORT
-        nakshTargets
+        niocTargets
     SCHEMA_FILES
         include/naksh/logger/idl/frame.capnp
     COMPILE_FEATURES
@@ -28,9 +28,9 @@ add_exported_library(
     TARGET
         logger
     NAMESPACE
-        Naksh::
+        nioc::
     EXPORT
-        nakshTargets
+        niocTargets
     SOURCES
         src/channel.cpp
         src/channelReader.cpp
@@ -59,8 +59,8 @@ add_exported_library(
     LINK_LIBRARIES
         PRIVATE Boost::headers
         PRIVATE Boost::iostreams
-        PRIVATE Naksh::common
-        PRIVATE Naksh::loggerIdl
+        PRIVATE nioc::common
+        PRIVATE nioc::loggerIdl
         PRIVATE spdlog::spdlog
     COMPILE_FEATURES
         PUBLIC cxx_std_20

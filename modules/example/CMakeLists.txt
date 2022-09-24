@@ -4,7 +4,7 @@
     library outside this file should be made using the namespaced alias. This
     way, we avoid link-conflicts after the targets are exported. ]]
 add_library(example SHARED src/example.cpp)
-add_library(Naksh::example ALIAS example)
+add_library(nioc::example ALIAS example)
 
 
 #[[ Set the include directories. These directories are passed to the compiler
@@ -47,7 +47,7 @@ target_compile_options(example PRIVATE
 
 #[[ Add and executable and its alias. Same reasons as above.]]
 add_executable(exampleMain src/exampleMain.cpp)
-add_executable(Naksh::exampleMain ALIAS exampleMain)
+add_executable(nioc::exampleMain ALIAS exampleMain)
 
 
 #[[ Set the include directories. These directories are passed to the compiler
@@ -60,10 +60,10 @@ target_include_directories(exampleMain PRIVATE include)
 
 
 #[[ Let the build system know that exampleMain needs to be linked against
-    Naksh::example library for build and run-time(if Naksh::example is a shared
-    library). Note that we use namespace aliased name(Naksh::example) of the
+    nioc::example library for build and run-time(if nioc::example is a shared
+    library). Note that we use namespace aliased name(nioc::example) of the
     library here instead of its direct name. ]]
-target_link_libraries(exampleMain Naksh::example)
+target_link_libraries(exampleMain nioc::example)
 
 
 #[[ Let the build system know that the "example" library and its dependees need
@@ -102,4 +102,4 @@ install(DIRECTORY include/
         FILES_MATCHING PATTERN "*.hpp")
 
 #[[ Setup install steps for the created targets. ]]
-install(TARGETS example exampleMain EXPORT nakshTargets)
+install(TARGETS example exampleMain EXPORT niocTargets)

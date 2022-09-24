@@ -1,7 +1,7 @@
 @0xc48e8c1ef6bb045c;
 
 using Cxx = import "/capnp/c++.capnp";
-$Cxx.namespace("naksh::messages");
+$Cxx.namespace("nioc::messages");
 
 struct Sample2 @0xb5d6c21f4954bf78
 {

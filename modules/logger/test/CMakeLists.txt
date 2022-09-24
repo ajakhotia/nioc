@@ -17,7 +17,7 @@ target_link_libraries(loggerTest
     Boost::iostreams
     GTest::GTest
     GTest::Main
-    Naksh::logger)
+    nioc::logger)
 
 target_compile_options(loggerTest PRIVATE
         $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>

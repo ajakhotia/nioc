@@ -1,1 +1,1 @@
-message(STATUS "Naksh is including external sub-modules into the source tree")
+message(STATUS "nioc is including external sub-modules into the source tree")

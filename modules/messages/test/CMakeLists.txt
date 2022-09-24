@@ -5,9 +5,9 @@ add_executable(messagesTest messagesTest.cpp)
 target_link_libraries(messagesTest
     GTest::GTest
     GTest::Main
-    Naksh::logger
-    Naksh::messages
-    Naksh::messagesIdl)
+    nioc::logger
+    nioc::messages
+    nioc::messagesIdl)
 
 target_compile_options(messagesTest PRIVATE
         $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>

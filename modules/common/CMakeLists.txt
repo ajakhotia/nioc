@@ -6,9 +6,9 @@ add_exported_library(
         TYPE
             INTERFACE
         NAMESPACE
-            Naksh::
+            nioc::
         EXPORT
-            nakshTargets
+            niocTargets
         SOURCES
             ""
         HEADERS

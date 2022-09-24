@@ -1,7 +1,7 @@
 @0xd7472994f9605ebc;
 
 using Cxx = import "/capnp/c++.capnp";
-$Cxx.namespace("naksh::logger");
+$Cxx.namespace("nioc::logger");
 
 
 struct Timestamp @0xb2cac35f6f565bc8

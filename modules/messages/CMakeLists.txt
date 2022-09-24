@@ -4,9 +4,9 @@ capnproto_generate_library(
         TARGET
             messagesIdl
         NAMESPACE
-            Naksh::
+            nioc::
         EXPORT
-            nakshTargets
+            niocTargets
         SCHEMA_FILES
             include/naksh/messages/idl/sample1.capnp
             include/naksh/messages/idl/sample2.capnp
@@ -24,9 +24,9 @@ add_exported_library(
         TARGET
             messages
         NAMESPACE
-            Naksh::
+            nioc::
         EXPORT
-            nakshTargets
+            niocTargets
         SOURCES
             src/msgBase.cpp
         HEADERS
@@ -37,8 +37,8 @@ add_exported_library(
         LINK_LIBRARIES
             PRIVATE CapnProto::capnp
             PRIVATE CapnProto::kj
-            PUBLIC Naksh::logger
-            PUBLIC Naksh::loggerIdl
+            PUBLIC nioc::logger
+            PUBLIC nioc::loggerIdl
         COMPILE_FEATURES
             PUBLIC cxx_std_17
         COMPILE_OPTIONS

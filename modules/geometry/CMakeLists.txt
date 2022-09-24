@@ -4,9 +4,9 @@ add_exported_library(
         TARGET
             geometry
         NAMESPACE
-            Naksh::
+            nioc::
         EXPORT
-            nakshTargets
+            niocTargets
         SOURCES
             src/frame.cpp
             src/frameReferences.cpp
@@ -22,7 +22,7 @@ add_exported_library(
             ${CMAKE_CURRENT_SOURCE_DIR}/include
         LINK_LIBRARIES
             INTERFACE Eigen3::Eigen
-            PUBLIC Naksh::common
+            PUBLIC nioc::common
         COMPILE_FEATURES
             PUBLIC cxx_std_20
         COMPILE_OPTIONS

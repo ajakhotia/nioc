@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20.2)
 
-project(naksh VERSION 0.0.0.0 LANGUAGES C CXX)
+project(nioc VERSION 0.0.0.0 LANGUAGES C CXX)
 
 
 #[[ Setup unit testing framework. ]]
@@ -16,7 +16,7 @@ endif()
 
 
 include(cmake/clangFormat.cmake)
-add_clang_format(TARGET nakshClangFormat VERSION 14)
+add_clang_format(TARGET niocClangFormat VERSION 14)
 
 include(cmake/exportedTargets.cmake)
 include(cmake/capnprotoGenerate.cmake)
@@ -29,7 +29,7 @@ include(cmake/capnprotoGenerate.cmake)
     maintain a single flat level of external sub-modules/sub-repos and avoid a
     tree of sub-modules with potential for conflict and multiple points of
     truth. ]]
-if(${CMAKE_SOURCE_DIR} STREQUAL ${naksh_SOURCE_DIR})
+if(${CMAKE_SOURCE_DIR} STREQUAL ${nioc_SOURCE_DIR})
     add_subdirectory(external)
 endif()
 
@@ -47,26 +47,26 @@ add_subdirectory(docker)
 include(CMakePackageConfigHelpers)
 
 #[[ Export the target metadata to the install tree. ]]
-install(EXPORT nakshTargets NAMESPACE Naksh::
-        FILE nakshTargets.cmake
-        DESTINATION lib/cmake/naksh)
+install(EXPORT niocTargets NAMESPACE nioc::
+        FILE niocTargets.cmake
+        DESTINATION lib/cmake/nioc)
 
 #[[ Generate config file and install it. ]]
 write_basic_package_version_file(
-        ${CMAKE_CURRENT_BINARY_DIR}/cmake/nakshConfigVersion.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/cmake/niocConfigVersion.cmake
         COMPATIBILITY SameMajorVersion)
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cmake/nakshConfigVersion.cmake
-        DESTINATION lib/cmake/naksh)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cmake/niocConfigVersion.cmake
+        DESTINATION lib/cmake/nioc)
 
-#[[ Configure and install nakshConfig.cmake.in to enable other projects find
-    naksh from the install tree. Even though the function
+#[[ Configure and install niocConfig.cmake.in to enable other projects find
+    nioc from the install tree. Even though the function
     "configure_package_config_file" takes the INSTALL_DESTINATION, it doesn't
     actually create a installation step for "make install". So, to install the
     generated config file, we are required to manually create a install step. ]]
 configure_package_config_file(
-        cmake/nakshConfig.cmake.in cmake/nakshConfig.cmake
-        INSTALL_DESTINATION lib/cmake/naksh)
+        cmake/niocConfig.cmake.in cmake/niocConfig.cmake
+        INSTALL_DESTINATION lib/cmake/nioc)
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cmake/nakshConfig.cmake
-        DESTINATION lib/cmake/naksh)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cmake/niocConfig.cmake
+        DESTINATION lib/cmake/nioc)
