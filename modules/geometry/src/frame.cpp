@@ -1,12 +1,12 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2021.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include <naksh/geometry/frame.hpp>
+#include <nioc/geometry/frame.hpp>
 
-namespace naksh::geometry
+namespace nioc::geometry
 {
 DynamicFrame::DynamicFrame(std::string frameId) noexcept: mFrameId(std::move(frameId)) {}
 
@@ -28,4 +28,4 @@ bool operator!=(const DynamicFrame& lhs, const DynamicFrame& rhs)
     return lhs.name() != rhs.name();
 }
 
-} // End of namespace naksh::geometry.
+} // End of namespace nioc::geometry.

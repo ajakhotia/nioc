@@ -1,11 +1,11 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2022.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-namespace naksh::geometry
+namespace nioc::geometry
 {
 /// @brief  To facilitate looking up traits of a class defined in
 ///         the geometry module. Use may define the traits for a give type
@@ -13,4 +13,4 @@ namespace naksh::geometry
 template<typename>
 struct Traits;
 
-} // End of namespace naksh::geometry.
+} // End of namespace nioc::geometry.

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2021.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma clang diagnostic push
@@ -12,7 +12,7 @@
 #include <fstream>
 #include <gtest/gtest.h>
 
-namespace naksh::logger
+namespace nioc::logger
 {
 namespace
 {
@@ -72,6 +72,6 @@ TEST(LoggerBoostUsageExample, SerialFileWrite)
 }
 
 
-} // namespace naksh::logger
+} // namespace nioc::logger
 
 #pragma clang diagnostic pop

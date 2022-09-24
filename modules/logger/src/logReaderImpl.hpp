@@ -1,18 +1,18 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2022.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
 #include "channelReader.hpp"
 #include <boost/iostreams/device/mapped_file.hpp>
-#include <naksh/common/locked.hpp>
-#include <naksh/logger/logReader.hpp>
+#include <nioc/common/locked.hpp>
+#include <nioc/logger/logReader.hpp>
 #include <unordered_map>
 
 
-namespace naksh::logger
+namespace nioc::logger
 {
 
 class LogReader::LogReaderImpl
@@ -47,4 +47,4 @@ private:
 };
 
 
-} // namespace naksh::logger
+} // namespace nioc::logger

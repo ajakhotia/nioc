@@ -1,17 +1,17 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2021.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
 #include <capnp/serialize.h>
 #include <cstdint>
-#include <naksh/logger/logger.hpp>
-#include <naksh/logger/memoryCrate.hpp>
+#include <nioc/logger/logger.hpp>
+#include <nioc/logger/memoryCrate.hpp>
 #include <variant>
 
-namespace naksh::messages
+namespace nioc::messages
 {
 
 class MMappedMessageReader final: public logger::MemoryCrate, public capnp::FlatArrayMessageReader
@@ -69,4 +69,4 @@ private:
 void write(MsgBase& msgBase, logger::Logger& logger);
 
 
-} // namespace naksh::messages
+} // namespace nioc::messages

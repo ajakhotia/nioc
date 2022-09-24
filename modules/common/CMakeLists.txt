@@ -12,9 +12,9 @@ add_exported_library(
         SOURCES
             ""
         HEADERS
-            INTERFACE include/naksh/common/cacheManager.hpp
-            INTERFACE include/naksh/common/locked.hpp
-            INTERFACE include/naksh/common/typeTraits.hpp
+            INTERFACE include/nioc/common/cacheManager.hpp
+            INTERFACE include/nioc/common/locked.hpp
+            INTERFACE include/nioc/common/typeTraits.hpp
         INCLUDE_DIRECTORIES
             ${CMAKE_CURRENT_SOURCE_DIR}/include
         LINK_LIBRARIES

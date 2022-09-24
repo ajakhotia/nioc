@@ -1,15 +1,15 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2021.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "cert-err58-cpp"
 
 #include <gtest/gtest.h>
-#include <naksh/geometry/frame.hpp>
+#include <nioc/geometry/frame.hpp>
 
-namespace naksh::geometry
+namespace nioc::geometry
 {
 class Mercury;
 class Venus;
@@ -24,8 +24,8 @@ TEST(StaticFrame, construction)
 
 TEST(StaticFrame, name)
 {
-    static_assert("naksh::geometry::Mercury" == StaticFrame<Mercury>::name());
-    EXPECT_EQ("naksh::geometry::Venus", StaticFrame<Venus>::name());
+    static_assert("nioc::geometry::Mercury" == StaticFrame<Mercury>::name());
+    EXPECT_EQ("nioc::geometry::Venus", StaticFrame<Venus>::name());
 }
 
 
@@ -60,6 +60,6 @@ TEST(DynamicFrame, EqualityCheck)
 }
 
 
-} // namespace naksh::geometry
+} // namespace nioc::geometry
 
 #pragma clang diagnostic pop

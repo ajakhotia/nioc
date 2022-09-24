@@ -1,15 +1,15 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2022.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "cert-err58-cpp"
 
 #include <gtest/gtest.h>
-#include <naksh/geometry/rigidTransform.hpp>
+#include <nioc/geometry/rigidTransform.hpp>
 
-namespace naksh::geometry
+namespace nioc::geometry
 {
 namespace
 {
@@ -50,6 +50,6 @@ TEST(RigidTransform, Multiplication)
     std::cout << decltype(alphaFromEcho)::ChildFrame::name() << std::endl;
 }
 
-} // namespace naksh::geometry
+} // namespace nioc::geometry
 
 #pragma clang diagnostic pop

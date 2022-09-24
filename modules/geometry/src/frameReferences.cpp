@@ -1,12 +1,12 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2022.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include <naksh/geometry/frameReferences.hpp>
+#include <nioc/geometry/frameReferences.hpp>
 
-namespace naksh::geometry::helpers
+namespace nioc::geometry::helpers
 {
 std::string frameCompositionErrorMessage(const std::string& lhsFrameName,
                                          const std::string& rhsFrameName)
@@ -19,4 +19,4 @@ std::string frameCompositionErrorMessage(const std::string& lhsFrameName,
            "] does not match the rhs parent frame[" + rhsFrameName + "].";
 }
 
-} // namespace naksh::geometry::helpers
+} // namespace nioc::geometry::helpers

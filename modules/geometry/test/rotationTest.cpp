@@ -1,17 +1,17 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2021.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "cert-err58-cpp"
 
 #include <gtest/gtest.h>
-#include <naksh/geometry/constants.hpp>
-#include <naksh/geometry/rotation.hpp>
+#include <nioc/geometry/constants.hpp>
+#include <nioc/geometry/rotation.hpp>
 
 
-namespace naksh::geometry
+namespace nioc::geometry
 {
 namespace
 {
@@ -158,6 +158,6 @@ TEST(Assignment, RotationAndMap)
 }
 
 
-} // End of namespace naksh::geometry.
+} // End of namespace nioc::geometry.
 
 #pragma clang diagnostic pop

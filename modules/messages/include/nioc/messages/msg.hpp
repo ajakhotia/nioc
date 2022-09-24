@@ -1,13 +1,13 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2021.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
 #include "msgBase.hpp"
 
-namespace naksh::messages
+namespace nioc::messages
 {
 
 
@@ -49,4 +49,4 @@ public:
 };
 
 
-} // namespace naksh::messages
+} // namespace nioc::messages

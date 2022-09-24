@@ -1,18 +1,18 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2022.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "cert-err58-cpp"
 
 #include <gtest/gtest.h>
-#include <naksh/common/typeTraits.hpp>
-#include <naksh/geometry/constants.hpp>
-#include <naksh/geometry/pose.hpp>
+#include <nioc/common/typeTraits.hpp>
+#include <nioc/geometry/constants.hpp>
+#include <nioc/geometry/pose.hpp>
 #include <span>
 
-namespace naksh::geometry
+namespace nioc::geometry
 {
 namespace
 {
@@ -151,5 +151,5 @@ TEST(Pose, StreamOperator)
               "0.707107], Position:[0.1, 0.2, 0.3] }\n");
 }
 
-} // End of namespace naksh::geometry.
+} // End of namespace nioc::geometry.
 #pragma clang diagnostic pop

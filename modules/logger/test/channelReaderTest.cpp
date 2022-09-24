@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2022.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma clang diagnostic push
@@ -15,7 +15,7 @@
 
 namespace fs = std::filesystem;
 
-namespace naksh::logger
+namespace nioc::logger
 {
 namespace
 {
@@ -94,4 +94,4 @@ TEST(ChannelReader, read)
     fs::remove_all(kTestChannelDirectoryPath);
 }
 
-} // namespace naksh::logger
+} // namespace nioc::logger

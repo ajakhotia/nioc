@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2021.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
@@ -10,7 +10,7 @@
 #include <type_traits>
 
 
-namespace naksh::common
+namespace nioc::common
 {
 /// @brief  SFINAE based helper type to determine if the InstanceType is template
 ///         specialization of the TemplateType. This declaration represents the
@@ -60,4 +60,4 @@ constexpr std::string_view prettyName() noexcept
     return name.substr(0, name.size() - 1);
 }
 
-} // namespace naksh::common
+} // namespace nioc::common

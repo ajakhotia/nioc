@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2022.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
@@ -8,9 +8,9 @@
 #include "utils.hpp"
 #include <boost/circular_buffer.hpp>
 #include <boost/iostreams/device/mapped_file.hpp>
-#include <naksh/logger/memoryCrate.hpp>
+#include <nioc/logger/memoryCrate.hpp>
 
-namespace naksh::logger
+namespace nioc::logger
 {
 
 class ChannelReader
@@ -52,4 +52,4 @@ private:
     MappedFilePtr acquireLogRoll(std::uint64_t rollId);
 };
 
-} // namespace naksh::logger
+} // namespace nioc::logger

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2021.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma clang diagnostic push
@@ -8,11 +8,11 @@
 
 #include "utils.hpp"
 #include <gtest/gtest.h>
-#include <naksh/logger/logger.hpp>
-#include <naksh/logger/logReader.hpp>
+#include <nioc/logger/logger.hpp>
+#include <nioc/logger/logReader.hpp>
 #include <numeric>
 
-namespace naksh::logger
+namespace nioc::logger
 {
 namespace fs = std::filesystem;
 
@@ -89,6 +89,6 @@ TEST(LogReader, read)
 }
 
 
-} // namespace naksh::logger
+} // namespace nioc::logger
 
 #pragma clang diagnostic pop

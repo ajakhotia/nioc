@@ -1,15 +1,15 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2021.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "cert-err58-cpp"
 
 #include <gtest/gtest.h>
-#include <naksh/example/example.hpp>
+#include <nioc/example/example.hpp>
 
-namespace naksh::example
+namespace nioc::example
 {
 TEST(ExampleTest, Construction)
 {
@@ -41,6 +41,6 @@ TEST(ExampleTest, MoveConstruction)
     EXPECT_EQ(example1.name(), ""); // NOLINT(clang-analyzer-cplusplus.Move)
 }
 
-} // namespace naksh::example
+} // namespace nioc::example
 
 #pragma clang diagnostic pop

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2022.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -9,7 +9,7 @@
 #include <numeric>
 #include <spdlog/spdlog.h>
 
-namespace naksh::logger
+namespace nioc::logger
 {
 namespace
 {
@@ -117,4 +117,4 @@ std::filesystem::path Channel::nextRollFilePath()
 }
 
 
-} // namespace naksh::logger
+} // namespace nioc::logger

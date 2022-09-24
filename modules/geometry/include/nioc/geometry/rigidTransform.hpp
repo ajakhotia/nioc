@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2022.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
@@ -8,7 +8,7 @@
 #include "frameReferences.hpp"
 #include "pose.hpp"
 
-namespace naksh::geometry
+namespace nioc::geometry
 {
 template<typename ParentFrame, typename ChildFrame, typename Scalar_ = double>
 class RigidTransform: public FrameReferences<ParentFrame, ChildFrame>
@@ -62,4 +62,4 @@ operator*(const RigidTransform<ParentFrame, IntermediateFrame, Scalar>& lhs,
                                                            composeFrameReferences(lhs, rhs));
 }
 
-} // namespace naksh::geometry
+} // namespace nioc::geometry

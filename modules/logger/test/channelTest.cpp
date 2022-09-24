@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2022.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma clang diagnostic push
@@ -11,7 +11,7 @@
 #include <numeric>
 #include <utils.hpp>
 
-namespace naksh::logger
+namespace nioc::logger
 {
 namespace fs = std::filesystem;
 
@@ -95,6 +95,6 @@ TEST(Channel, rollAndIndexFileSizeChecks)
     fs::remove_all(kTestLogDirectoryPath);
 }
 
-} // namespace naksh::logger
+} // namespace nioc::logger
 
 #pragma clang diagnostic pop

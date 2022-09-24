@@ -1,18 +1,18 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2021.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "cert-err58-cpp"
 
 #include <gtest/gtest.h>
-#include <naksh/logger/logger.hpp>
-#include <naksh/logger/logReader.hpp>
-#include <naksh/messages/idl/sample1.capnp.h>
-#include <naksh/messages/msg.hpp>
+#include <nioc/logger/logger.hpp>
+#include <nioc/logger/logReader.hpp>
+#include <nioc/messages/idl/sample1.capnp.h>
+#include <nioc/messages/msg.hpp>
 
-namespace naksh::messages
+namespace nioc::messages
 {
 TEST(MessagesTest, MsgHandleChecks)
 {
@@ -72,6 +72,6 @@ TEST(MessagesTest, Logger)
 }
 
 
-} // namespace naksh::messages
+} // namespace nioc::messages
 
 #pragma clang diagnostic pop

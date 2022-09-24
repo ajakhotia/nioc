@@ -1,11 +1,11 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2021.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-namespace naksh::example
+namespace nioc::example
 {
 class PrivateExample
 {
@@ -31,4 +31,4 @@ private:
     int mValue;
 };
 
-} // namespace naksh::example
+} // namespace nioc::example

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2022.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #include "loggerImpl.hpp"
@@ -9,7 +9,7 @@
 #include <boost/uuid/uuid_io.hpp>
 #include <spdlog/spdlog.h>
 
-namespace naksh::logger
+namespace nioc::logger
 {
 namespace
 {
@@ -100,4 +100,4 @@ const std::filesystem::path& Logger::LoggerImpl::path() const noexcept
 }
 
 
-} // namespace naksh::logger
+} // namespace nioc::logger

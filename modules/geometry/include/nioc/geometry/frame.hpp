@@ -1,14 +1,14 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2021.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include <naksh/common/typeTraits.hpp>
+#include <nioc/common/typeTraits.hpp>
 #include <string>
 
-namespace naksh::geometry
+namespace nioc::geometry
 {
 /// @brief  A class representing a static reference frame.
 ///
@@ -93,4 +93,4 @@ bool operator==(const DynamicFrame& lhs, const DynamicFrame& rhs);
 bool operator!=(const DynamicFrame& lhs, const DynamicFrame& rhs);
 
 
-} // End of namespace naksh::geometry.
+} // End of namespace nioc::geometry.

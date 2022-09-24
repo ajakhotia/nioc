@@ -1,12 +1,12 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2022.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "memoryCrateImpl.hpp"
 
-namespace naksh::logger
+namespace nioc::logger
 {
 namespace
 {
@@ -35,4 +35,4 @@ const std::span<const std::byte>& MemoryCrate::MemoryCrateImpl::span() const noe
 }
 
 
-} // namespace naksh::logger
+} // namespace nioc::logger

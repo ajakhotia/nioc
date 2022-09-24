@@ -1,13 +1,13 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2022.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "logReaderImpl.hpp"
 #include "utils.hpp"
 
-namespace naksh::logger
+namespace nioc::logger
 {
 
 LogReader::LogReaderImpl::LogReaderImpl(std::filesystem::path logRoot):
@@ -54,4 +54,4 @@ ChannelReader& LogReader::LogReaderImpl::acquireChannel(ChannelId channelId)
 }
 
 
-} // namespace naksh::logger
+} // namespace nioc::logger

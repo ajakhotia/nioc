@@ -1,13 +1,13 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2021.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "loggerImpl.hpp"
-#include <naksh/logger/logger.hpp>
+#include <nioc/logger/logger.hpp>
 
-namespace naksh::logger
+namespace nioc::logger
 {
 
 Logger::Logger(std::filesystem::path logRoot, const std::size_t maxFileSizeInBytes):
@@ -36,4 +36,4 @@ const std::filesystem::path& Logger::path() const noexcept
     return mLoggerImpl->path();
 }
 
-} // End of namespace naksh::logger
+} // End of namespace nioc::logger

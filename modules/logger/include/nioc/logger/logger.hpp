@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2021.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
@@ -10,7 +10,7 @@
 #include <span>
 #include <vector>
 
-namespace naksh::logger
+namespace nioc::logger
 {
 class Logger
 {
@@ -23,7 +23,7 @@ public:
     ///
     /// @param fileSize     Size of files allocated to store the data.
     explicit Logger(std::filesystem::path logRoot = std::filesystem::temp_directory_path() /
-                                                    "nakshLogs",
+                                                    "niocLogs",
                     std::size_t maxFileSizeInBytes = kDefaultMaxFileSizeInBytes);
 
     Logger(const Logger&) = delete;
@@ -47,4 +47,4 @@ private:
     std::unique_ptr<LoggerImpl> mLoggerImpl;
 };
 
-} // namespace naksh::logger
+} // namespace nioc::logger

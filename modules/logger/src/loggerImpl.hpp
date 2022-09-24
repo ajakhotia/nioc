@@ -1,16 +1,16 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2022.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
 #include "channel.hpp"
-#include <naksh/common/locked.hpp>
-#include <naksh/logger/logger.hpp>
+#include <nioc/common/locked.hpp>
+#include <nioc/logger/logger.hpp>
 #include <unordered_map>
 
-namespace naksh::logger
+namespace nioc::logger
 {
 
 class Logger::LoggerImpl
@@ -50,4 +50,4 @@ private:
     LockedChannel& acquireChannel(ChannelId channelId);
 };
 
-} // namespace naksh::logger
+} // namespace nioc::logger

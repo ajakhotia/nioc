@@ -1,4 +1,4 @@
-# nioc - naksh.io core library
+# nioc - nioc.io core library
 
 ## Usage
 
@@ -13,7 +13,7 @@
 * Spdlog
 
 It's recommended to build these dependencies using
-[naksh-io/robotFarm](https://github.com/naksh-io/robotFarm). Follow the instructions in 
+[nioc-io/robotFarm](https://github.com/nioc-io/robotFarm). Follow the instructions in 
 robotFarm's README. In addition, provide the following cache argument to robotFarm 
 during the cmake configuration step:
 ```shell

@@ -1,15 +1,15 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2021.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include <algorithm>
 #include <capnp/message.h>
 #include <cassert>
-#include <naksh/messages/msgBase.hpp>
+#include <nioc/messages/msgBase.hpp>
 
-namespace naksh::messages
+namespace nioc::messages
 {
 
 using ConstByteSpan = std::span<const std::byte>;
@@ -99,4 +99,4 @@ void write(MsgBase& msgBase, logger::Logger& logger)
 }
 
 
-} // namespace naksh::messages
+} // namespace nioc::messages

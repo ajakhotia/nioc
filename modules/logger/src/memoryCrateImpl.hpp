@@ -1,15 +1,15 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2022.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
 #include "utils.hpp"
 #include <boost/iostreams/device/mapped_file.hpp>
-#include <naksh/logger/memoryCrate.hpp>
+#include <nioc/logger/memoryCrate.hpp>
 
-namespace naksh::logger
+namespace nioc::logger
 {
 
 
@@ -41,4 +41,4 @@ private:
 };
 
 
-} // namespace naksh::logger
+} // namespace nioc::logger

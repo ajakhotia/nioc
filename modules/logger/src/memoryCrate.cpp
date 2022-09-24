@@ -1,13 +1,13 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2022.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "memoryCrateImpl.hpp"
 
 
-namespace naksh::logger
+namespace nioc::logger
 {
 
 MemoryCrate::MemoryCrate(std::shared_ptr<MemoryCrateImpl> memoryCrateImplPtr):
@@ -32,4 +32,4 @@ std::span<const std::byte> MemoryCrate::span() const
 }
 
 
-} // namespace naksh::logger
+} // namespace nioc::logger

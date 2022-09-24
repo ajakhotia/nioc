@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2021.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
@@ -9,26 +9,26 @@
 #include <Eigen/Geometry>
 #include <ostream>
 
-namespace naksh::geometry
+namespace nioc::geometry
 {
 /// Forward declare Rotation3
 template<typename Scalar_ = double>
 class Rotation3;
 
-} // End of namespace naksh::geometry.
+} // End of namespace nioc::geometry.
 
 
 /// Forward declare Eigen::Map for Rotation3.
 template<typename Scalar_, int mapOptions_>
-class Eigen::Map<naksh::geometry::Rotation3<Scalar_>, mapOptions_>;
+class Eigen::Map<nioc::geometry::Rotation3<Scalar_>, mapOptions_>;
 
 
 /// Forward declare Eigen::Map for const Rotation3.
 template<typename Scalar_, int mapOptions_>
-class Eigen::Map<const naksh::geometry::Rotation3<Scalar_>, mapOptions_>;
+class Eigen::Map<const nioc::geometry::Rotation3<Scalar_>, mapOptions_>;
 
 
-namespace naksh::geometry
+namespace nioc::geometry
 {
 /// @brief  Abstract rotation representation that leverages modified
 ///         rodrigues parametrisation. This representation has the benefits
@@ -337,7 +337,7 @@ private:
 };
 
 
-} // End of namespace naksh::geometry.
+} // End of namespace nioc::geometry.
 
 
 /// @brief  Implementation of 3D rotation representation using modified
@@ -350,11 +350,11 @@ private:
 /// @tparam mapOptions_ Options to convey storage alignment.
 ///
 template<typename Scalar_, int mapOptions_>
-class Eigen::Map<naksh::geometry::Rotation3<Scalar_>, mapOptions_>:
-    public naksh::geometry::Mrp3<Map<naksh::geometry::Rotation3<Scalar_>, mapOptions_>>
+class Eigen::Map<nioc::geometry::Rotation3<Scalar_>, mapOptions_>:
+    public nioc::geometry::Mrp3<Map<nioc::geometry::Rotation3<Scalar_>, mapOptions_>>
 {
 public:
-    using Base = naksh::geometry::Mrp3<Map<naksh::geometry::Rotation3<Scalar_>, mapOptions_>>;
+    using Base = nioc::geometry::Mrp3<Map<nioc::geometry::Rotation3<Scalar_>, mapOptions_>>;
 
     static constexpr auto kDimensions = Base::kDimensions;
 
@@ -409,9 +409,9 @@ public:
     /// @brief  Implicitly convert to Rotation3<> type
     /// @return Rotation3<> representing same rotation.
     /// NOLINTNEXTLINE (google-explicit-constructor)
-    operator naksh::geometry::Rotation3<Scalar>() const noexcept
+    operator nioc::geometry::Rotation3<Scalar>() const noexcept
     {
-        return naksh::geometry::Rotation3<Scalar>(mParameters);
+        return nioc::geometry::Rotation3<Scalar>(mParameters);
     }
 
 private:
@@ -429,11 +429,11 @@ private:
 /// @tparam mapOptions_ Options to convey storage alignment.
 ///
 template<typename Scalar_, int mapOptions_>
-class Eigen::Map<const naksh::geometry::Rotation3<Scalar_>, mapOptions_>:
-    public naksh::geometry::Mrp3<Map<const naksh::geometry::Rotation3<Scalar_>, mapOptions_>>
+class Eigen::Map<const nioc::geometry::Rotation3<Scalar_>, mapOptions_>:
+    public nioc::geometry::Mrp3<Map<const nioc::geometry::Rotation3<Scalar_>, mapOptions_>>
 {
 public:
-    using Base = naksh::geometry::Mrp3<Map<const naksh::geometry::Rotation3<Scalar_>, mapOptions_>>;
+    using Base = nioc::geometry::Mrp3<Map<const nioc::geometry::Rotation3<Scalar_>, mapOptions_>>;
 
     static constexpr auto kDimensions = Base::kDimensions;
 
@@ -480,9 +480,9 @@ public:
     /// @brief  Implicitly convert to Rotation3<> type
     /// @return Rotation3<> representing same rotation.
     /// NOLINTNEXTLINE (google-explicit-constructor)
-    operator naksh::geometry::Rotation3<Scalar>() const noexcept
+    operator nioc::geometry::Rotation3<Scalar>() const noexcept
     {
-        return naksh::geometry::Rotation3<Scalar>(mParameters);
+        return nioc::geometry::Rotation3<Scalar>(mParameters);
     }
 
 private:

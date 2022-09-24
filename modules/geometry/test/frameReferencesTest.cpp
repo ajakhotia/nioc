@@ -1,15 +1,15 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2021.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "cert-err58-cpp"
 
 #include <gtest/gtest.h>
-#include <naksh/geometry/frameReferences.hpp>
+#include <nioc/geometry/frameReferences.hpp>
 
-namespace naksh::geometry
+namespace nioc::geometry
 {
 class AlphaCentauri;
 class Jupiter;
@@ -24,12 +24,12 @@ TEST(FrameReferences, StaticParentStaticChild)
     using SaturnFromJupiter = FrameReferences<StaticFrame<Saturn>, StaticFrame<Jupiter>>;
     EXPECT_NO_THROW(SaturnFromJupiter());
 
-    static_assert(SaturnFromJupiter::ParentFrame::name() == "naksh::geometry::Saturn");
-    static_assert(SaturnFromJupiter::ChildFrame::name() == "naksh::geometry::Jupiter");
+    static_assert(SaturnFromJupiter::ParentFrame::name() == "nioc::geometry::Saturn");
+    static_assert(SaturnFromJupiter::ChildFrame::name() == "nioc::geometry::Jupiter");
 
     const SaturnFromJupiter saturnFromJupiter;
-    EXPECT_EQ("naksh::geometry::Saturn", decltype(saturnFromJupiter)::ParentFrame::name());
-    EXPECT_EQ("naksh::geometry::Jupiter", decltype(saturnFromJupiter)::ChildFrame::name());
+    EXPECT_EQ("nioc::geometry::Saturn", decltype(saturnFromJupiter)::ParentFrame::name());
+    EXPECT_EQ("nioc::geometry::Jupiter", decltype(saturnFromJupiter)::ChildFrame::name());
 }
 
 
@@ -39,19 +39,19 @@ TEST(FrameReferences, StaticParentDynamicChild)
     EXPECT_NO_THROW(SaturnFromDynamic("DynamicSaturn"));
 
     {
-        static_assert(SaturnFromDynamic::ParentFrame::name() == "naksh::geometry::Saturn");
+        static_assert(SaturnFromDynamic::ParentFrame::name() == "nioc::geometry::Saturn");
         // static_assert(SaturnFromDynamic::ChildFrame::name() == "");
     }
 
     {
         const SaturnFromDynamic saturnFromDynamic("DynamicSaturn");
-        EXPECT_EQ("naksh::geometry::Saturn", decltype(saturnFromDynamic)::ParentFrame::name());
+        EXPECT_EQ("nioc::geometry::Saturn", decltype(saturnFromDynamic)::ParentFrame::name());
         EXPECT_EQ("DynamicSaturn", saturnFromDynamic.childFrame().name());
     }
 
     {
         const SaturnFromDynamic saturnFromDynamic(DynamicFrame("DynamicSaturn"));
-        EXPECT_EQ("naksh::geometry::Saturn", decltype(saturnFromDynamic)::ParentFrame::name());
+        EXPECT_EQ("nioc::geometry::Saturn", decltype(saturnFromDynamic)::ParentFrame::name());
         EXPECT_EQ("DynamicSaturn", saturnFromDynamic.childFrame().name());
     }
 }
@@ -64,19 +64,19 @@ TEST(FrameReferences, DynamicParentStaticChild)
 
     {
         // static_assert(DynamicFromJupiter::ParentFrame::name() == "");
-        static_assert(DynamicFromJupiter::ChildFrame::name() == "naksh::geometry::Jupiter");
+        static_assert(DynamicFromJupiter::ChildFrame::name() == "nioc::geometry::Jupiter");
     }
 
     {
         const DynamicFromJupiter dynamicFromJupiter("DynamicSaturn");
         EXPECT_EQ("DynamicSaturn", dynamicFromJupiter.parentFrame().name());
-        EXPECT_EQ("naksh::geometry::Jupiter", decltype(dynamicFromJupiter)::ChildFrame::name());
+        EXPECT_EQ("nioc::geometry::Jupiter", decltype(dynamicFromJupiter)::ChildFrame::name());
     }
 
     {
         const DynamicFromJupiter dynamicFromJupiter(DynamicFrame("DynamicSaturn"));
         EXPECT_EQ("DynamicSaturn", dynamicFromJupiter.parentFrame().name());
-        EXPECT_EQ("naksh::geometry::Jupiter", decltype(dynamicFromJupiter)::ChildFrame::name());
+        EXPECT_EQ("nioc::geometry::Jupiter", decltype(dynamicFromJupiter)::ChildFrame::name());
     }
 }
 
@@ -120,7 +120,7 @@ TEST(assertFrameEqual, StaticLhsStaticRhs)
 TEST(assertFrameEqual, StaticLhsDynamicRhs)
 {
     EXPECT_NO_THROW(
-        (assertFrameEqual<StaticFrame<Sun>, DynamicFrame>(DynamicFrame("naksh::geometry::Sun"))));
+        (assertFrameEqual<StaticFrame<Sun>, DynamicFrame>(DynamicFrame("nioc::geometry::Sun"))));
 
     EXPECT_THROW((assertFrameEqual<StaticFrame<Sun>, DynamicFrame>(DynamicFrame("Bloop"))),
                  FrameCompositionException);
@@ -132,7 +132,7 @@ TEST(assertFrameEqual, StaticLhsDynamicRhs)
 TEST(assertFrameEqual, DynamicLhsStaticRhs)
 {
     EXPECT_NO_THROW(
-        (assertFrameEqual<DynamicFrame, StaticFrame<Sun>>(DynamicFrame("naksh::geometry::Sun"))));
+        (assertFrameEqual<DynamicFrame, StaticFrame<Sun>>(DynamicFrame("nioc::geometry::Sun"))));
 
     EXPECT_THROW(
         (assertFrameEqual<DynamicFrame, StaticFrame<AlphaCentauri>>(DynamicFrame("Bloop"))),
@@ -145,7 +145,7 @@ TEST(assertFrameEqual, DynamicLhsStaticRhs)
 TEST(assertFrameEqual, DynamicLhsDynamicRhs)
 {
     EXPECT_NO_THROW((assertFrameEqual<DynamicFrame, DynamicFrame>(
-        DynamicFrame("naksh::geometry::Sun"), DynamicFrame("naksh::geometry::Sun"))));
+        DynamicFrame("nioc::geometry::Sun"), DynamicFrame("nioc::geometry::Sun"))));
 
     EXPECT_THROW((assertFrameEqual<DynamicFrame, DynamicFrame>(DynamicFrame("Bloop"),
                                                                DynamicFrame("Bleep"))),
@@ -200,7 +200,7 @@ TEST(composeFrameReferences, StaticStaticDynamicStatic)
 
     {
         SunFromUranusFrames lhs;
-        DynamicFromPlutoFrames rhs("naksh::geometry::Uranus");
+        DynamicFromPlutoFrames rhs("nioc::geometry::Uranus");
 
         EXPECT_NO_THROW(composeFrameReferences(lhs, rhs));
         const auto result = composeFrameReferences(lhs, rhs);
@@ -225,7 +225,7 @@ TEST(composeFrameReferences, StaticDynamicStaticStatic)
     using DynamicFromPlutoFrames = FrameReferences<StaticFrame<Uranus>, StaticFrame<Pluto>>;
 
     {
-        SunFromDynamicFrames lhs("naksh::geometry::Uranus");
+        SunFromDynamicFrames lhs("nioc::geometry::Uranus");
         DynamicFromPlutoFrames rhs;
 
         EXPECT_NO_THROW(composeFrameReferences(lhs, rhs));
@@ -251,8 +251,8 @@ TEST(composeFrameReferences, StaticDynamicDynamicStatic)
     using DynamicFromPlutoFrames = FrameReferences<DynamicFrame, StaticFrame<Pluto>>;
 
     {
-        SunFromDynamicFrames lhs("naksh::geometry::Uranus");
-        DynamicFromPlutoFrames rhs("naksh::geometry::Uranus");
+        SunFromDynamicFrames lhs("nioc::geometry::Uranus");
+        DynamicFromPlutoFrames rhs("nioc::geometry::Uranus");
 
         EXPECT_NO_THROW(composeFrameReferences(lhs, rhs));
         const auto result = composeFrameReferences(lhs, rhs);
@@ -277,8 +277,8 @@ TEST(composeFrameReferences, DynamicStaticStaticDynamic)
     using UranusFromDynamicFrames = FrameReferences<StaticFrame<Uranus>, DynamicFrame>;
 
     {
-        DynamicFromUranusFrames lhs("naksh::geometry::Sun");
-        UranusFromDynamicFrames rhs("naksh::geometry::Pluto");
+        DynamicFromUranusFrames lhs("nioc::geometry::Sun");
+        UranusFromDynamicFrames rhs("nioc::geometry::Pluto");
 
         EXPECT_NO_THROW(composeFrameReferences(lhs, rhs));
         const auto result = composeFrameReferences(lhs, rhs);
@@ -286,8 +286,8 @@ TEST(composeFrameReferences, DynamicStaticStaticDynamic)
         using ResultType = decltype(result);
         static_assert(std::is_same_v<typename ResultType::ParentFrame, DynamicFrame>);
         static_assert(std::is_same_v<typename ResultType::ChildFrame, DynamicFrame>);
-        EXPECT_EQ(result.parentFrame().name(), "naksh::geometry::Sun");
-        EXPECT_EQ(result.childFrame().name(), "naksh::geometry::Pluto");
+        EXPECT_EQ(result.parentFrame().name(), "nioc::geometry::Sun");
+        EXPECT_EQ(result.childFrame().name(), "nioc::geometry::Pluto");
     }
 }
 
@@ -309,38 +309,38 @@ TEST(invertFrameReferences, allCases)
     }
 
     {
-        UranusFromDynamicFrames input("naksh::geometry::Pluto");
+        UranusFromDynamicFrames input("nioc::geometry::Pluto");
         auto result = invertFrameReferences(input);
         using ResultType = decltype(result);
 
         static_assert(std::is_same_v<typename ResultType::ParentFrame, DynamicFrame>);
         static_assert(std::is_same_v<typename ResultType::ChildFrame, StaticFrame<Uranus>>);
-        EXPECT_EQ(result.parentFrame().name(), "naksh::geometry::Pluto");
+        EXPECT_EQ(result.parentFrame().name(), "nioc::geometry::Pluto");
     }
 
     {
-        DynamicFromUranusFrames input("naksh::geometry::Sun");
+        DynamicFromUranusFrames input("nioc::geometry::Sun");
         auto result = invertFrameReferences(input);
         using ResultType = decltype(result);
 
         static_assert(std::is_same_v<typename ResultType::ParentFrame, StaticFrame<Uranus>>);
         static_assert(std::is_same_v<typename ResultType::ChildFrame, DynamicFrame>);
-        EXPECT_EQ(result.childFrame().name(), "naksh::geometry::Sun");
+        EXPECT_EQ(result.childFrame().name(), "nioc::geometry::Sun");
     }
 
     {
-        DynamicFromDynamicFrames input("naksh::geometry::Sun", "naksh::geometry::Uranus");
+        DynamicFromDynamicFrames input("nioc::geometry::Sun", "nioc::geometry::Uranus");
         auto result = invertFrameReferences(input);
         using ResultType = decltype(result);
 
         static_assert(std::is_same_v<typename ResultType::ParentFrame, DynamicFrame>);
         static_assert(std::is_same_v<typename ResultType::ChildFrame, DynamicFrame>);
-        EXPECT_EQ(result.parentFrame().name(), "naksh::geometry::Uranus");
-        EXPECT_EQ(result.childFrame().name(), "naksh::geometry::Sun");
+        EXPECT_EQ(result.parentFrame().name(), "nioc::geometry::Uranus");
+        EXPECT_EQ(result.childFrame().name(), "nioc::geometry::Sun");
     }
 }
 
 
-} // namespace naksh::geometry
+} // namespace nioc::geometry
 
 #pragma clang diagnostic pop

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2022.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
@@ -9,7 +9,7 @@
 #include "memoryCrate.hpp"
 #include <memory>
 
-namespace naksh::logger
+namespace nioc::logger
 {
 
 struct LogEntry
@@ -42,4 +42,4 @@ private:
     std::unique_ptr<LogReaderImpl> mLogReaderImpl;
 };
 
-} // namespace naksh::logger
+} // namespace nioc::logger

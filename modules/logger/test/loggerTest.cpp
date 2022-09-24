@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2021.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma clang diagnostic push
@@ -8,10 +8,10 @@
 
 #include "utils.hpp"
 #include <gtest/gtest.h>
-#include <naksh/logger/logger.hpp>
+#include <nioc/logger/logger.hpp>
 #include <numeric>
 
-namespace naksh::logger
+namespace nioc::logger
 {
 namespace fs = std::filesystem;
 
@@ -33,7 +33,7 @@ TEST(Logger, construction)
 {
     EXPECT_NO_THROW(Logger logger);
     EXPECT_NO_THROW(
-        Logger logger(fs::temp_directory_path() / "nakshUnitTestLogs", 1024UL * 1024UL));
+        Logger logger(fs::temp_directory_path() / "niocUnitTestLogs", 1024UL * 1024UL));
 }
 
 
@@ -135,11 +135,11 @@ TEST(Logger, writeCollectionOfSpan)
 
 TEST(Logger, path)
 {
-    Logger logger(fs::temp_directory_path() / "nakshUnitTestLogs");
+    Logger logger(fs::temp_directory_path() / "niocUnitTestLogs");
     EXPECT_TRUE(logger.path().string().starts_with(
-        (fs::temp_directory_path() / "nakshUnitTestLogs").string()));
+        (fs::temp_directory_path() / "niocUnitTestLogs").string()));
 }
 
-} // namespace naksh::logger
+} // namespace nioc::logger
 
 #pragma clang diagnostic pop

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2021.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma clang diagnostic push
@@ -8,9 +8,9 @@
 
 #include <cmath>
 #include <gtest/gtest.h>
-#include <naksh/common/cacheManager.hpp>
+#include <nioc/common/cacheManager.hpp>
 
-namespace naksh::common
+namespace nioc::common
 {
 namespace
 {
@@ -189,6 +189,6 @@ TEST(Caching, squareArea)
 }
 
 
-} // namespace naksh::common
+} // namespace nioc::common
 
 #pragma clang diagnostic pop

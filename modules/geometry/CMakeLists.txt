@@ -11,13 +11,13 @@ add_exported_library(
             src/frame.cpp
             src/frameReferences.cpp
         HEADERS
-            PUBLIC include/naksh/geometry/constants.hpp
-            PUBLIC include/naksh/geometry/frame.hpp
-            PUBLIC include/naksh/geometry/frameConcepts.hpp
-            PUBLIC include/naksh/geometry/frameReferences.hpp
-            PUBLIC include/naksh/geometry/pose.hpp
-            PUBLIC include/naksh/geometry/rigidTransform.hpp
-            PUBLIC include/naksh/geometry/rotation.hpp
+            PUBLIC include/nioc/geometry/constants.hpp
+            PUBLIC include/nioc/geometry/frame.hpp
+            PUBLIC include/nioc/geometry/frameConcepts.hpp
+            PUBLIC include/nioc/geometry/frameReferences.hpp
+            PUBLIC include/nioc/geometry/pose.hpp
+            PUBLIC include/nioc/geometry/rigidTransform.hpp
+            PUBLIC include/nioc/geometry/rotation.hpp
         INCLUDE_DIRECTORIES
             ${CMAKE_CURRENT_SOURCE_DIR}/include
         LINK_LIBRARIES

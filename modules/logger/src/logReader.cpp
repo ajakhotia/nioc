@@ -1,13 +1,13 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2022.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "logReaderImpl.hpp"
-#include <naksh/logger/logReader.hpp>
+#include <nioc/logger/logReader.hpp>
 
-namespace naksh::logger
+namespace nioc::logger
 {
 
 
@@ -32,4 +32,4 @@ LogEntry LogReader::read()
 }
 
 
-} // namespace naksh::logger
+} // namespace nioc::logger

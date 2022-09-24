@@ -1,15 +1,15 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2021.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "cert-err58-cpp"
 
 #include <gtest/gtest.h>
-#include <naksh/common/locked.hpp>
+#include <nioc/common/locked.hpp>
 
-namespace naksh::common
+namespace nioc::common
 {
 namespace
 {
@@ -282,6 +282,6 @@ TEST(Locked, LockedGreaterThanOrEqualCheck)
     EXPECT_TRUE(14 >= locked);
 }
 
-} // namespace naksh::common
+} // namespace nioc::common
 
 #pragma clang diagnostic pop

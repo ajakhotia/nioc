@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2022.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #include "utils.hpp"
@@ -9,7 +9,7 @@
 #include <numeric>
 #include <spdlog/fmt/chrono.h>
 
-namespace naksh::logger
+namespace nioc::logger
 {
 
 std::string timeAsFormattedString(std::chrono::system_clock::time_point timePoint)
@@ -128,4 +128,4 @@ std::filesystem::path validatePath(std::filesystem::path&& path)
 }
 
 
-} // namespace naksh::logger
+} // namespace nioc::logger

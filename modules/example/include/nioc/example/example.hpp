@@ -1,13 +1,13 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2021.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
 #include <string>
 
-namespace naksh::example
+namespace nioc::example
 {
 class Example
 {
@@ -39,4 +39,4 @@ private:
     std::string mName;
 };
 
-} // namespace naksh::example
+} // namespace nioc::example

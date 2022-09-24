@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2022.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
@@ -10,7 +10,7 @@
 #include <span>
 #include <vector>
 
-namespace naksh::logger
+namespace nioc::logger
 {
 
 class Channel
@@ -53,4 +53,4 @@ private:
     std::filesystem::path nextRollFilePath();
 };
 
-} // namespace naksh::logger
+} // namespace nioc::logger

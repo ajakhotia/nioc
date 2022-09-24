@@ -1,13 +1,13 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2022.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "channelReader.hpp"
 #include "memoryCrateImpl.hpp"
 
-namespace naksh::logger
+namespace nioc::logger
 {
 
 namespace
@@ -67,4 +67,4 @@ ChannelReader::MappedFilePtr ChannelReader::acquireLogRoll(const std::uint64_t r
     return iter->mMappedFilePtr;
 }
 
-} // namespace naksh::logger
+} // namespace nioc::logger

@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2022.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
@@ -10,7 +10,7 @@
 #include <Eigen/Geometry>
 #include <span>
 
-namespace naksh::geometry
+namespace nioc::geometry
 {
 /// @brief Forward declaration of the pose class.
 template<typename>
@@ -299,17 +299,17 @@ Pose<typename LhsDerived::Scalar> operator*(const Se3<LhsDerived>& lhs, const Se
             lhs.cPosition() + lhs.cOrientation() * rhs.cPosition()};
 }
 
-} // End of namespace naksh::geometry.
+} // End of namespace nioc::geometry.
 
 
 /// @brief
 /// @tparam Scalar_
 template<typename Scalar_>
-class Eigen::Map<naksh::geometry::Pose<Scalar_>>:
-    public naksh::geometry::Se3<Eigen::Map<naksh::geometry::Pose<Scalar_>>>
+class Eigen::Map<nioc::geometry::Pose<Scalar_>>:
+    public nioc::geometry::Se3<Eigen::Map<nioc::geometry::Pose<Scalar_>>>
 {
 public:
-    using Base = naksh::geometry::Se3<Eigen::Map<naksh::geometry::Pose<Scalar_>>>;
+    using Base = nioc::geometry::Se3<Eigen::Map<nioc::geometry::Pose<Scalar_>>>;
 
     static constexpr auto kNumParams = Base::kNumParams;
 
@@ -354,9 +354,9 @@ public:
         return mParameters;
     }
 
-    explicit operator naksh::geometry::Pose<Scalar>() const
+    explicit operator nioc::geometry::Pose<Scalar>() const
     {
-        return naksh::geometry::Pose<Scalar>(cParameters());
+        return nioc::geometry::Pose<Scalar>(cParameters());
     }
 
 private:
@@ -367,11 +367,11 @@ private:
 /// @brief
 /// @tparam Scalar_
 template<typename Scalar_>
-class Eigen::Map<const naksh::geometry::Pose<Scalar_>>:
-    public naksh::geometry::Se3<Eigen::Map<const naksh::geometry::Pose<Scalar_>>>
+class Eigen::Map<const nioc::geometry::Pose<Scalar_>>:
+    public nioc::geometry::Se3<Eigen::Map<const nioc::geometry::Pose<Scalar_>>>
 {
 public:
-    using Base = naksh::geometry::Se3<Eigen::Map<const naksh::geometry::Pose<Scalar_>>>;
+    using Base = nioc::geometry::Se3<Eigen::Map<const nioc::geometry::Pose<Scalar_>>>;
 
     static constexpr auto kNumParams = Base::kNumParams;
 
@@ -418,9 +418,9 @@ public:
         return cParameters();
     }
 
-    explicit operator naksh::geometry::Pose<Scalar>() const
+    explicit operator nioc::geometry::Pose<Scalar>() const
     {
-        return naksh::geometry::Pose<Scalar>(cParameters());
+        return nioc::geometry::Pose<Scalar>(cParameters());
     }
 
 private:
@@ -428,7 +428,7 @@ private:
 };
 
 
-namespace naksh::geometry
+namespace nioc::geometry
 {
 /// @brief
 /// @tparam Scalar_
@@ -457,4 +457,4 @@ struct Traits<Eigen::Map<const Pose<Scalar_>>>
 };
 
 
-} // namespace naksh::geometry
+} // namespace nioc::geometry

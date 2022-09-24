@@ -13,7 +13,7 @@ capnproto_generate_library(
     EXPORT
         niocTargets
     SCHEMA_FILES
-        include/naksh/logger/idl/frame.capnp
+        include/nioc/logger/idl/frame.capnp
     COMPILE_FEATURES
         PUBLIC cxx_std_17
     COMPILE_OPTIONS
@@ -50,10 +50,10 @@ add_exported_library(
         PRIVATE src/loggerImpl.hpp
         PRIVATE src/memoryCrateImpl.hpp
         PRIVATE src/utils.hpp
-        PUBLIC include/naksh/logger/defines.hpp
-        PUBLIC include/naksh/logger/logReader.hpp
-        PUBLIC include/naksh/logger/logger.hpp
-        PUBLIC include/naksh/logger/memoryCrate.hpp
+        PUBLIC include/nioc/logger/defines.hpp
+        PUBLIC include/nioc/logger/logReader.hpp
+        PUBLIC include/nioc/logger/logger.hpp
+        PUBLIC include/nioc/logger/memoryCrate.hpp
     INCLUDE_DIRECTORIES
         ${CMAKE_CURRENT_SOURCE_DIR}/include
     LINK_LIBRARIES

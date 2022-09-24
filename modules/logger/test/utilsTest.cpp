@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2022.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma clang diagnostic push
@@ -10,7 +10,7 @@
 #include <numeric>
 #include <utils.hpp>
 
-namespace naksh::logger
+namespace nioc::logger
 {
 namespace
 {
@@ -120,4 +120,4 @@ TEST(LoggerUtils, ReadWriteByteSpan)
 }
 
 
-} // namespace naksh::logger
+} // namespace nioc::logger

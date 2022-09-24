@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2021.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
@@ -8,7 +8,7 @@
 #include <mutex>
 #include <shared_mutex>
 
-namespace naksh::common
+namespace nioc::common
 {
 /// @Class      Locked
 /// @brief      A utility to protect a non-atomic type from access contention.
@@ -413,4 +413,4 @@ constexpr bool operator>=(const Other& otherValue, const Locked<ValueType>& lock
 }
 
 
-} // namespace naksh::common
+} // namespace nioc::common

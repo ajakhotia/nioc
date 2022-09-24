@@ -1,14 +1,14 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2021.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
 #include "frame.hpp"
-#include <naksh/common/typeTraits.hpp>
+#include <nioc/common/typeTraits.hpp>
 
-namespace naksh::geometry
+namespace nioc::geometry
 {
 /// @brief  A class representing the concept of a parent frame.
 /// @tparam ParentFrame_ Compile time identity of the frame.
@@ -111,4 +111,4 @@ private:
 };
 
 
-} // End of namespace naksh::geometry.
+} // End of namespace nioc::geometry.

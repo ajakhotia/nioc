@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2021.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma clang diagnostic push
@@ -8,10 +8,10 @@
 
 #include <deque>
 #include <gtest/gtest.h>
-#include <naksh/common/typeTraits.hpp>
+#include <nioc/common/typeTraits.hpp>
 #include <vector>
 
-namespace naksh::common
+namespace nioc::common
 {
 TEST(TypeTraits, IsSpecialization)
 {
@@ -33,13 +33,13 @@ class AnotherTestType;
 
 TEST(TypeTraits, prettyName)
 {
-    static_assert("naksh::common::TestType" == prettyName<TestType>());
-    static_assert("naksh::common::TestType" != prettyName<AnotherTestType>());
-    EXPECT_EQ("naksh::common::TestType", prettyName<TestType>());
-    EXPECT_NE("naksh::common::TestType", prettyName<AnotherTestType>());
+    static_assert("nioc::common::TestType" == prettyName<TestType>());
+    static_assert("nioc::common::TestType" != prettyName<AnotherTestType>());
+    EXPECT_EQ("nioc::common::TestType", prettyName<TestType>());
+    EXPECT_NE("nioc::common::TestType", prettyName<AnotherTestType>());
 }
 
 
-} // namespace naksh::common
+} // namespace nioc::common
 
 #pragma clang diagnostic pop

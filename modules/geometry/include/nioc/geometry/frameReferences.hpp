@@ -1,15 +1,15 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2021.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
 #include "frameConcepts.hpp"
-#include <naksh/common/typeTraits.hpp>
+#include <nioc/common/typeTraits.hpp>
 #include <type_traits>
 
-namespace naksh::geometry
+namespace nioc::geometry
 {
 /// @brief  Base class to provide necessary interface for geometric transformation.
 /// @tparam ParentFrame
@@ -237,4 +237,4 @@ invertFrameReferences(const InputFrameReferences& input)
 }
 
 
-} // namespace naksh::geometry
+} // namespace nioc::geometry

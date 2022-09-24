@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2022.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
@@ -12,7 +12,7 @@
 #include <spdlog/fmt/fmt.h>
 #include <vector>
 
-namespace naksh::logger
+namespace nioc::logger
 {
 
 /// Prefix of a data roll within a channel.
@@ -133,4 +133,4 @@ struct ReadWriteUtil
 std::filesystem::path validatePath(std::filesystem::path&& path);
 
 
-} // namespace naksh::logger
+} // namespace nioc::logger

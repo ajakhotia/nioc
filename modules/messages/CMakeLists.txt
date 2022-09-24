@@ -8,8 +8,8 @@ capnproto_generate_library(
         EXPORT
             niocTargets
         SCHEMA_FILES
-            include/naksh/messages/idl/sample1.capnp
-            include/naksh/messages/idl/sample2.capnp
+            include/nioc/messages/idl/sample1.capnp
+            include/nioc/messages/idl/sample2.capnp
         COMPILE_FEATURES
             PUBLIC cxx_std_17
         COMPILE_OPTIONS
@@ -30,8 +30,8 @@ add_exported_library(
         SOURCES
             src/msgBase.cpp
         HEADERS
-            PUBLIC include/naksh/messages/msg.hpp
-            PUBLIC include/naksh/messages/msgBase.hpp
+            PUBLIC include/nioc/messages/msg.hpp
+            PUBLIC include/nioc/messages/msgBase.hpp
         INCLUDE_DIRECTORIES
             ${CMAKE_CURRENT_SOURCE_DIR}/include
         LINK_LIBRARIES

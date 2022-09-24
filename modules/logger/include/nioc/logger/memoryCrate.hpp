@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2022.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
@@ -8,7 +8,7 @@
 #include <memory>
 #include <span>
 
-namespace naksh::logger
+namespace nioc::logger
 {
 
 class MemoryCrate
@@ -35,4 +35,4 @@ private:
 };
 
 
-} // namespace naksh::logger
+} // namespace nioc::logger

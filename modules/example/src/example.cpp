@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2021.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -22,9 +22,9 @@
 //          of the example library. So we reference the example.hpp header using a path w.r.t to
 //          that "include" directory as below.
 #include <cassert>
-#include <naksh/example/example.hpp>
+#include <nioc/example/example.hpp>
 
-namespace naksh::example
+namespace nioc::example
 {
 Example::Example(): mName()
 {
@@ -45,4 +45,4 @@ Example::Example(std::string name): mName(std::move(name)) {}
 }
 
 
-} // namespace naksh::example
+} // namespace nioc::example

@@ -1,13 +1,13 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Copyright (c) 2021.                                                                             /
-// Project  : Naksh                                                                                /
+// Project  : nioc                                                                                /
 // Author   : Anurag Jakhotia                                                                      /
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
 #include <optional>
 
-namespace naksh::common
+namespace nioc::common
 {
 /// @brief  Manages an implementation of CacheBase. This class hides the cache implementation
 ///         privately and checks for the validity of the cache and resets if the check return
@@ -47,4 +47,4 @@ private:
 };
 
 
-} // namespace naksh::common
+} // namespace nioc::common
