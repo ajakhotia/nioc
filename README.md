@@ -104,6 +104,14 @@ To install, use the following command:
 cmake --install <BUILD_TREE>
 ```
 
+# Contribution Guidelines
+
+## Naming Conventions
+* Member variables: mCamelCase
+* Compile time constants: kCamelCase
+* Types: PascalCase
+* Everything else, including filenames: camelCase
+
 
 # Tooling
 
