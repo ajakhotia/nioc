@@ -56,7 +56,7 @@ sudo apt install -y clang-14 clang-format-14 clang-tidy-14 cmake g++-12 gcc-12 g
 * Spdlog
 
 It's recommended to build these dependencies using
-[naksh-io/robotFarm](https://github.com/naksh-io/robotFarm). Follow the instructions in 
+[robotFarm](https://github.com/ajakhotia/robotFarm). Follow the instructions in 
 `robotFarm`'s README. Use the following cache argument during the cmake configuration step
 of `robotFarm` to build and install the necessary dependencies of `nioc`:
 
@@ -73,7 +73,7 @@ throughout the rest of this document.
 ## Clone
 Clone the source tree using the following command:
 ```shell
-git clone git@github.com:naksh-io/nioc.git <SOURCE_TREE>/..
+git clone git@github.com:ajakhotia/nioc.git <SOURCE_TREE>
 ```
 
 
