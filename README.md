@@ -1,6 +1,5 @@
-# `nioc` - naksh.io core library
-Core utilities for developing connected naksh.io applications.
-
+# nioc — Nerve IO Core Library
+Core C++ utilities for building high‑performance robotics and AI applications on edge devices.
 
 # Clone, Build, and Install
 Before proceeding, come-up with values for the following:
