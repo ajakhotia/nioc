@@ -15,11 +15,10 @@ if((TARGET GTest::GTest) AND (TARGET GTest::Main))
 endif()
 
 
-include(cmake/clangFormat.cmake)
+include(cmake/utilities/clangFormat.cmake)
+include(cmake/utilities/exportedTargets.cmake)
+include(cmake/utilities/capnprotoGenerate.cmake)
 add_clang_format(TARGET niocClangFormat VERSION 14)
-
-include(cmake/exportedTargets.cmake)
-include(cmake/capnprotoGenerate.cmake)
 
 
 #[[ Only add external dependencies to the source tree from here if this project
