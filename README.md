@@ -1,85 +1,86 @@
-# nioc — Nerve IO Core Library
-Core C++ utilities for building high‑performance robotics and AI applications on edge devices.
+# nioc — Nerve IO Core Library  
+Core C++ utilities for building high-performance robotics and AI applications on edge devices.
 
-# Clone, Build, and Install
-Before proceeding, come-up with values for the following:
+---
 
-* `<SOURCE_TREE>`: Path where you would like to clone the source tree of `nioc`.
-  Recommendations:
-  * `${HOME}/sandbox/nioc`
-  * `${HOME}/work/nioc`
-  * etc ...
+## 🚀 Getting Started
 
-* `<BUILD_TREE>`: Path were you'd like to host the build tree for `nioc`. You
-  may want to have multiple build trees depending on the configurations. 
-  Recommendation:
-  * `<SOURCE_TREE>/build/<config_name>`
-  * The `<config_name>` token is to be replaced with a name for the config
-    you are trying to build. Eg: `release`, `debug`, etc ...
+### Clone, Build, and Install
 
-* `<INSTALL_TREE>`: Path where you'd like to install the built binaries, 
-  libraries, header, executables, etc. Recommendation:
-  * `${HOME}/opt/nioc`
-  * `/opt/nioc` (Requires super user privileges during install step)
-  * `/usr` (default install prefix for cmake. Requires super user privileges 
-    during install step)
-  * etc ...
+Before proceeding, decide on the following paths:
 
+- **`<SOURCE_TREE>`**: Directory to clone the source tree.  
+  Examples:  
+  - `${HOME}/sandbox/nioc`  
+  - `${HOME}/work/nioc`  
 
-## Dependencies
-`nioc` depends on following libraries which must be made available before
-building `nioc`.
+- **`<BUILD_TREE>`**: Directory to host the build tree (you may have multiple for different configurations).  
+  Examples:  
+  - `<SOURCE_TREE>/build/release`  
+  - `<SOURCE_TREE>/build/debug`  
+
+- **`<INSTALL_TREE>`**: Directory to install binaries, libraries, headers, etc.  
+  Examples:  
+  - `${HOME}/opt/nioc`  
+  - `/opt/nioc` (requires `sudo`)  
+  - `/usr` (default CMake install prefix, requires `sudo`)  
+
+---
+
+## 📦 Dependencies
+
+`nioc` requires the following dependencies to be available before building.
 
 ### System Dependencies
-* clang-14 (alternative to gcc / g++)
-* clang-format-14 (optional)
-* clang-tidy-14 (optional)
-* cmake
-* g++-12
-* gcc-12
-* git
-* ninja-build
+- clang-14 (alternative to gcc/g++)
+- clang-format-14 (optional)
+- clang-tidy-14 (optional)
+- cmake
+- g++-12
+- gcc-12
+- git
+- ninja-build
 
-On `ubuntu 22.04`, these may be installed using:
-```shell
+On **Ubuntu 22.04**, install them with:  
+```bash
 sudo apt install -y clang-14 clang-format-14 clang-tidy-14 cmake g++-12 gcc-12 git ninja-build
-```
+````
 
 ### External Dependencies
-* Boost
-  * headers
-  * iostreams
-* Cap'n' proto
+
+* Boost (headers + iostreams)
+* Cap'n Proto
 * Eigen3
-* GoogleTest (optional, mandatory for build unit tests)
-* Nlohmann's Json
+* GoogleTest *(optional, required for unit tests)*
+* Nlohmann JSON
 * Spdlog
 
-It's recommended to build these dependencies using
-[robotFarm](https://github.com/ajakhotia/robotFarm). Follow the instructions in 
-`robotFarm`'s README. Use the following cache argument during the cmake configuration step
-of `robotFarm` to build and install the necessary dependencies of `nioc`:
+We recommend using [robotFarm](https://github.com/ajakhotia/robotFarm) to build these.
+During CMake configuration for **robotFarm**, pass the following cache argument to build and install 
+the dependencies required by `nioc`:
 
-```shell
+```bash
 -DROBOT_FARM_REQUESTED_BUILD_LIST="BoostExternalProject;CapnprotoExternalProject;Eigen3ExternalProject;GoogleTestExternalProject;NlohmannJsonExternalProject;SpdLogExternalProject"
 ```
 
-During the process of building and installation of external dependencies, **robotFarm** will
-require you to provide an installation path (via `-DCMAKE_INSTALL_PREFIX:PATH=...` cmake 
-cache argument). Remember this path, which will be referred to as `<ROBOT_FARM_INSTALL_TREE>`
-throughout the rest of this document. 
+> 🔑 Remember the installation path you provide via `-DCMAKE_INSTALL_PREFIX:PATH=...` when building `robotFarm`.
+> This path will be referred to as **`<ROBOT_FARM_INSTALL_TREE>`** in the rest of the README.
 
+---
 
-## Clone
-Clone the source tree using the following command:
-```shell
+## 🛠️ Build Instructions
+
+### Clone
+
+```bash
 git clone git@github.com:ajakhotia/nioc.git <SOURCE_TREE>
 ```
 
+### Configure
 
-## Build
-`nioc` uses cmake as its build system. Configure it using the following command:
-```shell
+Use CMake (with Ninja recommended):
+
+```bash
 cmake -S <SOURCE_TREE> -B <BUILD_TREE>          \
     -G Ninja                                    \
     -DCMAKE_BUILD_TYPE:STRING="Release"         \
@@ -87,47 +88,63 @@ cmake -S <SOURCE_TREE> -B <BUILD_TREE>          \
     -DBUILD_SHARED_LIBS:BOOL=ON                 \
     -DCMAKE_PREFIX_PATH:PATH=<ROBOT_FARM_INSTALL_TREE>
 ```
-* You may change "Release" to "Debug" if you would like debug builds instead of release builds.
-* You may set `-DBUILD_SHARED_LIBS` to `OFF` if you want to build static libraries instead
-  * This requires that the static version of the external dependencies are also available.
 
-Once the configuration is complete, you can build `nioc` using the following command:
-```shell
+Notes:
+
+* Set `CMAKE_BUILD_TYPE` to `"Debug"` for debug builds.
+* Set `BUILD_SHARED_LIBS=OFF` for static builds (requires static versions of dependencies).
+
+### Build
+
+```bash
 cmake --build <BUILD_TREE>
 ```
 
+### Install
 
-## Install
-To install, use the following command:
-```shell
+```bash
 cmake --install <BUILD_TREE>
 ```
 
-# Contribution Guidelines
+---
 
-## Naming Conventions
-* Member variables: mCamelCase
-* Compile time constants: kCamelCase
-* Types: PascalCase
-* Everything else, including filenames: camelCase
+## 🤝 Contributing
 
+We welcome contributions! Please follow the project conventions when submitting PRs.
 
-# Tooling
+### Naming Conventions
+
+* **Member variables**: `mCamelCase`
+* **Compile-time constants**: `kCamelCase`
+* **Types**: `PascalCase`
+* **Everything else (including filenames)**: `camelCase`
+
+---
+
+## 🧰 Tooling
 
 ### Clang Format
-`nioc` will automatically find `clang-format-14` and create a custom cmake target(`niocClangFormat`)
-which when built will format C/C++ code throughout the repository.
 
+CMake automatically detects `clang-format-14` and creates the target `niocClangFormat`.
+Run it to format all C/C++ code in the repository.
 
 ### Clang Tidy
-Command used to generate .clang-tidy config file:
-```shell
+
+Generate `.clang-tidy` with:
+
+```bash
 clang-tidy-12 -checks=android-*,bugprone-*,cert-*,cppcoreguidelines-*,hicpp-*,misc-*,modernize-*,openmp-*,performance-*,portability-*,readability-* --dump-config >> .clang-tidy
 ```
 
-Following CMake cache arguments can be used to run clang-tidy with
-compilation database:
-```shell
+Enable clang-tidy in CMake with:
+
+```bash
 -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON
 -DCMAKE_CXX_CLANG_TIDY:PATH=/path/to/clang-tidy-exe
 ```
+
+---
+
+## 📜 License
+
+[MIT](LICENSE) © 2025 Anurag Jakhotia
