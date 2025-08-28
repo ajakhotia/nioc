@@ -1,137 +1,75 @@
 {
-    "version": 3,
-    "cmakeMinimumRequired": {
-        "major": 3,
-        "minor": 20,
-        "patch": 0
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 20,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "basic",
+      "displayName": "basic",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "BUILD_TESTING": {
+          "type": "BOOL",
+          "value": false
+        },
+        "CMAKE_INSTALL_PREFIX": {
+          "type": "PATH",
+          "value": "$env{HOME}/opt/${sourceDirName}/${presetName}"
+        },
+        "CMAKE_BUILD_TYPE": {
+          "type": "STRING",
+          "value": "Release"
+        }
+      },
+      "hidden": true,
+      "binaryDir": "${sourceDir}/build/${presetName}"
     },
-
-    "configurePresets": [
-        {
-            "name": "ninja",
-            "displayName": "ninja",
-            "generator": "Ninja",
-            "cacheVariables": {
-                "CMAKE_EXPORT_COMPILE_COMMANDS": {
-                    "type": "BOOL",
-                    "value": true
-                },
-                "BUILD_TESTING": {
-                    "type": "BOOL",
-                    "value": true
-                },
-                "CMAKE_INSTALL_PREFIX": {
-                    "type": "PATH",
-                    "value": "$env{HOME}/opt/${presetName}"
-                },
-                "CMAKE_MAKE_PROGRAM": {
-                    "type": "FILEPATH",
-                    "value": "/usr/bin/ninja"
-                }
-            },
-            "hidden": true
-        },
-        {
-            "name": "debug",
-            "displayName": "debug",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": {
-                    "type": "STRING",
-                    "value": "Debug"
-                }
-            },
-            "hidden": true
-        },
-        {
-            "name": "release",
-            "displayName": "release",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": {
-                    "type": "STRING",
-                    "value": "Release"
-                }
-            },
-            "hidden": true
-        },
-        {
-            "name": "static",
-            "displayName": "static",
-            "cacheVariables": {
-                "BUILD_SHARED_LIBS": {
-                    "type": "BOOL",
-                    "value": false
-                }
-            },
-            "hidden": true
-        },
-        {
-            "name": "shared",
-            "displayName": "shared",
-            "cacheVariables": {
-                "BUILD_SHARED_LIBS": {
-                    "type": "BOOL",
-                    "value": true
-                }
-            },
-            "hidden": true
-        },
-        {
-            "name": "ci-static-prefix",
-            "displayName": "ci-static-prefix",
-            "inherits": ["static"],
-            "cacheVariables": {
-                "CMAKE_PREFIX_PATH": {
-                    "type": "LIST",
-                    "value": "$env{HOME}/usr/static"
-                }
-            },
-            "hidden": true
-        },
-        {
-            "name": "ci-shared-prefix",
-            "displayName": "ci-shared-prefix",
-            "inherits": ["shared"],
-            "cacheVariables": {
-                "CMAKE_PREFIX_PATH": {
-                    "type": "LIST",
-                    "value": "$env{HOME}/usr/shared"
-                }
-            },
-            "hidden": true
-        },
-        {
-            "name": "ci-gnu-12-static-debug",
-            "displayName": "ci-gnu-12-static-debug",
-            "toolchainFile": "${sourceDir}/toolchains/gnu-12.cmake",
-            "inherits": ["ninja", "ci-static-prefix", "debug"],
-            "binaryDir": "${sourceDir}/build/${presetName}",
-            "hidden": true
-        },
-        {
-            "name": "ci-clang-14-shared-release",
-            "displayName": "ci-clang-14-shared-release",
-            "toolchainFile": "${sourceDir}/toolchains/clang-14.cmake",
-            "inherits": ["ninja", "ci-shared-prefix", "release"],
-            "binaryDir": "${sourceDir}/build/${presetName}",
-            "hidden": true
+    {
+      "name": "static",
+      "displayName": "static",
+      "cacheVariables": {
+        "BUILD_SHARED_LIBS": {
+          "type": "BOOL",
+          "value": false
         }
-    ],
-
-    "buildPresets": [
-        {
-            "name": "ci-gnu-12-static-debug",
-            "displayName": "ci-gnu-12-static-debug",
-            "configurePreset": "ci-gnu-12-static-debug"
-        },
-
-        {
-            "name": "ci-clang-14-shared-release",
-            "displayName": "ci-clang-14-shared-release",
-            "configurePreset": "ci-clang-14-shared-release"
+      },
+      "hidden": true
+    },
+    {
+      "name": "shared",
+      "displayName": "shared",
+      "cacheVariables": {
+        "BUILD_SHARED_LIBS": {
+          "type": "BOOL",
+          "value": true
         }
-    ],
-
-    "testPresets": [
-
-    ]
+      },
+      "hidden": true
+    },
+    {
+      "name": "gnu-default-shared",
+      "displayName": "gnu-default-shared",
+      "toolchainFile": "${sourceDir}/cmake/toolchains/linux-gnu-default.cmake",
+      "inherits": [
+        "basic",
+        "shared"
+      ]
+    },
+    {
+      "name": "clang-default-shared",
+      "displayName": "clang-default-shared",
+      "toolchainFile": "${sourceDir}/cmake/toolchains/linux-clang-default.cmake",
+      "inherits": [
+        "basic",
+        "shared"
+      ]
+    }
+  ],
+  "buildPresets": [
+  ],
+  "testPresets": [
+  ]
 }
