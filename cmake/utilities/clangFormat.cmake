@@ -16,12 +16,8 @@ function(add_clang_format)
         message(STATUS "Found clang-format program with version "
                 "${ACF_PARAM_VERSION} at ${CLANG_FORMAT}")
     else()
-        if(CLANG_FORMAT)
-            message(STATUS "Found clang-format program with version ${ACF_PARAM_VERSION} at ${CLANG_FORMAT}")
-        else()
-            message($<IF:${ACF_PARAM_REQUIRED},SEND_ERROR,STATUS>
-                    "Unable to find clang-format for version ${ACF_PARAM_VERSION}.")
-        endif()
+        message($<IF:${ACF_PARAM_REQUIRED},SEND_ERROR,STATUS>
+                "Unable to find clang-format for version ${ACF_PARAM_VERSION}.")
     endif()
 
     if(XARGS)
