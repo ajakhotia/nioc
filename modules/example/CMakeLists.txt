@@ -87,6 +87,12 @@ target_compile_options(exampleMain PRIVATE
         PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>)
 
 
+if(CLANG_TIDY)
+  set_target_properties(example PROPERTIES CXX_CLANG_TIDY ${CLANG_TIDY})
+  set_target_properties(exampleMain PROPERTIES CXX_CLANG_TIDY ${CLANG_TIDY})
+endif()
+
+
 #[[ Add unit-tests conditionally. A user may-not always want to build unit-tests
     as they typically require external libraries and elaborate setups and there
     will be circumstance wherein, the user will simply want to build the code

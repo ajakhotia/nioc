@@ -13,16 +13,14 @@ function(add_clang_format)
     find_program(XARGS xargs NO_CACHE)
 
     if(CLANG_FORMAT)
-        message(STATUS "Found clang-format program for version "
+        message(STATUS "Found clang-format program with version "
                 "${ACF_PARAM_VERSION} at ${CLANG_FORMAT}")
     else()
-        if(ACF_PARAM_REQUIRED)
-            message(SEND_ERROR "Unable to find clang-format for version "
-                    "${ACF_PARAM_VERSION}.")
+        if(CLANG_FORMAT)
+            message(STATUS "Found clang-format program with version ${ACF_PARAM_VERSION} at ${CLANG_FORMAT}")
         else()
-            message(STATUS "Unable to find clang-format for version "
-                    "${ACF_PARAM_VERSION}. Skipping setting up the formatting "
-                    "target ${ACF_PARAM_TARGET}.")
+            message($<IF:${ACF_PARAM_REQUIRED},SEND_ERROR,STATUS>
+                    "Unable to find clang-format for version ${ACF_PARAM_VERSION}.")
         endif()
     endif()
 

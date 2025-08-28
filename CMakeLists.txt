@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20.2)
+cmake_minimum_required(VERSION 3.27)
 
 project(nioc VERSION 0.0.0.0 LANGUAGES C CXX)
 
@@ -15,10 +15,13 @@ if((TARGET GTest::GTest) AND (TARGET GTest::Main))
 endif()
 
 
-include(cmake/utilities/clangFormat.cmake)
-include(cmake/utilities/exportedTargets.cmake)
 include(cmake/utilities/capnprotoGenerate.cmake)
-add_clang_format(TARGET niocClangFormat VERSION 14)
+include(cmake/utilities/clangFormat.cmake)
+include(cmake/utilities/clangTidy.cmake)
+include(cmake/utilities/exportedTargets.cmake)
+
+add_clang_format(TARGET niocClangFormat VERSION 19)
+add_clang_tidy(VERSION 19)
 
 
 #[[ Only add external dependencies to the source tree from here if this project
@@ -30,12 +33,6 @@ add_clang_format(TARGET niocClangFormat VERSION 14)
     truth. ]]
 if(${CMAKE_SOURCE_DIR} STREQUAL ${nioc_SOURCE_DIR})
     add_subdirectory(external)
-endif()
-
-find_program(CLANG_TIDY clang-tidy-14 REQUIRED NO_CACHE)
-
-if(CLANG_TIDY)
-    message(STATUS "Found clang-tidy at ${CLANG_TIDY}")
 endif()
 
 add_subdirectory(modules)
