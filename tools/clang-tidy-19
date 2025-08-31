@@ -1,5 +1,5 @@
 ---
-Checks:          'clang-diagnostic-*,clang-analyzer-*,*,-clang-analyzer-alpha.*,-google-*,-llvm-*,-llvmlibc-*,-abseil-*,-fuchsia-*,-zircon-*,-objc-*,-android-*,-modernize-use-trailing-return-type,-misc-include-cleaner'
+Checks:          'clang-diagnostic-*,clang-analyzer-*,*,-clang-analyzer-alpha.*,-google-*,-llvm-*,-llvmlibc-*,-abseil-*,-fuchsia-*,-zircon-*,-objc-*,-android-*,-modernize-use-trailing-return-type,-misc-include-cleaner,-boost-use-ranges'
 WarningsAsErrors: 'bugprone-*,cert-*,clang-analyzer-*,cppcoreguidelines-*,modernize-*,performance-*,portability-*,readability-*,security-*'
 HeaderFileExtensions:
   - ''
@@ -20,9 +20,6 @@ CheckOptions:
   altera-single-work-item-barrier.AOCVersion: '1600'
   altera-struct-pack-align.MaxConfiguredAlignment: '128'
   altera-unroll-loops.MaxLoopIterations: '100'
-  boost-use-ranges.IncludeBoostSystem: 'true'
-  boost-use-ranges.IncludeStyle: llvm
-  boost-use-ranges.UseReversePipe: 'false'
   bugprone-argument-comment.CommentBoolLiterals: '0'
   bugprone-argument-comment.CommentCharacterLiterals: '0'
   bugprone-argument-comment.CommentFloatLiterals: '0'
