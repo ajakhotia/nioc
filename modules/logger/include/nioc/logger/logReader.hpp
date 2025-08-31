@@ -7,6 +7,7 @@
 
 #include "defines.hpp"
 #include "memoryCrate.hpp"
+#include <filesystem>
 #include <memory>
 
 namespace nioc::logger

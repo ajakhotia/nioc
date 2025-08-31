@@ -42,8 +42,7 @@ fs::path checkAndSetupLogDirectory(fs::path logRoot)
 Logger::LoggerImpl::LoggerImpl(std::filesystem::path logRoot, const std::size_t maxFileSizeInBytes):
     mLogDirectory(checkAndSetupLogDirectory(std::move(logRoot))),
     mMaxFileSizeInBytes(maxFileSizeInBytes),
-    mLockedSequenceFile(mLogDirectory / kSequenceFileName),
-    mLockedChannelPtrMap()
+    mLockedSequenceFile(mLogDirectory / kSequenceFileName)
 {
   spdlog::info(
       "[Logger] Logging to {} with unit file size {}.",

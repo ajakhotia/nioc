@@ -106,7 +106,7 @@ ReadWriteUtil<std::span<const std::byte>>::read(const char* ptr, const std::uint
   return std::as_bytes(std::span(ptr, size));
 }
 
-std::filesystem::path validatePath(std::filesystem::path&& path)
+std::filesystem::path validatePath(std::filesystem::path path)
 {
   if(not std::filesystem::exists(path))
   {

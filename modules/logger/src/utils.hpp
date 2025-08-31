@@ -122,7 +122,7 @@ struct ReadWriteUtil
 };
 
 /// @brief  Ensure that the input path exists and returns the same.
-std::filesystem::path validatePath(std::filesystem::path&& path);
+std::filesystem::path validatePath(std::filesystem::path path);
 
 
 } // namespace nioc::logger

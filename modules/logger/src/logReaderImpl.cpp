@@ -33,7 +33,7 @@ LogEntry LogReader::LogReaderImpl::read()
       ReadWriteUtil<SequenceEntry>::read(std::next(mSequenceFile.data(), ssize_t(indexPtrOffset)));
 
   auto& channelReader = acquireChannel(sequenceEntry.mChannelId);
-  return { sequenceEntry.mChannelId, channelReader.read() };
+  return { .mChannelId = sequenceEntry.mChannelId, .mMemoryCrate = channelReader.read() };
 }
 
 ChannelReader& LogReader::LogReaderImpl::acquireChannel(ChannelId channelId)

@@ -15,7 +15,7 @@ capnproto_generate_library(
     SCHEMA_FILES
         include/nioc/logger/idl/frame.capnp
     COMPILE_FEATURES
-        PUBLIC cxx_std_17
+        PUBLIC cxx_std_20
     COMPILE_OPTIONS
         PRIVATE $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
         PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>

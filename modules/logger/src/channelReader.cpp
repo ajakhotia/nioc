@@ -48,9 +48,8 @@ MemoryCrate ChannelReader::read()
 
 ChannelReader::MappedFilePtr ChannelReader::acquireLogRoll(const std::uint64_t rollId)
 {
-  const auto iter = std::find_if(
-      mLogRollBuffer.begin(),
-      mLogRollBuffer.end(),
+  const auto iter = std::ranges::find_if(
+      mLogRollBuffer,
       [rollId](const MappedLogRoll& mappedLogRoll) { return mappedLogRoll.mRollId == rollId; });
 
   // If the roll doesn't exist, then map it in.
