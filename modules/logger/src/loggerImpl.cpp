@@ -17,27 +17,27 @@ namespace fs = std::filesystem;
 
 fs::path checkAndSetupLogDirectory(fs::path logRoot)
 {
-    logRoot /= (timeAsFormattedString(std::chrono::system_clock::now())) + "_" +
-               boost::uuids::to_string(boost::uuids::random_generator_pure()());
+  logRoot /= (timeAsFormattedString(std::chrono::system_clock::now())) + "_" +
+             boost::uuids::to_string(boost::uuids::random_generator_pure()());
 
-    if(fs::exists(logRoot))
-    {
-        spdlog::warn("[logger] Directory or file {} exists already. Contents will be cleared.",
-                     logRoot.string());
-        fs::remove_all(logRoot);
-    }
+  if(fs::exists(logRoot))
+  {
+    spdlog::warn(
+        "[logger] Directory or file {} exists already. Contents will be cleared.",
+        logRoot.string());
+    fs::remove_all(logRoot);
+  }
 
-    if(not fs::create_directories(logRoot))
-    {
-        throw std::runtime_error("[Logger::Logger] Unable to create root directory for log at " +
-                                 logRoot.string());
-    }
+  if(not fs::create_directories(logRoot))
+  {
+    throw std::runtime_error(
+        "[Logger::Logger] Unable to create root directory for log at " + logRoot.string());
+  }
 
-    return logRoot;
+  return logRoot;
 }
 
 } // End of anonymous namespace.
-
 
 Logger::LoggerImpl::LoggerImpl(std::filesystem::path logRoot, const std::size_t maxFileSizeInBytes):
     mLogDirectory(checkAndSetupLogDirectory(std::move(logRoot))),
@@ -45,58 +45,55 @@ Logger::LoggerImpl::LoggerImpl(std::filesystem::path logRoot, const std::size_t 
     mLockedSequenceFile(mLogDirectory / kSequenceFileName),
     mLockedChannelPtrMap()
 {
-    spdlog::info("[Logger] Logging to {} with unit file size {}.",
-                 mLogDirectory.string(),
-                 mMaxFileSizeInBytes);
+  spdlog::info(
+      "[Logger] Logging to {} with unit file size {}.",
+      mLogDirectory.string(),
+      mMaxFileSizeInBytes);
 }
-
 
 void Logger::LoggerImpl::write(const ChannelId channelId, const std::span<const std::byte>& data)
 {
-    // TODO: This can be improved to use fewer locks and avoid race conditions.
-    mLockedSequenceFile(
-        [&](std::ofstream& sequenceFile)
-        { ReadWriteUtil<SequenceEntry>::write(sequenceFile, SequenceEntry{channelId}); });
+  // TODO: This can be improved to use fewer locks and avoid race conditions.
+  mLockedSequenceFile(
+      [&](std::ofstream& sequenceFile)
+      { ReadWriteUtil<SequenceEntry>::write(sequenceFile, SequenceEntry{ channelId }); });
 
-    auto& lockedChannel = acquireChannel(channelId);
-    lockedChannel([&](Channel& channel) { channel.writeFrame(data); });
+  auto& lockedChannel = acquireChannel(channelId);
+  lockedChannel([&](Channel& channel) { channel.writeFrame(data); });
 }
 
-
-void Logger::LoggerImpl::write(const ChannelId channelId,
-                               const std::vector<std::span<const std::byte>>& data)
+void Logger::LoggerImpl::write(
+    const ChannelId channelId, const std::vector<std::span<const std::byte>>& data)
 {
-    // TODO: This can be improved to use fewer locks and avoid race conditions.
-    mLockedSequenceFile(
-        [&](std::ofstream& sequenceFile)
-        { ReadWriteUtil<SequenceEntry>::write(sequenceFile, SequenceEntry{channelId}); });
+  // TODO: This can be improved to use fewer locks and avoid race conditions.
+  mLockedSequenceFile(
+      [&](std::ofstream& sequenceFile)
+      { ReadWriteUtil<SequenceEntry>::write(sequenceFile, SequenceEntry{ channelId }); });
 
-    auto& lockedChannel = acquireChannel(channelId);
-    lockedChannel([&](Channel& channel) { channel.writeFrame(data); });
+  auto& lockedChannel = acquireChannel(channelId);
+  lockedChannel([&](Channel& channel) { channel.writeFrame(data); });
 }
-
 
 Logger::LoggerImpl::LockedChannel& Logger::LoggerImpl::acquireChannel(const ChannelId channelId)
 {
-    return mLockedChannelPtrMap(
-        [&](ChannelPtrMap& channelPtrMap) -> LockedChannel&
+  return mLockedChannelPtrMap(
+      [&](ChannelPtrMap& channelPtrMap) -> LockedChannel&
+      {
+        if(not channelPtrMap.contains(channelId))
         {
-            if(not channelPtrMap.contains(channelId))
-            {
-                channelPtrMap.try_emplace(
-                    channelId,
-                    std::make_unique<LockedChannel>(mLogDirectory / toHexString(channelId),
-                                                    mMaxFileSizeInBytes));
-            }
+          channelPtrMap.try_emplace(
+              channelId,
+              std::make_unique<LockedChannel>(
+                  mLogDirectory / toHexString(channelId), mMaxFileSizeInBytes));
+        }
 
-            return *channelPtrMap.at(channelId);
-        });
+        return *channelPtrMap.at(channelId);
+      });
 }
-
 
 const std::filesystem::path& Logger::LoggerImpl::path() const noexcept
 {
-    return mLogDirectory;
+  return mLogDirectory;
 }
 
 

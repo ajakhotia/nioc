@@ -17,54 +17,52 @@ namespace nioc::messages
 class MMappedMessageReader final: public logger::MemoryCrate, public capnp::FlatArrayMessageReader
 {
 public:
-    explicit MMappedMessageReader(logger::MemoryCrate memoryCrate);
+  explicit MMappedMessageReader(logger::MemoryCrate memoryCrate);
 
-    MMappedMessageReader(const MMappedMessageReader&) = delete;
+  MMappedMessageReader(const MMappedMessageReader&) = delete;
 
-    MMappedMessageReader(MMappedMessageReader&&) = delete;
+  MMappedMessageReader(MMappedMessageReader&&) = delete;
 
-    ~MMappedMessageReader() final = default;
+  ~MMappedMessageReader() final = default;
 
-    MMappedMessageReader& operator=(const MMappedMessageReader&) = delete;
+  MMappedMessageReader& operator=(const MMappedMessageReader&) = delete;
 
-    MMappedMessageReader& operator=(MMappedMessageReader&&) = delete;
+  MMappedMessageReader& operator=(MMappedMessageReader&&) = delete;
 };
-
 
 class MsgBase
 {
 public:
-    using MsgHandle = std::uint64_t;
+  using MsgHandle = std::uint64_t;
 
-    using Variant = std::variant<capnp::MallocMessageBuilder, MMappedMessageReader>;
+  using Variant = std::variant<capnp::MallocMessageBuilder, MMappedMessageReader>;
 
 protected:
-    MsgBase();
+  MsgBase();
 
-    explicit MsgBase(logger::MemoryCrate memoryCrate);
+  explicit MsgBase(logger::MemoryCrate memoryCrate);
 
 public:
-    MsgBase(const MsgBase&) = delete;
+  MsgBase(const MsgBase&) = delete;
 
-    MsgBase(MsgBase&&) noexcept = delete;
+  MsgBase(MsgBase&&) noexcept = delete;
 
-    virtual ~MsgBase() = default;
+  virtual ~MsgBase() = default;
 
-    MsgBase& operator=(const MsgBase&) = delete;
+  MsgBase& operator=(const MsgBase&) = delete;
 
-    MsgBase& operator=(MsgBase&&) noexcept = delete;
+  MsgBase& operator=(MsgBase&&) noexcept = delete;
 
-    [[nodiscard]] virtual MsgHandle msgHandle() const = 0;
+  [[nodiscard]] virtual MsgHandle msgHandle() const = 0;
 
 protected:
-    friend void write(MsgBase&, logger::Logger&);
+  friend void write(MsgBase&, logger::Logger&);
 
-    [[nodiscard]] Variant& variant() noexcept;
+  [[nodiscard]] Variant& variant() noexcept;
 
 private:
-    Variant mVariant;
+  Variant mVariant;
 };
-
 
 void write(MsgBase& msgBase, logger::Logger& logger);
 

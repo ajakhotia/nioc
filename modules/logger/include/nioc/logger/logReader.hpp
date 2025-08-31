@@ -14,32 +14,31 @@ namespace nioc::logger
 
 struct LogEntry
 {
-    ChannelId mChannelId;
+  ChannelId mChannelId;
 
-    MemoryCrate mMemoryCrate;
+  MemoryCrate mMemoryCrate;
 };
-
 
 class LogReader
 {
 public:
-    explicit LogReader(std::filesystem::path logRoot);
+  explicit LogReader(std::filesystem::path logRoot);
 
-    LogReader(const LogReader&) = delete;
+  LogReader(const LogReader&) = delete;
 
-    LogReader(LogReader&& logReader) noexcept;
+  LogReader(LogReader&& logReader) noexcept;
 
-    ~LogReader();
+  ~LogReader();
 
-    LogReader& operator=(const LogReader&) = delete;
+  LogReader& operator=(const LogReader&) = delete;
 
-    LogReader& operator=(LogReader&& logReader) noexcept;
+  LogReader& operator=(LogReader&& logReader) noexcept;
 
-    LogEntry read();
+  LogEntry read();
 
 private:
-    class LogReaderImpl;
-    std::unique_ptr<LogReaderImpl> mLogReaderImpl;
+  class LogReaderImpl;
+  std::unique_ptr<LogReaderImpl> mLogReaderImpl;
 };
 
 } // namespace nioc::logger

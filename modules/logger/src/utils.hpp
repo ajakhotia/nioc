@@ -30,24 +30,21 @@ static constexpr auto kIndexFileName = "index";
 /// Name of the sequence file in a log.
 static constexpr auto kSequenceFileName = "sequence";
 
-
 /// @brief  A structure that represents an entry in the sequence file of a log.
 struct SequenceEntry
 {
-    std::uint64_t mChannelId;
+  std::uint64_t mChannelId;
 };
-
 
 /// @brief  A structure that represents an entry in the index file of a channel.
 struct IndexEntry
 {
-    std::uint64_t mRollId;
+  std::uint64_t mRollId;
 
-    std::uint64_t mRollPosition;
+  std::uint64_t mRollPosition;
 
-    std::uint64_t mDataSize;
+  std::uint64_t mDataSize;
 };
-
 
 /// @brief  Converts a system_clock time_point to date-time string formatted per ISO 8601
 /// @param  timePoint   Time point to be converted.
@@ -70,7 +67,6 @@ std::string padString(const std::string& input, uint64_t paddedLength, char padd
 /// @return std::string containing the name for the roll.
 std::string buildRollName(std::uint64_t rollId);
 
-
 /// @brief  Converts an integer to a sting in hexadecimal form(0x.....).
 /// @tparam Integer The integer type.
 /// @param  integer Input.
@@ -78,9 +74,8 @@ std::string buildRollName(std::uint64_t rollId);
 template<typename Integer>
 std::string toHexString(const Integer integer)
 {
-    return fmt::format("0x{:x}", integer);
+  return fmt::format("0x{:x}", integer);
 }
-
 
 /// @brief  Converts a valid hex string to an integer. The string must start with 0x.
 /// @tparam Integer     Integer type to return.
@@ -89,26 +84,25 @@ std::string toHexString(const Integer integer)
 template<typename Integer>
 Integer hexStringToInteger(const std::string& hexString)
 {
-    static constexpr auto kHexPrefix = "0x";
-    static constexpr auto kHexBase = 16U;
-    if(not hexString.starts_with(kHexPrefix))
-    {
-        throw std::invalid_argument("[Logger::hexStringToInteger] Provided input does not start " +
-                                    std::string(kHexPrefix) + " prefix.");
-    }
+  static constexpr auto kHexPrefix = "0x";
+  static constexpr auto kHexBase = 16U;
+  if(not hexString.starts_with(kHexPrefix))
+  {
+    throw std::invalid_argument(
+        "[Logger::hexStringToInteger] Provided input does not start " + std::string(kHexPrefix) +
+        " prefix.");
+  }
 
-    return std::stoull(hexString, nullptr, kHexBase);
+  return std::stoull(hexString, nullptr, kHexBase);
 }
-
 
 /// @brief  Checks if the files has required amount of space before reaching the max size.
 /// @param  file                Reference to the file in question.
 /// @param  spaceRequired       Space required by the client.
 /// @param  maxFileSizeInBytes  Maximum allowable size of the file.
 /// @return True if the required space is available. False otherwise.
-bool fileHasSpace(std::ofstream& file,
-                  std::uint64_t spaceRequired,
-                  std::uint64_t maxFileSizeInBytes);
+bool
+fileHasSpace(std::ofstream& file, std::uint64_t spaceRequired, std::uint64_t maxFileSizeInBytes);
 
 
 /// @brief  Compute the sum of the length of each byte span in the collection.
@@ -117,17 +111,15 @@ bool fileHasSpace(std::ofstream& file,
 std::uint64_t
 computeTotalSizeInBytes(const std::vector<std::span<const std::byte>>& dataCollection);
 
-
 /// @brief  Struct used to provide read/write functionality for a give type.
 /// @tparam ValueType
 template<typename ValueType>
 struct ReadWriteUtil
 {
-    static void write(std::ostream& stream, ValueType value);
+  static void write(std::ostream& stream, ValueType value);
 
-    static ValueType read(const char* ptr, std::uint64_t size = sizeof(ValueType));
+  static ValueType read(const char* ptr, std::uint64_t size = sizeof(ValueType));
 };
-
 
 /// @brief  Ensure that the input path exists and returns the same.
 std::filesystem::path validatePath(std::filesystem::path&& path);

@@ -16,19 +16,19 @@ template<typename ParentFrame_>
 class ParentConceptTmpl
 {
 public:
-    using ParentFrame = ParentFrame_;
+  using ParentFrame = ParentFrame_;
 
-    static_assert(common::isSpecialization<ParentFrame, StaticFrame>,
-                  "Parent frame is not a template specialization of StaticFrame<> class.");
+  static_assert(
+      common::isSpecialization<ParentFrame, StaticFrame>,
+      "Parent frame is not a template specialization of StaticFrame<> class.");
 
-    virtual ~ParentConceptTmpl() = default;
+  virtual ~ParentConceptTmpl() = default;
 
-    [[nodiscard]] decltype(auto) parentFrameAsTuple() const noexcept
-    {
-        return std::make_tuple();
-    }
+  [[nodiscard]] decltype(auto) parentFrameAsTuple() const noexcept
+  {
+    return std::make_tuple();
+  }
 };
-
 
 /// @brief  A class representing the concept of a child frame.
 /// @tparam ChildFrame_ Compile time identity of the frame.
@@ -36,78 +36,76 @@ template<typename ChildFrame_>
 class ChildConceptTmpl
 {
 public:
-    using ChildFrame = ChildFrame_;
+  using ChildFrame = ChildFrame_;
 
-    static_assert(common::isSpecialization<ChildFrame, StaticFrame>,
-                  "Child frame is not a template specialization of StaticFrame<> class.");
+  static_assert(
+      common::isSpecialization<ChildFrame, StaticFrame>,
+      "Child frame is not a template specialization of StaticFrame<> class.");
 
-    virtual ~ChildConceptTmpl() = default;
+  virtual ~ChildConceptTmpl() = default;
 
-    [[nodiscard]] decltype(auto) childFrameAsTuple() const noexcept
-    {
-        return std::make_tuple();
-    }
+  [[nodiscard]] decltype(auto) childFrameAsTuple() const noexcept
+  {
+    return std::make_tuple();
+  }
 };
-
 
 /// @brief  ParentConceptTmpl specialized for the dynamic case.
 template<>
 class ParentConceptTmpl<DynamicFrame>
 {
 public:
-    using ParentFrame = DynamicFrame;
+  using ParentFrame = DynamicFrame;
 
-    template<typename ParentFrameArgs>
-    explicit ParentConceptTmpl(ParentFrameArgs parentFrameArgs) noexcept:
-        mParentFrame(std::move(parentFrameArgs))
-    {
-    }
+  template<typename ParentFrameArgs>
+  explicit ParentConceptTmpl(ParentFrameArgs parentFrameArgs) noexcept:
+      mParentFrame(std::move(parentFrameArgs))
+  {
+  }
 
-    virtual ~ParentConceptTmpl() = default;
+  virtual ~ParentConceptTmpl() = default;
 
-    [[nodiscard]] const ParentFrame& parentFrame() const noexcept
-    {
-        return mParentFrame;
-    }
+  [[nodiscard]] const ParentFrame& parentFrame() const noexcept
+  {
+    return mParentFrame;
+  }
 
-    [[nodiscard]] decltype(auto) parentFrameAsTuple() const noexcept
-    {
-        return std::make_tuple(std::cref(mParentFrame));
-    }
+  [[nodiscard]] decltype(auto) parentFrameAsTuple() const noexcept
+  {
+    return std::make_tuple(std::cref(mParentFrame));
+  }
 
 private:
-    ParentFrame mParentFrame;
+  ParentFrame mParentFrame;
 };
-
 
 /// @brief  ChildConceptTmpl specialized for the dynamic case.
 template<>
 class ChildConceptTmpl<DynamicFrame>
 {
 public:
-    using ChildFrame = DynamicFrame;
+  using ChildFrame = DynamicFrame;
 
-    template<typename ChildFrameArgs>
-    explicit ChildConceptTmpl(ChildFrameArgs childFrameArgs) noexcept:
-        mChildFrame(std::move(childFrameArgs))
-    {
-    }
+  template<typename ChildFrameArgs>
+  explicit ChildConceptTmpl(ChildFrameArgs childFrameArgs) noexcept:
+      mChildFrame(std::move(childFrameArgs))
+  {
+  }
 
+  virtual ~ChildConceptTmpl() = default;
 
-    virtual ~ChildConceptTmpl() = default;
+  [[nodiscard]] const ChildFrame& childFrame() const noexcept
+  {
+    return mChildFrame;
+  }
 
-    [[nodiscard]] const ChildFrame& childFrame() const noexcept
-    {
-        return mChildFrame;
-    }
-
-    [[nodiscard]] decltype(auto) childFrameAsTuple() const noexcept
-    {
-        return std::make_tuple(std::cref(mChildFrame));
-    }
+  [[nodiscard]] decltype(auto) childFrameAsTuple() const noexcept
+  {
+    return std::make_tuple(std::cref(mChildFrame));
+  }
 
 private:
-    ChildFrame mChildFrame;
+  ChildFrame mChildFrame;
 };
 
 

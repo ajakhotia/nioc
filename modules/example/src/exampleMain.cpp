@@ -10,11 +10,11 @@
 
 auto main() -> int
 {
-    const nioc::example::Example myExample("Yolo");
-    assert("Yolo" == myExample.name());
+  const nioc::example::Example myExample("Yolo");
+  assert("Yolo" == myExample.name());
 
-    const nioc::example::PrivateExample myPrivateExample(12);
-    assert(myPrivateExample.value() == 12);
+  const nioc::example::PrivateExample myPrivateExample(12);
+  assert(myPrivateExample.value() == 12);
 
-    return EXIT_SUCCESS;
+  return EXIT_SUCCESS;
 }

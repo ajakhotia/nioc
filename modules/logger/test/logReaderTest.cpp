@@ -8,8 +8,8 @@
 
 #include "utils.hpp"
 #include <gtest/gtest.h>
-#include <nioc/logger/logger.hpp>
 #include <nioc/logger/logReader.hpp>
+#include <nioc/logger/logger.hpp>
 #include <numeric>
 
 namespace nioc::logger
@@ -20,9 +20,9 @@ namespace
 {
 std::vector<char> generateData(std::uint64_t size)
 {
-    std::vector<char> data(size);
-    std::iota(data.begin(), data.end(), size);
-    return data;
+  std::vector<char> data(size);
+  std::iota(data.begin(), data.end(), size);
+  return data;
 }
 
 constexpr const auto channelA = 16983UL;
@@ -34,58 +34,57 @@ const auto dataBAsBytes = std::as_bytes(std::span(dataB));
 
 fs::path createLog()
 {
-    Logger logger;
+  Logger logger;
 
-    logger.write(channelA, dataAAsBytes);
-    logger.write(channelB, dataBAsBytes);
-    logger.write(channelA, dataAAsBytes);
-    logger.write(channelB, dataBAsBytes);
+  logger.write(channelA, dataAAsBytes);
+  logger.write(channelB, dataBAsBytes);
+  logger.write(channelA, dataAAsBytes);
+  logger.write(channelB, dataBAsBytes);
 
-    return logger.path();
+  return logger.path();
 }
 
 void expectSpanEqual(const std::span<const std::byte>& lhs, const std::span<const std::byte>& rhs)
 {
-    EXPECT_EQ(lhs.size(), rhs.size());
-    for(auto ii = 0ULL; ii < lhs.size(); ++ii)
-    {
-        EXPECT_EQ(lhs[ii], rhs[ii]);
-    }
+  EXPECT_EQ(lhs.size(), rhs.size());
+  for(auto ii = 0ULL; ii < lhs.size(); ++ii)
+  {
+    EXPECT_EQ(lhs[ii], rhs[ii]);
+  }
 }
 
 } // namespace
 
-
 TEST(LogReader, read)
 {
-    const auto logPath = createLog();
-    LogReader logReader(logPath);
+  const auto logPath = createLog();
+  LogReader logReader(logPath);
 
-    {
-        const auto logEntry = logReader.read();
-        EXPECT_EQ(channelA, logEntry.mChannelId);
-        expectSpanEqual(dataAAsBytes, logEntry.mMemoryCrate.span());
-    }
+  {
+    const auto logEntry = logReader.read();
+    EXPECT_EQ(channelA, logEntry.mChannelId);
+    expectSpanEqual(dataAAsBytes, logEntry.mMemoryCrate.span());
+  }
 
-    {
-        const auto logEntry = logReader.read();
-        EXPECT_EQ(channelB, logEntry.mChannelId);
-        expectSpanEqual(dataBAsBytes, logEntry.mMemoryCrate.span());
-    }
+  {
+    const auto logEntry = logReader.read();
+    EXPECT_EQ(channelB, logEntry.mChannelId);
+    expectSpanEqual(dataBAsBytes, logEntry.mMemoryCrate.span());
+  }
 
-    {
-        const auto logEntry = logReader.read();
-        EXPECT_EQ(channelA, logEntry.mChannelId);
-        expectSpanEqual(dataAAsBytes, logEntry.mMemoryCrate.span());
-    }
+  {
+    const auto logEntry = logReader.read();
+    EXPECT_EQ(channelA, logEntry.mChannelId);
+    expectSpanEqual(dataAAsBytes, logEntry.mMemoryCrate.span());
+  }
 
-    {
-        const auto logEntry = logReader.read();
-        EXPECT_EQ(channelB, logEntry.mChannelId);
-        expectSpanEqual(dataBAsBytes, logEntry.mMemoryCrate.span());
-    }
+  {
+    const auto logEntry = logReader.read();
+    EXPECT_EQ(channelB, logEntry.mChannelId);
+    expectSpanEqual(dataBAsBytes, logEntry.mMemoryCrate.span());
+  }
 
-    EXPECT_THROW(logReader.read(), std::runtime_error);
+  EXPECT_THROW(logReader.read(), std::runtime_error);
 }
 
 

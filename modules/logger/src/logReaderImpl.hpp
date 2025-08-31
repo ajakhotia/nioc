@@ -11,39 +11,38 @@
 #include <nioc/logger/logReader.hpp>
 #include <unordered_map>
 
-
 namespace nioc::logger
 {
 
 class LogReader::LogReaderImpl
 {
 public:
-    explicit LogReaderImpl(std::filesystem::path logRoot);
+  explicit LogReaderImpl(std::filesystem::path logRoot);
 
-    LogReaderImpl(const LogReaderImpl&) = delete;
+  LogReaderImpl(const LogReaderImpl&) = delete;
 
-    LogReaderImpl(LogReaderImpl&&) = delete;
+  LogReaderImpl(LogReaderImpl&&) = delete;
 
-    ~LogReaderImpl() = default;
+  ~LogReaderImpl() = default;
 
-    LogReaderImpl& operator=(const LogReaderImpl&) = delete;
+  LogReaderImpl& operator=(const LogReaderImpl&) = delete;
 
-    LogReaderImpl& operator=(LogReaderImpl&&) = delete;
+  LogReaderImpl& operator=(LogReaderImpl&&) = delete;
 
-    LogEntry read();
+  LogEntry read();
 
 private:
-    using ChannelReaderMap = std::unordered_map<ChannelId, ChannelReader>;
+  using ChannelReaderMap = std::unordered_map<ChannelId, ChannelReader>;
 
-    std::filesystem::path mLogRoot;
+  std::filesystem::path mLogRoot;
 
-    boost::iostreams::mapped_file_source mSequenceFile;
+  boost::iostreams::mapped_file_source mSequenceFile;
 
-    std::uint64_t mNextReadIndex;
+  std::uint64_t mNextReadIndex;
 
-    common::Locked<ChannelReaderMap> mLockedChannelReaderMap;
+  common::Locked<ChannelReaderMap> mLockedChannelReaderMap;
 
-    ChannelReader& acquireChannel(ChannelId channelId);
+  ChannelReader& acquireChannel(ChannelId channelId);
 };
 
 

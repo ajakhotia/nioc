@@ -28,23 +28,21 @@ namespace nioc::example
 {
 Example::Example()
 {
-    // PrivateExample type declared and defined in the private header examplePrivateHeader.hpp
-    // is only available amongst its sibling source files. It cannot and should not be accessed in
-    // any other modules.
-    const auto privateExample = PrivateExample(7);
-    if(privateExample.value() != 7)
-    {
-      std::abort();
-    }
+  // PrivateExample type declared and defined in the private header examplePrivateHeader.hpp
+  // is only available amongst its sibling source files. It cannot and should not be accessed in
+  // any other modules.
+  const auto privateExample = PrivateExample(7);
+  if(privateExample.value() != 7)
+  {
+    std::abort();
+  }
 }
-
 
 Example::Example(std::string name): mName(std::move(name)) {}
 
-
 [[nodiscard]] const std::string& Example::name() const noexcept
 {
-    return mName;
+  return mName;
 }
 
 

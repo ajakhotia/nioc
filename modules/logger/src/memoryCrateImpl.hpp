@@ -16,28 +16,28 @@ namespace nioc::logger
 class MemoryCrate::MemoryCrateImpl
 {
 public:
-    using MappedFile = boost::iostreams::mapped_file_source;
+  using MappedFile = boost::iostreams::mapped_file_source;
 
-    using MappedFilePtr = std::shared_ptr<MappedFile>;
+  using MappedFilePtr = std::shared_ptr<MappedFile>;
 
-    MemoryCrateImpl(MappedFilePtr mappedFilePtr, const IndexEntry& index);
+  MemoryCrateImpl(MappedFilePtr mappedFilePtr, const IndexEntry& index);
 
-    MemoryCrateImpl(const MemoryCrateImpl&) = default;
+  MemoryCrateImpl(const MemoryCrateImpl&) = default;
 
-    MemoryCrateImpl(MemoryCrateImpl&&) = default;
+  MemoryCrateImpl(MemoryCrateImpl&&) = default;
 
-    ~MemoryCrateImpl() = default;
+  ~MemoryCrateImpl() = default;
 
-    MemoryCrateImpl& operator=(const MemoryCrateImpl&) = default;
+  MemoryCrateImpl& operator=(const MemoryCrateImpl&) = default;
 
-    MemoryCrateImpl& operator=(MemoryCrateImpl&&) = default;
+  MemoryCrateImpl& operator=(MemoryCrateImpl&&) = default;
 
-    [[nodiscard]] const std::span<const std::byte>& span() const noexcept;
+  [[nodiscard]] const std::span<const std::byte>& span() const noexcept;
 
 private:
-    MappedFilePtr mMappedFilePtr;
+  MappedFilePtr mMappedFilePtr;
 
-    std::span<const std::byte> mSpan;
+  std::span<const std::byte> mSpan;
 };
 
 

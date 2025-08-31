@@ -6,7 +6,6 @@
 
 #include "memoryCrateImpl.hpp"
 
-
 namespace nioc::logger
 {
 
@@ -25,10 +24,9 @@ MemoryCrate& MemoryCrate::operator=(MemoryCrate&& memoryCrate) noexcept = defaul
 
 MemoryCrate& MemoryCrate::operator=(const MemoryCrate& memoryCrate) = default;
 
-
 std::span<const std::byte> MemoryCrate::span() const
 {
-    return mMemoryCrateImplPtr->span();
+  return mMemoryCrateImplPtr->span();
 }
 
 

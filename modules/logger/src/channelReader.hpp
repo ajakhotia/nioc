@@ -16,40 +16,40 @@ namespace nioc::logger
 class ChannelReader
 {
 public:
-    using MappedFile = boost::iostreams::mapped_file_source;
+  using MappedFile = boost::iostreams::mapped_file_source;
 
-    using MappedFilePtr = std::shared_ptr<MappedFile>;
+  using MappedFilePtr = std::shared_ptr<MappedFile>;
 
-    struct MappedLogRoll
-    {
-        std::uint64_t mRollId;
-        MappedFilePtr mMappedFilePtr;
-    };
+  struct MappedLogRoll
+  {
+    std::uint64_t mRollId;
+    MappedFilePtr mMappedFilePtr;
+  };
 
-    explicit ChannelReader(std::filesystem::path logRoot);
+  explicit ChannelReader(std::filesystem::path logRoot);
 
-    ChannelReader(const ChannelReader&) = delete;
+  ChannelReader(const ChannelReader&) = delete;
 
-    ChannelReader(ChannelReader&&) = default;
+  ChannelReader(ChannelReader&&) = default;
 
-    ~ChannelReader() = default;
+  ~ChannelReader() = default;
 
-    ChannelReader& operator=(const ChannelReader&) = delete;
+  ChannelReader& operator=(const ChannelReader&) = delete;
 
-    ChannelReader& operator=(ChannelReader&&) = default;
+  ChannelReader& operator=(ChannelReader&&) = default;
 
-    [[nodiscard]] MemoryCrate read();
+  [[nodiscard]] MemoryCrate read();
 
 private:
-    std::filesystem::path mLogRoot;
+  std::filesystem::path mLogRoot;
 
-    MappedFile mIndexFile;
+  MappedFile mIndexFile;
 
-    std::uint64_t mNextReadIndex;
+  std::uint64_t mNextReadIndex;
 
-    boost::circular_buffer<MappedLogRoll> mLogRollBuffer;
+  boost::circular_buffer<MappedLogRoll> mLogRollBuffer;
 
-    MappedFilePtr acquireLogRoll(std::uint64_t rollId);
+  MappedFilePtr acquireLogRoll(std::uint64_t rollId);
 };
 
 } // namespace nioc::logger

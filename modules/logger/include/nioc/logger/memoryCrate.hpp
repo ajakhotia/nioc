@@ -14,24 +14,24 @@ namespace nioc::logger
 class MemoryCrate
 {
 public:
-    class MemoryCrateImpl;
+  class MemoryCrateImpl;
 
-    explicit MemoryCrate(std::shared_ptr<MemoryCrateImpl> memoryCrateImplPtr);
+  explicit MemoryCrate(std::shared_ptr<MemoryCrateImpl> memoryCrateImplPtr);
 
-    MemoryCrate(const MemoryCrate& memoryCrate);
+  MemoryCrate(const MemoryCrate& memoryCrate);
 
-    MemoryCrate(MemoryCrate&& memoryCrate) noexcept;
+  MemoryCrate(MemoryCrate&& memoryCrate) noexcept;
 
-    ~MemoryCrate();
+  ~MemoryCrate();
 
-    MemoryCrate& operator=(const MemoryCrate& memoryCrate);
+  MemoryCrate& operator=(const MemoryCrate& memoryCrate);
 
-    MemoryCrate& operator=(MemoryCrate&& memoryCrate) noexcept;
+  MemoryCrate& operator=(MemoryCrate&& memoryCrate) noexcept;
 
-    [[nodiscard]] std::span<const std::byte> span() const;
+  [[nodiscard]] std::span<const std::byte> span() const;
 
 private:
-    std::shared_ptr<MemoryCrateImpl> mMemoryCrateImplPtr;
+  std::shared_ptr<MemoryCrateImpl> mMemoryCrateImplPtr;
 };
 
 

@@ -14,49 +14,44 @@ namespace nioc::geometry
 class Mercury;
 class Venus;
 
-
 TEST(StaticFrame, construction)
 {
-    // A static frame cannot be constructed as one should never need to.
-    // EXPECT_NO_THROW(StaticFrame<Mercury>());
+  // A static frame cannot be constructed as one should never need to.
+  // EXPECT_NO_THROW(StaticFrame<Mercury>());
 }
-
 
 TEST(StaticFrame, name)
 {
-    static_assert("nioc::geometry::Mercury" == StaticFrame<Mercury>::name());
-    EXPECT_EQ("nioc::geometry::Venus", StaticFrame<Venus>::name());
+  static_assert("nioc::geometry::Mercury" == StaticFrame<Mercury>::name());
+  EXPECT_EQ("nioc::geometry::Venus", StaticFrame<Venus>::name());
 }
-
 
 TEST(DynamicFrame, construction)
 {
-    EXPECT_NO_THROW(DynamicFrame("testFrame145"));
+  EXPECT_NO_THROW(DynamicFrame("testFrame145"));
 }
-
 
 TEST(DynamicFrame, name)
 {
-    DynamicFrame df("testFrame145");
-    EXPECT_EQ("testFrame145", df.name());
+  DynamicFrame df("testFrame145");
+  EXPECT_EQ("testFrame145", df.name());
 }
-
 
 TEST(DynamicFrame, EqualityCheck)
 {
-    DynamicFrame d1("Test125");
+  DynamicFrame d1("Test125");
 
-    {
-        DynamicFrame d2("Test125");
-        EXPECT_TRUE(d1 == d2);
-        EXPECT_FALSE(d1 != d2);
-    }
+  {
+    DynamicFrame d2("Test125");
+    EXPECT_TRUE(d1 == d2);
+    EXPECT_FALSE(d1 != d2);
+  }
 
-    {
-        DynamicFrame d3("Test43");
-        EXPECT_FALSE(d1 == d3);
-        EXPECT_TRUE(d1 != d3);
-    }
+  {
+    DynamicFrame d3("Test43");
+    EXPECT_FALSE(d1 == d3);
+    EXPECT_TRUE(d1 != d3);
+  }
 }
 
 

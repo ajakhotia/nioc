@@ -16,7 +16,6 @@ LogReader::LogReader(std::filesystem::path logRoot):
 {
 }
 
-
 LogReader::LogReader(LogReader&&) noexcept = default;
 
 
@@ -25,10 +24,9 @@ LogReader::~LogReader() = default;
 
 LogReader& LogReader::operator=(LogReader&&) noexcept = default;
 
-
 LogEntry LogReader::read()
 {
-    return mLogReaderImpl->read();
+  return mLogReaderImpl->read();
 }
 
 

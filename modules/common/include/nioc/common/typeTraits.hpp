@@ -9,7 +9,6 @@
 #include <string_view>
 #include <type_traits>
 
-
 namespace nioc::common
 {
 /// @brief  SFINAE based helper type to determine if the InstanceType is template
@@ -22,7 +21,6 @@ template<typename InstanceType, template<typename...> typename TemplateType>
 struct IsSpecialization: public std::false_type
 {
 };
-
 
 /// @brief  Specialization of @class IsSpecialization for the case when the
 ///         InstanceType is actually and instance of the TemplateType. Hence,
@@ -39,13 +37,11 @@ struct IsSpecialization<TemplateType<Args...>, TemplateType>: public std::true_t
 {
 };
 
-
 /// @brief  A helper to variable check semantics for @class IsSpecialization.
 /// @tparam InstanceType    Type of the instance. Eg: std::vector<int>
 /// @tparam TemplateType    Type of the template. Eg: std::vector.
 template<typename InstanceType, template<typename...> typename TemplateType>
 inline constexpr bool isSpecialization = IsSpecialization<InstanceType, TemplateType>::value;
-
 
 /// @brief  Function to get a human readable name of a type.
 ///         This function uses boost ctti to interpret build the name string_view but
@@ -56,8 +52,8 @@ inline constexpr bool isSpecialization = IsSpecialization<InstanceType, Template
 template<typename Type>
 constexpr std::string_view prettyName() noexcept
 {
-    const auto name = std::string_view(boost::typeindex::ctti_type_index::type_id<Type>().name());
-    return name.substr(0, name.size() - 1);
+  const auto name = std::string_view(boost::typeindex::ctti_type_index::type_id<Type>().name());
+  return name.substr(0, name.size() - 1);
 }
 
 } // namespace nioc::common

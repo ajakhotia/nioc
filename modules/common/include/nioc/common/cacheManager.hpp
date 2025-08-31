@@ -18,32 +18,31 @@ template<typename Cache>
 class CacheManager
 {
 public:
-    CacheManager(): mCacheOpt(std::nullopt) {}
+  CacheManager(): mCacheOpt(std::nullopt) {}
 
-    CacheManager(const CacheManager&) = default;
+  CacheManager(const CacheManager&) = default;
 
-    CacheManager(CacheManager&&) noexcept = default;
+  CacheManager(CacheManager&&) noexcept = default;
 
-    ~CacheManager() = default;
+  ~CacheManager() = default;
 
-    CacheManager& operator=(const CacheManager&) = default;
+  CacheManager& operator=(const CacheManager&) = default;
 
-    CacheManager& operator=(CacheManager&&) noexcept = default;
+  CacheManager& operator=(CacheManager&&) noexcept = default;
 
-
-    template<typename... Args>
-    Cache& access(Args&&... args)
+  template<typename... Args>
+  Cache& access(Args&&... args)
+  {
+    if(not mCacheOpt || not mCacheOpt->validate(args...))
     {
-        if(not mCacheOpt || not mCacheOpt->validate(args...))
-        {
-            mCacheOpt = std::make_optional<Cache>(std::forward<Args>(args)...);
-        }
-
-        return *mCacheOpt;
+      mCacheOpt = std::make_optional<Cache>(std::forward<Args>(args)...);
     }
 
+    return *mCacheOpt;
+  }
+
 private:
-    std::optional<Cache> mCacheOpt;
+  std::optional<Cache> mCacheOpt;
 };
 
 

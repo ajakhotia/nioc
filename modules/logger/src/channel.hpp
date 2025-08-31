@@ -16,41 +16,41 @@ namespace nioc::logger
 class Channel
 {
 public:
-    static constexpr auto kDefaultMaxFileSizeInBytes = 128ULL * 1024ULL * 1024ULL;
+  static constexpr auto kDefaultMaxFileSizeInBytes = 128ULL * 1024ULL * 1024ULL;
 
-    using ConstByteSpan = std::span<const std::byte>;
+  using ConstByteSpan = std::span<const std::byte>;
 
-    explicit Channel(std::filesystem::path logRoot,
-                     std::uint64_t maxFileSizeInBytes = kDefaultMaxFileSizeInBytes);
+  explicit Channel(
+      std::filesystem::path logRoot, std::uint64_t maxFileSizeInBytes = kDefaultMaxFileSizeInBytes);
 
-    Channel(const Channel&) = delete;
+  Channel(const Channel&) = delete;
 
-    Channel(Channel&&) noexcept = default;
+  Channel(Channel&&) noexcept = default;
 
-    ~Channel() = default;
+  ~Channel() = default;
 
-    Channel& operator=(const Channel&) = delete;
+  Channel& operator=(const Channel&) = delete;
 
-    Channel& operator=(Channel&&) noexcept = default;
+  Channel& operator=(Channel&&) noexcept = default;
 
-    void writeFrame(const ConstByteSpan& data);
+  void writeFrame(const ConstByteSpan& data);
 
-    void writeFrame(const std::vector<ConstByteSpan>& dataCollection);
+  void writeFrame(const std::vector<ConstByteSpan>& dataCollection);
 
 private:
-    std::filesystem::path mLogRoot;
+  std::filesystem::path mLogRoot;
 
-    std::ofstream mIndexFile;
+  std::ofstream mIndexFile;
 
-    std::uint64_t mMaxFileSizeInBytes;
+  std::uint64_t mMaxFileSizeInBytes;
 
-    std::uint64_t mRollCounter;
+  std::uint64_t mRollCounter;
 
-    std::ofstream mActiveLogRoll;
+  std::ofstream mActiveLogRoll;
 
-    void rollCheckAndIndex(std::uint64_t requiredSizeInBytes);
+  void rollCheckAndIndex(std::uint64_t requiredSizeInBytes);
 
-    std::filesystem::path nextRollFilePath();
+  std::filesystem::path nextRollFilePath();
 };
 
 } // namespace nioc::logger
