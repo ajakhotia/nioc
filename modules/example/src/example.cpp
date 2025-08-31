@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2021.                                                                             /
-// Project  : nioc                                                                                /
-// Author   : Anurag Jakhotia                                                                      /
+// Copyright (c) 2022.
+// Project  : nioc
+// Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // NOTE:    Local headers(usually private) are referenced using relative path from the parent
