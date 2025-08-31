@@ -1,5 +1,5 @@
 ---
-Checks:          'clang-diagnostic-*,clang-analyzer-*,*,-clang-analyzer-alpha.*,-google-*,-llvm-*,-llvmlibc-*,-abseil-*,-fuchsia-*,-zircon-*,-objc-*,-android-*'
+Checks:          'clang-diagnostic-*,clang-analyzer-*,*,-clang-analyzer-alpha.*,-google-*,-llvm-*,-llvmlibc-*,-abseil-*,-fuchsia-*,-zircon-*,-objc-*,-android-*,-modernize-use-trailing-return-type,-misc-include-cleaner'
 WarningsAsErrors: 'bugprone-*,cert-*,clang-analyzer-*,cppcoreguidelines-*,modernize-*,performance-*,portability-*,readability-*,security-*'
 HeaderFileExtensions:
   - ''
@@ -244,8 +244,6 @@ CheckOptions:
   misc-coroutine-hostile-raii.RAIITypesList: 'std::lock_guard;std::scoped_lock'
   misc-coroutine-hostile-raii.SafeAwaitableList: ''
   misc-header-include-cycle.IgnoredFilesList: ''
-  misc-include-cleaner.DeduplicateFindings: 'true'
-  misc-include-cleaner.IgnoreHeaders: ''
   misc-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic: 'false'
   misc-non-private-member-variables-in-classes.IgnorePublicMemberVariables: 'false'
   misc-throw-by-value-catch-by-reference.CheckThrowTemporaries: 'true'
