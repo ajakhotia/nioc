@@ -1,8 +1,8 @@
 #!/bin/bash
 ####################################################################################################
-# Copyright (c) 2022.                                                                              #
-# Project  : nioc                                                                                 #
-# Author   : Anurag Jakhotia                                                                       #
+# Copyright (c) 2022.
+# Project  : nioc
+# Author   : Anurag Jakhotia
 ####################################################################################################
 
 # Add repository for latest Clang toolchains.
