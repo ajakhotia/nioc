@@ -1,5 +1,5 @@
 ---
-Checks:          'clang-diagnostic-*,clang-analyzer-*,*,-clang-analyzer-alpha.*,-google-*,-llvm-*,-llvmlibc-*,-abseil-*,-fuchsia-*,-zircon-*,-objc-*,-android-*,-modernize-use-trailing-return-type,-misc-include-cleaner,-boost-use-ranges'
+Checks:          'clang-diagnostic-*,clang-analyzer-*,*,-clang-analyzer-alpha.*,-google-*,-llvm-*,-llvmlibc-*,-abseil-*,-fuchsia-*,-zircon-*,-objc-*,-android-*'
 WarningsAsErrors: 'bugprone-*,cert-*,clang-analyzer-*,cppcoreguidelines-*,modernize-*,performance-*,portability-*,readability-*,security-*'
 HeaderFileExtensions:
   - ''
@@ -20,6 +20,9 @@ CheckOptions:
   altera-single-work-item-barrier.AOCVersion: '1600'
   altera-struct-pack-align.MaxConfiguredAlignment: '128'
   altera-unroll-loops.MaxLoopIterations: '100'
+  boost-use-ranges.IncludeBoostSystem: 'true'
+  boost-use-ranges.IncludeStyle: llvm
+  boost-use-ranges.UseReversePipe: 'false'
   bugprone-argument-comment.CommentBoolLiterals: '0'
   bugprone-argument-comment.CommentCharacterLiterals: '0'
   bugprone-argument-comment.CommentFloatLiterals: '0'
@@ -241,6 +244,8 @@ CheckOptions:
   misc-coroutine-hostile-raii.RAIITypesList: 'std::lock_guard;std::scoped_lock'
   misc-coroutine-hostile-raii.SafeAwaitableList: ''
   misc-header-include-cycle.IgnoredFilesList: ''
+  misc-include-cleaner.DeduplicateFindings: 'true'
+  misc-include-cleaner.IgnoreHeaders: ''
   misc-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic: 'false'
   misc-non-private-member-variables-in-classes.IgnorePublicMemberVariables: 'false'
   misc-throw-by-value-catch-by-reference.CheckThrowTemporaries: 'true'
