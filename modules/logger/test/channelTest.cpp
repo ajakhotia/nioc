@@ -61,11 +61,11 @@ TEST(Channel, rollAndIndexFileSizeChecks)
     }
   }
 
-  const auto numFramesPerFullFile = kMaxFileSizeInBytes / kDataSize;
-  const auto expectedFullFileSize = numFramesPerFullFile * kDataSize;
-  const auto numFramesInLastFile = kNumFramesToWrite % numFramesPerFullFile;
-  const auto expectedLastFileSize = numFramesInLastFile * kDataSize;
-  const auto expectedIndexFileSize = kNumFramesToWrite * 3 * sizeof(uint64_t);
+  constexpr auto numFramesPerFullFile = kMaxFileSizeInBytes / kDataSize;
+  constexpr auto expectedFullFileSize = numFramesPerFullFile * kDataSize;
+  constexpr auto numFramesInLastFile = kNumFramesToWrite % numFramesPerFullFile;
+  constexpr auto expectedLastFileSize = numFramesInLastFile * kDataSize;
+  constexpr auto expectedIndexFileSize = kNumFramesToWrite * 3 * sizeof(uint64_t);
 
   std::vector<fs::directory_entry> directoryEntries;
   for(const auto& entity: fs::directory_iterator(kTestLogDirectoryPath))
@@ -73,7 +73,7 @@ TEST(Channel, rollAndIndexFileSizeChecks)
     directoryEntries.emplace_back(entity);
   }
 
-  std::sort(directoryEntries.begin(), directoryEntries.end());
+  std::ranges::sort(directoryEntries);
 
   // We expect that the first file in this list to be the index file.
   EXPECT_EQ(directoryEntries.front().path(), kTestLogDirectoryPath / kIndexFileName);

@@ -36,8 +36,8 @@ TEST(Logger, construction)
 
 TEST(Logger, writeSpan)
 {
-  const auto channelA = 16983UL;
-  const auto channelB = 68964786UL;
+  constexpr auto channelA = 16983UL;
+  constexpr auto channelB = 68964786UL;
   const auto data = generateData();
 
   const auto logPath = [&]()
@@ -79,8 +79,8 @@ TEST(Logger, writeSpan)
 
 TEST(Logger, writeCollectionOfSpan)
 {
-  const auto channelA = 16983UL;
-  const auto channelB = 68964786UL;
+  constexpr auto channelA = 16983UL;
+  constexpr auto channelB = 68964786UL;
   const auto data = generateData();
 
   std::vector<std::span<const std::byte>> spanCollection;

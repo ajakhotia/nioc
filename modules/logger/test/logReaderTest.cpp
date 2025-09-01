@@ -25,8 +25,8 @@ std::vector<char> generateData(std::uint64_t size)
   return data;
 }
 
-constexpr const auto channelA = 16983UL;
-constexpr const auto channelB = 68964786UL;
+constexpr auto channelA = 16983UL;
+constexpr auto channelB = 68964786UL;
 const auto dataA = generateData(20ULL);
 const auto dataB = generateData(34ULL);
 const auto dataAAsBytes = std::as_bytes(std::span(dataA));
@@ -46,11 +46,7 @@ fs::path createLog()
 
 void expectSpanEqual(const std::span<const std::byte>& lhs, const std::span<const std::byte>& rhs)
 {
-  EXPECT_EQ(lhs.size(), rhs.size());
-  for(auto ii = 0ULL; ii < lhs.size(); ++ii)
-  {
-    EXPECT_EQ(lhs[ii], rhs[ii]);
-  }
+  EXPECT_TRUE(std::ranges::equal(lhs, rhs));
 }
 
 } // namespace
