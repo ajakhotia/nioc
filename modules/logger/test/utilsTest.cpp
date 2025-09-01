@@ -25,6 +25,14 @@ std::vector<char> generateData()
 
 } // namespace
 
+TEST(LoggerUtils, timeAsFormattedString)
+{
+  using std::chrono::system_clock;
+  constexpr auto timePoint = system_clock::time_point(system_clock::duration(1756736313992295120));
+  const auto formattedTime = iso8601UtcFormat(timePoint);
+  EXPECT_EQ("2025-09-01T14:18:33.992295120Z", formattedTime);
+}
+
 TEST(LoggerUtils, padString)
 {
   const auto input = std::string("682");

@@ -17,7 +17,7 @@ namespace fs = std::filesystem;
 
 fs::path checkAndSetupLogDirectory(fs::path logRoot)
 {
-  logRoot /= (timeAsFormattedString(std::chrono::system_clock::now())) + "_" +
+  logRoot /= (iso8601UtcFormat(std::chrono::system_clock::now())) + "_" +
              boost::uuids::to_string(boost::uuids::random_generator_pure()());
 
   if(fs::exists(logRoot))

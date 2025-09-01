@@ -20,7 +20,7 @@ add_exported_library(
         LINK_LIBRARIES
             INTERFACE Boost::headers
         COMPILE_FEATURES
-            INTERFACE cxx_std_17
+            INTERFACE cxx_std_20
         COMPILE_OPTIONS
             ""
         COMPILE_DEFINITIONS

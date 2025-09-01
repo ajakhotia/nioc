@@ -27,7 +27,7 @@ target_include_directories(example
     to compiled with the specified C++ standard. We use the keyword PUBLIC to
     tell the build system that any other library that links against this library
     will also need to be compiled with at least the specified C++ standard. ]]
-target_compile_features(example PUBLIC cxx_std_17)
+target_compile_features(example PUBLIC cxx_std_20)
 
 
 #[[ Set the compile options to an appropriate level. We set them as PRIVATE so
@@ -70,7 +70,7 @@ target_link_libraries(exampleMain nioc::example)
     to compiled with the specified C++ standard. We use the keyword PRIVATE
     because "exampleMain" is an executable and we don't expect other targets to
     link against it. Hence, the information need not be transitive. ]]
-target_compile_features(exampleMain PRIVATE cxx_std_17)
+target_compile_features(exampleMain PRIVATE cxx_std_20)
 
 
 #[[ Set the compile options to an appropriate level. We use the keyword PRIVATE

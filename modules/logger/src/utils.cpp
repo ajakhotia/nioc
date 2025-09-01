@@ -12,14 +12,9 @@
 namespace nioc::logger
 {
 
-std::string timeAsFormattedString(std::chrono::system_clock::time_point timePoint)
+std::string iso8601UtcFormat(std::chrono::system_clock::time_point timePoint)
 {
-  std::string timeString;
-
-  fmt::format_to(
-      std::back_inserter(timeString), "{:%Y-%m-%dT%H:%M:%S%z}", fmt::localtime(timePoint));
-
-  return timeString;
+  return std::format("{:%FT%TZ}", timePoint);
 }
 
 std::string padString(const std::string& input, const uint64_t paddedLength, const char paddingChar)

@@ -49,7 +49,7 @@ struct IndexEntry
 /// @brief  Converts a system_clock time_point to date-time string formatted per ISO 8601
 /// @param  timePoint   Time point to be converted.
 /// @return Date-time string.
-std::string timeAsFormattedString(std::chrono::system_clock::time_point timePoint);
+std::string iso8601UtcFormat(std::chrono::system_clock::time_point timePoint);
 
 
 /// @brief  Pads the input string such that the output string is paddedLength long. If the size of
