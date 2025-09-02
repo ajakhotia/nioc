@@ -36,7 +36,12 @@ public:
 
   Reader reader()
   {
-    return std::visit([](auto& var) { return Reader(var.template getRoot<Schema>()); }, variant());
+    return std::visit(
+        [](auto& var)
+        {
+          return Reader(var.template getRoot<Schema>());
+        },
+        variant());
   }
 
   Builder builder()

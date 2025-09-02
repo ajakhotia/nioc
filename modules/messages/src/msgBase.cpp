@@ -67,7 +67,10 @@ void write(MsgBase& msgBase, logger::Logger& logger)
         segments.begin(),
         segments.end(),
         inserter,
-        [](const ConstWordArrayPtr& segment) { return segment.size(); });
+        [](const ConstWordArrayPtr& segment)
+        {
+          return segment.size();
+        });
 
     // If there are even number of segments, there will be odd number of
     // entries in the table. Append a 0 to even them out.
@@ -88,7 +91,10 @@ void write(MsgBase& msgBase, logger::Logger& logger)
       segments.begin(),
       segments.end(),
       std::back_inserter(spanCollection),
-      [](const ConstWordArrayPtr& arrayPtr) { return convert(arrayPtr); });
+      [](const ConstWordArrayPtr& arrayPtr)
+      {
+        return convert(arrayPtr);
+      });
 
   logger.write(msgBase.msgHandle(), spanCollection);
 }

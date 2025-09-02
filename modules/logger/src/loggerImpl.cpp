@@ -55,10 +55,16 @@ void Logger::LoggerImpl::write(const ChannelId channelId, const std::span<const 
   // TODO: This can be improved to use fewer locks and avoid race conditions.
   mLockedSequenceFile(
       [&](std::ofstream& sequenceFile)
-      { ReadWriteUtil<SequenceEntry>::write(sequenceFile, SequenceEntry{ channelId }); });
+      {
+        ReadWriteUtil<SequenceEntry>::write(sequenceFile, SequenceEntry{ channelId });
+      });
 
   auto& lockedChannel = acquireChannel(channelId);
-  lockedChannel([&](Channel& channel) { channel.writeFrame(data); });
+  lockedChannel(
+      [&](Channel& channel)
+      {
+        channel.writeFrame(data);
+      });
 }
 
 void Logger::LoggerImpl::write(
@@ -67,10 +73,16 @@ void Logger::LoggerImpl::write(
   // TODO: This can be improved to use fewer locks and avoid race conditions.
   mLockedSequenceFile(
       [&](std::ofstream& sequenceFile)
-      { ReadWriteUtil<SequenceEntry>::write(sequenceFile, SequenceEntry{ channelId }); });
+      {
+        ReadWriteUtil<SequenceEntry>::write(sequenceFile, SequenceEntry{ channelId });
+      });
 
   auto& lockedChannel = acquireChannel(channelId);
-  lockedChannel([&](Channel& channel) { channel.writeFrame(data); });
+  lockedChannel(
+      [&](Channel& channel)
+      {
+        channel.writeFrame(data);
+      });
 }
 
 Logger::LoggerImpl::LockedChannel& Logger::LoggerImpl::acquireChannel(const ChannelId channelId)

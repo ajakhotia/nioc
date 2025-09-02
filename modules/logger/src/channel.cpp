@@ -69,7 +69,9 @@ void Channel::writeFrame(const std::vector<ConstByteSpan>& dataCollection)
   std::ranges::for_each(
       dataCollection,
       [this](const auto& data)
-      { ReadWriteUtil<std::span<const std::byte>>::write(mActiveLogRoll, data); });
+      {
+        ReadWriteUtil<std::span<const std::byte>>::write(mActiveLogRoll, data);
+      });
 
   // Check if the file is still good.
   if(not mActiveLogRoll.good())
