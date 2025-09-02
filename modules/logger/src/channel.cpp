@@ -87,7 +87,7 @@ void Channel::rollCheckAndIndex(const std::uint64_t requiredSizeInBytes)
     return;
   }
 
-  // Advance to next roll if there isn't enough space in the current roll.
+  // Advance to the next roll if there isn't enough space in the current roll.
   if(not fileHasSpace(mActiveLogRoll, requiredSizeInBytes, mMaxFileSizeInBytes))
   {
     mActiveLogRoll = std::ofstream(nextRollFilePath());
