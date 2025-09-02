@@ -6,6 +6,7 @@
 
 #include "channel.hpp"
 #include "utils.hpp"
+#include <algorithm>
 #include <numeric>
 #include <spdlog/spdlog.h>
 
@@ -65,10 +66,10 @@ void Channel::writeFrame(const std::vector<ConstByteSpan>& dataCollection)
   rollCheckAndIndex(sizeInBytes);
 
   // Write the size and the blob to the current roll.
-  for(const auto& data: dataCollection)
-  {
-    ReadWriteUtil<std::span<const std::byte>>::write(mActiveLogRoll, data);
-  }
+  std::ranges::for_each(
+      dataCollection,
+      [this](const auto& data)
+      { ReadWriteUtil<std::span<const std::byte>>::write(mActiveLogRoll, data); });
 
   // Check if the file is still good.
   if(not mActiveLogRoll.good())
