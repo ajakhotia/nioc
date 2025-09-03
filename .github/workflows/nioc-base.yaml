@@ -27,6 +27,7 @@ jobs:
           dockerfile: docker/ubuntu.dockerfile
           password: ${{ secrets.GITHUB_TOKEN }}
           target-stage: nioc-base
+          target-stage-id: base
           build-name: ${{ matrix.os_base }}
           build-args: |
             OS_BASE=${{ matrix.os_base }}
