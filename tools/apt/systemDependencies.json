@@ -16,7 +16,7 @@
     },
     {
       "group": "Compilers",
-      "ubuntu:22.04": "clang cuda-toolkit-13 g++ gcc gfortran libomp-dev",
+      "ubuntu:22.04": "clang cuda-toolkit-13 g++ g++-13 gcc gcc-13 gfortran gfortran-13 libomp-dev",
       "ubuntu:24.04": "clang cuda-toolkit-13 g++ gcc gfortran libomp-dev",
       "tag": "all"
     }
