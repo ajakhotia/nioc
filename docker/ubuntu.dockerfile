@@ -25,7 +25,8 @@ RUN --mount=type=bind,src=tools,dst=/tools,ro                                   
     bash /tools/apt/addNvidiaSources.sh -y &&                                                       \
     apt-get install -y --no-install-recommends $(bash /tools/apt/extractDependencies.sh Compilers)
 
-FROM nioc-base AS throwaway-nioc-dev-build
+
+FROM nioc-base AS nioc-dev-base
 ARG TOOLCHAIN=linux-gnu-default
 ARG ROBOT_FARM_URL="https://github.com/ajakhotia/robotFarm/archive/refs/tags/v1.0.0.tar.gz"
 ARG ROBOT_FARM_BUILD_LIST="BoostExternalProject;Eigen3ExternalProject;NlohmannJsonExternalProject;GoogleTestExternalProject;SpdLogExternalProject;CapnprotoExternalProject"
@@ -48,6 +49,27 @@ RUN --mount=type=bind,src=cmake/toolchains,dst=/toolchains,ro                   
     cmake --build /tmp/robotFarm-build &&                                                           \
     rm -rf /tmp/robotFarm.tar.gz /tmp/robotFarm-src /tmp/robotFarm-build
 
-RUN ls /tmp
-RUN ls /opt
-RUN ls /opt/robotFarm
+
+FROM nioc-dev-base AS nioc-build
+ARG BUILD_TYPE="Release"
+
+RUN --mount=type=bind,src=.,dst=/tmp/nioc-src,ro                                                    \
+    cmake -E make_directory /tmp/nioc-build &&                                                      \
+    cmake -E make_directory /opt/nioc &&                                                            \
+    cmake -G Ninja                                                                                  \
+      -S /tmp/nioc-src                                                                              \
+      -B /tmp/nioc-build                                                                            \
+      -DCMAKE_TOOLCHAIN_FILE:FILEPATH=/tmp/nioc-src/cmake/toolchains/${TOOLCHAIN}.cmake             \
+      -DCMAKE_BUILD_TYPE:STRING=${BUILD_TYPE}                                                       \
+      -DCMAKE_PREFIX_PATH:STRING=/opt/robotFarm                                                     \
+      -DCMAKE_INSTALL_PREFIX:PATH=/opt/nioc &&                                                      \
+    cmake --build /tmp/nioc-build &&                                                                \
+    cmake --install /tmp/nioc-build
+
+
+FROM nioc-build AS nioc-test
+RUN cmake --build /tmp/nioc-build --target test
+
+
+FROM nioc-dev-base AS nioc-deploy
+COPY --from=nioc-build /opt/nioc /opt/nioc

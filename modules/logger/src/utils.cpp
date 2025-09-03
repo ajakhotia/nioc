@@ -6,8 +6,9 @@
 #include "utils.hpp"
 #include <bit>
 #include <boost/endian.hpp>
+#include <format>
+#include <fstream>
 #include <numeric>
-#include <spdlog/fmt/chrono.h>
 
 namespace nioc::logger
 {
