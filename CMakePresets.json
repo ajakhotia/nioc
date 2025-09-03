@@ -61,7 +61,7 @@
     {
       "name": "clang-default-shared",
       "displayName": "clang-default-shared",
-      "toolchainFile": "${sourceDir}/cmake/toolchains/linux-clang-default.cmake",
+      "toolchainFile": "${sourceDir}/cmake/toolchains/linux-clang-19.cmake",
       "inherits": [
         "basic",
         "shared"

@@ -16,7 +16,7 @@ jobs:
           - ubuntu:22.04
           - ubuntu:24.04
         toolchain:
-          - linux-clang-default
+          - linux-clang-19
           - linux-gnu-default
 
     steps:
