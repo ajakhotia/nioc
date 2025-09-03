@@ -68,7 +68,7 @@ RUN --mount=type=bind,src=.,dst=/tmp/nioc-src,ro                                
 
 
 FROM nioc-build AS nioc-test
-RUN ctest --test-dir /tmp/nioc-build -j"$(nproc)" --output-on-failure
+RUN ctest --test-dir /tmp/nioc-build --output-on-failure
 
 
 FROM nioc-dev-base AS nioc-deploy
