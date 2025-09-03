@@ -9,7 +9,7 @@ execute_process(
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
-if (GCC_VERSION VERSION_LESS "13" OR GXX_VERSION VERSION_LESS "13")
+if(GCC_VERSION VERSION_LESS "13")
   message(STATUS "Detected default GNU as ${GCC_VERSION} < 13 — forcing gcc-13, g++-13, and gfortran-13")
   set(CMAKE_C_COMPILER /usr/bin/gcc-13)
   set(CMAKE_CXX_COMPILER /usr/bin/g++-13)
