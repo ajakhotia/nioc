@@ -21,7 +21,7 @@ public:
   /// @param logRoot      Root directory to store the log at. The log is written to a child
   ///                     directory with the local date and time as the directory name.
   ///
-  /// @param fileSize     Size of files allocated to store the data.
+  /// @param maxFileSizeInBytes     Size of files allocated to store the data.
   explicit Logger(
       std::filesystem::path logRoot = std::filesystem::temp_directory_path() / "niocLogs",
       std::size_t maxFileSizeInBytes = kDefaultMaxFileSizeInBytes);

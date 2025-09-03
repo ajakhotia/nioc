@@ -1,0 +1,24 @@
+{
+  "supportedOS": [
+    "ubuntu:22.04",
+    "ubuntu:24.04"
+  ],
+  "groupTags": [
+    "all",
+    "skip"
+  ],
+  "groups": [
+    {
+      "group": "Basics",
+      "ubuntu:22.04": "ca-certificates curl git gnupg gpg ninja-build sed software-properties-common tar",
+      "ubuntu:24.04": "ca-certificates curl git gnupg gpg ninja-build sed software-properties-common tar",
+      "tag": "all"
+    },
+    {
+      "group": "Compilers",
+      "ubuntu:22.04": "clang cuda-toolkit-13 g++ gcc gfortran libomp-dev",
+      "ubuntu:24.04": "clang cuda-toolkit-13 g++ gcc gfortran libomp-dev",
+      "tag": "all"
+    }
+  ]
+}
