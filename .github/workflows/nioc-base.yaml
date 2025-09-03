@@ -21,8 +21,8 @@ jobs:
           - ubuntu:22.04
           - ubuntu:24.04
     steps:
-      - name: checkout-self
-        uses: ./.github/actions/docker-typical-build-push
+      - name: nioc-base
+        uses: ajakhotia/infraCommons/.github/actions/docker-typical-build-push@main
         with:
           dockerfile: docker/ubuntu.dockerfile
           target-stage: nioc-base
