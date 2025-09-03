@@ -25,6 +25,7 @@ jobs:
         uses: ajakhotia/infraCommons/.github/actions/docker-typical-build-push@main
         with:
           dockerfile: docker/ubuntu.dockerfile
+          password: ${{ secrets.GITHUB_TOKEN }}
           target-stage: nioc-base
           build-name: ${{ matrix.os_base }}
           build-args: |
