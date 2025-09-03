@@ -18,7 +18,6 @@ namespace fs = std::filesystem;
 namespace
 {
 
-const auto kTestLogDirectoryPath = fs::path("/tmp/testChannel0x5832651q");
 constexpr auto kDataSize = 20;
 constexpr auto kMaxFileSizeInBytes = 256;
 constexpr auto kDataIotaStart = 65; // Corresponds to character A in ASCII
@@ -35,24 +34,26 @@ std::vector<char> generateTestDataFrame()
 
 TEST(Channel, construction)
 {
-  fs::remove_all(kTestLogDirectoryPath);
+  const auto testLogDirectoryPath = fs::temp_directory_path() / "niocChannelTest";
+  fs::remove_all(testLogDirectoryPath);
 
-  EXPECT_NO_THROW((Channel(kTestLogDirectoryPath, kMaxFileSizeInBytes)));
-  EXPECT_THROW((Channel(kTestLogDirectoryPath)), std::logic_error);
+  EXPECT_NO_THROW((Channel(testLogDirectoryPath, kMaxFileSizeInBytes)));
+  EXPECT_THROW((Channel(testLogDirectoryPath)), std::logic_error);
 
-  fs::remove_all(kTestLogDirectoryPath);
-  EXPECT_NO_THROW((Channel(kTestLogDirectoryPath)));
+  fs::remove_all(testLogDirectoryPath);
+  EXPECT_NO_THROW((Channel(testLogDirectoryPath)));
 
-  fs::remove_all(kTestLogDirectoryPath);
+  fs::remove_all(testLogDirectoryPath);
 }
 
 TEST(Channel, rollAndIndexFileSizeChecks)
 {
-  fs::remove_all(kTestLogDirectoryPath);
+  const auto testLogDirectoryPath = fs::temp_directory_path() / "niocChannelTest";
+  fs::remove_all(testLogDirectoryPath);
 
   // Create a channel and write frames to it.
   {
-    Channel channel(kTestLogDirectoryPath, kMaxFileSizeInBytes);
+    Channel channel(testLogDirectoryPath, kMaxFileSizeInBytes);
 
     const auto data = generateTestDataFrame();
     for(size_t ii = 0U; ii < kNumFramesToWrite; ++ii)
@@ -68,7 +69,7 @@ TEST(Channel, rollAndIndexFileSizeChecks)
   constexpr auto expectedIndexFileSize = kNumFramesToWrite * 3 * sizeof(uint64_t);
 
   std::vector<fs::directory_entry> directoryEntries;
-  for(const auto& entity: fs::directory_iterator(kTestLogDirectoryPath))
+  for(const auto& entity: fs::directory_iterator(testLogDirectoryPath))
   {
     directoryEntries.emplace_back(entity);
   }
@@ -76,7 +77,7 @@ TEST(Channel, rollAndIndexFileSizeChecks)
   std::ranges::sort(directoryEntries);
 
   // We expect that the first file in this list to be the index file.
-  EXPECT_EQ(directoryEntries.front().path(), kTestLogDirectoryPath / kIndexFileName);
+  EXPECT_EQ(directoryEntries.front().path(), testLogDirectoryPath / kIndexFileName);
   EXPECT_EQ(fs::file_size(directoryEntries.front()), expectedIndexFileSize);
 
   const auto rollSpan =
@@ -89,7 +90,7 @@ TEST(Channel, rollAndIndexFileSizeChecks)
 
   EXPECT_EQ(fs::file_size(directoryEntries.back()), expectedLastFileSize);
 
-  fs::remove_all(kTestLogDirectoryPath);
+  fs::remove_all(testLogDirectoryPath);
 }
 
 } // namespace nioc::logger
