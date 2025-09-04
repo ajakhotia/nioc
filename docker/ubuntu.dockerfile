@@ -45,7 +45,6 @@ RUN --mount=type=bind,src=cmake/toolchains,dst=/toolchains,ro                   
       -DROBOT_FARM_REQUESTED_BUILD_LIST:STRING=${ROBOT_FARM_BUILD_LIST} &&                          \
     apt-get update &&                                                                               \
     apt-get install -y --no-install-recommends $(cat /tmp/robotFarm-build/systemDependencies.txt) &&\
-    cp /tmp/robotFarm-build/systemDependencies.txt /opt/robotFarm &&                                \
     cmake --build /tmp/robotFarm-build &&                                                           \
     rm -rf /tmp/robotFarm.tar.gz /tmp/robotFarm-src /tmp/robotFarm-build
 
