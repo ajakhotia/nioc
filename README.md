@@ -1,3 +1,5 @@
+[![infra-congruency-check](https://github.com/ajakhotia/nioc/actions/workflows/infra-congruency-check.yaml/badge.svg)](https://github.com/ajakhotia/nioc/actions/workflows/infra-congruency-check.yaml) [![docker-image](https://github.com/ajakhotia/nioc/actions/workflows/docker-image.yaml/badge.svg)](https://github.com/ajakhotia/nioc/actions/workflows/docker-image.yaml)
+
 # nioc — Nerve IO Core Library  
 Core C++ utilities for building high-performance robotics and AI applications on edge devices.
 
