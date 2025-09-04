@@ -1,5 +1,5 @@
 ARG OS_BASE=ubuntu:22.04
-FROM ${OS_BASE} AS nioc-base
+FROM ${OS_BASE} AS base
 
 # Set dpkg to run in non-interactive mode.
 ENV DEBIAN_FRONTEND=noninteractive
@@ -26,7 +26,7 @@ RUN --mount=type=bind,src=tools,dst=/tools,ro                                   
     apt-get install -y --no-install-recommends $(bash /tools/apt/extractDependencies.sh Compilers)
 
 
-FROM nioc-base AS nioc-dev-base
+FROM nioc-base AS dev-base
 ARG TOOLCHAIN=linux-gnu-default
 ARG ROBOT_FARM_URL="https://github.com/ajakhotia/robotFarm/archive/refs/tags/v1.0.0.tar.gz"
 ARG ROBOT_FARM_BUILD_LIST="BoostExternalProject;Eigen3ExternalProject;NlohmannJsonExternalProject;GoogleTestExternalProject;SpdLogExternalProject;CapnprotoExternalProject"
@@ -50,7 +50,7 @@ RUN --mount=type=bind,src=cmake/toolchains,dst=/toolchains,ro                   
     rm -rf /tmp/robotFarm.tar.gz /tmp/robotFarm-src /tmp/robotFarm-build
 
 
-FROM nioc-dev-base AS nioc-build
+FROM nioc-dev-base AS build
 ARG BUILD_TYPE="Release"
 
 RUN --mount=type=bind,src=.,dst=/tmp/nioc-src,ro                                                    \
@@ -67,9 +67,9 @@ RUN --mount=type=bind,src=.,dst=/tmp/nioc-src,ro                                
     cmake --install /tmp/nioc-build
 
 
-FROM nioc-build AS nioc-test
+FROM nioc-build AS test
 RUN ctest --test-dir /tmp/nioc-build --output-on-failure
 
 
-FROM nioc-dev-base AS nioc-deploy
+FROM nioc-dev-base AS deploy
 COPY --from=nioc-build /opt/nioc /opt/nioc
