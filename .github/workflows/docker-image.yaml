@@ -97,3 +97,28 @@ jobs:
           build-args: |
             OS_BASE=${{ matrix.os_base }}
             TOOLCHAIN=${{ matrix.toolchain }}
+
+
+  find-libraries:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os_base:
+          - ubuntu:22.04
+          - ubuntu:24.04
+        toolchain:
+          - linux-clang-19
+          - linux-gnu-default
+        library-name:
+          - nioc
+
+    steps:
+      - name: find-library
+        uses: ajakhotia/infraCommons/.github/actions/cmake-find-package@main
+        with:
+          library-name: ${{ matrix.library-name }}
+          prefix-path: /opt/robotFarm;/opt/nioc
+          image-name: |
+            ${{ format('{0}/{1}/{2}', github.repository, matrix.os_base, matrix.toolchain )}}
+          password: ${{ secrets.GITHUB_TOKEN }}
