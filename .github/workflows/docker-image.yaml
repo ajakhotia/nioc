@@ -120,7 +120,7 @@ jobs:
         uses: ajakhotia/infraCommons/.github/actions/cmake-find-package@main
         with:
           library-name: ${{ matrix.library-name }}
-          prefix-path: /opt/robotFarm;/opt/nioc
+          prefix-path: "/opt/robotFarm;/opt/nioc"
           image-name: |
             ${{ format('{0}/{1}/{2}/deploy', github.repository, matrix.os_base, matrix.toolchain )}}
           password: ${{ secrets.GITHUB_TOKEN }}
