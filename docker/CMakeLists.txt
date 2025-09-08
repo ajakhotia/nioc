@@ -1,6 +1,6 @@
 add_custom_target(niocDockerBuildUbuntu2204LinuxGnuDefault
     COMMAND
-      bash -c "docker buildx build                                                                  \
+      bash -c "docker buildx build --progress=plain                                                 \
           --force-rm                                                                                \
           --tag ghcr.io/ajakhotia/nioc/ubuntu-22-04/linux-gnu-default:latest                        \
           --build-arg OS_BASE=ubuntu:22.04                                                          \
@@ -16,7 +16,7 @@ add_custom_target(niocDockerBuildUbuntu2204LinuxGnuDefault
 
 add_custom_target(niocDockerBuildUbuntu2404LinuxGnuDefault
     COMMAND
-      bash -c "docker buildx build                                                                  \
+      bash -c "docker buildx build --progress=plain                                                 \
           --force-rm                                                                                \
           --tag ghcr.io/ajakhotia/nioc/ubuntu-24-04/linux-gnu-default:latest                        \
           --build-arg OS_BASE=ubuntu:24.04                                                          \
