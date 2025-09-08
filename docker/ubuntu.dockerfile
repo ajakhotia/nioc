@@ -13,17 +13,20 @@ RUN echo $'Acquire::http::Pipeline-Depth 0;\n\
     >> /etc/apt/apt.conf.d/90fix-hashsum-mismatch
 
 RUN --mount=type=bind,src=tools,dst=/tools,ro                                                       \
+    --mount=type=bind,src=systemDependencies.json,dst=/systemDependencies.json,ro                   \
     apt-get update &&                                                                               \
     apt-get full-upgrade -y --no-install-recommends &&                                              \
     apt-get autoclean -y &&                                                                         \
     apt-get autoremove -y &&                                                                        \
     apt-get install -y --no-install-recommends jq &&                                                \
-    apt-get install -y --no-install-recommends $(bash /tools/apt/extractDependencies.sh Basics) &&  \
+    apt-get install -y --no-install-recommends                                                      \
+      $(bash /tools/extractDependencies.sh Basics /systemDependencies.json) &&                      \
     bash /tools/installCMake.sh &&                                                                  \
     bash /tools/apt/addGNUSources.sh -y &&                                                          \
     bash /tools/apt/addLLVMSources.sh -y &&                                                         \
     bash /tools/apt/addNvidiaSources.sh -y &&                                                       \
-    apt-get install -y --no-install-recommends $(bash /tools/apt/extractDependencies.sh Compilers)
+    apt-get install -y --no-install-recommends                                                      \
+      $(bash /tools/extractDependencies.sh Compilers /systemDependencies.json)
 
 
 FROM base AS dev-base
@@ -44,7 +47,8 @@ RUN --mount=type=bind,src=cmake/toolchains,dst=/toolchains,ro                   
       -DCMAKE_INSTALL_PREFIX:PATH=/opt/robotFarm                                                    \
       -DROBOT_FARM_REQUESTED_BUILD_LIST:STRING=${ROBOT_FARM_BUILD_LIST} &&                          \
     apt-get update &&                                                                               \
-    apt-get install -y --no-install-recommends $(cat /tmp/robotFarm-build/systemDependencies.txt) &&\
+    apt-get install -y --no-install-recommends                                                      \
+      $(cat /tmp/robotFarm-build/systemDependencies.txt) &&                                         \
     cmake --build /tmp/robotFarm-build &&                                                           \
     rm -rf /tmp/robotFarm.tar.gz /tmp/robotFarm-src /tmp/robotFarm-build
 
