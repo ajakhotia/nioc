@@ -1,4 +1,4 @@
-find_package(Boost REQUIRED COMPONENTS headers)
+find_package(Boost CONFIG REQUIRED COMPONENTS headers)
 
 add_exported_library(
         TARGET
