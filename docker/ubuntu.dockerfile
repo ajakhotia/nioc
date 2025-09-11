@@ -78,14 +78,14 @@ FROM base AS dev-base
 
 ARG TOOLCHAIN=linux-gnu-default
 ENV TOOLCHAIN=${TOOLCHAIN}
-ARG ROBOTFARM_URL="https://github.com/ajakhotia/robotFarm/archive/refs/tags/v1.0.0.tar.gz"
+ARG ROBOTFARM_URL="https://github.com/ajakhotia/robotFarm/archive/refs/tags/v1.1.0.tar.gz"
 ARG ROBOTFARM_BUILD_LIST="BoostExternalProject;Eigen3ExternalProject;NlohmannJsonExternalProject;GoogleTestExternalProject;SpdLogExternalProject;CapnprotoExternalProject"
-ARG NIOC_ROBOTFARM_BUILD_TREE_ID=nioc-robotfarm-build-${OS_BASE}-${TOOLCHAIN}
 
 RUN cmake -E make_directory /opt/robotFarm
 
-RUN --mount=type=bind,src=cmake/toolchains,dst=/toolchains,ro                                       \
-    --mount=type=cache,target=/tmp/robotFarm-build,id=${NIOC_ROBOTFARM_BUILD_TREE_ID}               \
+RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=locked                  \
+    --mount=type=cache,target=/var/lib/apt/lists,id=${APT_LIST_CACHE_ID},sharing=locked             \
+    --mount=type=bind,src=cmake/toolchains,dst=/toolchains,ro                                       \
     curl -L -o /tmp/robotFarm.tar.gz ${ROBOTFARM_URL} &&                                            \
     cmake -E make_directory /tmp/robotFarm-src &&                                                   \
     tar -xzf /tmp/robotFarm.tar.gz -C /tmp/robotFarm-src --strip-components=1 &&                    \
@@ -99,33 +99,24 @@ RUN --mount=type=bind,src=cmake/toolchains,dst=/toolchains,ro                   
     apt-get install -y --no-install-recommends                                                      \
       $(cat /tmp/robotFarm-build/systemDependencies.txt) &&                                         \
     cmake --build /tmp/robotFarm-build &&                                                           \
-    rm -rf /tmp/robotFarm.tar.gz /tmp/robotFarm-src
+    rm -rf /tmp/robotFarm.tar.gz /tmp/robotFarm-src /tmp/robotFarm-build
 
 
 FROM dev-base AS build
 ARG BUILD_TYPE="Release"
 ENV BUILD_TYPE=${BUILD_TYPE}
 
-ENV NIOC_BUILD_TREE_ID=nioc-build-${OS_BASE}-${TOOLCHAIN}-${BUILD_TYPE}
-
 RUN cmake -E make_directory /opt/nioc
 
 RUN --mount=type=bind,src=.,dst=/tmp/nioc-src,ro                                                    \
-    --mount=type=cache,target=/tmp/nioc-build,id=${NIOC_BUILD_TREE_ID}                              \
     cmake -G Ninja                                                                                  \
       -S /tmp/nioc-src                                                                              \
       -B /tmp/nioc-build                                                                            \
       -DCMAKE_TOOLCHAIN_FILE:FILEPATH=/tmp/nioc-src/cmake/toolchains/${TOOLCHAIN}.cmake             \
       -DCMAKE_BUILD_TYPE:STRING=${BUILD_TYPE}                                                       \
       -DCMAKE_PREFIX_PATH:STRING=/opt/robotFarm                                                     \
-      -DCMAKE_INSTALL_PREFIX:PATH=/opt/nioc
-
-RUN --mount=type=bind,src=.,dst=/tmp/nioc-src,ro                                                    \
-    --mount=type=cache,target=/tmp/nioc-build,id=${NIOC_BUILD_TREE_ID}                              \
-    cmake --build /tmp/nioc-build
-
-RUN --mount=type=bind,src=.,dst=/tmp/nioc-src,ro                                                    \
-    --mount=type=cache,target=/tmp/nioc-build,id=${NIOC_BUILD_TREE_ID}                              \
+      -DCMAKE_INSTALL_PREFIX:PATH=/opt/nioc &&                                                      \
+    cmake --build /tmp/nioc-build &&                                                                \
     cmake --install /tmp/nioc-build
 
 
