@@ -16,13 +16,12 @@ class Msg final: public MsgBase
 {
 public:
   using Schema = Schema_;
-  using Reader = typename Schema::Reader;
-  using Builder = typename Schema::Builder;
-  using MsgHandle = MsgBase::MsgHandle;
+  using Reader = Schema::Reader;
+  using Builder = Schema::Builder;
 
-  static constexpr MsgHandle kMsgHandle = Schema::_capnpPrivate::typeId;
+  static constexpr auto kMsgHandle = static_cast<MsgHandle>(Schema::_capnpPrivate::typeId);
 
-  Msg(): MsgBase()
+  Msg()
   {
     std::get<capnp::MallocMessageBuilder>(variant()).template initRoot<Schema>();
   }
