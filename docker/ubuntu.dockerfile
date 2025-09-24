@@ -78,28 +78,17 @@ FROM base AS dev-base
 
 ARG TOOLCHAIN=linux-gnu-default
 ENV TOOLCHAIN=${TOOLCHAIN}
-ARG ROBOTFARM_URL="https://github.com/ajakhotia/robotFarm/archive/refs/tags/v1.1.0.tar.gz"
 ARG ROBOTFARM_BUILD_LIST="BoostExternalProject;Eigen3ExternalProject;NlohmannJsonExternalProject;GoogleTestExternalProject;SpdLogExternalProject;CapnprotoExternalProject"
-
-RUN cmake -E make_directory /opt/robotFarm
 
 RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=locked                  \
     --mount=type=cache,target=/var/lib/apt/lists,id=${APT_LIST_CACHE_ID},sharing=locked             \
-    --mount=type=bind,src=cmake/toolchains,dst=/toolchains,ro                                       \
-    curl -L -o /tmp/robotFarm.tar.gz ${ROBOTFARM_URL} &&                                            \
-    cmake -E make_directory /tmp/robotFarm-src &&                                                   \
-    tar -xzf /tmp/robotFarm.tar.gz -C /tmp/robotFarm-src --strip-components=1 &&                    \
-    cmake -G Ninja                                                                                  \
-      -S /tmp/robotFarm-src                                                                         \
-      -B /tmp/robotFarm-build                                                                       \
-      -DCMAKE_TOOLCHAIN_FILE:FILEPATH=/toolchains/${TOOLCHAIN}.cmake                                \
-      -DCMAKE_INSTALL_PREFIX:PATH=/opt/robotFarm                                                    \
-      -DROBOT_FARM_REQUESTED_BUILD_LIST:STRING=${ROBOTFARM_BUILD_LIST} &&                           \
-    apt-get update &&                                                                               \
-    apt-get install -y --no-install-recommends                                                      \
-      $(cat /tmp/robotFarm-build/systemDependencies.txt) &&                                         \
-    cmake --build /tmp/robotFarm-build &&                                                           \
-    rm -rf /tmp/robotFarm.tar.gz /tmp/robotFarm-src /tmp/robotFarm-build
+    curl -fsSL                                                                                      \
+      https://raw.githubusercontent.com/ajakhotia/robotFarm/refs/heads/main/tools/quickBuild.sh |   \
+      bash -s --                                                                                    \
+        --version v1.1.0                                                                            \
+        --toolchain ${TOOLCHAIN}                                                                    \
+        --prefix /opt/robotFarm                                                                     \
+        --build-list ${ROBOTFARM_BUILD_LIST}
 
 
 FROM dev-base AS build
@@ -121,8 +110,7 @@ RUN --mount=type=bind,src=.,dst=/tmp/nioc-src,ro                                
 
 
 FROM build AS test
-RUN --mount=type=cache,target=/tmp/nioc-build,id=${NIOC_BUILD_TREE_ID}                              \
-    ctest --test-dir /tmp/nioc-build --output-on-failure
+RUN ctest --test-dir /tmp/nioc-build --output-on-failure
 
 
 FROM dev-base AS deploy
