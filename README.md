@@ -1,72 +1,148 @@
 [![infra-congruency-check](https://github.com/ajakhotia/nioc/actions/workflows/infra-congruency-check.yaml/badge.svg)](https://github.com/ajakhotia/nioc/actions/workflows/infra-congruency-check.yaml) [![docker-image](https://github.com/ajakhotia/nioc/actions/workflows/docker-image.yaml/badge.svg)](https://github.com/ajakhotia/nioc/actions/workflows/docker-image.yaml)
 
-# nioc — Nerve IO Core Library  
+# nioc — Nerve IO Core Library
+
 Core C++ utilities for building high-performance robotics and AI applications on edge devices.
 
 ---
 
-## 🚀 Getting Started
+## 🛠️ Setup
 
-### Clone, Build, and Install
+**The following instructions have been tested on Ubuntu 22.04 and Ubuntu 24.04.
+Read the docker/ubuntu.dockerfile for details.**
 
-Before proceeding, decide on the following paths:
+### 📂 Clone
 
-- **`<SOURCE_TREE>`**: Directory to clone the source tree.  
-  Examples:  
-  - `${HOME}/sandbox/nioc`  
-  - `${HOME}/work/nioc`  
+Before getting started, define three paths and ensure you have read and write
+permission for each. These paths are referenced throughout the rest of this
+document using the following tokens. Substitute your actual paths wherever these
+tokens appear.
 
-- **`<BUILD_TREE>`**: Directory to host the build tree (you may have multiple for different configurations).  
-  Examples:  
-  - `<SOURCE_TREE>/build/release`  
-  - `<SOURCE_TREE>/build/debug`  
+#### SOURCE_DIR
 
-- **`<INSTALL_TREE>`**: Directory to install binaries, libraries, headers, etc.  
-  Examples:  
-  - `${HOME}/opt/nioc`  
-  - `/opt/nioc` (requires `sudo`)  
-  - `/usr` (default CMake install prefix, requires `sudo`)  
+Path where you will clone the nioc project. This may be a temporary
+directory if you only plan to build once. Examples:
 
----
+- `"${HOME}/sandbox/nioc"`
+- `"/tmp/nioc"`
 
-## 📦 Dependencies
+#### BUILD_DIR
 
-`nioc` requires the following dependencies to be available before building.
+Path where you will create the build tree. This may also be temporary if you are
+not iterating on builds. Examples:
 
-### System Dependencies
-- clang-14 (alternative to gcc/g++)
-- clang-format-14 (optional)
-- clang-tidy-14 (optional)
-- cmake
-- g++-12
-- gcc-12
-- git
-- ninja-build
+- `"${SOURCE_DIR}/build"`
+- `"/tmp/nioc-build"`
+- `"${HOME}/sandbox/nioc-build"`
 
-On **Ubuntu 22.04**, install them with:  
-```bash
-sudo apt install -y clang-14 clang-format-14 clang-tidy-14 cmake g++-12 gcc-12 git ninja-build
-````
+#### INSTALL_DIR
+
+Path where installation artifacts will be placed. Keep this directory long-term;
+it will contain executables, libraries, and supporting files. Examples:
+
+- `"${HOME}/usr"`
+- `"${HOME}/opt"`
+- `"/opt/nioc"` (requires `sudo` during the build step)
+- `"/usr"` (requires `sudo` during the build step)
+
+NOTE: The build step of nioc (which is a super-build) triggers the
+download, configure, build, and install steps of all the child libraries. Hence,
+`sudo` is needed during the build step when installing to a location that
+requires superuser privileges to write to. As a general rule prefer to install
+to locations that do not require extra privileges.
+
+**NOTE: You may export these paths as environment variables in your current
+terminal context if you prefer**
+
+```shell
+export SOURCE_TREE=${HOME}/sandbox/nioc
+export BUILD_TREE=${HOME}/sandbox/nioc/build
+export INSTALL_TREE=${HOME}/opt/nioc
+```
+
+Clone the `nioc` project using the following:
+
+```shell
+git clone git@github.com:ajakhotia/nioc.git ${SOURCE_TREE}
+```
+
+### 🔧 Install tools
+
+Install `jq` so that we can extract the list of system dependencies from the
+[systemDependencies.json](systemDependencies.json) file.
+
+```shell
+sudo apt install -y --no-install-recommends jq
+```
+
+Install `cmake`. You may skip this if your OS-default cmake version is > 3.27
+
+```shell
+sudo bash tools/installCMake.sh
+```
+
+Install basic build tools:
+
+```shell
+sudo apt install -y --no-install-recommends \
+  $(sh tools/apt/extractDependencies.sh Basics systemDependencies.json)
+```
+
+Set up apt-sources for the latest compilers / toolchains. Prefer to skip this if
+the default OS-provided compilers / toolchains are new enough. Note the
+following constraints:
+
+* GNU compilers >= version 12
+* LLVM compilers >= version 19
+* Cuda toolkit >= version 13
+
+You are responsible for installing the appropriate compilers / toolchains
+yourself if you are skipping the commands below.
+
+```shell
+sudo bash tools/apt/addGNUSources.sh -y
+```
+
+```shell
+sudo bash tools/apt/addLLVMSources.sh -y
+```
+
+```shell
+sudo bash tools/apt/addNvidiaSources.sh -y
+```
+
+```shell
+sudo apt update && sudo apt install -y --no-install-recommends $(sh tools/apt/extractDependencies.sh Compilers systemDependencies.json)
+```
 
 ### External Dependencies
+
+`nioc` depends on the following external libraries:
 
 * Boost (headers + iostreams)
 * Cap'n Proto
 * Eigen3
-* GoogleTest *(optional, required for unit tests)*
+* GoogleTest
 * Nlohmann JSON
 * Spdlog
 
-We recommend using [robotFarm](https://github.com/ajakhotia/robotFarm) to build these.
-During CMake configuration for **robotFarm**, pass the following cache argument to build and install 
-the dependencies required by `nioc`:
+It's recommended to use [robotFarm](https://github.com/ajakhotia/robotFarm) to build these. Here is
+how it can be done using the quick start instructions:
 
-```bash
--DROBOT_FARM_REQUESTED_BUILD_LIST="BoostExternalProject;CapnprotoExternalProject;Eigen3ExternalProject;GoogleTestExternalProject;NlohmannJsonExternalProject;SpdLogExternalProject"
+```shell
+export ROBOT_FARM_INSTALL_TREE=/opt/robotFarm
 ```
 
-> 🔑 Remember the installation path you provide via `-DCMAKE_INSTALL_PREFIX:PATH=...` when building `robotFarm`.
-> This path will be referred to as **`<ROBOT_FARM_INSTALL_TREE>`** in the rest of the README.
+```shell
+curl -fsSL                                                                                          \
+  https://raw.githubusercontent.com/ajakhotia/robotFarm/refs/heads/main/tools/quickBuild.sh |       \
+  sudo bash -s --                                                                                   \
+    --version v1.1.0                                                                                \
+    --prefix ${ROBOT_FARM_INSTALL_TREE}                                                             \
+    --build-list "BoostExternalProject;CapnprotoExternalProject;Eigen3ExternalProject;GoogleTestExternalProject;NlohmannJsonExternalProject;SpdLogExternalProject"
+```
+
+For more details, see the [robotFarm](https://github.com/ajakhotia/robotFarm) README.
 
 ---
 
@@ -83,12 +159,14 @@ git clone git@github.com:ajakhotia/nioc.git <SOURCE_TREE>
 Use CMake (with Ninja recommended):
 
 ```bash
-cmake -S <SOURCE_TREE> -B <BUILD_TREE>          \
-    -G Ninja                                    \
-    -DCMAKE_BUILD_TYPE:STRING="Release"         \
-    -DCMAKE_INSTALL_PREFIX:PATH=<INSTALL_TREE>  \
-    -DBUILD_SHARED_LIBS:BOOL=ON                 \
-    -DCMAKE_PREFIX_PATH:PATH=<ROBOT_FARM_INSTALL_TREE>
+cmake                                                       \
+    -G Ninja                                                \
+    -S ${SOURCE_TREE}                                       \
+    -B ${BUILD_TREE}                                        \
+    -DCMAKE_BUILD_TYPE:STRING="Release"                     \
+    -DCMAKE_INSTALL_PREFIX:PATH=${INSTALL_TREE}             \
+    -DBUILD_SHARED_LIBS:BOOL=ON                             \
+    -DCMAKE_PREFIX_PATH:PATH=${ROBOT_FARM_INSTALL_TREE}
 ```
 
 Notes:
@@ -149,4 +227,4 @@ Enable clang-tidy in CMake with:
 
 ## 📜 License
 
-[MIT](LICENSE) © 2025 Anurag Jakhotia
+[MIT](LICENSE) © 2025 Anurag Jakhotia with restrictions on commercial use.
