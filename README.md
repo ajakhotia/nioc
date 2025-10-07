@@ -4,6 +4,39 @@
 
 Core C++ utilities for building high-performance robotics and AI applications on edge devices.
 
+## 🚀 Capabilities
+
+### Core Utilities (`nioc::common`)
+- **Thread-Safe Wrappers**: `Locked<T>` template for protecting non-atomic types from access contention with automatic mutex management
+- **Cache Management**: `CacheManager<T>` for managing cache implementations with automatic validity checking and reset
+- **Type Traits**: Advanced C++20 type manipulation utilities and compile-time type checking
+
+### Geometry Processing (`nioc::geometry`)
+- **Reference Frames**: Type-safe compile-time frame management with `StaticFrame<FrameId>`
+- **3D Transformations**: Rigid body transforms, poses, and rotations with Eigen3 integration
+- **Geometric Primitives**: Frame references, frame concepts, and geometric constants
+- **Type Safety**: Template-based compile-time type validation with static assertions
+
+### High-Performance Logging (`nioc::logger`)
+- **Memory-Mapped I/O**: Efficient file-based logging using Boost.Iostreams
+- **Structured Data**: Cap'n Proto serialization for high-performance binary logging
+- **Concurrent Access**: Separate reader/writer interfaces for concurrent log processing
+- **Configurable Storage**: Customizable file sizes and storage locations
+- **Log Replay**: Built-in log reader for data analysis and replay
+
+### Message Passing (`nioc::messages`)
+- **Serialization Framework**: Cap'n Proto-based message serialization
+- **Memory-Mapped Messages**: `MMappedMessageReader` for efficient message deserialization
+- **Base Message Types**: Foundation classes for building custom message protocols
+- **Schema Support**: IDL-based message schema definitions
+
+### Development Features
+- **Modern C++20**: Full C++20 standard support with `std::span`, `std::ranges`, and `std::format`
+- **Cross-Platform**: Tested on Ubuntu 22.04+ with GNU and Clang compiler support
+- **CMake Integration**: Advanced CMake utilities for library and executable exports
+- **Code Quality**: Integrated clang-format and clang-tidy support
+- **Testing Framework**: GoogleTest integration with CTest runner
+
 ---
 
 ## 🛠️ Setup
