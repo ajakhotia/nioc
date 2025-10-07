@@ -2,7 +2,9 @@
 .dockerignore
 .git
 .github
+.gitignore
 .idea
-docker/*.dockerfile
+CLAUDE.md
 LICENSE
 README.md
+docker/*.dockerfile
