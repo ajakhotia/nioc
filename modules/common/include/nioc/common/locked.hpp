@@ -57,13 +57,13 @@ namespace nioc::common
 ///                     Access by r-reference:
 ///                         [](auto&& value){ doSomething(); return somethingOrNot(); }
 ///
-/// @tparam     ValueType_  Type of the underlying variable. Any const qualifiers
+/// @tparam     ValueTypeT  Type of the underlying variable. Any const qualifiers
 ///                         specifiers are discarded.
-template<typename ValueType_>
+template<typename ValueTypeT>
 class Locked
 {
 public:
-  using ValueType = typename std::remove_const<ValueType_>::type;
+  using ValueType = typename std::remove_const_t<ValueTypeT>;
 
   /// @brief  Variadic constructor that accepts and forwards any arguments to the
   ///         constructor of the underlying types.
@@ -74,7 +74,7 @@ public:
   /// @param  args    Parameter pack to be forwarded as arguments to the
   ///                 constructor of the underlying value a.k.a Locked::mLockedValue
   template<typename... Args>
-  explicit Locked(Args&&... args): mMutex{}, mLockedValue{ std::forward<Args>(args)... }
+  explicit Locked(Args&&... args): mLockedValue{ std::forward<Args>(args)... }
   {
   }
 
