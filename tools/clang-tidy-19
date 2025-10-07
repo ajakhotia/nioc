@@ -379,34 +379,9 @@ CheckOptions:
   readability-identifier-length.MinimumVariableNameLength: '3'
   readability-identifier-naming.AggressiveDependentMemberLookup: 'false'
   readability-identifier-naming.CheckAnonFieldInParent: 'false'
-  readability-identifier-naming.ClassCase: CamelCase
-  readability-identifier-naming.ConstantParameterCase: camelBack
-  readability-identifier-naming.ConstexprVariableCase: CamelCase
-  readability-identifier-naming.ConstexprVariablePrefix: k
-  readability-identifier-naming.EnumCase: CamelCase
-  readability-identifier-naming.FunctionCase: camelBack
   readability-identifier-naming.GetConfigPerFile: 'true'
-  readability-identifier-naming.GlobalConstantCase: CamelCase
-  readability-identifier-naming.GlobalConstantPrefix: k
   readability-identifier-naming.IgnoreFailedSplit: 'false'
   readability-identifier-naming.IgnoreMainLikeFunctions: 'false'
-  readability-identifier-naming.MethodCase: camelBack
-  readability-identifier-naming.NamespaceCase: lower_case
-  readability-identifier-naming.ParameterCase: camelBack
-  readability-identifier-naming.PrivateMemberCase: CamelCase
-  readability-identifier-naming.PrivateMemberPrefix: m
-  readability-identifier-naming.ProtectedMemberCase: CamelCase
-  readability-identifier-naming.ProtectedMemberPrefix: m
-  readability-identifier-naming.PublicMemberCase: CamelCase
-  readability-identifier-naming.PublicMemberPrefix: m
-  readability-identifier-naming.StaticConstantCase: CamelCase
-  readability-identifier-naming.StaticConstantPrefix: k
-  readability-identifier-naming.StructCase: CamelCase
-  readability-identifier-naming.TemplateParameterCase: CamelCase
-  readability-identifier-naming.TemplateParameterSuffix: _
-  readability-identifier-naming.TypeAliasCase: CamelCase
-  readability-identifier-naming.TypedefCase: CamelCase
-  readability-identifier-naming.VariableCase: camelBack
   readability-implicit-bool-conversion.AllowIntegerConditions: 'false'
   readability-implicit-bool-conversion.AllowPointerConditions: 'false'
   readability-inconsistent-declaration-parameter-name.IgnoreMacros: 'true'
