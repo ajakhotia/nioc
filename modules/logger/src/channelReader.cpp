@@ -20,7 +20,6 @@ constexpr const auto kLogRollBufferSize = 5UL;
 ChannelReader::ChannelReader(std::filesystem::path logRoot):
     mLogRoot(validatePath(std::move(logRoot))),
     mIndexFile(mLogRoot / kIndexFileName),
-    mNextReadIndex(0ULL),
     mLogRollBuffer(kLogRollBufferSize)
 {
 }
@@ -37,8 +36,8 @@ MemoryCrate ChannelReader::read()
 
   ++mNextReadIndex;
 
-  const auto index =
-      ReadWriteUtil<IndexEntry>::read(std::next(mIndexFile.begin(), ssize_t(indexPtrOffset)));
+  const auto index = ReadWriteUtil<IndexEntry>::read(
+      std::next(mIndexFile.begin(), static_cast<ssize_t>(indexPtrOffset)));
 
   auto logRollPtr = acquireLogRoll(index.mRollId);
 

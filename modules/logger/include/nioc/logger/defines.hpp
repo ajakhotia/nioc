@@ -13,4 +13,4 @@ namespace nioc::logger
 using ChannelId = std::uint64_t;
 
 
-}
+} // namespace nioc::logger

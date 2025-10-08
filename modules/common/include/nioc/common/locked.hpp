@@ -57,13 +57,13 @@ namespace nioc::common
 ///                     Access by r-reference:
 ///                         [](auto&& value){ doSomething(); return somethingOrNot(); }
 ///
-/// @tparam     ValueType_  Type of the underlying variable. Any const qualifiers
+/// @tparam     ValueTypeT  Type of the underlying variable. Any const qualifiers
 ///                         specifiers are discarded.
-template<typename ValueType_>
+template<typename ValueTypeT>
 class Locked
 {
 public:
-  using ValueType = typename std::remove_const<ValueType_>::type;
+  using ValueType = typename std::remove_const_t<ValueTypeT>;
 
   /// @brief  Variadic constructor that accepts and forwards any arguments to the
   ///         constructor of the underlying types.
@@ -74,7 +74,7 @@ public:
   /// @param  args    Parameter pack to be forwarded as arguments to the
   ///                 constructor of the underlying value a.k.a Locked::mLockedValue
   template<typename... Args>
-  explicit Locked(Args&&... args): mMutex{}, mLockedValue{ std::forward<Args>(args)... }
+  explicit Locked(Args&&... args): mLockedValue{ std::forward<Args>(args)... }
   {
   }
 
@@ -105,8 +105,8 @@ public:
   template<typename Operation>
   decltype(auto) cExecute(Operation&& operation) const
   {
-    std::shared_lock sharedLock(mMutex);
-    return operation(mLockedValue);
+    const auto sharedLock = std::shared_lock(mMutex);
+    return std::forward<Operation>(operation)(mLockedValue);
   }
 
   /// @brief  Executes the operation lambda with Locked::mLockedValue as the argument
@@ -151,8 +151,8 @@ public:
   template<typename Operation>
   decltype(auto) execute(Operation&& operation)
   {
-    std::scoped_lock exclusiveLock(mMutex);
-    return operation(mLockedValue);
+    const auto exclusiveLock = std::scoped_lock(mMutex);
+    return std::forward<Operation>(operation)(mLockedValue);
   }
 
   /// @brief  Executes the operation lambda with Locked::mLockedValue as the argument
@@ -300,7 +300,7 @@ constexpr bool operator!=(const Locked<ValueType>& lockedValue, const Other& oth
 }
 
 /// @brief  Inequality check operator.
-/// @tparam Other       Type of the operand that is comparable with @tparam ValueType.
+/// @tparam Other       Type of the operand that is comparable with @ValueType.
 /// @tparam ValueType   Type of the other operand that is comparable with ValueType.
 /// @param  otherValue  LHS operand.
 /// @param  lockedValue RHS operand.
