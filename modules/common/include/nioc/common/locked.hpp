@@ -105,8 +105,8 @@ public:
   template<typename Operation>
   decltype(auto) cExecute(Operation&& operation) const
   {
-    std::shared_lock sharedLock(mMutex);
-    return operation(mLockedValue);
+    const auto sharedLock = std::shared_lock(mMutex);
+    return std::forward<Operation>(operation)(mLockedValue);
   }
 
   /// @brief  Executes the operation lambda with Locked::mLockedValue as the argument
@@ -151,8 +151,8 @@ public:
   template<typename Operation>
   decltype(auto) execute(Operation&& operation)
   {
-    std::scoped_lock exclusiveLock(mMutex);
-    return operation(mLockedValue);
+    const auto exclusiveLock = std::scoped_lock(mMutex);
+    return std::forward<Operation>(operation)(mLockedValue);
   }
 
   /// @brief  Executes the operation lambda with Locked::mLockedValue as the argument
@@ -300,7 +300,7 @@ constexpr bool operator!=(const Locked<ValueType>& lockedValue, const Other& oth
 }
 
 /// @brief  Inequality check operator.
-/// @tparam Other       Type of the operand that is comparable with @tparam ValueType.
+/// @tparam Other       Type of the operand that is comparable with @ValueType.
 /// @tparam ValueType   Type of the other operand that is comparable with ValueType.
 /// @param  otherValue  LHS operand.
 /// @param  lockedValue RHS operand.

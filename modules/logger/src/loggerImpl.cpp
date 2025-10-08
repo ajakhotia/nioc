@@ -52,7 +52,7 @@ Logger::LoggerImpl::LoggerImpl(std::filesystem::path logRoot, const std::size_t 
 
 void Logger::LoggerImpl::write(const ChannelId channelId, const std::span<const std::byte>& data)
 {
-  // TODO: This can be improved to use fewer locks and avoid race conditions.
+  // TODO(ajakhotia): This can be improved to use fewer locks and avoid race conditions.
   mLockedSequenceFile(
       [&](std::ofstream& sequenceFile)
       {
@@ -70,7 +70,7 @@ void Logger::LoggerImpl::write(const ChannelId channelId, const std::span<const 
 void Logger::LoggerImpl::write(
     const ChannelId channelId, const std::vector<std::span<const std::byte>>& data)
 {
-  // TODO: This can be improved to use fewer locks and avoid race conditions.
+  // TODO(ajakhotia): This can be improved to use fewer locks and avoid race conditions.
   mLockedSequenceFile(
       [&](std::ofstream& sequenceFile)
       {
