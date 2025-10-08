@@ -12,7 +12,7 @@ ImplementationFileExtensions:
   - cc
   - cpp
   - cxx
-HeaderFilterRegex: ''
+HeaderFilterRegex: '.*'
 ExcludeHeaderFilterRegex: ''
 FormatStyle:     none
 User:            ajakhotia
@@ -403,7 +403,7 @@ CheckOptions:
   readability-identifier-naming.StaticConstantPrefix: k
   readability-identifier-naming.StructCase: CamelCase
   readability-identifier-naming.TemplateParameterCase: CamelCase
-  readability-identifier-naming.TemplateParameterSuffix: _
+  readability-identifier-naming.TemplateParameterSuffix: ''
   readability-identifier-naming.TypeAliasCase: CamelCase
   readability-identifier-naming.TypedefCase: CamelCase
   readability-identifier-naming.VariableCase: camelBack
