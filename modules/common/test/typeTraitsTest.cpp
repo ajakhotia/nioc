@@ -3,8 +3,6 @@
 // Project  : nioc
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "cert-err58-cpp"
 
 #include <deque>
 #include <gtest/gtest.h>
@@ -40,5 +38,3 @@ TEST(TypeTraits, prettyName)
 
 
 } // namespace nioc::common
-
-#pragma clang diagnostic pop

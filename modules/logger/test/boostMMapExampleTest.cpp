@@ -3,8 +3,6 @@
 // Project  : nioc
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "cert-err58-cpp"
 
 #include <boost/iostreams/device/mapped_file.hpp>
 #include <cmath>
@@ -18,7 +16,7 @@ namespace
 {
 constexpr const auto kNumBytes = 1024ULL * 1024ULL;
 
-}
+} // namespace
 
 TEST(LoggerBoostUsageExample, MMapFileWriting)
 {
@@ -71,5 +69,3 @@ TEST(LoggerBoostUsageExample, SerialFileWrite)
 
 
 } // namespace nioc::logger
-
-#pragma clang diagnostic pop

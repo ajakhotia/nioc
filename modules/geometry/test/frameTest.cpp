@@ -3,8 +3,6 @@
 // Project  : nioc
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "cert-err58-cpp"
 
 #include <gtest/gtest.h>
 #include <nioc/geometry/frame.hpp>
@@ -56,5 +54,3 @@ TEST(DynamicFrame, EqualityCheck)
 
 
 } // namespace nioc::geometry
-
-#pragma clang diagnostic pop

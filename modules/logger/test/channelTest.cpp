@@ -3,8 +3,6 @@
 // Project  : nioc
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "cert-err58-cpp"
 
 #include <channel.hpp>
 #include <gtest/gtest.h>
@@ -94,5 +92,3 @@ TEST(Channel, rollAndIndexFileSizeChecks)
 }
 
 } // namespace nioc::logger
-
-#pragma clang diagnostic pop

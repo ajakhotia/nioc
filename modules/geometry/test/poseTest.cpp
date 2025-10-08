@@ -3,8 +3,6 @@
 // Project  : nioc
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "cert-err58-cpp"
 
 #include <gtest/gtest.h>
 #include <nioc/common/typeTraits.hpp>
@@ -149,5 +147,3 @@ TEST(Pose, StreamOperator)
 }
 
 } // End of namespace nioc::geometry.
-
-#pragma clang diagnostic pop
