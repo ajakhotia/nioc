@@ -30,7 +30,9 @@ std::string buildRollName(const std::uint64_t rollId)
 }
 
 bool fileHasSpace(
-    std::ofstream& file, const std::uint64_t spaceRequired, const std::uint64_t maxFileSizeInBytes)
+    std::ofstream& file,
+    const std::uint64_t spaceRequired,
+    const std::uint64_t maxFileSizeInBytes)
 {
   if(spaceRequired > maxFileSizeInBytes)
   {
@@ -92,7 +94,8 @@ IndexEntry ReadWriteUtil<IndexEntry>::read(const char* ptr, const std::uint64_t 
 
 template<>
 void ReadWriteUtil<std::span<const std::byte>>::write(
-    std::ostream& stream, std::span<const std::byte> value)
+    std::ostream& stream,
+    std::span<const std::byte> value)
 {
   stream.write(std::bit_cast<const char*>(value.data()), std::ssize(value));
 }

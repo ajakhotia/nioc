@@ -41,8 +41,9 @@ MemoryCrate ChannelReader::read()
 
   auto logRollPtr = acquireLogRoll(index.mRollId);
 
-  return MemoryCrate{ std::make_shared<MemoryCrate::MemoryCrateImpl>(
-      std::move(logRollPtr), index) };
+  return MemoryCrate{
+    std::make_shared<MemoryCrate::MemoryCrateImpl>(std::move(logRollPtr), index)
+  };
 }
 
 ChannelReader::MappedFilePtr ChannelReader::acquireLogRoll(const std::uint64_t rollId)

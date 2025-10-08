@@ -1,18 +1,13 @@
 ---
 Checks: >-
   *,
-  -abseil-*,
-  -altera-*,
-  -android-*,
+  -altera-struct-pack-align,
   -boost-use-ranges,
-  -clang-analyzer-alpha.*,
   -fuchsia-*,
   -llvm-header-guard,
   -llvmlibc-*,
   -misc-include-cleaner,
   -modernize-use-trailing-return-type,
-  -objc-*,
-  -zircon-*
 
 WarningsAsErrors: '*'
 HeaderFileExtensions:

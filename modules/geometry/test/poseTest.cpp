@@ -3,8 +3,6 @@
 // Project  : nioc
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "cert-err58-cpp"
 
 #include <gtest/gtest.h>
 #include <nioc/common/typeTraits.hpp>
@@ -30,7 +28,9 @@ const auto cosPiBy4F = std::sin(kPi<float> / 4.f);
 
 template<typename Scalar>
 void poseParamCheck(
-    const Pose<Scalar>& pose, typename Pose<Scalar>::Parameters params, const std::string& testName)
+    const Pose<Scalar>& pose,
+    typename Pose<Scalar>::Parameters params,
+    const std::string& testName)
 {
   // Normalize the quaternion portion of the params.
   {
@@ -149,5 +149,3 @@ TEST(Pose, StreamOperator)
 }
 
 } // End of namespace nioc::geometry.
-
-#pragma clang diagnostic pop

@@ -86,7 +86,8 @@ public:
       typename = typename std::enable_if_t<std::is_same_v<ParentFrame, DynamicFrame>>,
       typename = typename std::enable_if_t<std::is_same_v<ChildFrame, DynamicFrame>>>
   [[maybe_unused]] FrameReferences(
-      ParentConceptArgs&& parentId, ChildConceptArgs&& childId) noexcept:
+      ParentConceptArgs&& parentId,
+      ChildConceptArgs&& childId) noexcept:
       ParentConcept(std::forward<ParentConceptArgs>(parentId)),
       ChildConcept(std::forward<ChildConceptArgs>(childId))
   {
@@ -199,7 +200,8 @@ constexpr FrameReferences<
     typename LhsFrameReferences::ParentFrame,
     typename RhsFrameReferences::ChildFrame>
 composeFrameReferences(
-    const LhsFrameReferences& lhsFrameReferences, const RhsFrameReferences& rhsFrameReferences)
+    const LhsFrameReferences& lhsFrameReferences,
+    const RhsFrameReferences& rhsFrameReferences)
 {
   using ResultFrameReference = FrameReferences<
       typename LhsFrameReferences::ParentFrame,
@@ -210,10 +212,12 @@ composeFrameReferences(
           typename LhsFrameReferences::ChildFrame,
           typename RhsFrameReferences::ParentFrame>,
       std::tuple_cat(
-          lhsFrameReferences.childFrameAsTuple(), rhsFrameReferences.parentFrameAsTuple()));
+          lhsFrameReferences.childFrameAsTuple(),
+          rhsFrameReferences.parentFrameAsTuple()));
 
   return std::make_from_tuple<ResultFrameReference>(std::tuple_cat(
-      lhsFrameReferences.parentFrameAsTuple(), rhsFrameReferences.childFrameAsTuple()));
+      lhsFrameReferences.parentFrameAsTuple(),
+      rhsFrameReferences.childFrameAsTuple()));
 }
 
 /// @brief

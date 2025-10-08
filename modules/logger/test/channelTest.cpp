@@ -3,8 +3,6 @@
 // Project  : nioc
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "cert-err58-cpp"
 
 #include <channel.hpp>
 #include <gtest/gtest.h>
@@ -80,8 +78,9 @@ TEST(Channel, rollAndIndexFileSizeChecks)
   EXPECT_EQ(directoryEntries.front().path(), testLogDirectoryPath / kIndexFileName);
   EXPECT_EQ(fs::file_size(directoryEntries.front()), expectedIndexFileSize);
 
-  const auto rollSpan =
-      std::span(std::next(directoryEntries.begin()), std::prev(directoryEntries.end()));
+  const auto rollSpan = std::span(
+      std::next(directoryEntries.begin()),
+      std::prev(directoryEntries.end()));
 
   for(const auto& item: rollSpan)
   {
@@ -94,5 +93,3 @@ TEST(Channel, rollAndIndexFileSizeChecks)
 }
 
 } // namespace nioc::logger
-
-#pragma clang diagnostic pop

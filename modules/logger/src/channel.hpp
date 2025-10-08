@@ -21,7 +21,8 @@ public:
   using ConstByteSpan = std::span<const std::byte>;
 
   explicit Channel(
-      std::filesystem::path logRoot, std::uint64_t maxFileSizeInBytes = kDefaultMaxFileSizeInBytes);
+      std::filesystem::path logRoot,
+      std::uint64_t maxFileSizeInBytes = kDefaultMaxFileSizeInBytes);
 
   Channel(const Channel&) = delete;
 
