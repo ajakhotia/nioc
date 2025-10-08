@@ -1,6 +1,20 @@
 ---
-Checks:          'clang-diagnostic-*,clang-analyzer-*,*,-clang-analyzer-alpha.*,-google-*,-llvm-*,-llvmlibc-*,-abseil-*,-fuchsia-*,-zircon-*,-objc-*,-android-*,-modernize-use-trailing-return-type,-misc-include-cleaner,-boost-use-ranges'
-WarningsAsErrors: 'bugprone-*,cert-*,clang-analyzer-*,cppcoreguidelines-*,modernize-*,performance-*,portability-*,readability-*,security-*'
+Checks: >-
+  *,
+  -abseil-*,
+  -altera-*,
+  -android-*,
+  -boost-use-ranges,
+  -clang-analyzer-alpha.*,
+  -fuchsia-*,
+  -llvm-header-guard,
+  -llvmlibc-*,
+  -misc-include-cleaner,
+  -modernize-use-trailing-return-type,
+  -objc-*,
+  -zircon-*
+
+WarningsAsErrors: '*'
 HeaderFileExtensions:
   - ''
   - h
@@ -14,8 +28,7 @@ ImplementationFileExtensions:
   - cxx
 HeaderFilterRegex: '.*'
 ExcludeHeaderFilterRegex: ''
-FormatStyle:     none
-User:            ajakhotia
+FormatStyle: none
 CheckOptions:
   altera-single-work-item-barrier.AOCVersion: 1600
   altera-struct-pack-align.MaxConfiguredAlignment: 128
