@@ -11,9 +11,7 @@ namespace nioc::logger
 {
 
 LogReader::LogReaderImpl::LogReaderImpl(std::filesystem::path logRoot):
-    mLogRoot(validatePath(std::move(logRoot))),
-    mSequenceFile(mLogRoot / kSequenceFileName),
-    mNextReadIndex(0ULL)
+    mLogRoot(validatePath(std::move(logRoot))), mSequenceFile(mLogRoot / kSequenceFileName)
 {
 }
 
@@ -29,8 +27,8 @@ LogEntry LogReader::LogReaderImpl::read()
 
   ++mNextReadIndex;
 
-  const auto sequenceEntry =
-      ReadWriteUtil<SequenceEntry>::read(std::next(mSequenceFile.data(), ssize_t(indexPtrOffset)));
+  const auto sequenceEntry = ReadWriteUtil<SequenceEntry>::read(
+      std::next(mSequenceFile.data(), static_cast<ssize_t>(indexPtrOffset)));
 
   auto& channelReader = acquireChannel(sequenceEntry.mChannelId);
   return { .mChannelId = sequenceEntry.mChannelId, .mMemoryCrate = channelReader.read() };
