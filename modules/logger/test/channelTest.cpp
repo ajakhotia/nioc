@@ -78,8 +78,9 @@ TEST(Channel, rollAndIndexFileSizeChecks)
   EXPECT_EQ(directoryEntries.front().path(), testLogDirectoryPath / kIndexFileName);
   EXPECT_EQ(fs::file_size(directoryEntries.front()), expectedIndexFileSize);
 
-  const auto rollSpan =
-      std::span(std::next(directoryEntries.begin()), std::prev(directoryEntries.end()));
+  const auto rollSpan = std::span(
+      std::next(directoryEntries.begin()),
+      std::prev(directoryEntries.end()));
 
   for(const auto& item: rollSpan)
   {

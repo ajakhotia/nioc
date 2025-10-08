@@ -23,7 +23,8 @@ TEST(RigidTransform, Construction)
       Pose<double>(Eigen::Quaterniond::Identity(), Eigen::Vector3d::Zero()));
 
   auto alphaFromGamma2 = RigidTransform<StaticFrame<Alpha>, DynamicFrame>(
-      Pose<double>(Eigen::Quaterniond::Identity(), Eigen::Vector3d::Zero()), "Gamma");
+      Pose<double>(Eigen::Quaterniond::Identity(), Eigen::Vector3d::Zero()),
+      "Gamma");
 }
 
 TEST(RigidTransform, inverse)

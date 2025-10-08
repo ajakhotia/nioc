@@ -93,7 +93,8 @@ TEST(FrameReferences, DynamicParentDynamicChild)
 
   {
     const DynamicFromDynamic dynamicFromDynamic(
-        DynamicFrame("DynamicMars"), DynamicFrame("DynamicNeptune"));
+        DynamicFrame("DynamicMars"),
+        DynamicFrame("DynamicNeptune"));
 
     EXPECT_EQ("DynamicMars", dynamicFromDynamic.parentFrame().name());
     EXPECT_EQ("DynamicNeptune", dynamicFromDynamic.childFrame().name());
@@ -136,7 +137,8 @@ TEST(assertFrameEqual, DynamicLhsStaticRhs)
 TEST(assertFrameEqual, DynamicLhsDynamicRhs)
 {
   EXPECT_NO_THROW((assertFrameEqual<DynamicFrame, DynamicFrame>(
-      DynamicFrame("nioc::geometry::Sun"), DynamicFrame("nioc::geometry::Sun"))));
+      DynamicFrame("nioc::geometry::Sun"),
+      DynamicFrame("nioc::geometry::Sun"))));
 
   EXPECT_THROW(
       (assertFrameEqual<DynamicFrame, DynamicFrame>(DynamicFrame("Bloop"), DynamicFrame("Bleep"))),

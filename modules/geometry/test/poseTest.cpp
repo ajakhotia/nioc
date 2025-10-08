@@ -28,7 +28,9 @@ const auto cosPiBy4F = std::sin(kPi<float> / 4.f);
 
 template<typename Scalar>
 void poseParamCheck(
-    const Pose<Scalar>& pose, typename Pose<Scalar>::Parameters params, const std::string& testName)
+    const Pose<Scalar>& pose,
+    typename Pose<Scalar>::Parameters params,
+    const std::string& testName)
 {
   // Normalize the quaternion portion of the params.
   {
