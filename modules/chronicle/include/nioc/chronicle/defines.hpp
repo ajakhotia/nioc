@@ -10,6 +10,7 @@
 namespace nioc::chronicle
 {
 
+/// @brief Unique identifier for a data channel.
 using ChannelId = std::uint64_t;
 
 

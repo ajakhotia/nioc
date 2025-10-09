@@ -16,11 +16,11 @@ namespace nioc::geometry
 template<typename>
 class Pose;
 
-/// @brief  CTRP interface to represent special euclidean group in 3D (SE3).
-///         SE3 allows representing position and orientation of an object in
-///         3D space. The orientation is represented using unit quaternions
-///         and the position is represented using a 3-D position vector.
-/// @tparam Derived
+/// @brief 3D pose representation (SE3 group).
+///
+/// Combines position and orientation in 3D space. Orientation uses unit quaternions, position uses 3D vectors.
+///
+/// @tparam Derived CRTP derived type.
 template<typename Derived>
 class Se3
 {
@@ -96,17 +96,15 @@ public:
     return Pose<ResultScalar>(std::span<const Scalar>(cData(), kNumParams));
   }
 
-  /// @brief  Computes the inverse of the Se3 object.
-  /// @return Pose<> object representing the inverse.
+  /// @brief Computes inverse pose.
+  /// @return Inverted pose.
   Pose<Scalar> inverse() const
   {
     return Pose<Scalar>(derived()).invert();
   }
 
-  /// @brief  Inverts the Se3 object in-place.
-  /// TODO:   Optimize implementation by directly manipulating the
-  ///         underlying array.
-  /// @return Self.
+  /// @brief Inverts pose in-place.
+  /// @return Reference to this.
   Derived& invert()
   {
     const auto inverseOrientation = orientation().inverse();
@@ -115,8 +113,8 @@ public:
     return derived();
   }
 
-  /// @brief  Build an identity object.
-  /// @return Pose<> object representing identity.
+  /// @brief Creates identity pose.
+  /// @return Identity transformation.
   static constexpr Pose<Scalar> identity()
   {
     return Pose<Scalar>({ 0, 0, 0, 1, 0, 0, 0 });
@@ -136,34 +134,27 @@ protected:
   Se3& operator=(Se3&&) noexcept = default;
 
 private:
-  /// @brief  Statically casts self to derived type.
-  /// @return ConstRef to the derived type.
   inline constexpr const Derived& cDerived() const noexcept
   {
     return static_cast<const Derived&>(*this);
   }
 
-  /// @brief  Statically casts self to derived type.
-  /// @return ConstRef to the derived type.
   inline constexpr const Derived& derived() const noexcept
   {
     return cDerived();
   }
 
-  /// @brief  Statically casts self to derived type.
-  /// @return NonConstRef to the derived type.
   inline constexpr Derived& derived() noexcept
   {
     return static_cast<Derived&>(*this);
   }
 };
 
-/// @brief  Se3 with default storage. The parameters are stored
-///         in an std::array<Scalar, 7U> in the order:
-///             [q_x, q_y, q_z, q_w, p_x, p_y, p_z]
+/// @brief 3D pose with owned storage.
 ///
-/// @tparam Scalar_ The floating point representation to use.
-///                 Can be one of float or double
+/// Stores 7 parameters: [qx, qy, qz, qw, px, py, pz] (quaternion + position).
+///
+/// @tparam Scalar_ Floating-point type (float, double).
 template<typename Scalar_>
 class Pose: public Se3<Pose<Scalar_>>
 {
@@ -180,9 +171,9 @@ public:
 
   using Parameters = std::array<Scalar, kNumParams>;
 
-  /// @brief
-  /// @param orientation
-  /// @param position
+  /// @brief Constructs from orientation and position.
+  /// @param orientation Rotation quaternion (normalized automatically).
+  /// @param position Position vector.
   Pose(const Quaternion& orientation, const Vector3& position)
   {
     std::memcpy(
@@ -198,24 +189,23 @@ public:
     Base::orientation().normalize();
   }
 
-  /// @brief  Construct from parameters array by copying each element
-  ///         from the input parameters array. Cost: n-copies (n = 7)
-  /// @param parameters
+  /// @brief Constructs from parameter array (copy).
+  /// @param parameters Array of 7 values [qx, qy, qz, qw, px, py, pz].
   explicit Pose(const Parameters& parameters) noexcept: mParameters(parameters)
   {
     Base::orientation().normalize();
   }
 
-  /// @brief  Construct from parameters array by moving each element
-  ///         out of the input array. Cost: n-moves (n = 7)
-  /// @param parameters
+  /// @brief Constructs from parameter array (move).
+  /// @param parameters Array of 7 values [qx, qy, qz, qw, px, py, pz].
   explicit Pose(Parameters&& parameters) noexcept: mParameters(std::move(parameters))
   {
     Base::orientation().normalize();
   }
 
-  /// @brief
-  /// @param parametersPtr
+  /// @brief Constructs from span of parameters.
+  /// @param span Span containing 7 values.
+  /// @throws std::invalid_argument if span size is not 7.
   template<typename InputScalar>
   explicit Pose(const std::span<InputScalar>& span)
   {
@@ -260,11 +250,10 @@ private:
   Parameters mParameters;
 };
 
-/// @brief
-/// @tparam Derived
-/// @param stream
-/// @param se3
-/// @return
+/// @brief Outputs pose to stream.
+/// @param stream Output stream.
+/// @param se3 Pose to output.
+/// @return Modified stream.
 template<typename Derived>
 std::ostream& operator<<(std::ostream& stream, const Se3<Derived>& se3)
 {
@@ -278,12 +267,10 @@ std::ostream& operator<<(std::ostream& stream, const Se3<Derived>& se3)
   return stream;
 }
 
-/// @brief
-/// @tparam LhsDerived
-/// @tparam RhsDerived
-/// @param lhs
-/// @param rhs
-/// @return
+/// @brief Composes two poses.
+/// @param lhs First pose.
+/// @param rhs Second pose.
+/// @return Composed pose.
 template<typename LhsDerived, typename RhsDerived>
 Pose<typename LhsDerived::Scalar> operator*(const Se3<LhsDerived>& lhs, const Se3<RhsDerived>& rhs)
 {
@@ -297,8 +284,11 @@ Pose<typename LhsDerived::Scalar> operator*(const Se3<LhsDerived>& lhs, const Se
 
 } // End of namespace nioc::geometry.
 
-/// @brief
-/// @tparam Scalar_
+/// @brief Pose without owned storage (mutable).
+///
+/// Maps existing memory as pose parameters.
+///
+/// @tparam Scalar_ Floating-point type.
 template<typename Scalar_>
 class Eigen::Map<nioc::geometry::Pose<Scalar_>>:
     public nioc::geometry::Se3<Eigen::Map<nioc::geometry::Pose<Scalar_>>>
@@ -359,8 +349,11 @@ private:
   std::span<Scalar> mParameters;
 };
 
-/// @brief
-/// @tparam Scalar_
+/// @brief Pose without owned storage (const).
+///
+/// Maps const memory as pose parameters.
+///
+/// @tparam Scalar_ Floating-point type.
 template<typename Scalar_>
 class Eigen::Map<const nioc::geometry::Pose<Scalar_>>:
     public nioc::geometry::Se3<Eigen::Map<const nioc::geometry::Pose<Scalar_>>>
@@ -424,24 +417,21 @@ private:
 
 namespace nioc::geometry
 {
-/// @brief
-/// @tparam Scalar_
+/// @brief Traits for Pose.
 template<typename Scalar_>
 struct Traits<Pose<Scalar_>>
 {
   using Scalar = Scalar_;
 };
 
-/// @brief
-/// @tparam Scalar_
+/// @brief Traits for mapped Pose.
 template<typename Scalar_>
 struct Traits<Eigen::Map<Pose<Scalar_>>>
 {
   using Scalar = Scalar_;
 };
 
-/// @brief
-/// @tparam Scalar_
+/// @brief Traits for const mapped Pose.
 template<typename Scalar_>
 struct Traits<Eigen::Map<const Pose<Scalar_>>>
 {

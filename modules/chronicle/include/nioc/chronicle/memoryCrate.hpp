@@ -11,11 +11,16 @@
 namespace nioc::chronicle
 {
 
+/// @brief A container for chronicle data.
+///
+/// Provides read-only access to data from a chronicle entry.
 class MemoryCrate
 {
 public:
   class MemoryCrateImpl;
 
+  /// @brief Constructs a MemoryCrate.
+  /// @param memoryCrateImplPtr Implementation pointer.
   explicit MemoryCrate(std::shared_ptr<MemoryCrateImpl> memoryCrateImplPtr);
 
   MemoryCrate(const MemoryCrate& memoryCrate);
@@ -28,6 +33,8 @@ public:
 
   MemoryCrate& operator=(MemoryCrate&& memoryCrate) noexcept;
 
+  /// @brief Gets a read-only view of the data.
+  /// @return Span of bytes containing the data.
   [[nodiscard]] std::span<const std::byte> span() const;
 
 private:

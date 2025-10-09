@@ -7,9 +7,9 @@
 
 namespace nioc::geometry
 {
-/// @brief  To facilitate looking up traits of a class defined in
-///         the geometry module. Use may define the traits for a give type
-///         by simply defining a specialization of this class for the said type.
+/// @brief Trait lookup for geometry types.
+///
+/// Specialize this template to define traits for custom geometry types.
 template<typename>
 struct Traits;
 

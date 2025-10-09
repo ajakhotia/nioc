@@ -7,7 +7,7 @@
 
 #include <cmath>
 
-/// @brief  Provide access to pi in a modern C++ style.
-/// @tparam Scalar  Scalar type to use.
+/// @brief Pi constant for any floating-point type.
+/// @tparam Scalar Floating-point type (float, double, etc.).
 template<typename Scalar>
 constexpr auto kPi = Scalar(M_PI);
