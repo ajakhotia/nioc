@@ -18,7 +18,8 @@ class Pose;
 
 /// @brief 3D pose representation (SE3 group).
 ///
-/// Combines position and orientation in 3D space. Orientation uses unit quaternions, position uses 3D vectors.
+/// Combines position and orientation in 3D space. Orientation uses unit quaternions, position uses
+/// 3D vectors.
 ///
 /// @tparam Derived CRTP derived type.
 template<typename Derived>

@@ -13,7 +13,8 @@ namespace nioc::geometry
 {
 /// @brief Manages parent and child frame relationships.
 ///
-/// Stores frame identities for geometric transformations. Supports both compile-time (StaticFrame) and runtime (DynamicFrame) frame types.
+/// Stores frame identities for geometric transformations. Supports both compile-time (StaticFrame)
+/// and runtime (DynamicFrame) frame types.
 ///
 /// @tparam ParentFrame_ Parent frame type.
 /// @tparam ChildFrame_ Child frame type.

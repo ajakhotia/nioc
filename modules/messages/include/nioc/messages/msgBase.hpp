@@ -39,7 +39,8 @@ public:
 
 /// @brief Base class for messages.
 ///
-/// Provides common interface for all message types. Supports both creating new messages and reading from chronicle.
+/// Provides common interface for all message types. Supports both creating new messages and reading
+/// from chronicle.
 class MsgBase
 {
 public:

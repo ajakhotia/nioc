@@ -33,7 +33,8 @@ namespace nioc::geometry
 ///
 /// Compact 3-parameter representation for rotations. Best for small corrective rotations.
 ///
-/// **Limitations**: Does not handle rotations of magnitude 2(2k+1)π. Use Eigen::Quaternion for general rotations.
+/// **Limitations**: Does not handle rotations of magnitude 2(2k+1)π. Use Eigen::Quaternion for
+/// general rotations.
 ///
 /// **Reading**: https://link.springer.com/article/10.1007/s10851-017-0765-x#Abs1
 ///
