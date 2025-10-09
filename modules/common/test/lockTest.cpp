@@ -3,8 +3,6 @@
 // Project  : nioc
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "cert-err58-cpp"
 
 #include <gtest/gtest.h>
 #include <nioc/common/locked.hpp>
@@ -302,5 +300,3 @@ TEST(Locked, LockedGreaterThanOrEqualCheck)
 }
 
 } // namespace nioc::common
-
-#pragma clang diagnostic pop

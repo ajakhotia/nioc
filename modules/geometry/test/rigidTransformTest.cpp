@@ -3,8 +3,6 @@
 // Project  : nioc
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "cert-err58-cpp"
 
 #include <gtest/gtest.h>
 #include <nioc/geometry/rigidTransform.hpp>
@@ -25,7 +23,8 @@ TEST(RigidTransform, Construction)
       Pose<double>(Eigen::Quaterniond::Identity(), Eigen::Vector3d::Zero()));
 
   auto alphaFromGamma2 = RigidTransform<StaticFrame<Alpha>, DynamicFrame>(
-      Pose<double>(Eigen::Quaterniond::Identity(), Eigen::Vector3d::Zero()), "Gamma");
+      Pose<double>(Eigen::Quaterniond::Identity(), Eigen::Vector3d::Zero()),
+      "Gamma");
 }
 
 TEST(RigidTransform, inverse)
@@ -51,5 +50,3 @@ TEST(RigidTransform, Multiplication)
 }
 
 } // namespace nioc::geometry
-
-#pragma clang diagnostic pop

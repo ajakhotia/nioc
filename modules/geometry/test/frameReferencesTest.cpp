@@ -3,8 +3,6 @@
 // Project  : nioc
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "cert-err58-cpp"
 
 #include <gtest/gtest.h>
 #include <nioc/geometry/frameReferences.hpp>
@@ -95,7 +93,8 @@ TEST(FrameReferences, DynamicParentDynamicChild)
 
   {
     const DynamicFromDynamic dynamicFromDynamic(
-        DynamicFrame("DynamicMars"), DynamicFrame("DynamicNeptune"));
+        DynamicFrame("DynamicMars"),
+        DynamicFrame("DynamicNeptune"));
 
     EXPECT_EQ("DynamicMars", dynamicFromDynamic.parentFrame().name());
     EXPECT_EQ("DynamicNeptune", dynamicFromDynamic.childFrame().name());
@@ -138,7 +137,8 @@ TEST(assertFrameEqual, DynamicLhsStaticRhs)
 TEST(assertFrameEqual, DynamicLhsDynamicRhs)
 {
   EXPECT_NO_THROW((assertFrameEqual<DynamicFrame, DynamicFrame>(
-      DynamicFrame("nioc::geometry::Sun"), DynamicFrame("nioc::geometry::Sun"))));
+      DynamicFrame("nioc::geometry::Sun"),
+      DynamicFrame("nioc::geometry::Sun"))));
 
   EXPECT_THROW(
       (assertFrameEqual<DynamicFrame, DynamicFrame>(DynamicFrame("Bloop"), DynamicFrame("Bleep"))),
@@ -328,5 +328,3 @@ TEST(invertFrameReferences, allCases)
 
 
 } // namespace nioc::geometry
-
-#pragma clang diagnostic pop

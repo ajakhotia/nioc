@@ -68,7 +68,8 @@ void Logger::LoggerImpl::write(const ChannelId channelId, const std::span<const 
 }
 
 void Logger::LoggerImpl::write(
-    const ChannelId channelId, const std::vector<std::span<const std::byte>>& data)
+    const ChannelId channelId,
+    const std::vector<std::span<const std::byte>>& data)
 {
   // TODO(ajakhotia): This can be improved to use fewer locks and avoid race conditions.
   mLockedSequenceFile(
@@ -95,7 +96,8 @@ Logger::LoggerImpl::LockedChannel& Logger::LoggerImpl::acquireChannel(const Chan
           channelPtrMap.try_emplace(
               channelId,
               std::make_unique<LockedChannel>(
-                  mLogDirectory / toHexString(channelId), mMaxFileSizeInBytes));
+                  mLogDirectory / toHexString(channelId),
+                  mMaxFileSizeInBytes));
         }
 
         return *channelPtrMap.at(channelId);

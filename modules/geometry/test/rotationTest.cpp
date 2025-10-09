@@ -3,8 +3,6 @@
 // Project  : nioc
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "cert-err58-cpp"
 
 #include <gtest/gtest.h>
 #include <nioc/geometry/constants.hpp>
@@ -144,5 +142,3 @@ TEST(Assignment, RotationAndMap)
 
 
 } // End of namespace nioc::geometry.
-
-#pragma clang diagnostic pop

@@ -44,7 +44,8 @@ public:
   RigidTransform<ChildFrame, ParentFrame, Scalar> inverse() const
   {
     return RigidTransform<ChildFrame, ParentFrame, Scalar>(
-        pose().inverse(), invertFrameReferences(*this));
+        pose().inverse(),
+        invertFrameReferences(*this));
   }
 
 private:
@@ -57,7 +58,8 @@ RigidTransform<ParentFrame, ChildFrame, Scalar> operator*(
     const RigidTransform<IntermediateFrame, ChildFrame, Scalar>& rhs)
 {
   return RigidTransform<ParentFrame, ChildFrame, Scalar>(
-      lhs.pose() * rhs.pose(), composeFrameReferences(lhs, rhs));
+      lhs.pose() * rhs.pose(),
+      composeFrameReferences(lhs, rhs));
 }
 
 } // namespace nioc::geometry
