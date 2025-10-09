@@ -5,8 +5,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include <gtest/gtest.h>
-#include <nioc/logger/logReader.hpp>
-#include <nioc/logger/logger.hpp>
+#include <nioc/chronicle/chronicle.hpp>
 #include <nioc/messages/idl/sample1.capnp.h>
 #include <nioc/messages/msg.hpp>
 
@@ -39,12 +38,12 @@ TEST(MessagesTest, Construction)
   }
 }
 
-TEST(MessagesTest, Logger)
+TEST(MessagesTest, ChronicleWriterReader)
 {
-  std::filesystem::path logPath;
+  std::filesystem::path chroniclePath;
   {
-    logger::Logger logger;
-    logPath = logger.path();
+    chronicle::Writer writer;
+    chroniclePath = writer.path();
 
     Msg<Sample1> sampleMsg;
     {
@@ -52,18 +51,18 @@ TEST(MessagesTest, Logger)
       builder.setName("example");
       builder.setValue(3);
     }
-    write(sampleMsg, logger);
+    write(sampleMsg, writer);
   }
 
   {
-    auto logReader = logger::LogReader(logPath);
-    auto logEntry = logReader.read();
-    auto msg = Msg<Sample1>(logEntry.mMemoryCrate);
-    auto reader = msg.reader();
+    auto reader = chronicle::Reader(chroniclePath);
+    auto entry = reader.read();
+    auto msg = Msg<Sample1>(entry.mMemoryCrate);
+    auto msgReader = msg.reader();
 
-    EXPECT_EQ(logEntry.mChannelId, Msg<Sample1>::kMsgHandle);
-    EXPECT_EQ("example", reader.getName());
-    EXPECT_EQ(3, reader.getValue());
+    EXPECT_EQ(entry.mChannelId, Msg<Sample1>::kMsgHandle);
+    EXPECT_EQ("example", msgReader.getName());
+    EXPECT_EQ(3, msgReader.getValue());
   }
 }
 

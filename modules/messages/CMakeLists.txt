@@ -37,8 +37,8 @@ add_exported_library(
         LINK_LIBRARIES
             PRIVATE CapnProto::capnp
             PRIVATE CapnProto::kj
-            PUBLIC nioc::logger
-            PUBLIC nioc::loggerIdl
+            PUBLIC nioc::chronicle
+            PUBLIC nioc::chronicleIdl
         COMPILE_FEATURES
             PUBLIC cxx_std_20
         COMPILE_OPTIONS

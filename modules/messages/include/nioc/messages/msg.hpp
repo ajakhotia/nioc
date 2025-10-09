@@ -26,7 +26,7 @@ public:
     std::get<capnp::MallocMessageBuilder>(variant()).template initRoot<Schema>();
   }
 
-  explicit Msg(logger::MemoryCrate memoryCrate): MsgBase(std::move(memoryCrate)) {}
+  explicit Msg(chronicle::MemoryCrate memoryCrate): MsgBase(std::move(memoryCrate)) {}
 
   [[nodiscard]] MsgHandle msgHandle() const override
   {

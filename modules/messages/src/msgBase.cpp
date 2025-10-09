@@ -33,14 +33,14 @@ ConstByteSpan convert(const ConstWordArrayPtr& data)
 
 } // namespace
 
-MMappedMessageReader::MMappedMessageReader(logger::MemoryCrate memoryCrate):
+MMappedMessageReader::MMappedMessageReader(chronicle::MemoryCrate memoryCrate):
     MemoryCrate(std::move(memoryCrate)), FlatArrayMessageReader(convert(span()))
 {
 }
 
 MsgBase::MsgBase(): mVariant(std::in_place_type<MallocMessageBuilder>) {}
 
-MsgBase::MsgBase(logger::MemoryCrate memoryCrate):
+MsgBase::MsgBase(chronicle::MemoryCrate memoryCrate):
     mVariant(std::in_place_type<MMappedMessageReader>, std::move(memoryCrate))
 {
 }
@@ -50,7 +50,7 @@ MsgBase::Variant& MsgBase::variant() noexcept
   return mVariant;
 }
 
-void write(MsgBase& msgBase, logger::Logger& logger)
+void write(MsgBase& msgBase, chronicle::Writer& writer)
 {
   const auto segments = std::get<MallocMessageBuilder>(msgBase.variant()).getSegmentsForOutput();
 
@@ -96,7 +96,7 @@ void write(MsgBase& msgBase, logger::Logger& logger)
         return convert(arrayPtr);
       });
 
-  logger.write(msgBase.msgHandle(), spanCollection);
+  writer.write(msgBase.msgHandle(), spanCollection);
 }
 
 

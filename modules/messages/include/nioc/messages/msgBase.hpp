@@ -7,17 +7,19 @@
 
 #include <capnp/serialize.h>
 #include <cstdint>
-#include <nioc/logger/logger.hpp>
-#include <nioc/logger/memoryCrate.hpp>
+#include <nioc/chronicle/chronicle.hpp>
+#include <nioc/chronicle/memoryCrate.hpp>
 #include <variant>
 
 namespace nioc::messages
 {
 
-class MMappedMessageReader final: public logger::MemoryCrate, public capnp::FlatArrayMessageReader
+class MMappedMessageReader final:
+    public chronicle::MemoryCrate,
+    public capnp::FlatArrayMessageReader
 {
 public:
-  explicit MMappedMessageReader(logger::MemoryCrate memoryCrate);
+  explicit MMappedMessageReader(chronicle::MemoryCrate memoryCrate);
 
   MMappedMessageReader(const MMappedMessageReader&) = delete;
 
@@ -40,7 +42,7 @@ public:
 protected:
   MsgBase();
 
-  explicit MsgBase(logger::MemoryCrate memoryCrate);
+  explicit MsgBase(chronicle::MemoryCrate memoryCrate);
 
 public:
   MsgBase(const MsgBase&) = delete;
@@ -56,7 +58,7 @@ public:
   [[nodiscard]] virtual MsgHandle msgHandle() const = 0;
 
 protected:
-  friend void write(MsgBase&, logger::Logger&);
+  friend void write(MsgBase&, chronicle::Writer&);
 
   [[nodiscard]] Variant& variant() noexcept;
 
@@ -64,7 +66,7 @@ private:
   Variant mVariant;
 };
 
-void write(MsgBase& msgBase, logger::Logger& logger);
+void write(MsgBase& msgBase, chronicle::Writer& writer);
 
 
 } // namespace nioc::messages
