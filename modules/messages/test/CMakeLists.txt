@@ -5,7 +5,7 @@ add_executable(messagesTest messagesTest.cpp)
 target_link_libraries(messagesTest
     GTest::GTest
     GTest::Main
-    nioc::logger
+    nioc::chronicle
     nioc::messages
     nioc::messagesIdl)
 

@@ -10,98 +10,63 @@
 
 namespace nioc::common
 {
-/// @Class      Locked
-/// @brief      A utility to protect a non-atomic type from access contention.
+/// @brief Thread-safe wrapper for a value.
 ///
-/// @details    All operations on the underlying variable Locked::mLockedValue
-///             are issued using lambdas with exactly one parameter as in the
-///             following signatures:
+/// Protects a value from concurrent access across threads. Use lambdas to read or modify safely.
 ///
-///                 1. [](const ValueType& value){ DoSomethingWithValue; return result; };
-///                 2. [](Value value){ DoSomethingWithValue; return result; };
-///                 3. [](Value& value){ DoSomethingWithValue; return result; };
-///                 4. [](Value&&){ DoSomethingWithValue; return result; };
+/// **Key features:**
+/// - Multiple threads can read simultaneously
+/// - Only one thread can write at a time
+/// - Cannot be copied or moved (use copy() or move() instead)
 ///
-///             The underlying variable Locked::mLockedValue is passed as an
-///             argument to the provided lambda after suitably locking the
-///             protecting mutex (Locked::mMutex).
-///             @sa Locked::execute()(...), Locked::cExecute(...), Locked::operator()(...)
+/// **Usage:**
+/// ```
+/// Locked<int> counter(0);
 ///
-///             - NOTE A:
-///                 Lambdas with signature 1 and 2 do not modify the underlying
-///                 value and hence can be used with const-qualified instances
-///                 of this class. Such an operation requires a shared lock only
-///                 as seen on the const-qualified overload of operator()(...).
+/// // Read the value (multiple threads can do this concurrently)
+/// int value = counter([](const auto& val) { return val; });
 ///
-///             - NOTE B:
-///                 Lambdas with signature 3 and 4 may modify the underlying
-///                 value and hence can be only used with non-const-qualified
-///                 variables. Such an operation mandates an exclusive lock
-///                 as seen in the non-const qualified overload of operator()(...).
+/// // Modify the value (exclusive access)
+/// counter([](auto& val) { val++; });
 ///
-///             - Pro-tip:
-///                 To make code easy and more readable, leverage placeholder type
-///                 specifier(auto) to define the lambdas as in examples below.
+/// // Can also return values when modifying
+/// bool wasZero = counter([](auto& val) {
+///   bool result = (val == 0);
+///   val = 42;
+///   return result;
+/// });
+/// ```
 ///
-///                 Read only / const versions:
-///                     Access by const-reference:
-///                         [](const auto& value){ doSomething(); return somethingOrNot(); }
-///                     Access by const-value:
-///                         [](const auto value){ doSomething(); return somethingOrNot(); }
-///                     Access by value:
-///                         [](auto value){ doSomething(); return somethingOrNot(); }
-///
-///                 Read write / non-const versions:
-///                     Access by l-reference:
-///                         [](auto& value){ doSomething(); return somethingOrNot(); }
-///                     Access by r-reference:
-///                         [](auto&& value){ doSomething(); return somethingOrNot(); }
-///
-/// @tparam     ValueTypeT  Type of the underlying variable. Any const qualifiers
-///                         specifiers are discarded.
+/// @tparam ValueTypeT Type of value to protect.
 template<typename ValueTypeT>
 class Locked
 {
 public:
   using ValueType = typename std::remove_const_t<ValueTypeT>;
 
-  /// @brief  Variadic constructor that accepts and forwards any arguments to the
-  ///         constructor of the underlying types.
-  ///
-  /// @tparam Args    Variadic parameter pack accepted by the constructors of
-  ///                 the underlying type a.k.a ValueType
-  ///
-  /// @param  args    Parameter pack to be forwarded as arguments to the
-  ///                 constructor of the underlying value a.k.a Locked::mLockedValue
+  /// @brief Constructs the protected value.
+  /// @param args Arguments forwarded to value constructor.
   template<typename... Args>
   explicit Locked(Args&&... args): mLockedValue{ std::forward<Args>(args)... }
   {
   }
 
-  /// @brief  Deleted copy constructor. Mutexes are not copyable.
   Locked(const Locked&) = delete;
 
-  /// @brief  Deleted move constructor. Mutexes are not movable.
   Locked(Locked&&) noexcept = delete;
 
-  /// @brief  Default destructor.
   ~Locked() = default;
 
-  /// @brief  Deleted copy-assignment. Mutexes do not allow copy-assignment.
   Locked& operator=(const Locked&) = delete;
 
-  /// @brief  Deleted move-assignment. Mutexes do not allow move-assignment.
   Locked& operator=(Locked&&) = delete;
 
-  /// @brief  Executes the operation lambda with Locked::mLockedValue as the argument
-  ///         after acquiring a shared lock (read-lock).
+  /// @brief Reads the value (allows concurrent reads).
   ///
-  /// @tparam Operation   Type of the operating lambda.
+  /// Your lambda receives `const auto&` - you can read but not modify.
   ///
-  /// @param  operation   The operating lambda.
-  ///
-  /// @return Any result returned by the operation is returned to the
-  ///         calling context.
+  /// @param operation Lambda that receives const reference to value.
+  /// @return Whatever your lambda returns.
   template<typename Operation>
   decltype(auto) cExecute(Operation&& operation) const
   {
@@ -109,45 +74,36 @@ public:
     return std::forward<Operation>(operation)(mLockedValue);
   }
 
-  /// @brief  Executes the operation lambda with Locked::mLockedValue as the argument
-  ///         after acquiring a shared lock (read-lock).
+  /// @brief Reads the value (allows concurrent reads).
   ///
-  /// @tparam Operation   Type of the operating lambda.
+  /// Alias for cExecute(). Your lambda receives `const auto&`.
   ///
-  /// @param  operation   The operating lambda.
-  ///
-  /// @return Any result returned by the operation is returned to the
-  ///         calling context.
+  /// @param operation Lambda that receives const reference to value.
+  /// @return Whatever your lambda returns.
   template<typename Operation>
   decltype(auto) execute(Operation&& operation) const
   {
     return cExecute(std::forward<Operation>(operation));
   }
 
-  /// @brief  Executes the operation lambda with Locked::mLockedValue as the argument
-  ///         after acquiring a shared lock (read-lock).
+  /// @brief Reads the value (allows concurrent reads).
   ///
-  /// @tparam Operation   Type of the operating lambda.
+  /// Shorthand: `locked([](const auto& val) { ... })`. Lambda receives `const auto&`.
   ///
-  /// @param  operation   The operating lambda.
-  ///
-  /// @return Any result returned by the operation is returned to the
-  ///         calling context.
+  /// @param operation Lambda that receives const reference to value.
+  /// @return Whatever your lambda returns.
   template<typename Operation>
   decltype(auto) operator()(Operation&& operation) const
   {
     return cExecute(std::forward<Operation>(operation));
   }
 
-  /// @brief  Executes the operation lambda with Locked::mLockedValue as the argument
-  ///         after acquiring an exclusive lock (write-lock).
+  /// @brief Modifies the value (exclusive access).
   ///
-  /// @tparam Operation   Type of the operating lambda.
+  /// Your lambda receives `auto&` - you can read and modify. Only one thread can do this at a time.
   ///
-  /// @param  operation   The operating lambda.
-  ///
-  /// @return Any result returned by the operation is returned to the
-  ///         calling context.
+  /// @param operation Lambda that receives mutable reference to value.
+  /// @return Whatever your lambda returns.
   template<typename Operation>
   decltype(auto) execute(Operation&& operation)
   {
@@ -155,31 +111,24 @@ public:
     return std::forward<Operation>(operation)(mLockedValue);
   }
 
-  /// @brief  Executes the operation lambda with Locked::mLockedValue as the argument
-  ///         after acquiring an exclusive lock (write-lock).
+  /// @brief Modifies the value (exclusive access).
   ///
-  /// @tparam Operation   Type of the operating lambda.
+  /// Shorthand: `locked([](auto& val) { ... })`. Lambda receives `auto&` for modification.
   ///
-  /// @param  operation   The operating lambda.
-  ///
-  /// @return Any result returned by the operation is returned to the
-  ///         calling context.
+  /// @param operation Lambda that receives mutable reference to value.
+  /// @return Whatever your lambda returns.
   template<typename Operation>
   decltype(auto) operator()(Operation&& operation)
   {
     return execute(std::forward<Operation>(operation));
   }
 
-  /// @brief  A convenience operator to copy-assign a value to the underlying type
-  ///         in a thread-safe manner. Of course invocation of this method is
-  ///         only valid when OtherType is copy-assignable to ValueType.
+  /// @brief Replaces the value with a copy.
   ///
-  /// @tparam OtherType   The type of the assigned variable.
-  ///                     Any implicit conversion are performed automatically.
+  /// Thread-safe assignment. Example: `locked = 42;`
   ///
-  /// @param  other       The assigned variable.
-  ///
-  /// @return A reference to self post assignment.
+  /// @param other Value to copy in.
+  /// @return Reference to this.
   template<typename OtherType>
   Locked& operator=(const OtherType& other)
   {
@@ -191,16 +140,12 @@ public:
     return *this;
   }
 
-  /// @brief  A convenience operator to move-assign a value to the underlying type
-  ///         in a thread-safe manner. Of course invocation of this method is
-  ///         only valid when OtherType is move-assignable to ValueType.
+  /// @brief Replaces the value by moving.
   ///
-  /// @tparam OtherType   The type of the assigned variable.
-  ///                     Any implicit conversion are performed automatically.
+  /// Thread-safe move assignment. Example: `locked = std::move(value);`
   ///
-  /// @param  other       The assigned variable that is inadvertently consumed by the move.
-  ///
-  /// @return A reference to self.
+  /// @param other Value to move in.
+  /// @return Reference to this.
   template<typename OtherType>
   Locked& operator=(OtherType&& other)
   {
@@ -213,11 +158,13 @@ public:
     return *this;
   }
 
-  /// @brief  Convenience function to return a copy of the underlying member.
-  /// @return A copy of the underlying member.
+  /// @brief Gets a copy of the protected value.
+  ///
+  /// Use this to extract the value. The Locked itself cannot be copied.
+  ///
+  /// @return Copy of the value.
   ValueType copy() const
   {
-    // Note the copy in the invocation of the lambda.
     return cExecute(
         [](const auto value)
         {
@@ -225,16 +172,13 @@ public:
         });
   }
 
-  /// @brief      Convenience function to extract the underlying member.
+  /// @brief Moves the value out, leaving it in moved-from state.
   ///
-  /// @details    After the extraction, the underlying member is set to state
-  ///             as dictated by the move assignment of the underlying type,
-  ///             a.k.a ValueType.
+  /// The protected value remains valid but unspecified after this.
   ///
-  /// @return     A moved-copy of the underlying member.
+  /// @return Moved value.
   ValueType move()
   {
-    // Without std::move() here, the compiler will attempt to make a copy.
     return execute(
         [](auto& value)
         {
@@ -250,12 +194,11 @@ private:
   ValueType mLockedValue;
 };
 
-/// @brief  Equality check operator.
-/// @tparam ValueType   Underlying value type protected by the Locked type.
-/// @tparam Other       Type of the other operand that is comparable with ValueType.
-/// @param  lockedValue LHS operand.
-/// @param  otherValue  RHS operand.
-/// @return true if the underlying value of lockedValue equals the otherValue, false otherwise.
+/// @brief Compares locked value with another value.
+///
+/// Thread-safe comparison. Example: `if (locked == 42) { ... }`
+///
+/// @return True if equal.
 template<typename ValueType, typename Other>
 constexpr bool operator==(const Locked<ValueType>& lockedValue, const Other& otherValue)
 {
@@ -266,12 +209,11 @@ constexpr bool operator==(const Locked<ValueType>& lockedValue, const Other& oth
       });
 }
 
-/// @brief  Equality check operator.
-/// @tparam Other       Type of the operand that is comparable with @tparam ValueType.
-/// @tparam ValueType   Type of the other operand that is comparable with ValueType.
-/// @param  otherValue  LHS operand.
-/// @param  lockedValue RHS operand.
-/// @return true if the otherValue equals the underlying value of the lockedValue, false otherwise.
+/// @brief Compares value with locked value.
+///
+/// Thread-safe comparison. Example: `if (42 == locked) { ... }`
+///
+/// @return True if equal.
 template<typename Other, typename ValueType>
 constexpr bool operator==(const Other& otherValue, const Locked<ValueType>& lockedValue)
 {
@@ -282,13 +224,11 @@ constexpr bool operator==(const Other& otherValue, const Locked<ValueType>& lock
       });
 }
 
-/// @brief  Inequality check operator.
-/// @tparam ValueType   Underlying value type protected by the Locked type.
-/// @tparam Other       Type of the other operand that is comparable with ValueType.
-/// @param  lockedValue LHS operand.
-/// @param  otherValue  RHS operand.
-/// @return true if the underlying value of the lockedValue is not equal to the otherValue,
-///         false otherwise.
+/// @brief Compares locked value with another value.
+///
+/// Thread-safe inequality check.
+///
+/// @return True if not equal.
 template<typename ValueType, typename Other>
 constexpr bool operator!=(const Locked<ValueType>& lockedValue, const Other& otherValue)
 {
@@ -299,13 +239,11 @@ constexpr bool operator!=(const Locked<ValueType>& lockedValue, const Other& oth
       });
 }
 
-/// @brief  Inequality check operator.
-/// @tparam Other       Type of the operand that is comparable with @ValueType.
-/// @tparam ValueType   Type of the other operand that is comparable with ValueType.
-/// @param  otherValue  LHS operand.
-/// @param  lockedValue RHS operand.
-/// @return true if the otherValue is not equal to the underlying value of the lockedValue,
-///         false otherwise.
+/// @brief Compares value with locked value.
+///
+/// Thread-safe inequality check.
+///
+/// @return True if not equal.
 template<typename Other, typename ValueType>
 constexpr bool operator!=(const Other& otherValue, const Locked<ValueType>& lockedValue)
 {
@@ -316,13 +254,11 @@ constexpr bool operator!=(const Other& otherValue, const Locked<ValueType>& lock
       });
 }
 
-/// @brief  Lesser-than check operator.
-/// @tparam ValueType   Underlying value type protected by the Locked type.
-/// @tparam Other       Type of the other operand that is comparable with ValueType.
-/// @param  lockedValue LHS operand.
-/// @param  otherValue  RHS operand.
-/// @return true if the underlying value of the lockedValue is lesser than the otherValue,
-///         false otherwise.
+/// @brief Compares locked value with another value.
+///
+/// Thread-safe less-than comparison.
+///
+/// @return True if less than.
 template<typename ValueType, typename Other>
 constexpr bool operator<(const Locked<ValueType>& lockedValue, const Other& otherValue)
 {
@@ -333,13 +269,11 @@ constexpr bool operator<(const Locked<ValueType>& lockedValue, const Other& othe
       });
 }
 
-/// @brief  Lesser-than check operator.
-/// @tparam Other       Type of the operand that is comparable with @tparam ValueType.
-/// @tparam ValueType   Type of the other operand that is comparable with ValueType.
-/// @param  otherValue  LHS operand.
-/// @param  lockedValue RHS operand.
-/// @return true if the otherValue is lesser than the underlying value of the lockedValue,
-///         false otherwise.
+/// @brief Compares value with locked value.
+///
+/// Thread-safe less-than comparison.
+///
+/// @return True if less than.
 template<typename Other, typename ValueType>
 constexpr bool operator<(const Other& otherValue, const Locked<ValueType>& lockedValue)
 {
@@ -350,13 +284,11 @@ constexpr bool operator<(const Other& otherValue, const Locked<ValueType>& locke
       });
 }
 
-/// @brief  Lesser-than or equal check operator.
-/// @tparam ValueType   Underlying value type protected by the Locked type.
-/// @tparam Other       Type of the other operand that is comparable with ValueType.
-/// @param  lockedValue LHS operand.
-/// @param  otherValue  RHS operand.
-/// @return true if the underlying value of the lockedValue is lesser than or equal to the
-///         otherValue, false otherwise.
+/// @brief Compares locked value with another value.
+///
+/// Thread-safe less-than-or-equal comparison.
+///
+/// @return True if less than or equal.
 template<typename ValueType, typename Other>
 constexpr bool operator<=(const Locked<ValueType>& lockedValue, const Other& otherValue)
 {
@@ -367,13 +299,11 @@ constexpr bool operator<=(const Locked<ValueType>& lockedValue, const Other& oth
       });
 }
 
-/// @brief  Lesser-than or equal check operator.
-/// @tparam Other       Type of the operand that is comparable with @tparam ValueType.
-/// @tparam ValueType   Type of the other operand that is comparable with ValueType.
-/// @param  otherValue  LHS operand.
-/// @param  lockedValue RHS operand.
-/// @return true if the otherValue is lesser than or equal to the underlying value of the
-///         lockedValue, false otherwise.
+/// @brief Compares value with locked value.
+///
+/// Thread-safe less-than-or-equal comparison.
+///
+/// @return True if less than or equal.
 template<typename Other, typename ValueType>
 constexpr bool operator<=(const Other& otherValue, const Locked<ValueType>& lockedValue)
 {
@@ -384,13 +314,11 @@ constexpr bool operator<=(const Other& otherValue, const Locked<ValueType>& lock
       });
 }
 
-/// @brief  Greater-than check operator.
-/// @tparam ValueType   Underlying value type protected by the Locked type.
-/// @tparam Other       Type of the other operand that is comparable with ValueType.
-/// @param  lockedValue LHS operand.
-/// @param  otherValue  RHS operand.
-/// @return true if the underlying value of lockedValue is greater than the otherValue,
-///         false otherwise.
+/// @brief Compares locked value with another value.
+///
+/// Thread-safe greater-than comparison.
+///
+/// @return True if greater than.
 template<typename ValueType, typename Other>
 constexpr bool operator>(const Locked<ValueType>& lockedValue, const Other& otherValue)
 {
@@ -401,13 +329,11 @@ constexpr bool operator>(const Locked<ValueType>& lockedValue, const Other& othe
       });
 }
 
-/// @brief  Greater-than check operator.
-/// @tparam Other       Type of the operand that is comparable with @tparam ValueType.
-/// @tparam ValueType   Type of the other operand that is comparable with ValueType.
-/// @param  otherValue  LHS operand.
-/// @param  lockedValue RHS operand.
-/// @return true if the otherValue is greater than the underlying value of the lockedValue,
-///         false otherwise.
+/// @brief Compares value with locked value.
+///
+/// Thread-safe greater-than comparison.
+///
+/// @return True if greater than.
 template<typename Other, typename ValueType>
 constexpr bool operator>(const Other& otherValue, const Locked<ValueType>& lockedValue)
 {
@@ -418,13 +344,11 @@ constexpr bool operator>(const Other& otherValue, const Locked<ValueType>& locke
       });
 }
 
-/// @brief  Greater-than or equal check operator.
-/// @tparam ValueType   Underlying value type protected by the Locked type.
-/// @tparam Other       Type of the other operand that is comparable with ValueType.
-/// @param  lockedValue LHS operand.
-/// @param  otherValue  RHS operand.
-/// @return true if the underlying value of lockedValue is greater-than or equal to the otherValue,
-///         false otherwise.
+/// @brief Compares locked value with another value.
+///
+/// Thread-safe greater-than-or-equal comparison.
+///
+/// @return True if greater than or equal.
 template<typename ValueType, typename Other>
 constexpr bool operator>=(const Locked<ValueType>& lockedValue, const Other& otherValue)
 {
@@ -435,13 +359,11 @@ constexpr bool operator>=(const Locked<ValueType>& lockedValue, const Other& oth
       });
 }
 
-/// @brief  Greater-than or equal check operator.
-/// @tparam Other       Type of the operand that is comparable with @tparam ValueType.
-/// @tparam ValueType   Type of the other operand that is comparable with ValueType.
-/// @param  otherValue  LHS operand.
-/// @param  lockedValue RHS operand.
-/// @return true if the otherValue is greater than or equal to the underlying value of the
-///         lockedValue, false otherwise.
+/// @brief Compares value with locked value.
+///
+/// Thread-safe greater-than-or-equal comparison.
+///
+/// @return True if greater than or equal.
 template<typename Other, typename ValueType>
 constexpr bool operator>=(const Other& otherValue, const Locked<ValueType>& lockedValue)
 {

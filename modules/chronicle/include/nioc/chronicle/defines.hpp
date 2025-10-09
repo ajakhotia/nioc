@@ -5,9 +5,13 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include <cmath>
+#include <cstdint>
 
-/// @brief Pi constant for any floating-point type.
-/// @tparam Scalar Floating-point type (float, double, etc.).
-template<typename Scalar>
-constexpr auto kPi = Scalar(M_PI);
+namespace nioc::chronicle
+{
+
+/// @brief Unique identifier for a data channel.
+using ChannelId = std::uint64_t;
+
+
+} // namespace nioc::chronicle

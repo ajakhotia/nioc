@@ -10,8 +10,11 @@
 
 namespace nioc::geometry
 {
-/// @brief  A class representing the concept of a parent frame.
-/// @tparam ParentFrame_ Compile time identity of the frame.
+/// @brief Parent frame type wrapper.
+///
+/// Wraps a frame type to represent parent in a transformation.
+///
+/// @tparam ParentFrame_ Frame type (StaticFrame or DynamicFrame).
 template<typename ParentFrame_>
 class ParentConceptTmpl
 {
@@ -30,8 +33,11 @@ public:
   }
 };
 
-/// @brief  A class representing the concept of a child frame.
-/// @tparam ChildFrame_ Compile time identity of the frame.
+/// @brief Child frame type wrapper.
+///
+/// Wraps a frame type to represent child in a transformation.
+///
+/// @tparam ChildFrame_ Frame type (StaticFrame or DynamicFrame).
 template<typename ChildFrame_>
 class ChildConceptTmpl
 {
@@ -50,7 +56,7 @@ public:
   }
 };
 
-/// @brief  ParentConceptTmpl specialized for the dynamic case.
+/// @brief Parent frame wrapper for runtime-identified frames.
 template<>
 class ParentConceptTmpl<DynamicFrame>
 {
@@ -79,7 +85,7 @@ private:
   ParentFrame mParentFrame;
 };
 
-/// @brief  ChildConceptTmpl specialized for the dynamic case.
+/// @brief Child frame wrapper for runtime-identified frames.
 template<>
 class ChildConceptTmpl<DynamicFrame>
 {

@@ -9,11 +9,13 @@
 
 namespace nioc::common
 {
-/// @brief  Manages an implementation of CacheBase. This class hides the cache implementation
-///         privately and checks for the validity of the cache and resets if the check return
-///         false.
-/// @tparam Cache   The type of cache to be managed. This type must derive from CacheBase and
-///                 must provide access to ControlParameter type and imp
+/// @brief Lazy cache that rebuilds when stale.
+///
+/// Holds a cache and checks if it's still valid on each access. Rebuilds only when needed.
+///
+/// Cache type must provide: `bool validate(args...)` to check validity.
+///
+/// @tparam Cache Type of cache to manage.
 template<typename Cache>
 class CacheManager
 {
@@ -30,6 +32,9 @@ public:
 
   CacheManager& operator=(CacheManager&&) noexcept = default;
 
+  /// @brief Gets the cache, rebuilding if needed.
+  /// @param args Passed to cache constructor and validate() method.
+  /// @return Reference to valid cache.
   template<typename... Args>
   Cache& access(Args&&... args)
   {

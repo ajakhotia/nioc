@@ -10,53 +10,44 @@
 
 namespace nioc::geometry
 {
-/// @brief  A class representing a static reference frame.
+/// @brief A reference frame with compile-time identity.
 ///
-///         @usage
-///             You may either declare (definition is not required) a new type or use an already
-///             existing type that meaningfully represents the frame of reference. Eg. LeftCamera,
-///             IMUDriver, etc.
+/// Use a type to identify the frame. Example:
+/// ```
+/// class World;
+/// using WorldFrame = StaticFrame<World>;
+/// ```
 ///
-///             class World;
-///
-///             MyCompileTimeCheck<StaticFrame<World>, ... > ...
-///
-/// @tparam FrameId_   Compile-time identity of the reference frame.
+/// @tparam FrameId_ Type that identifies this frame.
 template<typename FrameId_>
 class StaticFrame
 {
 public:
-  /// Alias of the underlying identity of the frame.
   using FrameId = FrameId_;
 
-  /// Assert that the FrameId is not a specialization of StaticFrame. This is
-  /// done to avoid nesting specialization such as StaticFrame<StaticFrame<...>>.
   static_assert(
       not(common::isSpecialization<FrameId, StaticFrame>),
-      "FrameId cannot be a specialization of the StaticFrame<> template.");
+      "FrameId cannot be a StaticFrame specialization.");
 
-  /// Deleted destructor to prevent runtime instantiation for a static frame
   ~StaticFrame() = delete;
 
-  /// @brief  Accessor for the name of the frame.
-  /// @return Pretty formatted name of the underlying frame identity.
+  /// @brief Gets the frame name.
+  /// @return Name of the frame.
   static constexpr const std::string_view& name() noexcept
   {
     return kFrameName;
   }
 
 private:
-  /// Name identifying the reference frame. Used at run-time to evaluate
-  /// frame compatibility if one of the operands is a dynamic frame.
   static constexpr const auto kFrameName = common::prettyName<FrameId>();
 };
 
-/// @brief  Class to represent frames with names evaluated at run-time.
+/// @brief A reference frame with runtime identity.
 class DynamicFrame
 {
 public:
-  /// @brief  Constructor.
-  /// @param  frameId   Run-time identity of the reference frame.
+  /// @brief Constructs a dynamic frame.
+  /// @param frameId Name identifying this frame.
   explicit DynamicFrame(std::string frameId) noexcept;
 
   DynamicFrame(const DynamicFrame&) = default;
@@ -69,26 +60,20 @@ public:
 
   DynamicFrame& operator=(DynamicFrame&&) noexcept = default;
 
-  /// @brief  Accessor for the name of the frame.
-  /// @return A string reference that identifies the frame.
+  /// @brief Gets the frame name.
+  /// @return Name of the frame.
   [[nodiscard]] const std::string& name() const noexcept;
 
 private:
-  /// Name that represents the identity of the frame at run-time.
   std::string mFrameId;
 };
 
-/// @brief  Equality check operator.
-/// @param lhs
-/// @param rhs
-/// @return True if the identity of lhs and rhs are the same. False otherwise.
+/// @brief Checks if two frames are the same.
+/// @return True if frames have the same identity.
 bool operator==(const DynamicFrame& lhs, const DynamicFrame& rhs);
 
-
-/// @brief  In-equality check operator.
-/// @param lhs
-/// @param rhs
-/// @return True if the identity of lhs and rhs are not the same. False otherwise.
+/// @brief Checks if two frames are different.
+/// @return True if frames have different identities.
 bool operator!=(const DynamicFrame& lhs, const DynamicFrame& rhs);
 
 

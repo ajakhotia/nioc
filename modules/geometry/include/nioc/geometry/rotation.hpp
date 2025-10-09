@@ -29,139 +29,126 @@ class Eigen::Map<const nioc::geometry::Rotation3<Scalar_>, mapOptions_>;
 
 namespace nioc::geometry
 {
-/// @brief  Abstract rotation representation that leverages modified
-///         rodrigues parametrisation. This representation has the benefits
-///         of being compact. i.e. number of parameters equal number of degrees
-///         of freedom.
+/// @brief Rotation using modified Rodrigues parameters (MRP).
 ///
-///         Note that this representation does not handle rotations of magnitude
-///         2(2k + 1) * pi properly. Do not use this class for representing
-///         generic rotations. Eigen::Quaternion are better suited for that.
-///         This representation is useful for parametrizing rotation that are
-///         corrective in nature and have a small angle of rotation.
+/// Compact 3-parameter representation for rotations. Best for small corrective rotations.
 ///
+/// **Limitations**: Does not handle rotations of magnitude 2(2k+1)π. Use Eigen::Quaternion for
+/// general rotations.
 ///
-///         Reading:
-///             https://link.springer.com/article/10.1007/s10851-017-0765-x#Abs1
+/// **Reading**: https://link.springer.com/article/10.1007/s10851-017-0765-x#Abs1
 ///
-/// @tparam Derived Floating point representation to use.
+/// @tparam Derived CRTP derived type.
 template<typename Derived>
 class Mrp3
 {
 public:
   static constexpr auto kDimensions = 3U;
 
-  /// @brief  Statically casts self to derived type.
-  /// @return ConstRef to the derived type.
   inline constexpr const Derived& cDerived() const noexcept
   {
     return static_cast<const Derived&>(*this);
   }
 
-  /// @brief  Statically casts self to derived type.
-  /// @return ConstRef to the derived type.
   inline constexpr const Derived& derived() const noexcept
   {
     return cDerived();
   }
 
-  /// @brief  Statically casts self to derived type.
-  /// @return NonConstRef to the derived type.
   inline constexpr Derived& derived() noexcept
   {
     return static_cast<Derived&>(*this);
   }
 
-  /// @brief  Provides pointer access to underlying storage.
-  /// @return const Scalar* pointing to the underlying storage. The
-  ///         storage is a 3-element array.
+  /// @brief Gets pointer to parameter data.
+  /// @return Pointer to 3-element parameter array.
   inline decltype(auto) cData() const noexcept
   {
     return cDerived().cParameters().data();
   }
 
-  /// @brief
-  /// @return
+  /// @brief Gets pointer to parameter data (const).
+  /// @return Pointer to parameter array.
   inline decltype(auto) data() const noexcept
   {
     return cData();
   }
 
-  /// @brief
-  /// @return
+  /// @brief Gets pointer to parameter data (mutable).
+  /// @return Pointer to parameter array.
   inline decltype(auto) data() noexcept
   {
     return derived().parameters().data();
   }
 
-  /// @brief
-  /// @return
+  /// @brief Gets x parameter.
+  /// @return X component.
   inline decltype(auto) x() const noexcept
   {
     return cDerived().cParameters().x();
   }
 
-  /// @brief
-  /// @return
+  /// @brief Gets y parameter.
+  /// @return Y component.
   inline decltype(auto) y() const noexcept
   {
     return cDerived().cParameters().y();
   }
 
-  /// @brief
-  /// @return
+  /// @brief Gets z parameter.
+  /// @return Z component.
   inline decltype(auto) z() const noexcept
   {
     return cDerived().cParameters().z();
   }
 
-  /// @brief
-  /// @return
+  /// @brief Gets x parameter (mutable).
+  /// @return X component reference.
   inline decltype(auto) x() noexcept
   {
     return derived().parameters().x();
   }
 
-  /// @brief
-  /// @return
+  /// @brief Gets y parameter (mutable).
+  /// @return Y component reference.
   inline decltype(auto) y() noexcept
   {
     return derived().parameters().y();
   }
 
-  /// @brief
-  /// @return
+  /// @brief Gets z parameter (mutable).
+  /// @return Z component reference.
   inline decltype(auto) z() noexcept
   {
     return derived().parameters().z();
   }
 
-  /// @brief
-  /// @return
+  /// @brief Gets rotation angle.
+  /// @return Angle in radians.
   inline decltype(auto) angle() const noexcept
   {
     using Scalar = typename Derived::Scalar;
     return Scalar(4) * std::atan(cDerived().cParameters().norm());
   }
 
-  /// @brief
-  /// @return
+  /// @brief Gets rotation axis.
+  /// @return Normalized axis vector.
   inline decltype(auto) axis() const noexcept
   {
     return cDerived().cParameters().normalized().eval();
   }
 
-  /// @brief
-  /// @return
+  /// @brief Computes inverse rotation.
+  /// @return Inverted rotation.
   inline decltype(auto) inverse() const
   {
     return Rotation3<typename Derived::Scalar>(
         typename Derived::Scalar(-1) * cDerived().cParameters());
   }
 
-  /// @brief
-  /// @param rhsBase
-  /// @return
+  /// @brief Composes two rotations.
+  /// @param rhsBase Second rotation.
+  /// @return Composed rotation.
   inline decltype(auto) operator*(const Mrp3& rhsBase) const
   {
     using Scalar = typename Derived::Scalar;
@@ -194,10 +181,9 @@ protected:
   Mrp3& operator=(Mrp3&&) noexcept = default;
 };
 
-/// @brief  Stream insertion operator for Mrp3<>
-/// @tparam Derived CRTP template parameter.
-/// @param  stream  Output stream.
-/// @param  mrp3    Input instance.
+/// @brief Outputs rotation to stream.
+/// @param stream Output stream.
+/// @param mrp3 Rotation to output.
 /// @return Modified stream.
 template<typename Derived>
 std::ostream& operator<<(std::ostream& stream, const Mrp3<Derived>& mrp3)
@@ -209,10 +195,11 @@ std::ostream& operator<<(std::ostream& stream, const Mrp3<Derived>& mrp3)
   return stream;
 }
 
-/// @brief  Implementation of 3D rotation representation using modified
-///         rodrigues parametrisation with Eigen::Matrix<..., 3, 1> storage.
+/// @brief 3D rotation with owned storage.
 ///
-/// @tparam Scalar_ Floating type to use.
+/// Stores rotation as 3-element modified Rodrigues parameters.
+///
+/// @tparam Scalar_ Floating-point type (float, double).
 template<typename Scalar_>
 class Rotation3: public Mrp3<Rotation3<Scalar_>>
 {
@@ -233,29 +220,20 @@ public:
 
   using Parameters = Vector3;
 
-  /// @brief  Constructs Rotation3 from triplet of modified rodrigues
-  ///         parameters
-  ///
-  /// @param parameters   Modified rodrigues parameters laid out at
-  ///                     {x, y, z} components.
+  /// @brief Constructs from MRP parameters.
+  /// @param parameters Modified Rodrigues parameters (x, y, z).
   explicit Rotation3(const Vector3& parameters): mParameters(parameters) {}
 
-  /// @brief  Constructs a Rotation3 equivalent to a rotation by angle
-  ///         around an axis.
-  /// @param angle    Angle of rotation.
-  ///
-  /// @param axis     Vector3 along the axis of rotation. The axis is
-  ///                 normalized before use.
+  /// @brief Constructs from angle-axis representation.
+  /// @param angle Rotation angle in radians.
+  /// @param axis Rotation axis (normalized automatically).
   Rotation3(const Scalar angle, const Vector3 axis):
       Rotation3(axis.normalized() * std::tan(angle / Scalar(4)))
   {
   }
 
-  /// @brief  Constructs a Rotation3 equivalent to a rotation represented
-  ///         by a quaternion.
-  ///
-  /// @param quaternion   Quaternion representing the rotation. The
-  ///                     is normalized before use.
+  /// @brief Constructs from quaternion.
+  /// @param quaternion Rotation quaternion (normalized automatically).
   explicit Rotation3(const Quaternion& quaternion):
       Rotation3(std::invoke(
           [](const Quaternion& normalizedQuaternion)
@@ -267,11 +245,8 @@ public:
   {
   }
 
-  /// @brief  Constructs a Rotation equivalent to a rotation represented
-  ///         by an angle-axis.
-  ///
-  /// @param angleAxis    Angle-axis representing the orientation.
-  ///                     The axis component is normalized before use.
+  /// @brief Constructs from Eigen angle-axis.
+  /// @param angleAxis Angle-axis rotation.
   explicit Rotation3(const AngleAxis& angleAxis): Rotation3(angleAxis.angle(), angleAxis.axis()) {}
 
   Rotation3(const Rotation3&) = default;
@@ -284,22 +259,22 @@ public:
 
   Rotation3& operator=(Rotation3&&) noexcept = default;
 
-  /// @brief
-  /// @return
+  /// @brief Gets parameters (const).
+  /// @return Parameter vector.
   inline const Parameters& cParameters() const noexcept
   {
     return mParameters;
   }
 
-  /// @brief
-  /// @return
+  /// @brief Gets parameters (const).
+  /// @return Parameter vector.
   inline const Parameters& parameters() const noexcept
   {
     return cParameters();
   }
 
-  /// @brief
-  /// @return
+  /// @brief Gets parameters (mutable).
+  /// @return Parameter vector reference.
   inline Parameters& parameters() noexcept
   {
     return mParameters;
@@ -312,15 +287,12 @@ private:
 
 } // End of namespace nioc::geometry.
 
-/// @brief  Implementation of 3D rotation representation using modified
-///         rodrigues parametrisation without owning storage. This class
-///         leverages Eigen::Map functionality to create a Vector3 like
-///         view of the underlying data array.
+/// @brief 3D rotation without owned storage.
 ///
-/// @tparam Scalar_     Floating type to use.
+/// Maps existing memory as rotation parameters.
 ///
-/// @tparam mapOptions_ Options to convey storage alignment.
-///
+/// @tparam Scalar_ Floating-point type.
+/// @tparam mapOptions_ Eigen map options.
 template<typename Scalar_, int mapOptions_>
 class Eigen::Map<nioc::geometry::Rotation3<Scalar_>, mapOptions_>:
     public nioc::geometry::Mrp3<Map<nioc::geometry::Rotation3<Scalar_>, mapOptions_>>
@@ -338,8 +310,8 @@ public:
 
   using Parameters = Map<Vector3, mapOptions_>;
 
-  /// @brief
-  /// @param ptr
+  /// @brief Constructs map from pointer.
+  /// @param ptr Pointer to 3-element array.
   explicit Map(Scalar* ptr): mParameters(ptr) {}
 
   Map(const Map&) = default;
@@ -352,29 +324,29 @@ public:
 
   Map& operator=(Map&&) noexcept = default;
 
-  /// @brief
-  /// @return
+  /// @brief Gets parameters (const).
+  /// @return Parameter vector.
   inline const Parameters& cParameters() const noexcept
   {
     return mParameters;
   }
 
-  /// @brief
-  /// @return
+  /// @brief Gets parameters (const).
+  /// @return Parameter vector.
   inline const Parameters& parameters() const noexcept
   {
     return cParameters();
   }
 
-  /// @brief
-  /// @return
+  /// @brief Gets parameters (mutable).
+  /// @return Parameter vector reference.
   inline Parameters& parameters() noexcept
   {
     return mParameters;
   }
 
-  /// @brief  Implicitly convert to Rotation3<> type
-  /// @return Rotation3<> representing same rotation.
+  /// @brief Converts to owned Rotation3.
+  /// @return Rotation3 copy.
   /// NOLINTNEXTLINE (google-explicit-constructor)
   operator nioc::geometry::Rotation3<Scalar>() const noexcept
   {
@@ -385,15 +357,12 @@ private:
   Parameters mParameters;
 };
 
-/// @brief  Implementation of 3D rotation representation using modified
-///         rodrigues parametrisation without owning storage. This class
-///         leverages Eigen::Map functionality to create a const Vector3 like
-///         view of the underlying data array.
+/// @brief Const 3D rotation without owned storage.
 ///
-/// @tparam Scalar_     Floating type to use.
+/// Maps const memory as rotation parameters.
 ///
-/// @tparam mapOptions_ Options to convey storage alignment.
-///
+/// @tparam Scalar_ Floating-point type.
+/// @tparam mapOptions_ Eigen map options.
 template<typename Scalar_, int mapOptions_>
 class Eigen::Map<const nioc::geometry::Rotation3<Scalar_>, mapOptions_>:
     public nioc::geometry::Mrp3<Map<const nioc::geometry::Rotation3<Scalar_>, mapOptions_>>
@@ -411,8 +380,8 @@ public:
 
   using Parameters = Map<const Vector3, mapOptions_>;
 
-  /// @brief
-  /// @param ptr
+  /// @brief Constructs map from const pointer.
+  /// @param ptr Pointer to 3-element array.
   explicit Map(const Scalar* ptr): mParameters(ptr) {}
 
   Map(const Map&) = default;
@@ -425,22 +394,22 @@ public:
 
   Map& operator=(Map&&) noexcept = default;
 
-  /// @brief
-  /// @return
+  /// @brief Gets parameters.
+  /// @return Parameter vector.
   inline const Parameters& cParameters() const noexcept
   {
     return mParameters;
   }
 
-  /// @brief
-  /// @return
+  /// @brief Gets parameters.
+  /// @return Parameter vector.
   inline const Parameters& parameters() const noexcept
   {
     return cParameters();
   }
 
-  /// @brief  Implicitly convert to Rotation3<> type
-  /// @return Rotation3<> representing same rotation.
+  /// @brief Converts to owned Rotation3.
+  /// @return Rotation3 copy.
   /// NOLINTNEXTLINE (google-explicit-constructor)
   operator nioc::geometry::Rotation3<Scalar>() const noexcept
   {

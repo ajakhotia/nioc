@@ -9,30 +9,31 @@
 
 namespace nioc::example
 {
+/// @brief Example class demonstrating library usage.
+///
+/// Simple class showing basic patterns used in the nioc library.
 class Example
 {
 public:
-  /// Default constructor.
+  /// @brief Creates example with default name.
   Example();
 
-  /// Constructor
+  /// @brief Creates example with custom name.
+  /// @param name Name for the example.
   explicit Example(std::string name);
 
-  /// Default copy constructor.
   Example(const Example&) = default;
 
-  /// Default move constructor.
   Example(Example&&) = default;
 
-  /// Default destructor.
   ~Example() = default;
 
-  /// Default copy assignment operator.
   Example& operator=(const Example&) = default;
 
-  /// Default move assignment operator.
   Example& operator=(Example&&) = default;
 
+  /// @brief Gets the example name.
+  /// @return Name string.
   [[nodiscard]] const std::string& name() const noexcept;
 
 private:
