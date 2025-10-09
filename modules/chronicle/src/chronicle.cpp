@@ -11,7 +11,6 @@
 namespace nioc::chronicle
 {
 
-// Writer implementation (formerly Logger)
 Writer::Writer(std::filesystem::path logRoot, const std::size_t maxFileSizeInBytes):
     mLoggerImpl(std::make_unique<LoggerImpl>(std::move(logRoot), maxFileSizeInBytes))
 {
@@ -36,7 +35,6 @@ const std::filesystem::path& Writer::path() const noexcept
   return mLoggerImpl->path();
 }
 
-// Reader implementation (formerly LogReader)
 Reader::Reader(std::filesystem::path logRoot):
     mLogReaderImpl(std::make_unique<LogReaderImpl>(std::move(logRoot)))
 {

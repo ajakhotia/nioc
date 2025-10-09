@@ -15,18 +15,18 @@
 namespace nioc::chronicle
 {
 
-// Writer class (formerly Logger)
+/// @brief Writes data to a chronicle for later playback.
+///
+/// Records data to channels in the order it arrives. This preserves the exact
+/// sequence of events for replay.
 class Writer
 {
 public:
   static constexpr auto kDefaultMaxFileSizeInBytes = 128ULL * 1024ULL * 1024ULL;
 
-  /// @brief Constructor
-  /// @param logRoot      Root directory to store the chronicle at. The chronicle is written to a
-  /// child
-  ///                     directory with the local date and time as the directory name.
-  ///
-  /// @param maxFileSizeInBytes     Size of files allocated to store the data.
+  /// @brief Constructs a Writer.
+  /// @param logRoot Root directory for the chronicle. A timestamped subdirectory will be created.
+  /// @param maxFileSizeInBytes Maximum size of individual data files.
   explicit Writer(
       std::filesystem::path logRoot = std::filesystem::temp_directory_path() / "niocLogs",
       std::size_t maxFileSizeInBytes = kDefaultMaxFileSizeInBytes);
@@ -41,10 +41,18 @@ public:
 
   Writer& operator=(Writer&&) noexcept = delete;
 
+  /// @brief Writes a data frame to a channel.
+  /// @param channelId Channel identifier.
+  /// @param data Data to write.
   void write(ChannelId channelId, const std::span<const std::byte>& data);
 
+  /// @brief Writes multiple data spans as a single frame to a channel.
+  /// @param channelId Channel identifier.
+  /// @param data Data spans to write as one frame.
   void write(ChannelId channelId, const std::vector<std::span<const std::byte>>& data);
 
+  /// @brief Gets the chronicle directory path.
+  /// @return Path to the chronicle directory.
   [[nodiscard]] const std::filesystem::path& path() const noexcept;
 
 private:
@@ -52,18 +60,24 @@ private:
   std::unique_ptr<LoggerImpl> mLoggerImpl;
 };
 
-// Entry read from chronicle
+/// @brief A single entry from a chronicle.
+///
+/// Contains the channel ID and data for one frame.
 struct Entry
 {
-  ChannelId mChannelId;
+  ChannelId mChannelId; ///< Channel identifier.
 
-  MemoryCrate mMemoryCrate;
+  MemoryCrate mMemoryCrate; ///< Frame data.
 };
 
-// Reader class (formerly LogReader)
+/// @brief Reads data from a chronicle for playback.
+///
+/// Reads entries in the same order they were written.
 class Reader
 {
 public:
+  /// @brief Constructs a Reader.
+  /// @param logRoot Path to the chronicle directory.
   explicit Reader(std::filesystem::path logRoot);
 
   Reader(const Reader&) = delete;
@@ -76,6 +90,9 @@ public:
 
   Reader& operator=(Reader&& reader) noexcept;
 
+  /// @brief Reads the next entry.
+  /// @return Entry with channel ID and data.
+  /// @throws std::runtime_error When end of chronicle is reached.
   Entry read();
 
 private:
