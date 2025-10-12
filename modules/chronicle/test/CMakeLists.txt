@@ -5,8 +5,8 @@ find_package(Boost CONFIG REQUIRED COMPONENTS iostreams)
 
 add_executable(chronicleTest
     boostMMapExampleTest.cpp
-    channelTest.cpp
-    channelReaderTest.cpp
+    streamChannelWriterTest.cpp
+    mmapChannelReaderTest.cpp
     loggerTest.cpp
     logReaderTest.cpp
     utilsTest.cpp)

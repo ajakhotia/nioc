@@ -17,11 +17,11 @@ namespace nioc::chronicle
 class MemoryCrate
 {
 public:
-  class MemoryCrateImpl;
+  class MmapMemoryCrate;
 
   /// @brief Constructs a MemoryCrate.
-  /// @param memoryCrateImplPtr Implementation pointer.
-  explicit MemoryCrate(std::shared_ptr<MemoryCrateImpl> memoryCrateImplPtr);
+  /// @param mmapMemoryCratePtr Implementation pointer.
+  explicit MemoryCrate(std::shared_ptr<MmapMemoryCrate> mmapMemoryCratePtr);
 
   MemoryCrate(const MemoryCrate& memoryCrate);
 
@@ -38,7 +38,7 @@ public:
   [[nodiscard]] std::span<const std::byte> span() const;
 
 private:
-  std::shared_ptr<MemoryCrateImpl> mMemoryCrateImplPtr;
+  std::shared_ptr<MmapMemoryCrate> mMmapMemoryCratePtr;
 };
 
 

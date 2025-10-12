@@ -51,9 +51,9 @@ TEST(LoggerUtils, padString)
 
 TEST(LoggerUtils, buildRollName)
 {
-  EXPECT_EQ("roll00000000000000000000.nio", buildRollName(0U));
-  EXPECT_EQ("roll00000000000000000001.nio", buildRollName(1U));
-  EXPECT_EQ("roll00000003519894239162.nio", buildRollName(3519894239162U));
+  EXPECT_EQ("roll00000000000000000000.nioc", buildRollName(0U));
+  EXPECT_EQ("roll00000000000000000001.nioc", buildRollName(1U));
+  EXPECT_EQ("roll00000003519894239162.nioc", buildRollName(3519894239162U));
 }
 
 TEST(LoggerUtils, toHexString)

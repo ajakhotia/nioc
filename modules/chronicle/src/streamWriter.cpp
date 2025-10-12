@@ -3,7 +3,7 @@
 // Project  : nioc
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-#include "loggerImpl.hpp"
+#include "streamWriter.hpp"
 #include "utils.hpp"
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
@@ -39,7 +39,7 @@ fs::path checkAndSetupLogDirectory(fs::path logRoot)
 
 } // End of anonymous namespace.
 
-Writer::LoggerImpl::LoggerImpl(std::filesystem::path logRoot, const std::size_t maxFileSizeInBytes):
+Writer::StreamWriter::StreamWriter(std::filesystem::path logRoot, const std::size_t maxFileSizeInBytes):
     mLogDirectory(checkAndSetupLogDirectory(std::move(logRoot))),
     mMaxFileSizeInBytes(maxFileSizeInBytes),
     mLockedSequenceFile(mLogDirectory / kSequenceFileName)
@@ -50,7 +50,7 @@ Writer::LoggerImpl::LoggerImpl(std::filesystem::path logRoot, const std::size_t 
       mMaxFileSizeInBytes);
 }
 
-void Writer::LoggerImpl::write(const ChannelId channelId, const std::span<const std::byte>& data)
+void Writer::StreamWriter::write(const ChannelId channelId, const std::span<const std::byte>& data)
 {
   // TODO(ajakhotia): This can be improved to use fewer locks and avoid race conditions.
   mLockedSequenceFile(
@@ -61,13 +61,13 @@ void Writer::LoggerImpl::write(const ChannelId channelId, const std::span<const 
 
   auto& lockedChannel = acquireChannel(channelId);
   lockedChannel(
-      [&](Channel& channel)
+      [&](StreamChannelWriter& channel)
       {
         channel.writeFrame(data);
       });
 }
 
-void Writer::LoggerImpl::write(
+void Writer::StreamWriter::write(
     const ChannelId channelId,
     const std::vector<std::span<const std::byte>>& data)
 {
@@ -80,13 +80,13 @@ void Writer::LoggerImpl::write(
 
   auto& lockedChannel = acquireChannel(channelId);
   lockedChannel(
-      [&](Channel& channel)
+      [&](StreamChannelWriter& channel)
       {
         channel.writeFrame(data);
       });
 }
 
-Writer::LoggerImpl::LockedChannel& Writer::LoggerImpl::acquireChannel(const ChannelId channelId)
+Writer::StreamWriter::LockedChannel& Writer::StreamWriter::acquireChannel(const ChannelId channelId)
 {
   return mLockedChannelPtrMap(
       [&](ChannelPtrMap& channelPtrMap) -> LockedChannel&
@@ -104,7 +104,7 @@ Writer::LoggerImpl::LockedChannel& Writer::LoggerImpl::acquireChannel(const Chan
       });
 }
 
-const std::filesystem::path& Writer::LoggerImpl::path() const noexcept
+const std::filesystem::path& Writer::StreamWriter::path() const noexcept
 {
   return mLogDirectory;
 }

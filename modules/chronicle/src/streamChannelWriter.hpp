@@ -13,26 +13,26 @@
 namespace nioc::chronicle
 {
 
-class Channel
+class StreamChannelWriter
 {
 public:
   static constexpr auto kDefaultMaxFileSizeInBytes = 128ULL * 1024ULL * 1024ULL;
 
   using ConstByteSpan = std::span<const std::byte>;
 
-  explicit Channel(
+  explicit StreamChannelWriter(
       std::filesystem::path logRoot,
       std::uint64_t maxFileSizeInBytes = kDefaultMaxFileSizeInBytes);
 
-  Channel(const Channel&) = delete;
+  StreamChannelWriter(const StreamChannelWriter&) = delete;
 
-  Channel(Channel&&) noexcept = default;
+  StreamChannelWriter(StreamChannelWriter&&) noexcept = default;
 
-  ~Channel() = default;
+  ~StreamChannelWriter() = default;
 
-  Channel& operator=(const Channel&) = delete;
+  StreamChannelWriter& operator=(const StreamChannelWriter&) = delete;
 
-  Channel& operator=(Channel&&) noexcept = default;
+  StreamChannelWriter& operator=(StreamChannelWriter&&) noexcept = default;
 
   void writeFrame(const ConstByteSpan& data);
 

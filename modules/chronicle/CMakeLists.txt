@@ -32,20 +32,20 @@ add_exported_library(
     EXPORT
         niocTargets
     SOURCES
-        src/channel.cpp
-        src/channelReader.cpp
         src/chronicle.cpp
-        src/logReaderImpl.cpp
-        src/loggerImpl.cpp
         src/memoryCrate.cpp
-        src/memoryCrateImpl.cpp
+        src/mmapChannelReader.cpp
+        src/mmapMemoryCrate.cpp
+        src/mmapReader.cpp
+        src/streamChannelWriter.cpp
+        src/streamWriter.cpp
         src/utils.cpp
     HEADERS
-        PRIVATE src/channel.hpp
-        PRIVATE src/channelReader.hpp
-        PRIVATE src/logReaderImpl.hpp
-        PRIVATE src/loggerImpl.hpp
-        PRIVATE src/memoryCrateImpl.hpp
+        PRIVATE src/mmapChannelReader.hpp
+        PRIVATE src/mmapMemoryCrate.hpp
+        PRIVATE src/mmapReader.hpp
+        PRIVATE src/streamChannelWriter.hpp
+        PRIVATE src/streamWriter.hpp
         PRIVATE src/utils.hpp
         PUBLIC include/nioc/chronicle/chronicle.hpp
         PUBLIC include/nioc/chronicle/defines.hpp

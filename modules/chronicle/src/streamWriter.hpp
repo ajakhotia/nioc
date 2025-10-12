@@ -5,7 +5,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include "channel.hpp"
+#include "streamChannelWriter.hpp"
 #include <nioc/chronicle/chronicle.hpp>
 
 #include <nioc/common/locked.hpp>
@@ -14,24 +14,24 @@
 namespace nioc::chronicle
 {
 
-class Writer::LoggerImpl
+class Writer::StreamWriter
 {
 public:
-  using LockedChannel = common::Locked<Channel>;
+  using LockedChannel = common::Locked<StreamChannelWriter>;
 
   using ChannelPtrMap = std::unordered_map<ChannelId, std::unique_ptr<LockedChannel>>;
 
-  explicit LoggerImpl(std::filesystem::path logRoot, std::size_t maxFileSizeInBytes);
+  explicit StreamWriter(std::filesystem::path logRoot, std::size_t maxFileSizeInBytes);
 
-  LoggerImpl(const LoggerImpl&) = delete;
+  StreamWriter(const StreamWriter&) = delete;
 
-  LoggerImpl(LoggerImpl&&) noexcept = delete;
+  StreamWriter(StreamWriter&&) noexcept = delete;
 
-  ~LoggerImpl() = default;
+  ~StreamWriter() = default;
 
-  LoggerImpl& operator=(const LoggerImpl&) = delete;
+  StreamWriter& operator=(const StreamWriter&) = delete;
 
-  LoggerImpl& operator=(LoggerImpl&&) noexcept = delete;
+  StreamWriter& operator=(StreamWriter&&) noexcept = delete;
 
   void write(ChannelId channelId, const std::span<const std::byte>& data);
 

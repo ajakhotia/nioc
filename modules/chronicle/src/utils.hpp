@@ -18,7 +18,7 @@ namespace nioc::chronicle
 static constexpr auto kRollFileNamePrefix = "roll";
 
 /// File extension of a data roll within a channel.
-static constexpr auto kRollFileNameExtension = ".nio";
+static constexpr auto kRollFileNameExtension = ".nioc";
 
 /// Length of the padded roll number string.
 static constexpr auto kPaddedRollNumberLength = 20UL;

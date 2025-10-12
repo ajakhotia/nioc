@@ -4,7 +4,7 @@
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include <channel.hpp>
+#include <streamChannelWriter.hpp>
 #include <gtest/gtest.h>
 #include <numeric>
 #include <utils.hpp>
@@ -30,28 +30,28 @@ std::vector<char> generateTestDataFrame()
 
 } // namespace
 
-TEST(Channel, construction)
+TEST(StreamChannelWriter, construction)
 {
   const auto testLogDirectoryPath = fs::temp_directory_path() / "niocChannelTest";
   fs::remove_all(testLogDirectoryPath);
 
-  EXPECT_NO_THROW((Channel(testLogDirectoryPath, kMaxFileSizeInBytes)));
-  EXPECT_THROW((Channel(testLogDirectoryPath)), std::logic_error);
+  EXPECT_NO_THROW((StreamChannelWriter(testLogDirectoryPath, kMaxFileSizeInBytes)));
+  EXPECT_THROW((StreamChannelWriter(testLogDirectoryPath)), std::logic_error);
 
   fs::remove_all(testLogDirectoryPath);
-  EXPECT_NO_THROW((Channel(testLogDirectoryPath)));
+  EXPECT_NO_THROW((StreamChannelWriter(testLogDirectoryPath)));
 
   fs::remove_all(testLogDirectoryPath);
 }
 
-TEST(Channel, rollAndIndexFileSizeChecks)
+TEST(StreamChannelWriter, rollAndIndexFileSizeChecks)
 {
   const auto testLogDirectoryPath = fs::temp_directory_path() / "niocChannelTest";
   fs::remove_all(testLogDirectoryPath);
 
   // Create a channel and write frames to it.
   {
-    Channel channel(testLogDirectoryPath, kMaxFileSizeInBytes);
+    StreamChannelWriter channel(testLogDirectoryPath, kMaxFileSizeInBytes);
 
     const auto data = generateTestDataFrame();
     for(size_t ii = 0U; ii < kNumFramesToWrite; ++ii)

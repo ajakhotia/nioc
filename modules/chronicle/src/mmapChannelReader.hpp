@@ -13,7 +13,7 @@
 namespace nioc::chronicle
 {
 
-class ChannelReader
+class MmapChannelReader
 {
 public:
   using MappedFile = boost::iostreams::mapped_file_source;
@@ -26,17 +26,17 @@ public:
     MappedFilePtr mMappedFilePtr;
   };
 
-  explicit ChannelReader(std::filesystem::path logRoot);
+  explicit MmapChannelReader(std::filesystem::path logRoot);
 
-  ChannelReader(const ChannelReader&) = delete;
+  MmapChannelReader(const MmapChannelReader&) = delete;
 
-  ChannelReader(ChannelReader&&) = default;
+  MmapChannelReader(MmapChannelReader&&) = default;
 
-  ~ChannelReader() = default;
+  ~MmapChannelReader() = default;
 
-  ChannelReader& operator=(const ChannelReader&) = delete;
+  MmapChannelReader& operator=(const MmapChannelReader&) = delete;
 
-  ChannelReader& operator=(ChannelReader&&) = default;
+  MmapChannelReader& operator=(MmapChannelReader&&) = default;
 
   [[nodiscard]] MemoryCrate read();
 

@@ -56,8 +56,8 @@ public:
   [[nodiscard]] const std::filesystem::path& path() const noexcept;
 
 private:
-  class LoggerImpl;
-  std::unique_ptr<LoggerImpl> mLoggerImpl;
+  class StreamWriter;
+  std::unique_ptr<StreamWriter> mStreamWriter;
 };
 
 /// @brief A single entry from a chronicle.
@@ -96,8 +96,8 @@ public:
   Entry read();
 
 private:
-  class LogReaderImpl;
-  std::unique_ptr<LogReaderImpl> mLogReaderImpl;
+  class MmapReader;
+  std::unique_ptr<MmapReader> mMmapReader;
 };
 
 } // namespace nioc::chronicle

@@ -5,7 +5,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include "channelReader.hpp"
+#include "mmapChannelReader.hpp"
 #include <nioc/chronicle/chronicle.hpp>
 
 #include <boost/iostreams/device/mapped_file.hpp>
@@ -15,25 +15,25 @@
 namespace nioc::chronicle
 {
 
-class Reader::LogReaderImpl
+class Reader::MmapReader
 {
 public:
-  explicit LogReaderImpl(std::filesystem::path logRoot);
+  explicit MmapReader(std::filesystem::path logRoot);
 
-  LogReaderImpl(const LogReaderImpl&) = delete;
+  MmapReader(const MmapReader&) = delete;
 
-  LogReaderImpl(LogReaderImpl&&) = delete;
+  MmapReader(MmapReader&&) = delete;
 
-  ~LogReaderImpl() = default;
+  ~MmapReader() = default;
 
-  LogReaderImpl& operator=(const LogReaderImpl&) = delete;
+  MmapReader& operator=(const MmapReader&) = delete;
 
-  LogReaderImpl& operator=(LogReaderImpl&&) = delete;
+  MmapReader& operator=(MmapReader&&) = delete;
 
   Entry read();
 
 private:
-  using ChannelReaderMap = std::unordered_map<ChannelId, ChannelReader>;
+  using ChannelReaderMap = std::unordered_map<ChannelId, MmapChannelReader>;
 
   std::filesystem::path mLogRoot;
 
@@ -43,7 +43,7 @@ private:
 
   common::Locked<ChannelReaderMap> mLockedChannelReaderMap;
 
-  ChannelReader& acquireChannel(ChannelId channelId);
+  MmapChannelReader& acquireChannel(ChannelId channelId);
 };
 
 

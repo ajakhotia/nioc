@@ -4,18 +4,18 @@
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "logReaderImpl.hpp"
+#include "mmapReader.hpp"
 #include "utils.hpp"
 
 namespace nioc::chronicle
 {
 
-Reader::LogReaderImpl::LogReaderImpl(std::filesystem::path logRoot):
+Reader::MmapReader::MmapReader(std::filesystem::path logRoot):
     mLogRoot(validatePath(std::move(logRoot))), mSequenceFile(mLogRoot / kSequenceFileName)
 {
 }
 
-Entry Reader::LogReaderImpl::read()
+Entry Reader::MmapReader::read()
 {
   const auto indexPtrOffset = mNextReadIndex * sizeof(SequenceEntry);
 
@@ -34,14 +34,14 @@ Entry Reader::LogReaderImpl::read()
   return { .mChannelId = sequenceEntry.mChannelId, .mMemoryCrate = channelReader.read() };
 }
 
-ChannelReader& Reader::LogReaderImpl::acquireChannel(ChannelId channelId)
+MmapChannelReader& Reader::MmapReader::acquireChannel(ChannelId channelId)
 {
   return mLockedChannelReaderMap(
-      [&](ChannelReaderMap& channelReaderMap) -> ChannelReader&
+      [&](ChannelReaderMap& channelReaderMap) -> MmapChannelReader&
       {
         if(not channelReaderMap.contains(channelId))
         {
-          channelReaderMap.try_emplace(channelId, ChannelReader(mLogRoot / toHexString(channelId)));
+          channelReaderMap.try_emplace(channelId, MmapChannelReader(mLogRoot / toHexString(channelId)));
         }
 
         return channelReaderMap.at(channelId);
