@@ -37,7 +37,7 @@ public:
 
   void writeFrame(const ConstByteSpan& data) override;
 
-  void writeFrame(const std::vector<ConstByteSpan>& dataCollection) override;
+  void writeFrame(std::span<const ConstByteSpan> dataCollection) override;
 
 private:
   std::filesystem::path mLogRoot;

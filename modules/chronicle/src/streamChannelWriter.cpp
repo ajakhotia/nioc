@@ -64,7 +64,7 @@ void StreamChannelWriter::writeFrame(const ConstByteSpan& data)
   }
 }
 
-void StreamChannelWriter::writeFrame(const std::vector<ConstByteSpan>& dataCollection)
+void StreamChannelWriter::writeFrame(std::span<const ConstByteSpan> dataCollection)
 {
   const auto sizeInBytes = computeTotalSizeInBytes(dataCollection);
   rollCheckAndIndex(sizeInBytes);

@@ -13,7 +13,6 @@
 #include <nioc/common/locked.hpp>
 #include <span>
 #include <unordered_map>
-#include <vector>
 
 namespace nioc::chronicle
 {
@@ -55,7 +54,7 @@ public:
   /// @brief Writes multiple data spans as a single frame to a channel.
   /// @param channelId Channel identifier.
   /// @param data Data spans to write as one frame.
-  void write(ChannelId channelId, const std::vector<std::span<const std::byte>>& data);
+  void write(ChannelId channelId, std::span<const std::span<const std::byte>> data);
 
   /// @brief Gets the chronicle directory path.
   /// @return Path to the chronicle directory.

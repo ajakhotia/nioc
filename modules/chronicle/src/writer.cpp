@@ -75,7 +75,7 @@ void Writer::write(const ChannelId channelId, const std::span<const std::byte>& 
       });
 }
 
-void Writer::write(const ChannelId channelId, const std::vector<std::span<const std::byte>>& data)
+void Writer::write(const ChannelId channelId, std::span<const std::span<const std::byte>> data)
 {
   // TODO(ajakhotia): This can be improved to use fewer locks and avoid race conditions.
   mLockedSequenceFile(

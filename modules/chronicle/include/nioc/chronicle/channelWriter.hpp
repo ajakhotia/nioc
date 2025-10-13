@@ -6,7 +6,6 @@
 #pragma once
 
 #include <span>
-#include <vector>
 
 namespace nioc::chronicle
 {
@@ -37,7 +36,7 @@ public:
 
   /// @brief Writes multiple data spans as a single frame.
   /// @param dataCollection Data spans to write as one frame.
-  virtual void writeFrame(const std::vector<ConstByteSpan>& dataCollection) = 0;
+  virtual void writeFrame(std::span<const ConstByteSpan> dataCollection) = 0;
 };
 
 } // namespace nioc::chronicle

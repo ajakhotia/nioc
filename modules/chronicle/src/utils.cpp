@@ -44,7 +44,7 @@ bool fileHasSpace(
   return (maxFileSizeInBytes - file.tellp()) >= spaceRequired;
 }
 
-std::uint64_t computeTotalSizeInBytes(const std::vector<std::span<const std::byte>>& dataCollection)
+std::uint64_t computeTotalSizeInBytes(std::span<const std::span<const std::byte>> dataCollection)
 {
   return std::accumulate(
       dataCollection.begin(),

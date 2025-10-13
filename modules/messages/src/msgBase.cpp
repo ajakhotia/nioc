@@ -8,6 +8,7 @@
 #include <capnp/message.h>
 #include <cassert>
 #include <nioc/messages/msgBase.hpp>
+#include <vector>
 
 namespace nioc::messages
 {
@@ -33,8 +34,9 @@ ConstByteSpan convert(const ConstWordArrayPtr& data)
 
 } // namespace
 
-MMappedMessageReader::MMappedMessageReader(chronicle::MemoryCrate memoryCrate):
-    MemoryCrate(std::move(memoryCrate)), FlatArrayMessageReader(convert(span()))
+MMappedMessageReader::MMappedMessageReader(MemoryCrate memoryCrate):
+    MemoryCrate(std::move(memoryCrate)),
+    FlatArrayMessageReader(convert(span()))
 {
 }
 
@@ -87,9 +89,8 @@ void write(MsgBase& msgBase, chronicle::Writer& writer)
   spanCollection.reserve(segments.size() + 1);
 
   spanCollection.emplace_back(std::as_bytes(std::span(table)));
-  std::transform(
-      segments.begin(),
-      segments.end(),
+  std::ranges::transform(
+      segments,
       std::back_inserter(spanCollection),
       [](const ConstWordArrayPtr& arrayPtr)
       {

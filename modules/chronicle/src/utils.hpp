@@ -107,8 +107,7 @@ fileHasSpace(std::ofstream& file, std::uint64_t spaceRequired, std::uint64_t max
 /// @brief  Compute the sum of the length of each byte span in the collection.
 /// @param  dataCollection A collection of ConstByteSpan.
 /// @return Total size in bytes.
-std::uint64_t
-computeTotalSizeInBytes(const std::vector<std::span<const std::byte>>& dataCollection);
+std::uint64_t computeTotalSizeInBytes(std::span<const std::span<const std::byte>> dataCollection);
 
 /// @brief  Struct used to provide read/write functionality for a give type.
 /// @tparam ValueType

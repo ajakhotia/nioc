@@ -24,7 +24,7 @@ class MMappedMessageReader final:
 public:
   /// @brief Constructs reader from chronicle data.
   /// @param memoryCrate Chronicle data container.
-  explicit MMappedMessageReader(chronicle::MemoryCrate memoryCrate);
+  explicit MMappedMessageReader(MemoryCrate memoryCrate);
 
   MMappedMessageReader(const MMappedMessageReader&) = delete;
 
