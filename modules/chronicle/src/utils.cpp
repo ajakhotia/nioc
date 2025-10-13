@@ -13,7 +13,7 @@
 namespace nioc::chronicle
 {
 
-std::string iso8601UtcFormat(std::chrono::system_clock::time_point timePoint)
+std::string iso8601UtcFormat(const std::chrono::system_clock::time_point timePoint)
 {
   return std::format("{:%FT%TZ}", timePoint);
 }
@@ -44,7 +44,8 @@ bool fileHasSpace(
   return (maxFileSizeInBytes - file.tellp()) >= spaceRequired;
 }
 
-std::uint64_t computeTotalSizeInBytes(std::span<const std::span<const std::byte>> dataCollection)
+std::uint64_t
+computeTotalSizeInBytes(const std::span<const std::span<const std::byte>> dataCollection)
 {
   return std::accumulate(
       dataCollection.begin(),
@@ -57,7 +58,7 @@ std::uint64_t computeTotalSizeInBytes(std::span<const std::span<const std::byte>
 }
 
 template<>
-void ReadWriteUtil<SequenceEntry>::write(std::ostream& stream, SequenceEntry value)
+void ReadWriteUtil<SequenceEntry>::write(std::ostream& stream, const SequenceEntry value)
 {
   boost::endian::native_to_little_inplace(value.mChannelId);
   stream.write(std::bit_cast<const char*>(&value), sizeof(value));
@@ -72,7 +73,7 @@ SequenceEntry ReadWriteUtil<SequenceEntry>::read(const char* ptr, std::uint64_t 
 }
 
 template<>
-void ReadWriteUtil<IndexEntry>::write(std::ostream& stream, IndexEntry value)
+void ReadWriteUtil<IndexEntry>::write(std::ostream& stream, const IndexEntry value)
 {
   boost::endian::native_to_little_inplace(value.mRollId);
   boost::endian::native_to_little_inplace(value.mRollPosition);
@@ -95,7 +96,7 @@ IndexEntry ReadWriteUtil<IndexEntry>::read(const char* ptr, const std::uint64_t 
 template<>
 void ReadWriteUtil<std::span<const std::byte>>::write(
     std::ostream& stream,
-    std::span<const std::byte> value)
+    const std::span<const std::byte> value)
 {
   stream.write(std::bit_cast<const char*>(value.data()), std::ssize(value));
 }

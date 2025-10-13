@@ -20,7 +20,7 @@ public:
 
   using MappedFilePtr = std::shared_ptr<MappedFile>;
 
-  MmapMemoryCrate(MappedFilePtr mappedFilePtr, const IndexEntry& index);
+  MmapMemoryCrate(MappedFilePtr mappedFilePtr, const IndexEntry& indexEntry);
 
   MmapMemoryCrate(const MmapMemoryCrate&) = default;
 

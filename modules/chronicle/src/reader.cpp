@@ -43,7 +43,7 @@ Entry Reader::read()
       });
 }
 
-ChannelReader& Reader::acquireChannel(ChannelId channelId, ChannelReaderMap& channelReaderMap)
+ChannelReader& Reader::acquireChannel(const ChannelId channelId, ChannelReaderMap& channelReaderMap)
 {
   if(not channelReaderMap.contains(channelId))
   {

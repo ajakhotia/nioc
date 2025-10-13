@@ -23,9 +23,11 @@ ConstByteSpan retrieveSpan(const MappedFile& mappedFile, const IndexEntry& index
 
 } // namespace
 
-MemoryCrate::MmapMemoryCrate::MmapMemoryCrate(MappedFilePtr mappedFilePtr, const IndexEntry& index):
+MemoryCrate::MmapMemoryCrate::MmapMemoryCrate(
+    MappedFilePtr mappedFilePtr,
+    const IndexEntry& indexEntry):
     mMappedFilePtr(std::move(mappedFilePtr)),
-    mSpan(retrieveSpan(*mMappedFilePtr, index))
+    mSpan(retrieveSpan(*mMappedFilePtr, indexEntry))
 {
 }
 
