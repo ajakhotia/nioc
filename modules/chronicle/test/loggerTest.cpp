@@ -30,7 +30,10 @@ std::vector<char> generateData()
 TEST(Writer, construction)
 {
   EXPECT_NO_THROW(Writer writer);
-  EXPECT_NO_THROW(Writer writer(fs::temp_directory_path() / "niocUnitTestLogs", 1024UL * 1024UL));
+  EXPECT_NO_THROW(Writer writer(
+      fs::temp_directory_path() / "niocUnitTestLogs",
+      IoMechanism::Stream,
+      1024UL * 1024UL));
 }
 
 TEST(Writer, writeSpan)

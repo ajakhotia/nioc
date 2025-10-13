@@ -41,7 +41,11 @@ fs::path checkAndSetupLogDirectory(fs::path logRoot)
 
 } // End of anonymous namespace.
 
-Writer::Writer(std::filesystem::path logRoot, const std::size_t maxFileSizeInBytes):
+Writer::Writer(
+    std::filesystem::path logRoot,
+    const IoMechanism ioMechanism,
+    const std::size_t maxFileSizeInBytes):
+    mIoMechanism(ioMechanism),
     mLogDirectory(checkAndSetupLogDirectory(std::move(logRoot))),
     mMaxFileSizeInBytes(maxFileSizeInBytes),
     mLockedSequenceFile(mLogDirectory / kSequenceFileName)
@@ -92,10 +96,28 @@ ChannelWriter& Writer::acquireChannel(const ChannelId channelId, ChannelPtrMap& 
 {
   if(not channelPtrMap.contains(channelId))
   {
-    channelPtrMap.try_emplace(
-        channelId,
-        std::make_unique<StreamChannelWriter>(
-            mLogDirectory / toHexString(channelId), mMaxFileSizeInBytes));
+    std::unique_ptr<ChannelWriter> channelWriter;
+
+    switch(mIoMechanism)
+    {
+    case IoMechanism::Stream:
+      channelWriter = std::make_unique<StreamChannelWriter>(
+          mLogDirectory / toHexString(channelId),
+          mMaxFileSizeInBytes);
+      break;
+
+    case IoMechanism::Mmap:
+      throw std::invalid_argument(
+          "[Chronicle::Writer] IoMechanism '" + stringFromIoMechanism(IoMechanism::Mmap) +
+          "' is not supported for writing. Use '" + stringFromIoMechanism(IoMechanism::Stream) + "' instead.");
+
+    default:
+      throw std::invalid_argument(
+          "[Chronicle::Writer] Unknown IoMechanism with value: " +
+          std::to_string(static_cast<int>(mIoMechanism)));
+    }
+
+    channelPtrMap.try_emplace(channelId, std::move(channelWriter));
   }
 
   return *channelPtrMap.at(channelId);

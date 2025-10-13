@@ -11,8 +11,10 @@
 namespace nioc::chronicle
 {
 
-Reader::Reader(std::filesystem::path logRoot):
-    mLogRoot(validatePath(std::move(logRoot))), mSequenceFile(mLogRoot / kSequenceFileName)
+Reader::Reader(std::filesystem::path logRoot, const IoMechanism ioMechanism):
+    mIoMechanism(ioMechanism),
+    mLogRoot(validatePath(std::move(logRoot))),
+    mSequenceFile(mLogRoot / kSequenceFileName)
 {
 }
 
@@ -45,8 +47,26 @@ ChannelReader& Reader::acquireChannel(ChannelId channelId, ChannelReaderMap& cha
 {
   if(not channelReaderMap.contains(channelId))
   {
-    channelReaderMap.try_emplace(
-        channelId, std::make_unique<MmapChannelReader>(mLogRoot / toHexString(channelId)));
+    std::unique_ptr<ChannelReader> channelReader;
+
+    switch(mIoMechanism)
+    {
+    case IoMechanism::Mmap:
+      channelReader = std::make_unique<MmapChannelReader>(mLogRoot / toHexString(channelId));
+      break;
+
+    case IoMechanism::Stream:
+      throw std::invalid_argument(
+          "[Chronicle::Reader] IoMechanism '" + stringFromIoMechanism(IoMechanism::Stream) +
+          "' is not supported for reading. Use '" + stringFromIoMechanism(IoMechanism::Mmap) + "' instead.");
+
+    default:
+      throw std::invalid_argument(
+          "[Chronicle::Reader] Unknown IoMechanism with value: " +
+          std::to_string(static_cast<int>(mIoMechanism)));
+    }
+
+    channelReaderMap.try_emplace(channelId, std::move(channelReader));
   }
 
   return *channelReaderMap.at(channelId);

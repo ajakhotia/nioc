@@ -29,9 +29,12 @@ public:
 
   /// @brief Constructs a Writer.
   /// @param logRoot Root directory for the chronicle. A timestamped subdirectory will be created.
+  /// @param ioMechanism I/O mechanism to use for writing data.
   /// @param maxFileSizeInBytes Maximum size of individual data files.
+  /// @throws std::invalid_argument If ioMechanism is not supported for writing.
   explicit Writer(
       std::filesystem::path logRoot = std::filesystem::temp_directory_path() / "niocLogs",
+      IoMechanism ioMechanism = IoMechanism::Stream,
       std::size_t maxFileSizeInBytes = kDefaultMaxFileSizeInBytes);
 
   Writer(const Writer&) = delete;
@@ -63,6 +66,7 @@ private:
 
   ChannelWriter& acquireChannel(ChannelId channelId, ChannelPtrMap& channelPtrMap);
 
+  IoMechanism mIoMechanism;
   std::filesystem::path mLogDirectory;
   std::size_t mMaxFileSizeInBytes;
   common::Locked<std::ofstream> mLockedSequenceFile;

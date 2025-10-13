@@ -32,6 +32,7 @@ add_exported_library(
     EXPORT
         niocTargets
     SOURCES
+        src/defines.cpp
         src/memoryCrate.cpp
         src/mmapChannelReader.cpp
         src/mmapMemoryCrate.cpp

@@ -34,7 +34,9 @@ class Reader
 public:
   /// @brief Constructs a Reader.
   /// @param logRoot Path to the chronicle directory.
-  explicit Reader(std::filesystem::path logRoot);
+  /// @param ioMechanism I/O mechanism to use for reading data.
+  /// @throws std::invalid_argument If ioMechanism is not supported for reading.
+  explicit Reader(std::filesystem::path logRoot, IoMechanism ioMechanism = IoMechanism::Mmap);
 
   Reader(const Reader&) = delete;
 
@@ -56,6 +58,7 @@ private:
 
   ChannelReader& acquireChannel(ChannelId channelId, ChannelReaderMap& channelReaderMap);
 
+  IoMechanism mIoMechanism;
   std::filesystem::path mLogRoot;
   boost::iostreams::mapped_file_source mSequenceFile;
   std::uint64_t mNextReadIndex{ 0ULL };
