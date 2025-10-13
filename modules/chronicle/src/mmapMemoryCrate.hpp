@@ -28,9 +28,9 @@ public:
 
   ~MmapMemoryCrate() = default;
 
-  MmapMemoryCrate& operator=(const MmapMemoryCrate&) = default;
+  MmapMemoryCrate& operator=(const MmapMemoryCrate&) = delete;
 
-  MmapMemoryCrate& operator=(MmapMemoryCrate&&) = default;
+  MmapMemoryCrate& operator=(MmapMemoryCrate&&) = delete;
 
   [[nodiscard]] const std::span<const std::byte>& span() const noexcept;
 
