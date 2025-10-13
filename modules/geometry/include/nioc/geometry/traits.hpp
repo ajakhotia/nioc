@@ -13,4 +13,4 @@ namespace nioc::geometry
 template<typename>
 struct Traits;
 
-} // End of namespace nioc::geometry.
+} // namespace nioc::geometry

@@ -72,4 +72,4 @@ ChannelReader& Reader::acquireChannel(ChannelId channelId, ChannelReaderMap& cha
   return *channelReaderMap.at(channelId);
 }
 
-} // End of namespace nioc::chronicle
+} // namespace nioc::chronicle

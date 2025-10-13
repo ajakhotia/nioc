@@ -67,4 +67,4 @@ TEST(ChildConceptTmpl, DynamicChildFrame)
 }
 
 
-} // End of namespace nioc::geometry.
+} // namespace nioc::geometry

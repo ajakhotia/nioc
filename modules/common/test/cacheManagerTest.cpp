@@ -74,7 +74,7 @@ private:
 };
 
 
-} // End of anonymous namespace.
+} // namespace
 
 TEST(TestCache, construction)
 {

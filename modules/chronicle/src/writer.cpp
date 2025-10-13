@@ -39,7 +39,7 @@ fs::path checkAndSetupLogDirectory(fs::path logRoot)
   return logRoot;
 }
 
-} // End of anonymous namespace.
+} // namespace
 
 Writer::Writer(
     std::filesystem::path logRoot,
@@ -128,4 +128,4 @@ const std::filesystem::path& Writer::path() const noexcept
   return mLogDirectory;
 }
 
-} // End of namespace nioc::chronicle
+} // namespace nioc::chronicle

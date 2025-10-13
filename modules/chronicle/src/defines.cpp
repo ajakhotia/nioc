@@ -14,7 +14,6 @@ namespace nioc::chronicle
 namespace
 {
 
-// Returns the bimap for IoMechanism <-> string conversions
 const auto& ioMechanismBimap()
 {
   static const auto kBimap = common::makeBimap({

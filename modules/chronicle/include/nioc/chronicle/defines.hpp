@@ -16,14 +16,11 @@ using ChannelId = std::uint64_t;
 
 /// @brief I/O mechanism for reading or writing chronicle data.
 ///
-/// Specifies which implementation to use for data access.
-/// Each mechanism corresponds to a specific ChannelReader/ChannelWriter implementation.
+/// Specifies which implementation to use for IO access.
 enum class IoMechanism : std::uint8_t
 {
-  /// File-based streaming I/O (sequential writes to rotating files).
   Stream,
 
-  /// Memory-mapped file I/O (fast random access to existing data).
   Mmap
 };
 

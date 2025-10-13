@@ -115,4 +115,4 @@ private:
 };
 
 
-} // End of namespace nioc::geometry.
+} // namespace nioc::geometry

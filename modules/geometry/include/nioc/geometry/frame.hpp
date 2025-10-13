@@ -77,4 +77,4 @@ bool operator==(const DynamicFrame& lhs, const DynamicFrame& rhs);
 bool operator!=(const DynamicFrame& lhs, const DynamicFrame& rhs);
 
 
-} // End of namespace nioc::geometry.
+} // namespace nioc::geometry
