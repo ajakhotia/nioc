@@ -6,6 +6,7 @@
 
 #include <nioc/chronicle/defines.hpp>
 #include <nioc/common/makeBimap.hpp>
+#include <stdexcept>
 
 using namespace std::string_literals;
 
@@ -32,8 +33,9 @@ std::string stringFromIoMechanism(const IoMechanism mechanism)
 
   if(iter == bimap.left.end())
   {
-    throw std::out_of_range(
-        "[Chronicle] Unknown IoMechanism: " + std::to_string(static_cast<int>(mechanism)));
+    throw std::logic_error(
+        "[Chronicle] Programming error: IoMechanism bimap missing entry for value " +
+        std::to_string(static_cast<int>(mechanism)) + ". Update ioMechanismBimap().");
   }
 
   return iter->second;

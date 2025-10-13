@@ -27,7 +27,7 @@ enum class IoMechanism : std::uint8_t
 /// @brief Converts IoMechanism to string.
 /// @param mechanism I/O mechanism to convert.
 /// @return String representation of the mechanism.
-/// @throws std::out_of_range If the mechanism is unknown.
+/// @throws std::logic_error If the mechanism is unknown.
 std::string stringFromIoMechanism(IoMechanism mechanism);
 
 /// @brief Converts string to IoMechanism.

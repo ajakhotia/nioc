@@ -109,7 +109,8 @@ ChannelWriter& Writer::acquireChannel(const ChannelId channelId, ChannelPtrMap& 
     case IoMechanism::Mmap:
       throw std::invalid_argument(
           "[Chronicle::Writer] IoMechanism '" + stringFromIoMechanism(IoMechanism::Mmap) +
-          "' is not supported for writing. Use '" + stringFromIoMechanism(IoMechanism::Stream) + "' instead.");
+          "' is not supported for writing. Use '" + stringFromIoMechanism(IoMechanism::Stream) +
+          "' instead.");
 
     default:
       throw std::invalid_argument(

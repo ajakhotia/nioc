@@ -58,7 +58,8 @@ ChannelReader& Reader::acquireChannel(ChannelId channelId, ChannelReaderMap& cha
     case IoMechanism::Stream:
       throw std::invalid_argument(
           "[Chronicle::Reader] IoMechanism '" + stringFromIoMechanism(IoMechanism::Stream) +
-          "' is not supported for reading. Use '" + stringFromIoMechanism(IoMechanism::Mmap) + "' instead.");
+          "' is not supported for reading. Use '" + stringFromIoMechanism(IoMechanism::Mmap) +
+          "' instead.");
 
     default:
       throw std::invalid_argument(
