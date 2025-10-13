@@ -4,7 +4,7 @@
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "channel.hpp"
+#include "streamChannelWriter.hpp"
 #include "utils.hpp"
 #include <algorithm>
 #include <numeric>
@@ -22,13 +22,15 @@ std::filesystem::path setupLogRoot(std::filesystem::path logRoot)
   if(fs::exists(logRoot))
   {
     throw std::logic_error(
-        "[Channel::Channel] Directory or file" + logRoot.string() + " exists already.");
+        "[StreamChannelWriter::StreamChannelWriter] Directory or file" + logRoot.string() +
+        " exists already.");
   }
 
   if(not fs::create_directories(logRoot))
   {
     throw std::runtime_error(
-        "[Channel::Channel] Unable to create directory at " + logRoot.string() + ".");
+        "[StreamChannelWriter::StreamChannelWriter] Unable to create directory at " +
+        logRoot.string() + ".");
   }
 
   return logRoot;
@@ -36,7 +38,9 @@ std::filesystem::path setupLogRoot(std::filesystem::path logRoot)
 
 } // namespace
 
-Channel::Channel(std::filesystem::path logRoot, const std::uint64_t maxFileSizeInBytes):
+StreamChannelWriter::StreamChannelWriter(
+    std::filesystem::path logRoot,
+    const std::uint64_t maxFileSizeInBytes):
     mLogRoot(setupLogRoot(std::move(logRoot))),
     mIndexFile(mLogRoot / kIndexFileName),
     mMaxFileSizeInBytes(maxFileSizeInBytes),
@@ -45,7 +49,7 @@ Channel::Channel(std::filesystem::path logRoot, const std::uint64_t maxFileSizeI
 {
 }
 
-void Channel::writeFrame(const ConstByteSpan& data)
+void StreamChannelWriter::writeFrame(const ConstByteSpan& data)
 {
   const auto sizeInBytes = data.size_bytes();
   rollCheckAndIndex(sizeInBytes);
@@ -60,7 +64,7 @@ void Channel::writeFrame(const ConstByteSpan& data)
   }
 }
 
-void Channel::writeFrame(const std::vector<ConstByteSpan>& dataCollection)
+void StreamChannelWriter::writeFrame(std::span<const ConstByteSpan> dataCollection)
 {
   const auto sizeInBytes = computeTotalSizeInBytes(dataCollection);
   rollCheckAndIndex(sizeInBytes);
@@ -80,7 +84,7 @@ void Channel::writeFrame(const std::vector<ConstByteSpan>& dataCollection)
   }
 }
 
-void Channel::rollCheckAndIndex(const std::uint64_t requiredSizeInBytes)
+void StreamChannelWriter::rollCheckAndIndex(const std::uint64_t requiredSizeInBytes)
 {
   if(requiredSizeInBytes == 0U)
   {
@@ -106,11 +110,11 @@ void Channel::rollCheckAndIndex(const std::uint64_t requiredSizeInBytes)
   }
   else
   {
-    throw std::runtime_error("[Channel::index] Unable to retrieve the write position");
+    throw std::runtime_error("[StreamChannelWriter::index] Unable to retrieve the write position");
   }
 }
 
-std::filesystem::path Channel::nextRollFilePath()
+std::filesystem::path StreamChannelWriter::nextRollFilePath()
 {
   return mLogRoot / buildRollName(++mRollCounter);
 }

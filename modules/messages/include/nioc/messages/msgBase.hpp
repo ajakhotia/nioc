@@ -7,8 +7,8 @@
 
 #include <capnp/serialize.h>
 #include <cstdint>
-#include <nioc/chronicle/chronicle.hpp>
 #include <nioc/chronicle/memoryCrate.hpp>
+#include <nioc/chronicle/writer.hpp>
 #include <variant>
 
 namespace nioc::messages
@@ -24,7 +24,7 @@ class MMappedMessageReader final:
 public:
   /// @brief Constructs reader from chronicle data.
   /// @param memoryCrate Chronicle data container.
-  explicit MMappedMessageReader(chronicle::MemoryCrate memoryCrate);
+  explicit MMappedMessageReader(MemoryCrate memoryCrate);
 
   MMappedMessageReader(const MMappedMessageReader&) = delete;
 

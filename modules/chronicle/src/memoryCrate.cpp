@@ -4,13 +4,13 @@
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "memoryCrateImpl.hpp"
+#include "mmapMemoryCrate.hpp"
 
 namespace nioc::chronicle
 {
 
-MemoryCrate::MemoryCrate(std::shared_ptr<MemoryCrateImpl> memoryCrateImplPtr):
-    mMemoryCrateImplPtr(std::move(memoryCrateImplPtr))
+MemoryCrate::MemoryCrate(std::shared_ptr<MmapMemoryCrate> mmapMemoryCratePtr):
+    mMmapMemoryCratePtr(std::move(mmapMemoryCratePtr))
 {
 }
 
@@ -26,7 +26,7 @@ MemoryCrate& MemoryCrate::operator=(const MemoryCrate& memoryCrate) = default;
 
 std::span<const std::byte> MemoryCrate::span() const
 {
-  return mMemoryCrateImplPtr->span();
+  return mMmapMemoryCratePtr->span();
 }
 
 

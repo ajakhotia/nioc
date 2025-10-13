@@ -4,13 +4,13 @@
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "memoryCrateImpl.hpp"
+#include "mmapMemoryCrate.hpp"
 
 namespace nioc::chronicle
 {
 namespace
 {
-using MappedFile = MemoryCrate::MemoryCrateImpl::MappedFile;
+using MappedFile = MemoryCrate::MmapMemoryCrate::MappedFile;
 using ConstByteSpan = std::span<const std::byte>;
 
 ConstByteSpan retrieveSpan(const MappedFile& mappedFile, const IndexEntry& indexEntry)
@@ -23,12 +23,15 @@ ConstByteSpan retrieveSpan(const MappedFile& mappedFile, const IndexEntry& index
 
 } // namespace
 
-MemoryCrate::MemoryCrateImpl::MemoryCrateImpl(MappedFilePtr mappedFilePtr, const IndexEntry& index):
-    mMappedFilePtr(std::move(mappedFilePtr)), mSpan(retrieveSpan(*mMappedFilePtr, index))
+MemoryCrate::MmapMemoryCrate::MmapMemoryCrate(
+    MappedFilePtr mappedFilePtr,
+    const IndexEntry& indexEntry):
+    mMappedFilePtr(std::move(mappedFilePtr)),
+    mSpan(retrieveSpan(*mMappedFilePtr, indexEntry))
 {
 }
 
-const std::span<const std::byte>& MemoryCrate::MemoryCrateImpl::span() const noexcept
+const std::span<const std::byte>& MemoryCrate::MmapMemoryCrate::span() const noexcept
 {
   return mSpan;
 }

@@ -148,7 +148,7 @@ TEST(assertFrameEqual, DynamicLhsDynamicRhs)
       assertFrameEqual<DynamicFrame, DynamicFrame>(DynamicFrame(""), DynamicFrame(""))));
 }
 
-} // End of namespace helpers.
+} // namespace helpers
 
 TEST(composeFrameReferences, StaticStaticStaticStatic)
 {

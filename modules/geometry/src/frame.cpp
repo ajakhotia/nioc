@@ -25,4 +25,4 @@ bool operator!=(const DynamicFrame& lhs, const DynamicFrame& rhs)
   return lhs.name() != rhs.name();
 }
 
-} // End of namespace nioc::geometry.
+} // namespace nioc::geometry

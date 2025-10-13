@@ -58,7 +58,7 @@ void poseParamCheck(
   }
 }
 
-} // End of anonymous namespace.
+} // namespace
 
 TEST(Pose, ConstructionFromQuaternionAndVector3)
 {
@@ -148,4 +148,4 @@ TEST(Pose, StreamOperator)
       "0.707107], Position:[0.1, 0.2, 0.3] }\n");
 }
 
-} // End of namespace nioc::geometry.
+} // namespace nioc::geometry

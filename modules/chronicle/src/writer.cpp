@@ -1,12 +1,14 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2022.
+// Copyright (c) 2021.
 // Project  : nioc
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-#include "loggerImpl.hpp"
+
+#include "streamChannelWriter.hpp"
 #include "utils.hpp"
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
+#include <nioc/chronicle/writer.hpp>
 #include <spdlog/spdlog.h>
 
 namespace nioc::chronicle
@@ -37,9 +39,13 @@ fs::path checkAndSetupLogDirectory(fs::path logRoot)
   return logRoot;
 }
 
-} // End of anonymous namespace.
+} // namespace
 
-Writer::LoggerImpl::LoggerImpl(std::filesystem::path logRoot, const std::size_t maxFileSizeInBytes):
+Writer::Writer(
+    std::filesystem::path logRoot,
+    const IoMechanism ioMechanism,
+    const std::size_t maxFileSizeInBytes):
+    mIoMechanism(ioMechanism),
     mLogDirectory(checkAndSetupLogDirectory(std::move(logRoot))),
     mMaxFileSizeInBytes(maxFileSizeInBytes),
     mLockedSequenceFile(mLogDirectory / kSequenceFileName)
@@ -50,7 +56,9 @@ Writer::LoggerImpl::LoggerImpl(std::filesystem::path logRoot, const std::size_t 
       mMaxFileSizeInBytes);
 }
 
-void Writer::LoggerImpl::write(const ChannelId channelId, const std::span<const std::byte>& data)
+Writer::~Writer() = default;
+
+void Writer::write(const ChannelId channelId, const std::span<const std::byte>& data)
 {
   // TODO(ajakhotia): This can be improved to use fewer locks and avoid race conditions.
   mLockedSequenceFile(
@@ -59,17 +67,15 @@ void Writer::LoggerImpl::write(const ChannelId channelId, const std::span<const 
         ReadWriteUtil<SequenceEntry>::write(sequenceFile, SequenceEntry{ channelId });
       });
 
-  auto& lockedChannel = acquireChannel(channelId);
-  lockedChannel(
-      [&](Channel& channel)
+  mLockedChannelPtrMap(
+      [&](ChannelPtrMap& channelPtrMap)
       {
+        auto& channel = acquireChannel(channelId, channelPtrMap);
         channel.writeFrame(data);
       });
 }
 
-void Writer::LoggerImpl::write(
-    const ChannelId channelId,
-    const std::vector<std::span<const std::byte>>& data)
+void Writer::write(const ChannelId channelId, std::span<const std::span<const std::byte>> data)
 {
   // TODO(ajakhotia): This can be improved to use fewer locks and avoid race conditions.
   mLockedSequenceFile(
@@ -78,36 +84,49 @@ void Writer::LoggerImpl::write(
         ReadWriteUtil<SequenceEntry>::write(sequenceFile, SequenceEntry{ channelId });
       });
 
-  auto& lockedChannel = acquireChannel(channelId);
-  lockedChannel(
-      [&](Channel& channel)
+  mLockedChannelPtrMap(
+      [&](ChannelPtrMap& channelPtrMap)
       {
+        auto& channel = acquireChannel(channelId, channelPtrMap);
         channel.writeFrame(data);
       });
 }
 
-Writer::LoggerImpl::LockedChannel& Writer::LoggerImpl::acquireChannel(const ChannelId channelId)
+ChannelWriter& Writer::acquireChannel(const ChannelId channelId, ChannelPtrMap& channelPtrMap)
 {
-  return mLockedChannelPtrMap(
-      [&](ChannelPtrMap& channelPtrMap) -> LockedChannel&
-      {
-        if(not channelPtrMap.contains(channelId))
-        {
-          channelPtrMap.try_emplace(
-              channelId,
-              std::make_unique<LockedChannel>(
-                  mLogDirectory / toHexString(channelId),
-                  mMaxFileSizeInBytes));
-        }
+  if(not channelPtrMap.contains(channelId))
+  {
+    std::unique_ptr<ChannelWriter> channelWriter;
 
-        return *channelPtrMap.at(channelId);
-      });
+    switch(mIoMechanism)
+    {
+    case IoMechanism::Stream:
+      channelWriter = std::make_unique<StreamChannelWriter>(
+          mLogDirectory / toHexString(channelId),
+          mMaxFileSizeInBytes);
+      break;
+
+    case IoMechanism::Mmap:
+      throw std::invalid_argument(
+          "[Chronicle::Writer] IoMechanism '" + stringFromIoMechanism(IoMechanism::Mmap) +
+          "' is not supported for writing. Use '" + stringFromIoMechanism(IoMechanism::Stream) +
+          "' instead.");
+
+    default:
+      throw std::invalid_argument(
+          "[Chronicle::Writer] Unknown IoMechanism with value: " +
+          std::to_string(static_cast<int>(mIoMechanism)));
+    }
+
+    channelPtrMap.try_emplace(channelId, std::move(channelWriter));
+  }
+
+  return *channelPtrMap.at(channelId);
 }
 
-const std::filesystem::path& Writer::LoggerImpl::path() const noexcept
+const std::filesystem::path& Writer::path() const noexcept
 {
   return mLogDirectory;
 }
-
 
 } // namespace nioc::chronicle

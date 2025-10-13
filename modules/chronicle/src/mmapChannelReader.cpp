@@ -4,8 +4,8 @@
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "channelReader.hpp"
-#include "memoryCrateImpl.hpp"
+#include "mmapChannelReader.hpp"
+#include "mmapMemoryCrate.hpp"
 
 namespace nioc::chronicle
 {
@@ -17,14 +17,14 @@ constexpr const auto kLogRollBufferSize = 5UL;
 
 } // namespace
 
-ChannelReader::ChannelReader(std::filesystem::path logRoot):
+MmapChannelReader::MmapChannelReader(std::filesystem::path logRoot):
     mLogRoot(validatePath(std::move(logRoot))),
     mIndexFile(mLogRoot / kIndexFileName),
     mLogRollBuffer(kLogRollBufferSize)
 {
 }
 
-MemoryCrate ChannelReader::read()
+MemoryCrate MmapChannelReader::read()
 {
   const auto indexPtrOffset = mNextReadIndex * sizeof(IndexEntry);
 
@@ -42,11 +42,11 @@ MemoryCrate ChannelReader::read()
   auto logRollPtr = acquireLogRoll(index.mRollId);
 
   return MemoryCrate{
-    std::make_shared<MemoryCrate::MemoryCrateImpl>(std::move(logRollPtr), index)
+    std::make_shared<MemoryCrate::MmapMemoryCrate>(std::move(logRollPtr), index)
   };
 }
 
-ChannelReader::MappedFilePtr ChannelReader::acquireLogRoll(const std::uint64_t rollId)
+MmapChannelReader::MappedFilePtr MmapChannelReader::acquireLogRoll(const std::uint64_t rollId)
 {
   const auto iter = std::ranges::find_if(
       mLogRollBuffer,

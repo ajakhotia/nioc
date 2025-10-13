@@ -6,7 +6,8 @@
 
 #include "utils.hpp"
 #include <gtest/gtest.h>
-#include <nioc/chronicle/chronicle.hpp>
+#include <nioc/chronicle/reader.hpp>
+#include <nioc/chronicle/writer.hpp>
 #include <numeric>
 
 namespace nioc::chronicle
@@ -29,7 +30,10 @@ std::vector<char> generateData()
 TEST(Writer, construction)
 {
   EXPECT_NO_THROW(Writer writer);
-  EXPECT_NO_THROW(Writer writer(fs::temp_directory_path() / "niocUnitTestLogs", 1024UL * 1024UL));
+  EXPECT_NO_THROW(Writer writer(
+      fs::temp_directory_path() / "niocUnitTestLogs",
+      IoMechanism::Stream,
+      1024UL * 1024UL));
 }
 
 TEST(Writer, writeSpan)

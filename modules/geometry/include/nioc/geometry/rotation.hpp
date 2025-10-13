@@ -15,7 +15,7 @@ namespace nioc::geometry
 template<typename Scalar_ = double>
 class Rotation3;
 
-} // End of namespace nioc::geometry.
+} // namespace nioc::geometry
 
 
 /// Forward declare Eigen::Map for Rotation3.
@@ -285,7 +285,7 @@ private:
 };
 
 
-} // End of namespace nioc::geometry.
+} // namespace nioc::geometry
 
 /// @brief 3D rotation without owned storage.
 ///

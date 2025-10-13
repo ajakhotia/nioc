@@ -17,7 +17,7 @@ const auto valueExtractorHelper = [](const auto& value)
   return *value;
 };
 
-} // End of anonymous namespace.
+} // namespace
 
 TEST(Locked, LockedConstruction)
 {

@@ -7,36 +7,37 @@
 
 #include <filesystem>
 #include <fstream>
+#include <nioc/chronicle/channelWriter.hpp>
 #include <span>
 #include <vector>
 
 namespace nioc::chronicle
 {
 
-class Channel
+class StreamChannelWriter final: public ChannelWriter
 {
 public:
   static constexpr auto kDefaultMaxFileSizeInBytes = 128ULL * 1024ULL * 1024ULL;
 
   using ConstByteSpan = std::span<const std::byte>;
 
-  explicit Channel(
+  explicit StreamChannelWriter(
       std::filesystem::path logRoot,
       std::uint64_t maxFileSizeInBytes = kDefaultMaxFileSizeInBytes);
 
-  Channel(const Channel&) = delete;
+  StreamChannelWriter(const StreamChannelWriter&) = delete;
 
-  Channel(Channel&&) noexcept = default;
+  StreamChannelWriter(StreamChannelWriter&&) noexcept = delete;
 
-  ~Channel() = default;
+  ~StreamChannelWriter() override = default;
 
-  Channel& operator=(const Channel&) = delete;
+  StreamChannelWriter& operator=(const StreamChannelWriter&) = delete;
 
-  Channel& operator=(Channel&&) noexcept = default;
+  StreamChannelWriter& operator=(StreamChannelWriter&&) noexcept = delete;
 
-  void writeFrame(const ConstByteSpan& data);
+  void writeFrame(const ConstByteSpan& data) override;
 
-  void writeFrame(const std::vector<ConstByteSpan>& dataCollection);
+  void writeFrame(std::span<const ConstByteSpan> dataCollection) override;
 
 private:
   std::filesystem::path mLogRoot;

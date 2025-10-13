@@ -6,7 +6,8 @@
 
 #include "utils.hpp"
 #include <gtest/gtest.h>
-#include <nioc/chronicle/chronicle.hpp>
+#include <nioc/chronicle/reader.hpp>
+#include <nioc/chronicle/writer.hpp>
 #include <numeric>
 
 namespace nioc::chronicle

@@ -8,12 +8,13 @@
 #include "utils.hpp"
 #include <boost/circular_buffer.hpp>
 #include <boost/iostreams/device/mapped_file.hpp>
+#include <nioc/chronicle/channelReader.hpp>
 #include <nioc/chronicle/memoryCrate.hpp>
 
 namespace nioc::chronicle
 {
 
-class ChannelReader
+class MmapChannelReader final: public ChannelReader
 {
 public:
   using MappedFile = boost::iostreams::mapped_file_source;
@@ -26,19 +27,19 @@ public:
     MappedFilePtr mMappedFilePtr;
   };
 
-  explicit ChannelReader(std::filesystem::path logRoot);
+  explicit MmapChannelReader(std::filesystem::path logRoot);
 
-  ChannelReader(const ChannelReader&) = delete;
+  MmapChannelReader(const MmapChannelReader&) = delete;
 
-  ChannelReader(ChannelReader&&) = default;
+  MmapChannelReader(MmapChannelReader&&) = delete;
 
-  ~ChannelReader() = default;
+  ~MmapChannelReader() override = default;
 
-  ChannelReader& operator=(const ChannelReader&) = delete;
+  MmapChannelReader& operator=(const MmapChannelReader&) = delete;
 
-  ChannelReader& operator=(ChannelReader&&) = default;
+  MmapChannelReader& operator=(MmapChannelReader&&) = delete;
 
-  [[nodiscard]] MemoryCrate read();
+  [[nodiscard]] MemoryCrate read() override;
 
 private:
   std::filesystem::path mLogRoot;

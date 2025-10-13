@@ -13,24 +13,24 @@ namespace nioc::chronicle
 {
 
 
-class MemoryCrate::MemoryCrateImpl
+class MemoryCrate::MmapMemoryCrate
 {
 public:
   using MappedFile = boost::iostreams::mapped_file_source;
 
   using MappedFilePtr = std::shared_ptr<MappedFile>;
 
-  MemoryCrateImpl(MappedFilePtr mappedFilePtr, const IndexEntry& index);
+  MmapMemoryCrate(MappedFilePtr mappedFilePtr, const IndexEntry& indexEntry);
 
-  MemoryCrateImpl(const MemoryCrateImpl&) = default;
+  MmapMemoryCrate(const MmapMemoryCrate&) = default;
 
-  MemoryCrateImpl(MemoryCrateImpl&&) = default;
+  MmapMemoryCrate(MmapMemoryCrate&&) = default;
 
-  ~MemoryCrateImpl() = default;
+  ~MmapMemoryCrate() = default;
 
-  MemoryCrateImpl& operator=(const MemoryCrateImpl&) = default;
+  MmapMemoryCrate& operator=(const MmapMemoryCrate&) = default;
 
-  MemoryCrateImpl& operator=(MemoryCrateImpl&&) = default;
+  MmapMemoryCrate& operator=(MmapMemoryCrate&&) = default;
 
   [[nodiscard]] const std::span<const std::byte>& span() const noexcept;
 

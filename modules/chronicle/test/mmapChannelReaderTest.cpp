@@ -4,8 +4,8 @@
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "channelReader.hpp"
-#include "channel.hpp"
+#include "mmapChannelReader.hpp"
+#include "streamChannelWriter.hpp"
 #include "utils.hpp"
 #include <filesystem>
 #include <gtest/gtest.h>
@@ -32,12 +32,12 @@ std::vector<char> generateTestDataFrame()
 
 } // namespace
 
-TEST(ChannelReader, construction)
+TEST(MmapChannelReader, construction)
 {
-  EXPECT_THROW((ChannelReader("/foo")), std::invalid_argument);
+  EXPECT_THROW((MmapChannelReader("/foo")), std::invalid_argument);
 }
 
-TEST(ChannelReader, read)
+TEST(MmapChannelReader, read)
 {
   fs::remove_all(kTestChannelDirectoryPath);
 
@@ -46,7 +46,7 @@ TEST(ChannelReader, read)
 
   // Build a channel on disk.
   {
-    auto channel = Channel(kTestChannelDirectoryPath, kTestChannelMaxFileSize);
+    auto channel = StreamChannelWriter(kTestChannelDirectoryPath, kTestChannelMaxFileSize);
     for(auto ii = 0ULL; ii < kNumFramesToWrite; ++ii)
     {
       channel.writeFrame(dataAsBytes);
@@ -55,7 +55,7 @@ TEST(ChannelReader, read)
 
   // Read the built channel
   {
-    auto channelReader = ChannelReader(kTestChannelDirectoryPath);
+    auto channelReader = MmapChannelReader(kTestChannelDirectoryPath);
     auto numFramesRead = 0ULL;
     try
     {

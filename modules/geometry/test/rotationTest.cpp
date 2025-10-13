@@ -54,7 +54,7 @@ void mrpEquivalenceOverRotationsAroundPrincipleAxes(const double angle)
 }
 
 
-} // End of anonymous namespace.
+} // namespace
 
 TEST(Rotation3, construction)
 {
@@ -141,4 +141,4 @@ TEST(Assignment, RotationAndMap)
 }
 
 
-} // End of namespace nioc::geometry.
+} // namespace nioc::geometry

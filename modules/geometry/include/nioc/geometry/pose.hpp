@@ -283,7 +283,7 @@ Pose<typename LhsDerived::Scalar> operator*(const Se3<LhsDerived>& lhs, const Se
            lhs.cPosition() + lhs.cOrientation() * rhs.cPosition() };
 }
 
-} // End of namespace nioc::geometry.
+} // namespace nioc::geometry
 
 /// @brief Pose without owned storage (mutable).
 ///
