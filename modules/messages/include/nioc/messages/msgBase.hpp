@@ -7,8 +7,8 @@
 
 #include <capnp/serialize.h>
 #include <cstdint>
-#include <nioc/chronicle/chronicle.hpp>
 #include <nioc/chronicle/memoryCrate.hpp>
+#include <nioc/chronicle/writer.hpp>
 #include <variant>
 
 namespace nioc::messages

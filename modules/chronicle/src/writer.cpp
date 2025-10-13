@@ -1,12 +1,14 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2022.
+// Copyright (c) 2021.
 // Project  : nioc
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-#include "streamWriter.hpp"
+
+#include "streamChannelWriter.hpp"
 #include "utils.hpp"
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
+#include <nioc/chronicle/writer.hpp>
 #include <spdlog/spdlog.h>
 
 namespace nioc::chronicle
@@ -39,7 +41,7 @@ fs::path checkAndSetupLogDirectory(fs::path logRoot)
 
 } // End of anonymous namespace.
 
-Writer::StreamWriter::StreamWriter(std::filesystem::path logRoot, const std::size_t maxFileSizeInBytes):
+Writer::Writer(std::filesystem::path logRoot, const std::size_t maxFileSizeInBytes):
     mLogDirectory(checkAndSetupLogDirectory(std::move(logRoot))),
     mMaxFileSizeInBytes(maxFileSizeInBytes),
     mLockedSequenceFile(mLogDirectory / kSequenceFileName)
@@ -50,7 +52,9 @@ Writer::StreamWriter::StreamWriter(std::filesystem::path logRoot, const std::siz
       mMaxFileSizeInBytes);
 }
 
-void Writer::StreamWriter::write(const ChannelId channelId, const std::span<const std::byte>& data)
+Writer::~Writer() = default;
+
+void Writer::write(const ChannelId channelId, const std::span<const std::byte>& data)
 {
   // TODO(ajakhotia): This can be improved to use fewer locks and avoid race conditions.
   mLockedSequenceFile(
@@ -59,17 +63,15 @@ void Writer::StreamWriter::write(const ChannelId channelId, const std::span<cons
         ReadWriteUtil<SequenceEntry>::write(sequenceFile, SequenceEntry{ channelId });
       });
 
-  auto& lockedChannel = acquireChannel(channelId);
-  lockedChannel(
-      [&](StreamChannelWriter& channel)
+  mLockedChannelPtrMap(
+      [&](ChannelPtrMap& channelPtrMap)
       {
+        auto& channel = acquireChannel(channelId, channelPtrMap);
         channel.writeFrame(data);
       });
 }
 
-void Writer::StreamWriter::write(
-    const ChannelId channelId,
-    const std::vector<std::span<const std::byte>>& data)
+void Writer::write(const ChannelId channelId, const std::vector<std::span<const std::byte>>& data)
 {
   // TODO(ajakhotia): This can be improved to use fewer locks and avoid race conditions.
   mLockedSequenceFile(
@@ -78,36 +80,30 @@ void Writer::StreamWriter::write(
         ReadWriteUtil<SequenceEntry>::write(sequenceFile, SequenceEntry{ channelId });
       });
 
-  auto& lockedChannel = acquireChannel(channelId);
-  lockedChannel(
-      [&](StreamChannelWriter& channel)
+  mLockedChannelPtrMap(
+      [&](ChannelPtrMap& channelPtrMap)
       {
+        auto& channel = acquireChannel(channelId, channelPtrMap);
         channel.writeFrame(data);
       });
 }
 
-Writer::StreamWriter::LockedChannel& Writer::StreamWriter::acquireChannel(const ChannelId channelId)
+ChannelWriter& Writer::acquireChannel(const ChannelId channelId, ChannelPtrMap& channelPtrMap)
 {
-  return mLockedChannelPtrMap(
-      [&](ChannelPtrMap& channelPtrMap) -> LockedChannel&
-      {
-        if(not channelPtrMap.contains(channelId))
-        {
-          channelPtrMap.try_emplace(
-              channelId,
-              std::make_unique<LockedChannel>(
-                  mLogDirectory / toHexString(channelId),
-                  mMaxFileSizeInBytes));
-        }
+  if(not channelPtrMap.contains(channelId))
+  {
+    channelPtrMap.try_emplace(
+        channelId,
+        std::make_unique<StreamChannelWriter>(
+            mLogDirectory / toHexString(channelId), mMaxFileSizeInBytes));
+  }
 
-        return *channelPtrMap.at(channelId);
-      });
+  return *channelPtrMap.at(channelId);
 }
 
-const std::filesystem::path& Writer::StreamWriter::path() const noexcept
+const std::filesystem::path& Writer::path() const noexcept
 {
   return mLogDirectory;
 }
 
-
-} // namespace nioc::chronicle
+} // End of namespace nioc::chronicle

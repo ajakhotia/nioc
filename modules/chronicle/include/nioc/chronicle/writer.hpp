@@ -5,11 +5,14 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
+#include "channelWriter.hpp"
 #include "defines.hpp"
-#include "memoryCrate.hpp"
 #include <filesystem>
+#include <fstream>
 #include <memory>
+#include <nioc/common/locked.hpp>
 #include <span>
+#include <unordered_map>
 #include <vector>
 
 namespace nioc::chronicle
@@ -33,7 +36,7 @@ public:
 
   Writer(const Writer&) = delete;
 
-  Writer(Writer&& rhs) noexcept;
+  Writer(Writer&&) noexcept = delete;
 
   ~Writer();
 
@@ -56,48 +59,14 @@ public:
   [[nodiscard]] const std::filesystem::path& path() const noexcept;
 
 private:
-  class StreamWriter;
-  std::unique_ptr<StreamWriter> mStreamWriter;
-};
+  using ChannelPtrMap = std::unordered_map<ChannelId, std::unique_ptr<ChannelWriter>>;
 
-/// @brief A single entry from a chronicle.
-///
-/// Contains the channel ID and data for one frame.
-struct Entry
-{
-  ChannelId mChannelId; ///< Channel identifier.
+  ChannelWriter& acquireChannel(ChannelId channelId, ChannelPtrMap& channelPtrMap);
 
-  MemoryCrate mMemoryCrate; ///< Frame data.
-};
-
-/// @brief Reads data from a chronicle for playback.
-///
-/// Reads entries in the same order they were written.
-class Reader
-{
-public:
-  /// @brief Constructs a Reader.
-  /// @param logRoot Path to the chronicle directory.
-  explicit Reader(std::filesystem::path logRoot);
-
-  Reader(const Reader&) = delete;
-
-  Reader(Reader&& reader) noexcept;
-
-  ~Reader();
-
-  Reader& operator=(const Reader&) = delete;
-
-  Reader& operator=(Reader&& reader) noexcept;
-
-  /// @brief Reads the next entry.
-  /// @return Entry with channel ID and data.
-  /// @throws std::runtime_error When end of chronicle is reached.
-  Entry read();
-
-private:
-  class MmapReader;
-  std::unique_ptr<MmapReader> mMmapReader;
+  std::filesystem::path mLogDirectory;
+  std::size_t mMaxFileSizeInBytes;
+  common::Locked<std::ofstream> mLockedSequenceFile;
+  common::Locked<ChannelPtrMap> mLockedChannelPtrMap;
 };
 
 } // namespace nioc::chronicle

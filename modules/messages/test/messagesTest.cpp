@@ -5,7 +5,8 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include <gtest/gtest.h>
-#include <nioc/chronicle/chronicle.hpp>
+#include <nioc/chronicle/reader.hpp>
+#include <nioc/chronicle/writer.hpp>
 #include <nioc/messages/idl/sample1.capnp.h>
 #include <nioc/messages/msg.hpp>
 

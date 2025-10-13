@@ -22,13 +22,15 @@ std::filesystem::path setupLogRoot(std::filesystem::path logRoot)
   if(fs::exists(logRoot))
   {
     throw std::logic_error(
-        "[StreamChannelWriter::StreamChannelWriter] Directory or file" + logRoot.string() + " exists already.");
+        "[StreamChannelWriter::StreamChannelWriter] Directory or file" + logRoot.string() +
+        " exists already.");
   }
 
   if(not fs::create_directories(logRoot))
   {
     throw std::runtime_error(
-        "[StreamChannelWriter::StreamChannelWriter] Unable to create directory at " + logRoot.string() + ".");
+        "[StreamChannelWriter::StreamChannelWriter] Unable to create directory at " +
+        logRoot.string() + ".");
   }
 
   return logRoot;
@@ -36,7 +38,9 @@ std::filesystem::path setupLogRoot(std::filesystem::path logRoot)
 
 } // namespace
 
-StreamChannelWriter::StreamChannelWriter(std::filesystem::path logRoot, const std::uint64_t maxFileSizeInBytes):
+StreamChannelWriter::StreamChannelWriter(
+    std::filesystem::path logRoot,
+    const std::uint64_t maxFileSizeInBytes):
     mLogRoot(setupLogRoot(std::move(logRoot))),
     mIndexFile(mLogRoot / kIndexFileName),
     mMaxFileSizeInBytes(maxFileSizeInBytes),

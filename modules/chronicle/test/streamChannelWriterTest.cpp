@@ -4,9 +4,9 @@
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include <streamChannelWriter.hpp>
 #include <gtest/gtest.h>
 #include <numeric>
+#include <streamChannelWriter.hpp>
 #include <utils.hpp>
 
 namespace nioc::chronicle

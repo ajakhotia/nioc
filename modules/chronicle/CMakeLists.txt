@@ -32,32 +32,32 @@ add_exported_library(
     EXPORT
         niocTargets
     SOURCES
-        src/chronicle.cpp
         src/memoryCrate.cpp
         src/mmapChannelReader.cpp
         src/mmapMemoryCrate.cpp
-        src/mmapReader.cpp
+        src/reader.cpp
         src/streamChannelWriter.cpp
-        src/streamWriter.cpp
         src/utils.cpp
+        src/writer.cpp
     HEADERS
         PRIVATE src/mmapChannelReader.hpp
         PRIVATE src/mmapMemoryCrate.hpp
-        PRIVATE src/mmapReader.hpp
         PRIVATE src/streamChannelWriter.hpp
-        PRIVATE src/streamWriter.hpp
         PRIVATE src/utils.hpp
-        PUBLIC include/nioc/chronicle/chronicle.hpp
+        PUBLIC include/nioc/chronicle/channelReader.hpp
+        PUBLIC include/nioc/chronicle/channelWriter.hpp
         PUBLIC include/nioc/chronicle/defines.hpp
         PUBLIC include/nioc/chronicle/memoryCrate.hpp
+        PUBLIC include/nioc/chronicle/reader.hpp
+        PUBLIC include/nioc/chronicle/writer.hpp
     INCLUDE_DIRECTORIES
         ${CMAKE_CURRENT_SOURCE_DIR}/include
     LINK_LIBRARIES
         PRIVATE Boost::headers
-        PRIVATE Boost::iostreams
-        PRIVATE nioc::common
         PRIVATE nioc::chronicleIdl
         PRIVATE spdlog::spdlog
+        PUBLIC Boost::iostreams
+        PUBLIC nioc::common
     COMPILE_FEATURES
         PUBLIC cxx_std_20
     COMPILE_OPTIONS
