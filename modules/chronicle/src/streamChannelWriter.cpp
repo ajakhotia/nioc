@@ -42,8 +42,8 @@ StreamChannelWriter::StreamChannelWriter(
     std::filesystem::path logRoot,
     const std::uint64_t maxFileSizeInBytes):
     mLogRoot(setupLogRoot(std::move(logRoot))),
-    mIndexFile(mLogRoot / kIndexFileName),
     mMaxFileSizeInBytes(maxFileSizeInBytes),
+    mIndexFile(mLogRoot / kIndexFileName),
     mRollCounter(std::numeric_limits<std::uint64_t>::max()),
     mActiveLogRoll(nextRollFilePath())
 {

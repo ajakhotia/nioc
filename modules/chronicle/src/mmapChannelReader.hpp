@@ -42,9 +42,9 @@ public:
   [[nodiscard]] MemoryCrate read() override;
 
 private:
-  std::filesystem::path mLogRoot;
+  const std::filesystem::path mLogRoot;
 
-  MappedFile mIndexFile;
+  const MappedFile mIndexFile;
 
   std::uint64_t mNextReadIndex{ 0ULL };
 

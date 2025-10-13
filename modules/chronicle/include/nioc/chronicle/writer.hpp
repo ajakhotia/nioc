@@ -65,9 +65,9 @@ private:
 
   ChannelWriter& acquireChannel(ChannelId channelId, ChannelPtrMap& channelPtrMap);
 
-  IoMechanism mIoMechanism;
-  std::filesystem::path mLogDirectory;
-  std::size_t mMaxFileSizeInBytes;
+  const IoMechanism mIoMechanism;
+  const std::filesystem::path mLogDirectory;
+  const std::size_t mMaxFileSizeInBytes;
   common::Locked<std::ofstream> mLockedSequenceFile;
   common::Locked<ChannelPtrMap> mLockedChannelPtrMap;
 };

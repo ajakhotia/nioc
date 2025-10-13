@@ -9,7 +9,6 @@
 #include <fstream>
 #include <nioc/chronicle/channelWriter.hpp>
 #include <span>
-#include <vector>
 
 namespace nioc::chronicle
 {
@@ -40,11 +39,11 @@ public:
   void writeFrame(std::span<const ConstByteSpan> dataCollection) override;
 
 private:
-  std::filesystem::path mLogRoot;
+  const std::filesystem::path mLogRoot;
+
+  const std::uint64_t mMaxFileSizeInBytes;
 
   std::ofstream mIndexFile;
-
-  std::uint64_t mMaxFileSizeInBytes;
 
   std::uint64_t mRollCounter;
 
