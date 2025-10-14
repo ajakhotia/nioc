@@ -16,7 +16,7 @@ namespace
 std::vector<char> generateData()
 {
   static constexpr auto kSize = 20UL;
-  std::vector<char> data(kSize);
+  auto data = std::vector<char>(kSize);
   std::iota(data.begin(), data.end(), 63);
   return data;
 }
@@ -33,7 +33,7 @@ TEST(LoggerUtils, timeAsFormattedString)
 
 TEST(LoggerUtils, padString)
 {
-  const auto input = std::string("682");
+  const auto input = std::string{ "682" };
 
   {
     const auto output = padString(input, 13U, '0');
@@ -81,8 +81,8 @@ TEST(LoggerUtils, computeTotalSizeInBytes)
 
 TEST(LoggerUtils, ReadWriteUtilSequenceEntry)
 {
-  std::stringstream stream;
-  const auto value = SequenceEntry{ 53519839189237 };
+  auto stream = std::stringstream{};
+  const auto value = SequenceEntry{ ChannelId{ 53519839189237 } };
 
   ReadWriteUtil<SequenceEntry>::write(stream, value);
   const auto readValue = ReadWriteUtil<SequenceEntry>::read(stream.str().data());
@@ -92,7 +92,7 @@ TEST(LoggerUtils, ReadWriteUtilSequenceEntry)
 
 TEST(LoggerUtils, ReadWriteUtilIndexEntry)
 {
-  std::stringstream stream;
+  auto stream = std::stringstream{};
   const auto value = IndexEntry{ 53519839189237, 9065316618953, 281591230 };
 
   ReadWriteUtil<IndexEntry>::write(stream, value);
@@ -105,7 +105,7 @@ TEST(LoggerUtils, ReadWriteUtilIndexEntry)
 
 TEST(LoggerUtils, ReadWriteByteSpan)
 {
-  std::stringstream stream;
+  auto stream = std::stringstream{};
   const auto data = generateData();
   const auto value = std::as_bytes(std::span(data));
   const auto size = value.size();

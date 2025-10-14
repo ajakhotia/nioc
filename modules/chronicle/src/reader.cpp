@@ -52,7 +52,7 @@ ChannelReader& Reader::acquireChannel(const ChannelId channelId, ChannelReaderMa
     switch(mIoMechanism)
     {
     case IoMechanism::Mmap:
-      channelReader = std::make_unique<MmapChannelReader>(mLogRoot / toHexString(channelId));
+      channelReader = std::make_unique<MmapChannelReader>(mLogRoot / toHexString(channelId.mValue));
       break;
 
     case IoMechanism::Stream:

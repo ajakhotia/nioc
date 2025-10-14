@@ -7,6 +7,7 @@
 
 #include <chrono>
 #include <filesystem>
+#include <nioc/chronicle/defines.hpp>
 #include <span>
 #include <spdlog/fmt/fmt.h>
 #include <vector>
@@ -32,7 +33,7 @@ static constexpr auto kSequenceFileName = "sequence";
 /// @brief  A structure that represents an entry in the sequence file of a log.
 struct SequenceEntry
 {
-  std::uint64_t mChannelId;
+  ChannelId mChannelId;
 };
 
 /// @brief  A structure that represents an entry in the index file of a channel.
