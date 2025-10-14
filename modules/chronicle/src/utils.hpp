@@ -9,8 +9,6 @@
 #include <filesystem>
 #include <nioc/chronicle/defines.hpp>
 #include <span>
-#include <spdlog/fmt/fmt.h>
-#include <vector>
 
 namespace nioc::chronicle
 {
@@ -74,7 +72,7 @@ std::string buildRollName(std::uint64_t rollId);
 template<typename Integer>
 std::string toHexString(const Integer integer)
 {
-  return fmt::format("0x{:x}", integer);
+  return std::format("0x{:x}", integer);
 }
 
 /// @brief  Converts a valid hex string to an integer. The string must start with 0x.
