@@ -94,7 +94,7 @@ Integer hexStringToInteger(const std::string& hexString)
   return std::stoull(hexString, nullptr, kHexBase);
 }
 
-/// @brief  Checks if the files has required amount of space before reaching the max size.
+/// @brief  Checks if the files have the required amount of space before reaching the max size.
 /// @param  file                Reference to the file in question.
 /// @param  spaceRequired       Space required by the client.
 /// @param  maxFileSizeInBytes  Maximum allowable size of the file.
