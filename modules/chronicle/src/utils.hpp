@@ -65,7 +65,7 @@ std::string padString(const std::string& input, uint64_t paddedLength, char padd
 /// @return std::string containing the name for the roll.
 std::string buildRollName(std::uint64_t rollId);
 
-/// @brief  Converts an integer to a sting in hexadecimal form(0x.....).
+/// @brief  Converts an integer to a sting in hexadecimal form (0x...)
 /// @tparam Integer The integer type.
 /// @param  integer Input.
 /// @return A string containing the integer represented in hexadecimal form.
