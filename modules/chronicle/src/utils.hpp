@@ -39,9 +39,9 @@ struct IndexEntry
 {
   std::uint64_t mRollId;
 
-  std::uint64_t mRollPosition;
+  std::uint64_t mOffset;
 
-  std::uint64_t mDataSize;
+  std::uint64_t mSize;
 };
 
 /// @brief  Converts a system_clock time_point to date-time string formatted per ISO 8601

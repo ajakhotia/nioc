@@ -99,8 +99,8 @@ TEST(LoggerUtils, ReadWriteUtilIndexEntry)
   const auto readValue = ReadWriteUtil<IndexEntry>::read(stream.str().data());
 
   EXPECT_EQ(value.mRollId, readValue.mRollId);
-  EXPECT_EQ(value.mRollPosition, readValue.mRollPosition);
-  EXPECT_EQ(value.mDataSize, readValue.mDataSize);
+  EXPECT_EQ(value.mOffset, readValue.mOffset);
+  EXPECT_EQ(value.mSize, readValue.mSize);
 }
 
 TEST(LoggerUtils, ReadWriteByteSpan)
