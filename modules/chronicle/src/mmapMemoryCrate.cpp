@@ -17,8 +17,9 @@ ConstByteSpan retrieveSpan(const MappedFile& mappedFile, const IndexEntry& index
 {
   const auto* dataPtr = std::next(
       mappedFile.begin(),
-      static_cast<ssize_t>(indexEntry.mRollPosition));
-  return ReadWriteUtil<ConstByteSpan>::read(dataPtr, indexEntry.mDataSize);
+      static_cast<ssize_t>(indexEntry.mOffset));
+
+  return ReadWriteUtil<ConstByteSpan>::read(dataPtr, indexEntry.mSize);
 }
 
 } // namespace

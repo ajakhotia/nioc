@@ -7,9 +7,8 @@
 
 #include <chrono>
 #include <filesystem>
+#include <nioc/chronicle/defines.hpp>
 #include <span>
-#include <spdlog/fmt/fmt.h>
-#include <vector>
 
 namespace nioc::chronicle
 {
@@ -32,7 +31,7 @@ static constexpr auto kSequenceFileName = "sequence";
 /// @brief  A structure that represents an entry in the sequence file of a log.
 struct SequenceEntry
 {
-  std::uint64_t mChannelId;
+  ChannelId mChannelId;
 };
 
 /// @brief  A structure that represents an entry in the index file of a channel.
@@ -40,9 +39,9 @@ struct IndexEntry
 {
   std::uint64_t mRollId;
 
-  std::uint64_t mRollPosition;
+  std::uint64_t mOffset;
 
-  std::uint64_t mDataSize;
+  std::uint64_t mSize;
 };
 
 /// @brief  Converts a system_clock time_point to date-time string formatted per ISO 8601
@@ -66,14 +65,14 @@ std::string padString(const std::string& input, uint64_t paddedLength, char padd
 /// @return std::string containing the name for the roll.
 std::string buildRollName(std::uint64_t rollId);
 
-/// @brief  Converts an integer to a sting in hexadecimal form(0x.....).
+/// @brief  Converts an integer to a sting in hexadecimal form (0x...)
 /// @tparam Integer The integer type.
 /// @param  integer Input.
 /// @return A string containing the integer represented in hexadecimal form.
 template<typename Integer>
 std::string toHexString(const Integer integer)
 {
-  return fmt::format("0x{:x}", integer);
+  return std::format("0x{:x}", integer);
 }
 
 /// @brief  Converts a valid hex string to an integer. The string must start with 0x.
@@ -95,7 +94,7 @@ Integer hexStringToInteger(const std::string& hexString)
   return std::stoull(hexString, nullptr, kHexBase);
 }
 
-/// @brief  Checks if the files has required amount of space before reaching the max size.
+/// @brief  Checks if the files have the required amount of space before reaching the max size.
 /// @param  file                Reference to the file in question.
 /// @param  spaceRequired       Space required by the client.
 /// @param  maxFileSizeInBytes  Maximum allowable size of the file.

@@ -105,8 +105,8 @@ void StreamChannelWriter::rollCheckAndIndex(const std::uint64_t requiredSizeInBy
     ReadWriteUtil<IndexEntry>::write(
         mIndexFile,
         { .mRollId = mRollCounter,
-          .mRollPosition = static_cast<std::uint64_t>(position),
-          .mDataSize = requiredSizeInBytes });
+          .mOffset = static_cast<std::uint64_t>(position),
+          .mSize = requiredSizeInBytes });
   }
   else
   {

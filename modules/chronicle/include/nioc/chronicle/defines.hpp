@@ -12,7 +12,12 @@ namespace nioc::chronicle
 {
 
 /// @brief Unique identifier for a data channel.
-using ChannelId = std::uint64_t;
+struct ChannelId
+{
+  std::uint64_t mValue;
+
+  constexpr bool operator==(const ChannelId&) const = default;
+};
 
 /// @brief I/O mechanism for reading or writing chronicle data.
 ///
@@ -37,3 +42,12 @@ std::string stringFromIoMechanism(IoMechanism mechanism);
 IoMechanism ioMechanismFromString(const std::string& str);
 
 } // namespace nioc::chronicle
+
+template<>
+struct std::hash<nioc::chronicle::ChannelId>
+{
+  decltype(auto) operator()(const nioc::chronicle::ChannelId& channelId) const noexcept
+  {
+    return std::hash<std::uint64_t>{}(channelId.mValue);
+  }
+};

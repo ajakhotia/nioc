@@ -60,7 +60,7 @@ computeTotalSizeInBytes(const std::span<const std::span<const std::byte>> dataCo
 template<>
 void ReadWriteUtil<SequenceEntry>::write(std::ostream& stream, const SequenceEntry value)
 {
-  boost::endian::native_to_little_inplace(value.mChannelId);
+  boost::endian::native_to_little_inplace(value.mChannelId.mValue);
   stream.write(std::bit_cast<const char*>(&value), sizeof(value));
 }
 
@@ -68,7 +68,7 @@ template<>
 SequenceEntry ReadWriteUtil<SequenceEntry>::read(const char* ptr, std::uint64_t /*unused*/)
 {
   auto value = *std::bit_cast<const SequenceEntry*>(ptr);
-  boost::endian::little_to_native_inplace(value.mChannelId);
+  boost::endian::little_to_native_inplace(value.mChannelId.mValue);
   return value;
 }
 
@@ -76,8 +76,8 @@ template<>
 void ReadWriteUtil<IndexEntry>::write(std::ostream& stream, const IndexEntry value)
 {
   boost::endian::native_to_little_inplace(value.mRollId);
-  boost::endian::native_to_little_inplace(value.mRollPosition);
-  boost::endian::native_to_little_inplace(value.mDataSize);
+  boost::endian::native_to_little_inplace(value.mOffset);
+  boost::endian::native_to_little_inplace(value.mSize);
 
   stream.write(std::bit_cast<const char*>(&value), sizeof(value));
 }
@@ -88,8 +88,8 @@ IndexEntry ReadWriteUtil<IndexEntry>::read(const char* ptr, const std::uint64_t 
   auto value = *std::bit_cast<const IndexEntry*>(ptr);
 
   boost::endian::little_to_native_inplace(value.mRollId);
-  boost::endian::little_to_native_inplace(value.mRollPosition);
-  boost::endian::little_to_native_inplace(value.mDataSize);
+  boost::endian::little_to_native_inplace(value.mOffset);
+  boost::endian::little_to_native_inplace(value.mSize);
   return value;
 }
 

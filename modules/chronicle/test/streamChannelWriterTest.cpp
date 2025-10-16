@@ -4,6 +4,7 @@
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#include <algorithm>
 #include <gtest/gtest.h>
 #include <numeric>
 #include <streamChannelWriter.hpp>

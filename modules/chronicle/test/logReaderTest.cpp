@@ -18,13 +18,13 @@ namespace
 {
 std::vector<char> generateData(std::uint64_t size)
 {
-  std::vector<char> data(size);
+  auto data = std::vector<char>(size);
   std::iota(data.begin(), data.end(), size);
   return data;
 }
 
-constexpr auto channelA = 16983UL;
-constexpr auto channelB = 68964786UL;
+constexpr auto channelA = ChannelId{ 16983UL };
+constexpr auto channelB = ChannelId{ 68964786UL };
 const auto dataA = generateData(20ULL);
 const auto dataB = generateData(34ULL);
 const auto dataAAsBytes = std::as_bytes(std::span(dataA));
@@ -32,7 +32,7 @@ const auto dataBAsBytes = std::as_bytes(std::span(dataB));
 
 fs::path createLog()
 {
-  Writer writer;
+  auto writer = Writer{};
 
   writer.write(channelA, dataAAsBytes);
   writer.write(channelB, dataBAsBytes);
@@ -52,7 +52,7 @@ void expectSpanEqual(const std::span<const std::byte>& lhs, const std::span<cons
 TEST(Reader, read)
 {
   const auto logPath = createLog();
-  Reader reader(logPath);
+  auto reader = Reader{ logPath };
 
   {
     const auto entry = reader.read();

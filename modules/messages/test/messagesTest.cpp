@@ -16,7 +16,7 @@ TEST(MessagesTest, MsgHandleChecks)
 {
   static_assert(Msg<Sample1>::kMsgHandle == Sample1::_capnpPrivate::typeId);
 
-  const Msg<Sample1> testMsg;
+  const auto testMsg = Msg<Sample1>{};
   EXPECT_EQ(testMsg.msgHandle(), Msg<Sample1>::kMsgHandle);
 
   const auto& baseRef = dynamic_cast<const MsgBase&>(testMsg);
@@ -25,7 +25,7 @@ TEST(MessagesTest, MsgHandleChecks)
 
 TEST(MessagesTest, Construction)
 {
-  Msg<Sample1> sampleMsg;
+  auto sampleMsg = Msg<Sample1>{};
   {
     auto builder = sampleMsg.builder();
     builder.setName("example");
@@ -41,12 +41,12 @@ TEST(MessagesTest, Construction)
 
 TEST(MessagesTest, ChronicleWriterReader)
 {
-  std::filesystem::path chroniclePath;
+  auto chroniclePath = std::filesystem::path{};
   {
-    chronicle::Writer writer;
+    auto writer = chronicle::Writer{};
     chroniclePath = writer.path();
 
-    Msg<Sample1> sampleMsg;
+    auto sampleMsg = Msg<Sample1>{};
     {
       auto builder = sampleMsg.builder();
       builder.setName("example");
@@ -56,12 +56,12 @@ TEST(MessagesTest, ChronicleWriterReader)
   }
 
   {
-    auto reader = chronicle::Reader(chroniclePath);
+    auto reader = chronicle::Reader{ chroniclePath };
     auto entry = reader.read();
-    auto msg = Msg<Sample1>(entry.mMemoryCrate);
+    auto msg = Msg<Sample1>{ entry.mMemoryCrate };
     auto msgReader = msg.reader();
 
-    EXPECT_EQ(entry.mChannelId, Msg<Sample1>::kMsgHandle);
+    EXPECT_EQ(entry.mChannelId, chronicle::ChannelId(Msg<Sample1>::kMsgHandle));
     EXPECT_EQ("example", msgReader.getName());
     EXPECT_EQ(3, msgReader.getValue());
   }

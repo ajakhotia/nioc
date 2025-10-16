@@ -102,7 +102,7 @@ ChannelWriter& Writer::acquireChannel(const ChannelId channelId, ChannelPtrMap& 
     {
     case IoMechanism::Stream:
       channelWriter = std::make_unique<StreamChannelWriter>(
-          mLogDirectory / toHexString(channelId),
+          mLogDirectory / toHexString(channelId.mValue),
           mMaxFileSizeInBytes);
       break;
 

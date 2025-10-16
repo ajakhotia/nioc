@@ -97,7 +97,7 @@ void write(MsgBase& msgBase, chronicle::Writer& writer)
         return convert(arrayPtr);
       });
 
-  writer.write(msgBase.msgHandle(), spanCollection);
+  writer.write(chronicle::ChannelId(msgBase.msgHandle()), spanCollection);
 }
 
 
