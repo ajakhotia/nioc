@@ -249,7 +249,7 @@ CheckOptions:
   misc-coroutine-hostile-raii.RAIITypesList: 'std::lock_guard;std::scoped_lock'
   misc-coroutine-hostile-raii.SafeAwaitableList: ''
   misc-header-include-cycle.IgnoredFilesList: ''
-  misc-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic: false
+  misc-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic: true
   misc-non-private-member-variables-in-classes.IgnorePublicMemberVariables: false
   misc-throw-by-value-catch-by-reference.CheckThrowTemporaries: true
   misc-throw-by-value-catch-by-reference.MaxSize: 18446744073709551615
