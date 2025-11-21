@@ -100,22 +100,22 @@ ChannelWriter& Writer::acquireChannel(const ChannelId channelId, ChannelPtrMap& 
 
     switch(mIoMechanism)
     {
-    case IoMechanism::Stream:
-      channelWriter = std::make_unique<StreamChannelWriter>(
-          mLogDirectory / toHexString(channelId),
-          mMaxFileSizeInBytes);
-      break;
+      case IoMechanism::Stream:
+        channelWriter = std::make_unique<StreamChannelWriter>(
+            mLogDirectory / toHexString(channelId.mValue),
+            mMaxFileSizeInBytes);
+        break;
 
-    case IoMechanism::Mmap:
-      throw std::invalid_argument(
-          "[Chronicle::Writer] IoMechanism '" + stringFromIoMechanism(IoMechanism::Mmap) +
-          "' is not supported for writing. Use '" + stringFromIoMechanism(IoMechanism::Stream) +
-          "' instead.");
+      case IoMechanism::Mmap:
+        throw std::invalid_argument(
+            "[Chronicle::Writer] IoMechanism '" + stringFromIoMechanism(IoMechanism::Mmap) +
+            "' is not supported for writing. Use '" + stringFromIoMechanism(IoMechanism::Stream) +
+            "' instead.");
 
-    default:
-      throw std::invalid_argument(
-          "[Chronicle::Writer] Unknown IoMechanism with value: " +
-          std::to_string(static_cast<int>(mIoMechanism)));
+      default:
+        throw std::invalid_argument(
+            "[Chronicle::Writer] Unknown IoMechanism with value: " +
+            std::to_string(static_cast<int>(mIoMechanism)));
     }
 
     channelPtrMap.try_emplace(channelId, std::move(channelWriter));

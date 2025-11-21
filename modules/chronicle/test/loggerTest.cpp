@@ -20,7 +20,7 @@ namespace
 std::vector<char> generateData()
 {
   static constexpr auto kSize = 20UL;
-  std::vector<char> data(kSize);
+  auto data = std::vector<char>(kSize);
   std::iota(data.begin(), data.end(), kSize);
   return data;
 }
@@ -38,13 +38,13 @@ TEST(Writer, construction)
 
 TEST(Writer, writeSpan)
 {
-  constexpr auto channelA = 16983UL;
-  constexpr auto channelB = 68964786UL;
+  constexpr auto channelA = ChannelId{ 16983UL };
+  constexpr auto channelB = ChannelId{ 68964786UL };
   const auto data = generateData();
 
   const auto logPath = [&]()
   {
-    Writer writer;
+    auto writer = Writer{};
 
     writer.write(channelA, std::as_bytes(std::span(data)));
     writer.write(channelB, std::as_bytes(std::span(data)));
@@ -81,11 +81,11 @@ TEST(Writer, writeSpan)
 
 TEST(Writer, writeCollectionOfSpan)
 {
-  constexpr auto channelA = 16983UL;
-  constexpr auto channelB = 68964786UL;
+  constexpr auto channelA = ChannelId{ 16983UL };
+  constexpr auto channelB = ChannelId{ 68964786UL };
   const auto data = generateData();
 
-  std::vector<std::span<const std::byte>> spanCollection;
+  auto spanCollection = std::vector<std::span<const std::byte>>{};
   spanCollection.reserve(10UL);
   for(size_t ii = 0UL; ii < 10UL; ++ii)
   {
@@ -95,7 +95,7 @@ TEST(Writer, writeCollectionOfSpan)
 
   const auto logPath = [&]()
   {
-    Writer writer;
+    auto writer = Writer{};
 
     writer.write(channelA, spanCollection);
     writer.write(channelB, spanCollection);
@@ -132,7 +132,7 @@ TEST(Writer, writeCollectionOfSpan)
 
 TEST(Writer, path)
 {
-  Writer writer(fs::temp_directory_path() / "niocUnitTestLogs");
+  auto writer = Writer{ fs::temp_directory_path() / "niocUnitTestLogs" };
   EXPECT_TRUE(writer.path().string().starts_with(
       (fs::temp_directory_path() / "niocUnitTestLogs").string()));
 }
