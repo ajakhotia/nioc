@@ -51,20 +51,21 @@ ChannelReader& Reader::acquireChannel(const ChannelId channelId, ChannelReaderMa
 
     switch(mIoMechanism)
     {
-    case IoMechanism::Mmap:
-      channelReader = std::make_unique<MmapChannelReader>(mLogRoot / toHexString(channelId.mValue));
-      break;
+      case IoMechanism::Mmap:
+        channelReader = std::make_unique<MmapChannelReader>(
+            mLogRoot / toHexString(channelId.mValue));
+        break;
 
-    case IoMechanism::Stream:
-      throw std::invalid_argument(
-          "[Chronicle::Reader] IoMechanism '" + stringFromIoMechanism(IoMechanism::Stream) +
-          "' is not supported for reading. Use '" + stringFromIoMechanism(IoMechanism::Mmap) +
-          "' instead.");
+      case IoMechanism::Stream:
+        throw std::invalid_argument(
+            "[Chronicle::Reader] IoMechanism '" + stringFromIoMechanism(IoMechanism::Stream) +
+            "' is not supported for reading. Use '" + stringFromIoMechanism(IoMechanism::Mmap) +
+            "' instead.");
 
-    default:
-      throw std::invalid_argument(
-          "[Chronicle::Reader] Unknown IoMechanism with value: " +
-          std::to_string(static_cast<int>(mIoMechanism)));
+      default:
+        throw std::invalid_argument(
+            "[Chronicle::Reader] Unknown IoMechanism with value: " +
+            std::to_string(static_cast<int>(mIoMechanism)));
     }
 
     channelReaderMap.try_emplace(channelId, std::move(channelReader));
