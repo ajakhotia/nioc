@@ -15,26 +15,24 @@ if((TARGET GTest::GTest) AND (TARGET GTest::Main))
 endif()
 
 
-include(cmake/utilities/capnprotoGenerate.cmake)
-include(cmake/utilities/clangFormat.cmake)
-include(cmake/utilities/clangTidy.cmake)
-include(cmake/utilities/exportedTargets.cmake)
-
-add_clang_format(TARGET niocClangFormat VERSION 19)
-add_clang_tidy(VERSION 19)
-
-
-#[[ Only add external dependencies to the source tree from here if this project
+#[[ Setup project level tools and external dependencies if and only if this project
     is the top-level project. If this project has been included with-in another
-    project as a submodule, then the onus of setting up the required external
-    dependencies fall on that top-level project. This is done in order to
-    maintain a single flat level of external sub-modules/sub-repos and avoid a
-    tree of sub-modules with potential for conflict and multiple points of
-    truth. ]]
-if(${CMAKE_SOURCE_DIR} STREQUAL ${nioc_SOURCE_DIR})
-    add_subdirectory(external)
+    project as a submodule, then the onus of setting up these requirement falls on that
+    top-level project. This prevent this project from overreaching when it is used as a submodule
+    in another project. ]]
+if(PROJECT_IS_TOP_LEVEL)
+  include(cmake/utilities/clangFormat.cmake)
+  include(cmake/utilities/clangTidy.cmake)
+  include(cmake/utilities/exportedTargets.cmake)
+
+  add_clang_format(TARGET niocClangFormat VERSION 19)
+  add_clang_tidy(VERSION 19)
+
+  add_subdirectory(external)
 endif()
 
+
+include(cmake/utilities/capnprotoGenerate.cmake)
 add_subdirectory(modules)
 add_subdirectory(docker)
 
