@@ -57,7 +57,7 @@ ARG ROBOTFARM_BUILD_LIST="BoostExternalProject;Eigen3ExternalProject;NlohmannJso
 RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=locked                  \
     --mount=type=cache,target=/var/lib/apt/lists,id=${APT_LIST_CACHE_ID},sharing=locked             \
     curl -fsSL                                                                                      \
-      https://raw.githubusercontent.com/ajakhotia/robotFarm/74b1b58134be1706342b3e71ba4baabceba3051c/tools/quickBuild.sh |   \
+      https://raw.githubusercontent.com/ajakhotia/robotFarm/refs/heads/main/tools/quickBuild.sh |   \
       bash -s --                                                                                    \
         --version v1.1.0                                                                            \
         --toolchain ${TOOLCHAIN}                                                                    \
