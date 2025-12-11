@@ -47,32 +47,6 @@ RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=lock
     apt-get install -y --no-install-recommends                                                      \
       $(sh /tmp/tools/extractDependencies.sh Basics /tmp/systemDependencies.json)
 
-RUN --mount=type=bind,src=tools/installCMake.sh,dst=/tmp/tools/installCMake.sh,ro                   \
-    bash /tmp/tools/installCMake.sh
-
-RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=locked                  \
-    --mount=type=cache,target=/var/lib/apt/lists,id=${APT_LIST_CACHE_ID},sharing=locked             \
-    --mount=type=bind,src=tools/apt/addGNUSources.sh,dst=/tmp/tools/apt/addGNUSources.sh,ro         \
-    bash /tmp/tools/apt/addGNUSources.sh -y
-
-RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=locked                  \
-    --mount=type=cache,target=/var/lib/apt/lists,id=${APT_LIST_CACHE_ID},sharing=locked             \
-    --mount=type=bind,src=tools/apt/addLLVMSources.sh,dst=/tmp/tools/apt/addLLVMSources.sh,ro       \
-    bash /tmp/tools/apt/addLLVMSources.sh -y
-
-RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=locked                  \
-    --mount=type=cache,target=/var/lib/apt/lists,id=${APT_LIST_CACHE_ID},sharing=locked             \
-    --mount=type=bind,src=tools/apt/addNvidiaSources.sh,dst=/tmp/tools/apt/addNvidiaSources.sh,ro   \
-    bash /tmp/tools/apt/addNvidiaSources.sh -y
-
-RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=locked                  \
-    --mount=type=cache,target=/var/lib/apt/lists,id=${APT_LIST_CACHE_ID},sharing=locked             \
-    --mount=type=bind,src=tools/extractDependencies.sh,dst=/tmp/tools/extractDependencies.sh,ro     \
-    --mount=type=bind,src=systemDependencies.json,dst=/tmp/systemDependencies.json,ro               \
-    apt-get update &&                                                                               \
-    apt-get install -y --no-install-recommends                                                      \
-      $(bash /tmp/tools/extractDependencies.sh Compilers /tmp/systemDependencies.json)
-
 
 FROM base AS dev-base
 
@@ -89,6 +63,14 @@ RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=lock
         --toolchain ${TOOLCHAIN}                                                                    \
         --prefix /opt/robotFarm                                                                     \
         --build-list ${ROBOTFARM_BUILD_LIST}
+
+RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=locked                  \
+    --mount=type=cache,target=/var/lib/apt/lists,id=${APT_LIST_CACHE_ID},sharing=locked             \
+    --mount=type=bind,src=tools/extractDependencies.sh,dst=/tmp/tools/extractDependencies.sh,ro     \
+    --mount=type=bind,src=systemDependencies.json,dst=/tmp/systemDependencies.json,ro               \
+    apt-get update &&                                                                               \
+    apt-get install -y --no-install-recommends                                                      \
+      $(bash /tmp/tools/extractDependencies.sh Compilers /tmp/systemDependencies.json)
 
 
 FROM dev-base AS build
