@@ -29,12 +29,12 @@ if(PROJECT_IS_TOP_LEVEL)
   add_clang_tidy(VERSION 19)
 
   add_subdirectory(external)
+  add_subdirectory(docker)
 endif()
 
 
 include(cmake/utilities/capnprotoGenerate.cmake)
 add_subdirectory(modules)
-add_subdirectory(docker)
 
 
 #[[ Include cmake-default tools to create export files. ]]
