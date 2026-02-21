@@ -1,5 +1,6 @@
 add_subdirectory(example)
 add_subdirectory(common)
+add_subdirectory(primitives)
 add_subdirectory(chronicle)
 add_subdirectory(messages)
 add_subdirectory(geometry)
