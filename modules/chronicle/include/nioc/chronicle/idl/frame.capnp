@@ -3,12 +3,7 @@
 using Cxx = import "/capnp/c++.capnp";
 $Cxx.namespace("nioc::chronicle");
 
-
-struct Timestamp @0xb2cac35f6f565bc8
-{
-    nanosecondSinceEpoch @0 : Int64;
-    reference @1 : Text;
-}
+using Timestamp = import "/nioc/primitives/idl/timestamp.capnp".Timestamp;
 
 
 struct Frame @0xbbe393db90ef9d35 (Msg)
