@@ -3,9 +3,9 @@
 using Cxx = import "/capnp/c++.capnp";
 $Cxx.namespace("nioc::sensors");
 
-using Header     = import "/nioc/primitives/idl/header.capnp".Header;
-using Vector3    = import "/nioc/primitives/idl/geometry.capnp".Vector3;
-using Quaternion = import "/nioc/primitives/idl/geometry.capnp".Quaternion;
+using Header     = import "/nioc/common/idl/header.capnp".Header;
+using Vector3    = import "/nioc/geometry/idl/geometry.capnp".Vector3;
+using Quaternion = import "/nioc/geometry/idl/geometry.capnp".Quaternion;
 
 
 struct Imu @0xa32f91dd180cb931

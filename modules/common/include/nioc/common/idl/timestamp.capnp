@@ -1,7 +1,7 @@
 @0xfddb771c230afa0a;
 
 using Cxx = import "/capnp/c++.capnp";
-$Cxx.namespace("nioc::primitives");
+$Cxx.namespace("nioc::common");
 
 
 struct Timestamp @0xb2cac35f6f565bc8

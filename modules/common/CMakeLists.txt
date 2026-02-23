@@ -1,4 +1,25 @@
+find_package(CapnProto REQUIRED)
 find_package(Boost CONFIG REQUIRED COMPONENTS headers)
+
+capnproto_generate_library(
+        TARGET
+            commonIdl
+        NAMESPACE
+            nioc::
+        EXPORT
+            niocTargets
+        SCHEMA_FILES
+            include/nioc/common/idl/timestamp.capnp
+            include/nioc/common/idl/header.capnp
+        COMPILE_FEATURES
+            PUBLIC cxx_std_20
+        COMPILE_OPTIONS
+            PRIVATE $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
+            PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
+            PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
+        COMPILE_DEFINITIONS
+            "")
+
 
 add_exported_library(
         TARGET

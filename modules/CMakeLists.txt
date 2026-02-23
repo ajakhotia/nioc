@@ -1,7 +1,6 @@
 add_subdirectory(example)
 add_subdirectory(common)
-add_subdirectory(primitives)
+add_subdirectory(geometry)
 add_subdirectory(sensors)
 add_subdirectory(chronicle)
 add_subdirectory(terminus)
-add_subdirectory(geometry)

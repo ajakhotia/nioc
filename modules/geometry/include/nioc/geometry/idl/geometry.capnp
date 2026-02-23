@@ -1,7 +1,7 @@
 @0x907347fe40a016ff;
 
 using Cxx = import "/capnp/c++.capnp";
-$Cxx.namespace("nioc::primitives");
+$Cxx.namespace("nioc::geometry");
 
 
 struct Vector3 @0x8e0ed3ea29f55494

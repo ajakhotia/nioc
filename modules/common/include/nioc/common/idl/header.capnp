@@ -1,7 +1,7 @@
 @0xce5af619be087419;
 
 using Cxx = import "/capnp/c++.capnp";
-$Cxx.namespace("nioc::primitives");
+$Cxx.namespace("nioc::common");
 
 using Timestamp = import "timestamp.capnp".Timestamp;
 
