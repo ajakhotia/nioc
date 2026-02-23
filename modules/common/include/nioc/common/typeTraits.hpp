@@ -38,7 +38,7 @@ inline constexpr bool isSpecialization = IsSpecialization<InstanceType, Template
 /// @tparam Type Type to get name for.
 /// @return String view of the type name.
 template<typename Type>
-constexpr std::string_view prettyName() noexcept
+consteval std::string_view prettyName() noexcept
 {
   const auto name = std::string_view(boost::typeindex::ctti_type_index::type_id<Type>().name());
   return name.substr(0, name.size() - 1);
