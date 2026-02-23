@@ -7,10 +7,10 @@
 #include <algorithm>
 #include <capnp/message.h>
 #include <cassert>
-#include <nioc/messages/msgBase.hpp>
+#include <nioc/terminus/msgBase.hpp>
 #include <vector>
 
-namespace nioc::messages
+namespace nioc::terminus
 {
 
 using ConstByteSpan = std::span<const std::byte>;
@@ -101,4 +101,4 @@ void write(MsgBase& msgBase, chronicle::Writer& writer)
 }
 
 
-} // namespace nioc::messages
+} // namespace nioc::terminus

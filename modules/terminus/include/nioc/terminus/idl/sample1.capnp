@@ -1,7 +1,7 @@
 @0xedf94979a37df74f;
 
 using Cxx = import "/capnp/c++.capnp";
-$Cxx.namespace("nioc::messages");
+$Cxx.namespace("nioc::terminus");
 
 struct Sample1 @0xc319225d305dbe45
 {

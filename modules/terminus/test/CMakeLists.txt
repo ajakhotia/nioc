@@ -1,16 +1,16 @@
 find_package(GTest REQUIRED)
 include(GoogleTest)
 
-add_executable(messagesTest messagesTest.cpp)
-target_link_libraries(messagesTest
+add_executable(terminusTest terminusTest.cpp)
+target_link_libraries(terminusTest
     GTest::GTest
     GTest::Main
     nioc::chronicle
-    nioc::messages
-    nioc::messagesIdl)
+    nioc::terminus
+    nioc::terminusIdl)
 
-target_compile_options(messagesTest PRIVATE
+target_compile_options(terminusTest PRIVATE
         $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
         $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>)
 
-gtest_discover_tests(messagesTest)
+gtest_discover_tests(terminusTest)

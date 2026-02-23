@@ -24,7 +24,7 @@ Core C++ utilities for building high-performance robotics and AI applications on
 - **Configurable Storage**: Customizable file sizes and storage locations
 - **Log Replay**: Built-in log reader for data analysis and replay
 
-### Message Passing (`nioc::messages`)
+### Data Terminus (`nioc::terminus`)
 - **Serialization Framework**: Cap'n Proto-based message serialization
 - **Memory-Mapped Messages**: `MMappedMessageReader` for efficient message deserialization
 - **Base Message Types**: Foundation classes for building custom message protocols

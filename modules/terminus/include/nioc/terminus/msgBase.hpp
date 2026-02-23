@@ -11,7 +11,7 @@
 #include <nioc/chronicle/writer.hpp>
 #include <variant>
 
-namespace nioc::messages
+namespace nioc::terminus
 {
 
 /// @brief Message reader for chronicle data.
@@ -89,4 +89,4 @@ private:
 void write(MsgBase& msgBase, chronicle::Writer& writer);
 
 
-} // namespace nioc::messages
+} // namespace nioc::terminus
