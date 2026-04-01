@@ -74,7 +74,7 @@ void write(MsgBase& msgBase, chronicle::Writer& writer)
           return segment.size();
         });
 
-    // If there are even number of segments, there will be odd number of
+    // If there are even number of segments, there will be an odd number of
     // entries in the table. Append a 0 to even them out.
     if(segments.size() % 2 == 0)
     {
