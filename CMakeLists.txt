@@ -21,12 +21,13 @@ endif()
     top-level project. This prevent this project from overreaching when it is used as a submodule
     in another project. ]]
 if(PROJECT_IS_TOP_LEVEL)
+  include(cmake/utilities/requireArguments.cmake)
   include(cmake/utilities/clangFormat.cmake)
   include(cmake/utilities/clangTidy.cmake)
   include(cmake/utilities/exportedTargets.cmake)
 
   add_clang_format(TARGET niocClangFormat VERSION 19)
-  add_clang_tidy(VERSION 19)
+  add_clang_tidy(TARGET niocClangTidy VERSION 19)
 
   add_subdirectory(external)
   add_subdirectory(docker)
