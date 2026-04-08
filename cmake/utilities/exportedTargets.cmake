@@ -94,18 +94,14 @@ function(add_exported_library)
 
   if(AEL_PARAM_INCLUDE_DIRECTORIES)
     if(AEL_PARAM_TYPE STREQUAL "INTERFACE")
-      set(AEL_INCLUDE_KEYWORD INTERFACE)
+      target_include_directories(${AEL_PARAM_TARGET} INTERFACE
+        $<BUILD_INTERFACE:${AEL_PARAM_INCLUDE_DIRECTORIES}>
+        $<INSTALL_INTERFACE:include>)
     else()
-      set(AEL_INCLUDE_KEYWORD PUBLIC)
+      target_include_directories(${AEL_PARAM_TARGET} PUBLIC
+        $<BUILD_INTERFACE:${AEL_PARAM_INCLUDE_DIRECTORIES}>
+        $<INSTALL_INTERFACE:include>)
     endif()
-
-    foreach(AEL_INCLUDE_DIRECTORY IN LISTS AEL_PARAM_INCLUDE_DIRECTORIES)
-      target_include_directories(${AEL_PARAM_TARGET}
-        ${AEL_INCLUDE_KEYWORD} $<BUILD_INTERFACE:${AEL_INCLUDE_DIRECTORY}>)
-    endforeach()
-
-    target_include_directories(${AEL_PARAM_TARGET}
-      ${AEL_INCLUDE_KEYWORD} $<INSTALL_INTERFACE:include>)
   else()
     message(AUTHOR_WARNING "No include directories have been provided for library target ${AEL_PARAM_TARGET}")
   endif()
@@ -131,16 +127,9 @@ function(add_exported_library)
   endif()
 
   # The trailing / is important to avoid having install path that look like <prefix>/include/include.
-  foreach(AEL_INCLUDE_DIRECTORY IN LISTS AEL_PARAM_INCLUDE_DIRECTORIES)
-    install(
-      DIRECTORY ${AEL_INCLUDE_DIRECTORY}/
-      TYPE INCLUDE
-      PATTERN "*.c++" EXCLUDE
-      PATTERN "*.cpp" EXCLUDE
-      PATTERN "*.c" EXCLUDE
-      PATTERN "*.cc" EXCLUDE
-    )
-  endforeach()
+  install(DIRECTORY ${AEL_PARAM_INCLUDE_DIRECTORIES}/ TYPE INCLUDE
+    PATTERN "*.capnp" EXCLUDE
+    PATTERN "*.capnp.c++" EXCLUDE)
 
   install(TARGETS ${AEL_PARAM_TARGET} EXPORT ${AEL_PARAM_EXPORT})
 
