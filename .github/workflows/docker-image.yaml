@@ -22,6 +22,12 @@ jobs:
           - ubuntu:24.04
 
     steps:
+      - name: checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          submodules: true
+
       - name: base
         uses: ajakhotia/infraCommons/.github/actions/docker-typical-build-push@main
         with:

@@ -39,12 +39,12 @@ RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=lock
     apt-get update &&                                                                               \
     apt-get install -y --no-install-recommends jq
 
-RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=locked                  \
-    --mount=type=cache,target=/var/lib/apt/lists,id=${APT_LIST_CACHE_ID},sharing=locked             \
-    --mount=type=bind,src=tools/extractDependencies.sh,dst=/tmp/tools/extractDependencies.sh,ro     \
-    --mount=type=bind,src=systemDependencies.json,dst=/tmp/systemDependencies.json,ro               \
-    apt-get update &&                                                                               \
-    apt-get install -y --no-install-recommends                                                      \
+RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=locked                                        \
+    --mount=type=cache,target=/var/lib/apt/lists,id=${APT_LIST_CACHE_ID},sharing=locked                                   \
+    --mount=type=bind,src=external/infraCommons/tools/extractDependencies.sh,dst=/tmp/tools/extractDependencies.sh,ro     \
+    --mount=type=bind,src=systemDependencies.json,dst=/tmp/systemDependencies.json,ro                                     \
+    apt-get update &&                                                                                                     \
+    apt-get install -y --no-install-recommends                                                                            \
       $(sh /tmp/tools/extractDependencies.sh Basics /tmp/systemDependencies.json)
 
 
@@ -64,12 +64,12 @@ RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=lock
         --prefix /opt/robotFarm                                                                     \
         --build-list ${ROBOTFARM_BUILD_LIST}
 
-RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=locked                  \
-    --mount=type=cache,target=/var/lib/apt/lists,id=${APT_LIST_CACHE_ID},sharing=locked             \
-    --mount=type=bind,src=tools/extractDependencies.sh,dst=/tmp/tools/extractDependencies.sh,ro     \
-    --mount=type=bind,src=systemDependencies.json,dst=/tmp/systemDependencies.json,ro               \
-    apt-get update &&                                                                               \
-    apt-get install -y --no-install-recommends                                                      \
+RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=locked                                        \
+    --mount=type=cache,target=/var/lib/apt/lists,id=${APT_LIST_CACHE_ID},sharing=locked                                   \
+    --mount=type=bind,src=external/infraCommons/tools/extractDependencies.sh,dst=/tmp/tools/extractDependencies.sh,ro     \
+    --mount=type=bind,src=systemDependencies.json,dst=/tmp/systemDependencies.json,ro                                     \
+    apt-get update &&                                                                                                     \
+    apt-get install -y --no-install-recommends                                                                            \
       $(bash /tmp/tools/extractDependencies.sh Compilers /tmp/systemDependencies.json)
 
 
@@ -79,15 +79,15 @@ ENV BUILD_TYPE=${BUILD_TYPE}
 
 RUN cmake -E make_directory /opt/nioc
 
-RUN --mount=type=bind,src=.,dst=/tmp/nioc-src,ro                                                    \
-    cmake -G Ninja                                                                                  \
-      -S /tmp/nioc-src                                                                              \
-      -B /tmp/nioc-build                                                                            \
-      -DCMAKE_TOOLCHAIN_FILE:FILEPATH=/tmp/nioc-src/cmake/toolchains/${TOOLCHAIN}.cmake             \
-      -DCMAKE_BUILD_TYPE:STRING=${BUILD_TYPE}                                                       \
-      -DCMAKE_PREFIX_PATH:STRING=/opt/robotFarm                                                     \
-      -DCMAKE_INSTALL_PREFIX:PATH=/opt/nioc &&                                                      \
-    cmake --build /tmp/nioc-build &&                                                                \
+RUN --mount=type=bind,src=.,dst=/tmp/nioc-src,ro                                                              \
+    cmake -G Ninja                                                                                            \
+      -S /tmp/nioc-src                                                                                        \
+      -B /tmp/nioc-build                                                                                      \
+      -DCMAKE_TOOLCHAIN_FILE:FILEPATH=/tmp/nioc-src/external/infraCommons/cmake/toolchains/${TOOLCHAIN}.cmake \
+      -DCMAKE_BUILD_TYPE:STRING=${BUILD_TYPE}                                                                 \
+      -DCMAKE_PREFIX_PATH:STRING=/opt/robotFarm                                                               \
+      -DCMAKE_INSTALL_PREFIX:PATH=/opt/nioc &&                                                                \
+    cmake --build /tmp/nioc-build &&                                                                          \
     cmake --install /tmp/nioc-build
 
 
