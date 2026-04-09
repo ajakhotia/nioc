@@ -2,12 +2,14 @@
 Checks: >-
   *,
   -altera-struct-pack-align,
+  -altera-unroll-loops,
   -boost-use-ranges,
   -fuchsia-*,
   -llvm-header-guard,
+  -llvm-prefer-static-over-anonymous-namespace,
   -llvmlibc-*,
   -misc-include-cleaner,
-  -modernize-use-trailing-return-type,
+  -modernize-use-trailing-return-type
 
 WarningsAsErrors: '*'
 HeaderFileExtensions:

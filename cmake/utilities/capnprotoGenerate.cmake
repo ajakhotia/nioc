@@ -90,13 +90,13 @@ function(capnproto_generate_library)
         PATH=${CGL_CAPNP_TOOL_DIRECTORY}:$ENV{PATH}
         LD_LIBRARY_PATH=${CGL_CAPNP_RUNTIME_LIBRARY_DIRECTORY}:$ENV{LD_LIBRARY_PATH}
         ${CGL_CAPNP_TOOL_PATH}
-        compile
-        --no-standard-import
-        --import-path=${CGL_CAPNP_INTERFACE_DIRECTORY}
-        ${CGL_DEPENDENCY_IMPORT_PATH_FLAGS}
-        --output=c++:${CMAKE_CURRENT_BINARY_DIR}/include
-        --src-prefix=${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${CGL_SCHEMA_FILE_ABSOLUTE_PATH}
+          compile
+          --no-standard-import
+          --import-path=${CGL_CAPNP_INTERFACE_DIRECTORY}
+          ${CGL_DEPENDENCY_IMPORT_PATH_FLAGS}
+          --output=c++:${CMAKE_CURRENT_BINARY_DIR}/include
+          --src-prefix=${CMAKE_CURRENT_SOURCE_DIR}/include
+          ${CGL_SCHEMA_FILE_ABSOLUTE_PATH}
       MAIN_DEPENDENCY
         ${CGL_SCHEMA_FILE_ABSOLUTE_PATH}
       DEPENDS
