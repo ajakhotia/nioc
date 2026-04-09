@@ -22,6 +22,12 @@ jobs:
           - ubuntu:24.04
 
     steps:
+      - name: self-checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          submodules: true
+
       - name: base
         uses: ajakhotia/infraCommons/.github/actions/docker-typical-build-push@main
         with:
@@ -48,6 +54,12 @@ jobs:
           - linux-gnu-default
 
     steps:
+      - name: self-checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          submodules: true
+
       - name: dev-base
         uses: ajakhotia/infraCommons/.github/actions/docker-typical-build-push@main
         with:
