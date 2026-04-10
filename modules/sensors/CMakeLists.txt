@@ -11,7 +11,8 @@ capnproto_generate_library(
     include/nioc/sensors/idl/imu.capnp
     include/nioc/sensors/idl/pointCloud.capnp
   LINK_LIBRARIES
-    nioc::primitivesIdl
+    nioc::commonIdl
+    nioc::geometryIdl
   COMPILE_FEATURES
     PUBLIC cxx_std_20
   COMPILE_OPTIONS

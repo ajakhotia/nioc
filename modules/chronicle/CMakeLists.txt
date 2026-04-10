@@ -15,7 +15,7 @@ capnproto_generate_library(
     SCHEMA_FILES
         include/nioc/chronicle/idl/frame.capnp
     LINK_LIBRARIES
-        nioc::primitivesIdl
+        nioc::commonIdl
     COMPILE_FEATURES
         PUBLIC cxx_std_20
     COMPILE_OPTIONS

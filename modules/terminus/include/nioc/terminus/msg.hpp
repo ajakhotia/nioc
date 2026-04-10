@@ -7,7 +7,7 @@
 
 #include "msgBase.hpp"
 
-namespace nioc::messages
+namespace nioc::terminus
 {
 
 /// @brief Typed message container.
@@ -71,4 +71,4 @@ public:
 };
 
 
-} // namespace nioc::messages
+} // namespace nioc::terminus

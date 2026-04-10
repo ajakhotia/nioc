@@ -7,12 +7,12 @@
 #include <gtest/gtest.h>
 #include <nioc/chronicle/reader.hpp>
 #include <nioc/chronicle/writer.hpp>
-#include <nioc/messages/idl/sample1.capnp.h>
-#include <nioc/messages/msg.hpp>
+#include <nioc/terminus/idl/sample1.capnp.h>
+#include <nioc/terminus/msg.hpp>
 
-namespace nioc::messages
+namespace nioc::terminus
 {
-TEST(MessagesTest, MsgHandleChecks)
+TEST(TerminusTest, MsgHandleChecks)
 {
   static_assert(Msg<Sample1>::kMsgHandle == Sample1::_capnpPrivate::typeId);
 
@@ -23,7 +23,7 @@ TEST(MessagesTest, MsgHandleChecks)
   EXPECT_EQ(baseRef.msgHandle(), Msg<Sample1>::kMsgHandle);
 }
 
-TEST(MessagesTest, Construction)
+TEST(TerminusTest, Construction)
 {
   auto sampleMsg = Msg<Sample1>{};
   {
@@ -39,7 +39,7 @@ TEST(MessagesTest, Construction)
   }
 }
 
-TEST(MessagesTest, ChronicleWriterReader)
+TEST(TerminusTest, ChronicleWriterReader)
 {
   auto chroniclePath = std::filesystem::path{};
   {
@@ -68,4 +68,4 @@ TEST(MessagesTest, ChronicleWriterReader)
 }
 
 
-} // namespace nioc::messages
+} // namespace nioc::terminus

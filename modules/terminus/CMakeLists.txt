@@ -2,14 +2,14 @@ find_package(CapnProto REQUIRED)
 
 capnproto_generate_library(
         TARGET
-            messagesIdl
+            terminusIdl
         NAMESPACE
             nioc::
         EXPORT
             niocTargets
         SCHEMA_FILES
-            include/nioc/messages/idl/sample1.capnp
-            include/nioc/messages/idl/sample2.capnp
+            include/nioc/terminus/idl/sample1.capnp
+            include/nioc/terminus/idl/sample2.capnp
         COMPILE_FEATURES
             PUBLIC cxx_std_20
         COMPILE_OPTIONS
@@ -22,7 +22,7 @@ capnproto_generate_library(
 
 add_exported_library(
         TARGET
-            messages
+            terminus
         NAMESPACE
             nioc::
         EXPORT
@@ -30,8 +30,8 @@ add_exported_library(
         SOURCES
             src/msgBase.cpp
         HEADERS
-            PUBLIC include/nioc/messages/msg.hpp
-            PUBLIC include/nioc/messages/msgBase.hpp
+            PUBLIC include/nioc/terminus/msg.hpp
+            PUBLIC include/nioc/terminus/msgBase.hpp
         INCLUDE_DIRECTORIES
             ${CMAKE_CURRENT_SOURCE_DIR}/include
         LINK_LIBRARIES
