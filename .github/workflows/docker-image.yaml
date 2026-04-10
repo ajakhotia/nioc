@@ -37,12 +37,12 @@ jobs:
 
       - name: image-name
         id: image-name
-        uses: ajakhotia/infraCommons/.github/actions/oci-compliant-image-name@main
+        uses: ./external/infraCommons/.github/actions/oci-compliant-image-name
         with:
           build-name: ${{ matrix.os_base }}/base
 
       - name: base
-        uses: ajakhotia/infraCommons/.github/actions/docker-typical-build-push@main
+        uses: ./external/infraCommons/.github/actions/docker-typical-build-push
         with:
           dockerfile: docker/ubuntu.dockerfile
           target-stage: base
@@ -80,12 +80,12 @@ jobs:
 
       - name: dev-base-image-name
         id: dev-base-image-name
-        uses: ajakhotia/infraCommons/.github/actions/oci-compliant-image-name@main
+        uses: ./external/infraCommons/.github/actions/oci-compliant-image-name
         with:
           build-name: ${{ matrix.os_base }}/${{ matrix.toolchain }}/dev-base
 
       - name: dev-base
-        uses: ajakhotia/infraCommons/.github/actions/docker-typical-build-push@main
+        uses: ./external/infraCommons/.github/actions/docker-typical-build-push
         with:
           dockerfile: docker/ubuntu.dockerfile
           target-stage: dev-base
@@ -96,12 +96,12 @@ jobs:
 
       - name: build-image-name
         id: build-image-name
-        uses: ajakhotia/infraCommons/.github/actions/oci-compliant-image-name@main
+        uses: ./external/infraCommons/.github/actions/oci-compliant-image-name
         with:
           build-name: ${{ matrix.os_base }}/${{ matrix.toolchain }}/build
 
       - name: build
-        uses: ajakhotia/infraCommons/.github/actions/docker-typical-build-push@main
+        uses: ./external/infraCommons/.github/actions/docker-typical-build-push
         with:
           dockerfile: docker/ubuntu.dockerfile
           target-stage: build
@@ -112,12 +112,12 @@ jobs:
 
       - name: test-image-name
         id: test-image-name
-        uses: ajakhotia/infraCommons/.github/actions/oci-compliant-image-name@main
+        uses: ./external/infraCommons/.github/actions/oci-compliant-image-name
         with:
           build-name: ${{ matrix.os_base }}/${{ matrix.toolchain }}/test
 
       - name: test
-        uses: ajakhotia/infraCommons/.github/actions/docker-typical-build-push@main
+        uses: ./external/infraCommons/.github/actions/docker-typical-build-push
         with:
           dockerfile: docker/ubuntu.dockerfile
           target-stage: test
@@ -128,12 +128,12 @@ jobs:
 
       - name: deploy-image-name
         id: deploy-image-name
-        uses: ajakhotia/infraCommons/.github/actions/oci-compliant-image-name@main
+        uses: ./external/infraCommons/.github/actions/oci-compliant-image-name
         with:
           build-name: ${{ matrix.os_base }}/${{ matrix.toolchain }}/deploy
 
       - name: deploy
-        uses: ajakhotia/infraCommons/.github/actions/docker-typical-build-push@main
+        uses: ./external/infraCommons/.github/actions/docker-typical-build-push
         with:
           dockerfile: docker/ubuntu.dockerfile
           target-stage: deploy
@@ -159,6 +159,11 @@ jobs:
           - nioc
 
     steps:
+      - name: self-checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: true
+
       - name: setup-login
         uses: docker/login-action@v3
         with:
@@ -168,12 +173,12 @@ jobs:
 
       - name: image-name
         id: image-name
-        uses: ajakhotia/infraCommons/.github/actions/oci-compliant-image-name@main
+        uses: ./external/infraCommons/.github/actions/oci-compliant-image-name
         with:
           build-name: ${{ matrix.os_base }}/${{ matrix.toolchain }}/deploy
 
       - name: find-library
-        uses: ajakhotia/infraCommons/.github/actions/cmake-find-package@main
+        uses: ./external/infraCommons/.github/actions/cmake-find-package
         with:
           library-name: ${{ matrix.library-name }}
           prefix-path: "/opt/robotFarm;/opt/nioc"
