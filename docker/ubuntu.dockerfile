@@ -52,14 +52,15 @@ FROM base AS dev-base
 
 ARG TOOLCHAIN=linux-gnu-default
 ENV TOOLCHAIN=${TOOLCHAIN}
+ARG ROBOTFARM_VERSION=v1.1.0
 ARG ROBOTFARM_BUILD_LIST="BoostExternalProject;Eigen3ExternalProject;NlohmannJsonExternalProject;GoogleTestExternalProject;SpdLogExternalProject;CapnprotoExternalProject"
+
+ADD https://raw.githubusercontent.com/ajakhotia/robotFarm/refs/tags/${ROBOTFARM_VERSION}/tools/quickBuild.sh /tmp/quickBuild.sh
 
 RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=locked                  \
     --mount=type=cache,target=/var/lib/apt/lists,id=${APT_LIST_CACHE_ID},sharing=locked             \
-    curl -fsSL                                                                                      \
-      https://raw.githubusercontent.com/ajakhotia/robotFarm/refs/heads/main/tools/quickBuild.sh |   \
-      bash -s --                                                                                    \
-        --version v1.1.0                                                                            \
+    bash /tmp/quickBuild.sh                                                                         \
+        --version ${ROBOTFARM_VERSION}                                                              \
         --toolchain ${TOOLCHAIN}                                                                    \
         --prefix /opt/robotFarm                                                                     \
         --build-list ${ROBOTFARM_BUILD_LIST}
