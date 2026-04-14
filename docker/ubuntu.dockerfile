@@ -37,7 +37,7 @@ RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=lock
 RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=locked                  \
     --mount=type=cache,target=/var/lib/apt/lists,id=${APT_LIST_CACHE_ID},sharing=locked             \
     apt-get update &&                                                                               \
-    apt-get install -y --no-install-recommends jq
+    apt-get install -y --no-install-recommends curl jq
 
 RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=locked                                        \
     --mount=type=cache,target=/var/lib/apt/lists,id=${APT_LIST_CACHE_ID},sharing=locked                                   \
@@ -52,17 +52,18 @@ FROM base AS dev-base
 
 ARG TOOLCHAIN=linux-gnu-default
 ENV TOOLCHAIN=${TOOLCHAIN}
+ARG ROBOTFARM_VERSION=v2.0.0
 ARG ROBOTFARM_BUILD_LIST="BoostExternalProject;Eigen3ExternalProject;NlohmannJsonExternalProject;GoogleTestExternalProject;SpdLogExternalProject;CapnprotoExternalProject"
 
-RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=locked                  \
-    --mount=type=cache,target=/var/lib/apt/lists,id=${APT_LIST_CACHE_ID},sharing=locked             \
-    curl -fsSL                                                                                      \
-      https://raw.githubusercontent.com/ajakhotia/robotFarm/refs/heads/main/tools/quickBuild.sh |   \
-      bash -s --                                                                                    \
-        --version v1.1.0                                                                            \
-        --toolchain ${TOOLCHAIN}                                                                    \
-        --prefix /opt/robotFarm                                                                     \
-        --build-list ${ROBOTFARM_BUILD_LIST}
+RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=locked                                                                  \
+    --mount=type=cache,target=/var/lib/apt/lists,id=${APT_LIST_CACHE_ID},sharing=locked                                                             \
+    curl -fsSL "https://raw.githubusercontent.com/ajakhotia/robotFarm/refs/tags/${ROBOTFARM_VERSION}/tools/quickBuild.sh" -o /tmp/quickBuild.sh &&  \
+    bash /tmp/quickBuild.sh                                                                                                                         \
+        --version ${ROBOTFARM_VERSION}                                                                                                              \
+        --toolchain ${TOOLCHAIN}                                                                                                                    \
+        --prefix /opt/robotFarm                                                                                                                     \
+        --build-list ${ROBOTFARM_BUILD_LIST}                                                                                                        \
+    && rm -f /tmp/quickBuild.sh
 
 RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=locked                                        \
     --mount=type=cache,target=/var/lib/apt/lists,id=${APT_LIST_CACHE_ID},sharing=locked                                   \
