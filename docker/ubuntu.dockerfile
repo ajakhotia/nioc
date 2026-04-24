@@ -37,22 +37,14 @@ RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=lock
 RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=locked                  \
     --mount=type=cache,target=/var/lib/apt/lists,id=${APT_LIST_CACHE_ID},sharing=locked             \
     apt-get update &&                                                                               \
-    apt-get install -y --no-install-recommends curl jq
-
-RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=locked                                        \
-    --mount=type=cache,target=/var/lib/apt/lists,id=${APT_LIST_CACHE_ID},sharing=locked                                   \
-    --mount=type=bind,src=external/infraCommons/tools/extractDependencies.sh,dst=/tmp/tools/extractDependencies.sh,ro     \
-    --mount=type=bind,src=systemDependencies.json,dst=/tmp/systemDependencies.json,ro                                     \
-    apt-get update &&                                                                                                     \
-    apt-get install -y --no-install-recommends                                                                            \
-      $(sh /tmp/tools/extractDependencies.sh Basics /tmp/systemDependencies.json)
+    apt-get install -y --no-install-recommends ca-certificates curl jq
 
 
 FROM base AS dev-base
 
-ARG TOOLCHAIN=linux-gnu-default
+ARG TOOLCHAIN=linux-gnu-15
 ENV TOOLCHAIN=${TOOLCHAIN}
-ARG ROBOTFARM_VERSION=v2.0.0
+ARG ROBOTFARM_VERSION=v2.2.0
 ARG ROBOTFARM_BUILD_LIST="BoostExternalProject;Eigen3ExternalProject;NlohmannJsonExternalProject;GoogleTestExternalProject;SpdLogExternalProject;CapnprotoExternalProject"
 
 RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=locked                                                                  \
@@ -64,14 +56,6 @@ RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=lock
         --prefix /opt/robotFarm                                                                                                                     \
         --build-list ${ROBOTFARM_BUILD_LIST}                                                                                                        \
     && rm -f /tmp/quickBuild.sh
-
-RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=locked                                        \
-    --mount=type=cache,target=/var/lib/apt/lists,id=${APT_LIST_CACHE_ID},sharing=locked                                   \
-    --mount=type=bind,src=external/infraCommons/tools/extractDependencies.sh,dst=/tmp/tools/extractDependencies.sh,ro     \
-    --mount=type=bind,src=systemDependencies.json,dst=/tmp/systemDependencies.json,ro                                     \
-    apt-get update &&                                                                                                     \
-    apt-get install -y --no-install-recommends                                                                            \
-      $(bash /tmp/tools/extractDependencies.sh Compilers /tmp/systemDependencies.json)
 
 
 FROM dev-base AS build
