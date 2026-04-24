@@ -18,16 +18,20 @@ jobs:
       fail-fast: false
       matrix:
         os_base:
-          - ubuntu:22.04
-          - ubuntu:24.04
+          - name: ubuntu:22.04
+            image: ghcr.io/ajakhotia/infracommons/weekly/ubuntu:22.04
+          - name: ubuntu:24.04
+            image: ghcr.io/ajakhotia/infracommons/weekly/ubuntu:24.04
 
     steps:
       - name: self-checkout
+        id: self-checkout
         uses: actions/checkout@v6
         with:
           submodules: true
 
       - name: setup-login
+        id: setup-login
         uses: docker/login-action@v4
         with:
           registry: ghcr.io
@@ -35,29 +39,43 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: setup-buildx
+        id: setup-buildx
         uses: docker/setup-buildx-action@v4
 
-      - name: base-stage-shared-cache
-        id: base-stage-shared-cache
+      - name: image-name-base
+        id: image-name-base
         uses: ./external/infraCommons/.github/actions/oci-compliant-image-name
         with:
-          build-name: ${{ matrix.os_base }}/shared
-
-      - name: image-name
-        id: image-name
-        uses: ./external/infraCommons/.github/actions/oci-compliant-image-name
-        with:
-          build-name: ${{ matrix.os_base }}/base
+          build-name: ${{ matrix.os_base.name }}/base
 
       - name: base
+        id: base
         uses: ./external/infraCommons/.github/actions/docker-typical-build-push
         with:
           dockerfile: docker/ubuntu.dockerfile
           target-stage: base
-          image-name: ${{ steps.image-name.outputs.name }}
-          shared-cache-to: ${{ steps.base-stage-shared-cache.outputs.name }}:cache
+          image-name: ${{ steps.image-name-base.outputs.name }}
           build-args: |
-            OS_BASE=${{ matrix.os_base }}
+            OS_BASE=${{ matrix.os_base.image }}
+
+
+  aggregate-base-stage:
+    name: aggregate-base-stage
+    if: always()
+    needs: [base-stage]
+    runs-on: ubuntu-latest
+    steps:
+      - name: self-checkout
+        id: self-checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: true
+
+      - name: aggregate
+        id: aggregate
+        uses: ./external/infraCommons/.github/actions/matrix-aggregate
+        with:
+          result: ${{ needs.base-stage.result }}
 
 
   dev-build-test-deploy-stages:
@@ -67,19 +85,25 @@ jobs:
       fail-fast: false
       matrix:
         os_base:
-          - ubuntu:22.04
-          - ubuntu:24.04
+          - name: ubuntu:22.04
+            image: ghcr.io/ajakhotia/infracommons/weekly/ubuntu:22.04
+          - name: ubuntu:24.04
+            image: ghcr.io/ajakhotia/infracommons/weekly/ubuntu:24.04
         toolchain:
-          - linux-clang-19
-          - linux-gnu-default
+          - linux-clang-21
+          - linux-clang-22
+          - linux-gnu-14
+          - linux-gnu-15
 
     steps:
       - name: self-checkout
+        id: self-checkout
         uses: actions/checkout@v6
         with:
           submodules: true
 
       - name: setup-login
+        id: setup-login
         uses: docker/login-action@v4
         with:
           registry: ghcr.io
@@ -87,131 +111,163 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: setup-buildx
+        id: setup-buildx
         uses: docker/setup-buildx-action@v4
 
-      - name: base-stage-shared-cache
-        id: base-stage-shared-cache
+      - name: image-name-dev-base
+        id: image-name-dev-base
         uses: ./external/infraCommons/.github/actions/oci-compliant-image-name
         with:
-          build-name: ${{ matrix.os_base }}/shared
-
-      - name: dev-base-image-name
-        id: dev-base-image-name
-        uses: ./external/infraCommons/.github/actions/oci-compliant-image-name
-        with:
-          build-name: ${{ matrix.os_base }}/${{ matrix.toolchain }}/dev-base
+          build-name: ${{ matrix.os_base.name }}/${{ matrix.toolchain }}/dev-base
 
       - name: dev-base
+        id: dev-base
         uses: ./external/infraCommons/.github/actions/docker-typical-build-push
         with:
           dockerfile: docker/ubuntu.dockerfile
           target-stage: dev-base
-          image-name: ${{ steps.dev-base-image-name.outputs.name }}
-          shared-cache-from: ${{ steps.base-stage-shared-cache.outputs.name }}:cache
+          image-name: ${{ steps.image-name-dev-base.outputs.name }}
           build-args: |
-            OS_BASE=${{ matrix.os_base }}
+            OS_BASE=${{ matrix.os_base.image }}
             TOOLCHAIN=${{ matrix.toolchain }}
 
-      - name: build-image-name
-        id: build-image-name
+      - name: image-name-build
+        id: image-name-build
         uses: ./external/infraCommons/.github/actions/oci-compliant-image-name
         with:
-          build-name: ${{ matrix.os_base }}/${{ matrix.toolchain }}/build
+          build-name: ${{ matrix.os_base.name }}/${{ matrix.toolchain }}/build
 
       - name: build
+        id: build
         uses: ./external/infraCommons/.github/actions/docker-typical-build-push
         with:
           dockerfile: docker/ubuntu.dockerfile
           target-stage: build
-          image-name: ${{ steps.build-image-name.outputs.name }}
+          image-name: ${{ steps.image-name-build.outputs.name }}
           build-args: |
-            OS_BASE=${{ matrix.os_base }}
+            OS_BASE=${{ matrix.os_base.image }}
             TOOLCHAIN=${{ matrix.toolchain }}
 
-      - name: test-image-name
-        id: test-image-name
+      - name: image-name-test
+        id: image-name-test
         uses: ./external/infraCommons/.github/actions/oci-compliant-image-name
         with:
-          build-name: ${{ matrix.os_base }}/${{ matrix.toolchain }}/test
+          build-name: ${{ matrix.os_base.name }}/${{ matrix.toolchain }}/test
 
       - name: test
+        id: test
         uses: ./external/infraCommons/.github/actions/docker-typical-build-push
         with:
           dockerfile: docker/ubuntu.dockerfile
           target-stage: test
-          image-name: ${{ steps.test-image-name.outputs.name }}
+          image-name: ${{ steps.image-name-test.outputs.name }}
           build-args: |
-            OS_BASE=${{ matrix.os_base }}
+            OS_BASE=${{ matrix.os_base.image }}
             TOOLCHAIN=${{ matrix.toolchain }}
 
-      - name: deploy-image-name
-        id: deploy-image-name
+      - name: image-name-deploy
+        id: image-name-deploy
         uses: ./external/infraCommons/.github/actions/oci-compliant-image-name
         with:
-          build-name: ${{ matrix.os_base }}/${{ matrix.toolchain }}/deploy
+          build-name: ${{ matrix.os_base.name }}/${{ matrix.toolchain }}/deploy
 
       - name: deploy
+        id: deploy
         uses: ./external/infraCommons/.github/actions/docker-typical-build-push
         with:
           dockerfile: docker/ubuntu.dockerfile
           target-stage: deploy
-          image-name: ${{ steps.deploy-image-name.outputs.name }}
+          image-name: ${{ steps.image-name-deploy.outputs.name }}
           build-args: |
-            OS_BASE=${{ matrix.os_base }}
+            OS_BASE=${{ matrix.os_base.image }}
             TOOLCHAIN=${{ matrix.toolchain }}
 
 
-  find-libraries:
+  aggregate-dev-build-test-deploy-stages:
+    name: aggregate-dev-build-test-deploy-stages
+    if: always()
+    needs: [dev-build-test-deploy-stages]
+    runs-on: ubuntu-latest
+    steps:
+      - name: self-checkout
+        id: self-checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: true
+
+      - name: aggregate
+        id: aggregate
+        uses: ./external/infraCommons/.github/actions/matrix-aggregate
+        with:
+          result: ${{ needs.dev-build-test-deploy-stages.result }}
+
+
+  find-package:
     needs: dev-build-test-deploy-stages
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         os_base:
-          - ubuntu:22.04
-          - ubuntu:24.04
+          - name: ubuntu:22.04
+          - name: ubuntu:24.04
         toolchain:
-          - linux-clang-19
-          - linux-gnu-default
-        library-name:
-          - nioc
+          - linux-clang-21
+          - linux-clang-22
+          - linux-gnu-14
+          - linux-gnu-15
 
     steps:
       - name: self-checkout
+        id: self-checkout
         uses: actions/checkout@v6
         with:
           submodules: true
 
       - name: setup-login
+        id: setup-login
         uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: image-name
-        id: image-name
+      - name: image-name-deploy
+        id: image-name-deploy
         uses: ./external/infraCommons/.github/actions/oci-compliant-image-name
         with:
-          build-name: ${{ matrix.os_base }}/${{ matrix.toolchain }}/deploy
+          build-name: ${{ matrix.os_base.name }}/${{ matrix.toolchain }}/deploy
+
+      - name: docker-metadata
+        id: docker-metadata
+        uses: docker/metadata-action@v6
+        with:
+          tags: |
+            type=sha,format=long
 
       - name: find-library
+        id: find-library
         uses: ./external/infraCommons/.github/actions/cmake-find-package
         with:
-          library-name: ${{ matrix.library-name }}
-          prefix-path: "/opt/robotFarm;/opt/nioc"
-          image-name: ${{ steps.image-name.outputs.name }}
+          image-name: ${{ steps.image-name-deploy.outputs.name }}:${{ steps.docker-metadata.outputs.version }}
+          library-names: nioc
+          prefix-path: /opt/robotFarm;/opt/nioc
 
-  aggregate-find-libraries:
-    name: aggregate-find-libraries
+
+  aggregate-find-package:
+    name: aggregate-find-package
     if: always()
-    needs: [ find-libraries ]
+    needs: [find-package]
     runs-on: ubuntu-latest
     steps:
-      - name: Fail if any matrix job failed
-        run: |
-          echo "find-libraries result: ${{ needs.find-libraries.result }}"
-          if [ "${{ needs.find-libraries.result }}" != "success" ]; then
-            echo "One or more find-libraries matrix runs failed."
-            exit 1
-          fi
+      - name: self-checkout
+        id: self-checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: true
+
+      - name: aggregate
+        id: aggregate
+        uses: ./external/infraCommons/.github/actions/matrix-aggregate
+        with:
+          result: ${{ needs.find-package.result }}
