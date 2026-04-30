@@ -54,6 +54,7 @@ RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=lock
     --mount=type=cache,target=/var/lib/apt/lists,id=${APT_LIST_CACHE_ID},sharing=locked            \
     --mount=type=bind,src=external/infraCommons/tools,dst=/tmp/tools                               \
     --mount=type=bind,src=systemDependencies.json,dst=/tmp/systemDependencies.json                 \
+    apt-get update &&                                                                              \
     apt-get install -y --no-install-recommends                                                     \
       $(sh /tmp/tools/extractDependencies.sh "Basics Compilers" /tmp/systemDependencies.json)
 
@@ -99,6 +100,7 @@ COPY --from=throw-away-dev-base /opt/robotFarm /opt/robotFarm
 
 RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=locked                 \
     --mount=type=cache,target=/var/lib/apt/lists,id=${APT_LIST_CACHE_ID},sharing=locked            \
+    apt-get update &&                                                                              \
     apt-get install -y --no-install-recommends $(cat /opt/robotFarm/systemDependencies.txt)
 
 
