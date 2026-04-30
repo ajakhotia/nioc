@@ -124,7 +124,7 @@ TEST(Pose, ConstructionFromParamterSpan)
     std::array<double, 6> paramArray = { 0.1, 0.2, 0.3, 0.4, 0.5, 0.6 };
     auto paramSpan = std::span(paramArray.data(), paramArray.size());
 
-    // EXPECT_THROW((Pose<double>(paramSpan)), std::invalid_argument);
+    EXPECT_THROW((Pose<double>(paramSpan)), std::invalid_argument);
   }
 }
 
