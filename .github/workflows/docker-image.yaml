@@ -90,9 +90,7 @@ jobs:
           - name: ubuntu:24.04
             image: ghcr.io/ajakhotia/infracommons/weekly/ubuntu:24.04
         toolchain:
-          - linux-clang-21
           - linux-clang-22
-          - linux-gnu-14
           - linux-gnu-15
 
     steps:
@@ -212,9 +210,7 @@ jobs:
           - name: ubuntu:22.04
           - name: ubuntu:24.04
         toolchain:
-          - linux-clang-21
           - linux-clang-22
-          - linux-gnu-14
           - linux-gnu-15
 
     steps:
