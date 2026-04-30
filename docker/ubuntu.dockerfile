@@ -85,6 +85,7 @@ RUN cmake -G Ninja                                                              
 
 RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=locked                 \
     --mount=type=cache,target=/var/lib/apt/lists,id=${APT_LIST_CACHE_ID},sharing=locked            \
+    apt-get update &&                                                                              \
     apt-get install -y --no-install-recommends $(cat /tmp/robotFarm-build/systemDependencies.txt)
 
 RUN cmake --build /tmp/robotFarm-build
