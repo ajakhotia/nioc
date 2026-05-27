@@ -12,6 +12,19 @@
 
 namespace nioc::terminus
 {
+namespace
+{
+/// Create a fresh empty directory at a deterministic path under the system temp
+/// directory. Any prior contents are wiped.
+std::filesystem::path makeFreshEmptyDir(std::string_view name)
+{
+  const auto path = std::filesystem::temp_directory_path() / "nioc-terminusTest" / name;
+  std::filesystem::remove_all(path);
+  std::filesystem::create_directories(path);
+  return path;
+}
+} // namespace
+
 TEST(TerminusTest, MsgHandleChecks)
 {
   static_assert(Msg<Sample1>::kMsgHandle == Sample1::_capnpPrivate::typeId);
@@ -41,10 +54,9 @@ TEST(TerminusTest, Construction)
 
 TEST(TerminusTest, ChronicleWriterReader)
 {
-  auto chroniclePath = std::filesystem::path{};
+  const auto chroniclePath = makeFreshEmptyDir("ChronicleWriterReader");
   {
-    auto writer = chronicle::Writer{};
-    chroniclePath = writer.path();
+    auto writer = chronicle::Writer{ chroniclePath };
 
     auto sampleMsg = Msg<Sample1>{};
     {

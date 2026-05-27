@@ -6,8 +6,6 @@
 
 #include "streamChannelWriter.hpp"
 #include "utils.hpp"
-#include <boost/uuid/uuid_generators.hpp>
-#include <boost/uuid/uuid_io.hpp>
 #include <nioc/chronicle/writer.hpp>
 #include <spdlog/spdlog.h>
 
@@ -17,36 +15,37 @@ namespace
 {
 namespace fs = std::filesystem;
 
-fs::path checkAndSetupLogDirectory(fs::path logRoot)
+fs::path requireEmptyDirectory(fs::path path)
 {
-  logRoot /= (iso8601UtcFormat(std::chrono::system_clock::now())) + "_" +
-             boost::uuids::to_string(boost::uuids::random_generator_pure()());
-
-  if(fs::exists(logRoot))
+  if(not fs::exists(path))
   {
-    spdlog::warn(
-        "[Chronicle::Writer] Directory or file {} exists already. Contents will be cleared.",
-        logRoot.string());
-    fs::remove_all(logRoot);
+    throw std::invalid_argument(
+        "[Chronicle::Writer] Directory does not exist: " + path.string());
   }
 
-  if(not fs::create_directories(logRoot))
+  if(not fs::is_directory(path))
   {
-    throw std::runtime_error(
-        "[Chronicle::Writer] Unable to create root directory for chronicle at " + logRoot.string());
+    throw std::invalid_argument(
+        "[Chronicle::Writer] Path is not a directory: " + path.string());
   }
 
-  return logRoot;
+  if(not fs::is_empty(path))
+  {
+    throw std::invalid_argument(
+        "[Chronicle::Writer] Directory is not empty: " + path.string());
+  }
+
+  return path;
 }
 
 } // namespace
 
 Writer::Writer(
-    std::filesystem::path logRoot,
+    std::filesystem::path rootDir,
     const IoMechanism ioMechanism,
     const std::size_t maxFileSizeInBytes):
     mIoMechanism(ioMechanism),
-    mLogDirectory(checkAndSetupLogDirectory(std::move(logRoot))),
+    mLogDirectory(requireEmptyDirectory(std::move(rootDir))),
     mMaxFileSizeInBytes(maxFileSizeInBytes),
     mLockedSequenceFile(mLogDirectory / kSequenceFileName)
 {

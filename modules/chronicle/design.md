@@ -24,7 +24,9 @@ shares the same backing memory.
 ## How Recording Works
 
 ```cpp
-auto writer = nioc::chronicle::Writer("/path/to/logs");
+// The caller is responsible for creating an existing empty directory and passing it in.
+// Chronicle no longer picks its own path or creates a timestamped subdirectory.
+auto writer = nioc::chronicle::Writer("/path/to/empty/directory");
 
 writer.write(cameraChannelId, imageBytes);
 writer.write(imuChannelId, imuBytes);
@@ -151,7 +153,6 @@ Published as the `nioc::chronicleIdl` build target. Modules that define domain-s
 | nioc::common          | public     | `Locked<T>` wrapper, `makeBimap`   |
 | Boost.Endian          | private    | Little-endian binary serialization |
 | Boost.CircularBuffer  | private    | LRU cache of mapped roll files     |
-| Boost.UUID            | private    | Unique log directory naming        |
 | nioc::commonIdl       | private    | Timestamp schema for Frame         |
 | spdlog                | private    | Logging                            |
 

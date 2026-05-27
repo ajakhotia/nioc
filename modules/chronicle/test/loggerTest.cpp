@@ -5,6 +5,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "utils.hpp"
+#include <fstream>
 #include <gtest/gtest.h>
 #include <nioc/chronicle/reader.hpp>
 #include <nioc/chronicle/writer.hpp>
@@ -25,15 +26,48 @@ std::vector<char> generateData()
   return data;
 }
 
+/// Create a fresh empty directory at a deterministic path under the system temp
+/// directory. Any prior contents are wiped. Pass a unique @p name per test to
+/// avoid cross-test interference.
+fs::path makeFreshEmptyDir(std::string_view name)
+{
+  const auto path = fs::temp_directory_path() / "nioc-chronicleTest" / name;
+  fs::remove_all(path);
+  fs::create_directories(path);
+  return path;
+}
+
 } // namespace
 
-TEST(Writer, construction)
+TEST(Writer, constructionAcceptsEmptyDirectory)
 {
-  EXPECT_NO_THROW(Writer writer);
+  EXPECT_NO_THROW(Writer writer(makeFreshEmptyDir("ctor-default")));
   EXPECT_NO_THROW(Writer writer(
-      fs::temp_directory_path() / "niocUnitTestLogs",
+      makeFreshEmptyDir("ctor-allArgs"),
       IoMechanism::Stream,
       1024UL * 1024UL));
+}
+
+TEST(Writer, constructionRejectsMissingDirectory)
+{
+  const auto missing = fs::temp_directory_path() / "nioc-chronicleTest" / "doesNotExist";
+  fs::remove_all(missing);
+  EXPECT_THROW(Writer writer(missing), std::invalid_argument);
+}
+
+TEST(Writer, constructionRejectsFilePath)
+{
+  const auto parent = makeFreshEmptyDir("ctor-filePath");
+  const auto filePath = parent / "notADirectory";
+  { std::ofstream sink(filePath); }
+  EXPECT_THROW(Writer writer(filePath), std::invalid_argument);
+}
+
+TEST(Writer, constructionRejectsNonEmptyDirectory)
+{
+  const auto dir = makeFreshEmptyDir("ctor-nonEmpty");
+  { std::ofstream sink(dir / "leftover"); }
+  EXPECT_THROW(Writer writer(dir), std::invalid_argument);
 }
 
 TEST(Writer, writeSpan)
@@ -44,7 +78,7 @@ TEST(Writer, writeSpan)
 
   const auto logPath = [&]()
   {
-    auto writer = Writer{};
+    auto writer = Writer{ makeFreshEmptyDir("writeSpan") };
 
     writer.write(channelA, std::as_bytes(std::span(data)));
     writer.write(channelB, std::as_bytes(std::span(data)));
@@ -95,7 +129,7 @@ TEST(Writer, writeCollectionOfSpan)
 
   const auto logPath = [&]()
   {
-    auto writer = Writer{};
+    auto writer = Writer{ makeFreshEmptyDir("writeCollectionOfSpan") };
 
     writer.write(channelA, spanCollection);
     writer.write(channelB, spanCollection);
@@ -132,9 +166,9 @@ TEST(Writer, writeCollectionOfSpan)
 
 TEST(Writer, path)
 {
-  auto writer = Writer{ fs::temp_directory_path() / "niocUnitTestLogs" };
-  EXPECT_TRUE(writer.path().string().starts_with(
-      (fs::temp_directory_path() / "niocUnitTestLogs").string()));
+  const auto dir = makeFreshEmptyDir("writerPath");
+  auto writer = Writer{ dir };
+  EXPECT_EQ(writer.path(), dir);
 }
 
 } // namespace nioc::chronicle

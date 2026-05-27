@@ -26,13 +26,15 @@ class Writer
 public:
   static constexpr auto kDefaultMaxFileSizeInBytes = 128ULL * 1024ULL * 1024ULL;
 
-  /// @brief Constructs a Writer.
-  /// @param logRoot Root directory for the chronicle. A timestamped subdirectory will be created.
-  /// @param ioMechanism I/O mechanism to use for writing data.
+  /// @brief Constructs a Writer that writes into @p rootDir.
+  /// @param rootDir            Existing empty directory that this Writer will populate.
+  /// @param ioMechanism        I/O mechanism to use for writing data.
   /// @param maxFileSizeInBytes Maximum size of individual data files.
-  /// @throws std::invalid_argument If ioMechanism is not supported for writing.
+  /// @throws std::invalid_argument If @p rootDir does not exist, is not a directory, or is
+  ///                               not empty; or if @p ioMechanism is not supported for
+  ///                               writing.
   explicit Writer(
-      std::filesystem::path logRoot = std::filesystem::temp_directory_path() / "niocLogs",
+      std::filesystem::path rootDir,
       IoMechanism ioMechanism = IoMechanism::Stream,
       std::size_t maxFileSizeInBytes = kDefaultMaxFileSizeInBytes);
 

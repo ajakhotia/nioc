@@ -23,6 +23,16 @@ std::vector<char> generateData(std::uint64_t size)
   return data;
 }
 
+/// Create a fresh empty directory at a deterministic path under the system temp
+/// directory. Any prior contents are wiped.
+fs::path makeFreshEmptyDir(std::string_view name)
+{
+  const auto path = fs::temp_directory_path() / "nioc-chronicleTest" / name;
+  fs::remove_all(path);
+  fs::create_directories(path);
+  return path;
+}
+
 constexpr auto channelA = ChannelId{ 16983UL };
 constexpr auto channelB = ChannelId{ 68964786UL };
 const auto dataA = generateData(20ULL);
@@ -32,7 +42,7 @@ const auto dataBAsBytes = std::as_bytes(std::span(dataB));
 
 fs::path createLog()
 {
-  auto writer = Writer{};
+  auto writer = Writer{ makeFreshEmptyDir("logReaderTest-createLog") };
 
   writer.write(channelA, dataAAsBytes);
   writer.write(channelB, dataBAsBytes);
