@@ -7,6 +7,7 @@
 #include "streamChannelWriter.hpp"
 #include "utils.hpp"
 #include <algorithm>
+#include <nioc/common/exception.hpp>
 #include <numeric>
 
 namespace nioc::chronicle
@@ -20,16 +21,16 @@ std::filesystem::path setupLogRoot(std::filesystem::path logRoot)
 
   if(fs::exists(logRoot))
   {
-    throw std::logic_error(
-        "[StreamChannelWriter::StreamChannelWriter] Directory or file" + logRoot.string() +
-        " exists already.");
+    common::throwException<std::logic_error>(
+        "Directory or file {} exists already.",
+        logRoot.string());
   }
 
   if(not fs::create_directories(logRoot))
   {
-    throw std::runtime_error(
-        "[StreamChannelWriter::StreamChannelWriter] Unable to create directory at " +
-        logRoot.string() + ".");
+    common::throwException<std::runtime_error>(
+        "Unable to create directory at {}.",
+        logRoot.string());
   }
 
   return logRoot;
@@ -59,7 +60,7 @@ void StreamChannelWriter::writeFrame(const ConstByteSpan& data)
   // Check if the file is still good.
   if(not mActiveLogRoll.good())
   {
-    throw std::runtime_error("[Logger::utils] Unable to cleanly write to the file.");
+    common::throwException<std::runtime_error>("Unable to cleanly write to the file.");
   }
 }
 
@@ -79,7 +80,7 @@ void StreamChannelWriter::writeFrame(std::span<const ConstByteSpan> dataCollecti
   // Check if the file is still good.
   if(not mActiveLogRoll.good())
   {
-    throw std::runtime_error("[Logger::utils] Unable to cleanly write to the file.");
+    common::throwException<std::runtime_error>("Unable to cleanly write to the file.");
   }
 }
 
@@ -109,7 +110,7 @@ void StreamChannelWriter::rollCheckAndIndex(const std::uint64_t requiredSizeInBy
   }
   else
   {
-    throw std::runtime_error("[StreamChannelWriter::index] Unable to retrieve the write position");
+    common::throwException<std::runtime_error>("Unable to retrieve the write position.");
   }
 }
 

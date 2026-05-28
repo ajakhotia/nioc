@@ -51,13 +51,13 @@ TEST(LoggerUtils, buildRollName)
 TEST(LoggerUtils, toHexString)
 {
   constexpr auto integer = 255U;
-  EXPECT_EQ("0xff", toHexString(integer));
+  EXPECT_EQ("0xff", hexString(integer));
 }
 
 TEST(LoggerUtils, hexStringToInteger)
 {
   constexpr auto hexString = "0xff";
-  EXPECT_EQ(255, hexStringToInteger<uint64_t>(hexString));
+  EXPECT_EQ(255, integerFromHex<uint64_t>(hexString));
 }
 
 TEST(LoggerUtils, computeTotalSizeInBytes)

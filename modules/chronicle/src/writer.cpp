@@ -7,6 +7,7 @@
 #include "streamChannelWriter.hpp"
 #include "utils.hpp"
 #include <nioc/chronicle/writer.hpp>
+#include <nioc/common/exception.hpp>
 #include <nioc/common/filesystem.hpp>
 #include <nioc/logger/logger.hpp>
 
@@ -74,20 +75,20 @@ ChannelWriter& Writer::acquireChannel(const ChannelId channelId, ChannelPtrMap& 
     {
       case IoMechanism::Stream:
         channelWriter = std::make_unique<StreamChannelWriter>(
-            mLogDirectory / toHexString(channelId.mValue),
+            mLogDirectory / hexString(channelId.mValue),
             mMaxFileSizeInBytes);
         break;
 
       case IoMechanism::Mmap:
-        throw std::invalid_argument(
-            "[Chronicle::Writer] IoMechanism '" + stringFromIoMechanism(IoMechanism::Mmap) +
-            "' is not supported for writing. Use '" + stringFromIoMechanism(IoMechanism::Stream) +
-            "' instead.");
+        common::throwException<std::invalid_argument>(
+            "IoMechanism '{}' is not supported for writing. Use '{}' instead.",
+            stringFromIoMechanism(IoMechanism::Mmap),
+            stringFromIoMechanism(IoMechanism::Stream));
 
       default:
-        throw std::invalid_argument(
-            "[Chronicle::Writer] Unknown IoMechanism with value: " +
-            std::to_string(static_cast<int>(mIoMechanism)));
+        common::throwException<std::invalid_argument>(
+            "Unknown IoMechanism with value: {}",
+            static_cast<int>(mIoMechanism));
     }
 
     channelPtrMap.try_emplace(channelId, std::move(channelWriter));

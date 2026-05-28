@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <format>
 #include <nioc/chronicle/defines.hpp>
+#include <nioc/common/exception.hpp>
 #include <span>
 
 namespace nioc::chronicle
@@ -59,14 +60,20 @@ std::string padString(const std::string& input, uint64_t paddedLength, char padd
 /// @return std::string containing the name for the roll.
 std::string buildRollName(std::uint64_t rollId);
 
+/// Prefix marking a hexadecimal string representation.
+static constexpr auto kHexPrefix = "0x";
+
+/// Numeric base used to parse a hexadecimal string.
+static constexpr auto kHexBase = 16U;
+
 /// @brief  Converts an integer to a sting in hexadecimal form (0x...)
 /// @tparam Integer The integer type.
 /// @param  integer Input.
 /// @return A string containing the integer represented in hexadecimal form.
 template<typename Integer>
-std::string toHexString(const Integer integer)
+std::string hexString(const Integer integer)
 {
-  return std::format("0x{:x}", integer);
+  return std::format("{}{:x}", kHexPrefix, integer);
 }
 
 /// @brief  Converts a valid hex string to an integer. The string must start with 0x.
@@ -74,15 +81,13 @@ std::string toHexString(const Integer integer)
 /// @param  hexString   Input hex string
 /// @return Equivalent integer.
 template<typename Integer>
-Integer hexStringToInteger(const std::string& hexString)
+Integer integerFromHex(const std::string& hexString)
 {
-  static constexpr auto kHexPrefix = "0x";
-  static constexpr auto kHexBase = 16U;
   if(not hexString.starts_with(kHexPrefix))
   {
-    throw std::invalid_argument(
-        "[Logger::hexStringToInteger] Provided input does not start " + std::string(kHexPrefix) +
-        " prefix.");
+    common::throwException<std::invalid_argument>(
+        "Provided input does not start with the {} prefix.",
+        kHexPrefix);
   }
 
   return std::stoull(hexString, nullptr, kHexBase);

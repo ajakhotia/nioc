@@ -75,14 +75,14 @@ TEST(MmapChannelReader, read)
     }
     catch(const std::runtime_error& error)
     {
-      if(error.what() == std::string("Reached end of index file at ") +
-                             (kTestChannelDirectoryPath / "index").string())
+      if(std::string{ error.what() }.ends_with(
+             "Reached end of index file at " + (kTestChannelDirectoryPath / "index").string()))
       {
         EXPECT_EQ(numFramesRead, kNumFramesToWrite);
       }
       else
       {
-        throw error;
+        throw;
       }
     }
   }

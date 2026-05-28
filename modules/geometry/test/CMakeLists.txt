@@ -15,6 +15,6 @@ target_compile_options(geometryTest PRIVATE
         $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
         $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>)
 
-target_compile_features(geometryTest PRIVATE cxx_std_20)
+target_compile_features(geometryTest PRIVATE cxx_std_23)
 
 gtest_discover_tests(geometryTest)

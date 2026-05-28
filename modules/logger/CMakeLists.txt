@@ -17,7 +17,7 @@ add_exported_library(
             PUBLIC nioc::common
             PUBLIC spdlog::spdlog
         COMPILE_FEATURES
-            PUBLIC cxx_std_20
+            PUBLIC cxx_std_23
         COMPILE_OPTIONS
             PRIVATE $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
             PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>

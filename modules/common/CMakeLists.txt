@@ -12,7 +12,7 @@ capnproto_generate_library(
             include/nioc/common/idl/timestamp.capnp
             include/nioc/common/idl/header.capnp
         COMPILE_FEATURES
-            PUBLIC cxx_std_20
+            PUBLIC cxx_std_23
         COMPILE_OPTIONS
             PRIVATE $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
             PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
@@ -44,7 +44,7 @@ add_exported_library(
         LINK_LIBRARIES
             PUBLIC Boost::headers
         COMPILE_FEATURES
-            PUBLIC cxx_std_20
+            PUBLIC cxx_std_23
         COMPILE_OPTIONS
             PRIVATE $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
             PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>

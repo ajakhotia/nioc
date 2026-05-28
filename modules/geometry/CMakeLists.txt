@@ -11,7 +11,7 @@ capnproto_generate_library(
         SCHEMA_FILES
             include/nioc/geometry/idl/geometry.capnp
         COMPILE_FEATURES
-            PUBLIC cxx_std_20
+            PUBLIC cxx_std_23
         COMPILE_OPTIONS
             PRIVATE $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
             PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
@@ -44,7 +44,7 @@ add_exported_library(
             INTERFACE Eigen3::Eigen
             PUBLIC nioc::common
         COMPILE_FEATURES
-            PUBLIC cxx_std_20
+            PUBLIC cxx_std_23
         COMPILE_OPTIONS
             PRIVATE $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
             PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>

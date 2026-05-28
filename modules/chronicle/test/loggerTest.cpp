@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 #include <nioc/chronicle/reader.hpp>
 #include <nioc/chronicle/writer.hpp>
+#include <nioc/common/exception.hpp>
 #include <numeric>
 
 namespace nioc::chronicle
@@ -64,7 +65,9 @@ void expectWrittenFileSizes(const fs::path& logRoot, const std::uintmax_t expect
     }
     else
     {
-      throw std::logic_error("Unexpected file type encountered: " + entityPathString);
+      common::throwException<std::logic_error>(
+          "Unexpected file type encountered: {}",
+          entityPathString);
     }
   }
 }

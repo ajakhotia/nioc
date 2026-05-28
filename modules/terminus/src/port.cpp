@@ -172,7 +172,7 @@ Port::Port(const po::variables_map& variableMap):
 
 Port::Port(
     const fs::path& logRoot,
-    const std::vector<fs::path>& configPaths, // NOLINT(bugprone-easily-swappable-parameters)
+    const std::vector<fs::path>& configPaths,   // NOLINT(bugprone-easily-swappable-parameters)
     const std::vector<fs::path>& resourcePaths, // NOLINT(bugprone-easily-swappable-parameters)
     const bool writeChronicle,
     std::string commandLine):
@@ -225,9 +225,7 @@ fs::path Port::acquireResource(const fs::path& source) const
   const auto entry = mResourceMap.find(source.string());
   if(entry == mResourceMap.end())
   {
-    common::throwException<std::invalid_argument>(
-        "Resource {} was not declared.",
-        source.string());
+    common::throwException<std::invalid_argument>("Resource {} was not declared.", source.string());
   }
 
   return mWorkingDir / entry->second;

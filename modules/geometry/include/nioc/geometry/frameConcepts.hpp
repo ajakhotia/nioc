@@ -27,7 +27,7 @@ public:
 
   virtual ~ParentConceptTmpl() = default;
 
-  [[nodiscard]] decltype(auto) parentFrameAsTuple() const noexcept
+  [[nodiscard]] constexpr decltype(auto) parentFrameAsTuple() const noexcept
   {
     return std::make_tuple();
   }
@@ -50,7 +50,7 @@ public:
 
   virtual ~ChildConceptTmpl() = default;
 
-  [[nodiscard]] decltype(auto) childFrameAsTuple() const noexcept
+  [[nodiscard]] constexpr decltype(auto) childFrameAsTuple() const noexcept
   {
     return std::make_tuple();
   }
@@ -71,12 +71,12 @@ public:
 
   virtual ~ParentConceptTmpl() = default;
 
-  [[nodiscard]] const ParentFrame& parentFrame() const noexcept
+  [[nodiscard]] constexpr const ParentFrame& parentFrame() const noexcept
   {
     return mParentFrame;
   }
 
-  [[nodiscard]] decltype(auto) parentFrameAsTuple() const noexcept
+  [[nodiscard]] constexpr decltype(auto) parentFrameAsTuple() const noexcept
   {
     return std::make_tuple(std::cref(mParentFrame));
   }
@@ -100,12 +100,12 @@ public:
 
   virtual ~ChildConceptTmpl() = default;
 
-  [[nodiscard]] const ChildFrame& childFrame() const noexcept
+  [[nodiscard]] constexpr const ChildFrame& childFrame() const noexcept
   {
     return mChildFrame;
   }
 
-  [[nodiscard]] decltype(auto) childFrameAsTuple() const noexcept
+  [[nodiscard]] constexpr decltype(auto) childFrameAsTuple() const noexcept
   {
     return std::make_tuple(std::cref(mChildFrame));
   }

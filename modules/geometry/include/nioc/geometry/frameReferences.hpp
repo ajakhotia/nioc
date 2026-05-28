@@ -6,6 +6,7 @@
 #pragma once
 
 #include "frameConcepts.hpp"
+#include <nioc/common/exception.hpp>
 #include <nioc/common/typeTraits.hpp>
 #include <type_traits>
 
@@ -124,8 +125,9 @@ inline void assertFrameEqual(const RhsFrame& rhsFrame)
 {
   if(LhsFrame::name() != rhsFrame.name())
   {
-    auto msg = frameCompositionErrorMessage(std::string(LhsFrame::name()), rhsFrame.name());
-    throw FrameCompositionException(std::move(msg));
+    common::throwException<FrameCompositionException>(
+        "{}",
+        frameCompositionErrorMessage(std::string(LhsFrame::name()), rhsFrame.name()));
   }
 }
 
@@ -140,8 +142,9 @@ inline void assertFrameEqual(const LhsFrame& lhsFrame)
 {
   if(lhsFrame.name() != RhsFrame::name())
   {
-    auto msg = frameCompositionErrorMessage(lhsFrame.name(), std::string(RhsFrame::name()));
-    throw FrameCompositionException(std::move(msg));
+    common::throwException<FrameCompositionException>(
+        "{}",
+        frameCompositionErrorMessage(lhsFrame.name(), std::string(RhsFrame::name())));
   }
 }
 
@@ -157,8 +160,9 @@ inline void assertFrameEqual(const LhsFrame& lhsFrame, const RhsFrame& rhsFrame)
 {
   if(lhsFrame.name() != rhsFrame.name())
   {
-    auto msg = frameCompositionErrorMessage(lhsFrame.name(), rhsFrame.name());
-    throw FrameCompositionException(std::move(msg));
+    common::throwException<FrameCompositionException>(
+        "{}",
+        frameCompositionErrorMessage(lhsFrame.name(), rhsFrame.name()));
   }
 }
 
@@ -201,7 +205,7 @@ composeFrameReferences(
 /// @param input Frame relationship to invert.
 /// @return Inverted frame relationship.
 template<typename InputFrameReferences>
-FrameReferences<
+constexpr FrameReferences<
     typename InputFrameReferences::ChildFrame,
     typename InputFrameReferences::ParentFrame>
 invertFrameReferences(const InputFrameReferences& input)

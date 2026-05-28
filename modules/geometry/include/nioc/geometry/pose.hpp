@@ -8,7 +8,9 @@
 #include "traits.hpp"
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+#include <nioc/common/exception.hpp>
 #include <span>
+#include <stdexcept>
 
 namespace nioc::geometry
 {
@@ -212,10 +214,11 @@ public:
   {
     if(span.size() != kNumParams)
     {
-      throw std::invalid_argument(
-          "[geometry::Pose] Provided span is of insufficient size to initialize (" +
-          std::to_string(span.size()) + ") the underlying parameters. Required size is " +
-          std::to_string(kNumParams) + ".");
+      common::throwException<std::invalid_argument>(
+          "Provided span is of insufficient size to initialize ({}) the underlying parameters. "
+          "Required size is {}.",
+          span.size(),
+          kNumParams);
     }
 
     std::copy(span.begin(), span.end(), mParameters.begin());
@@ -305,13 +308,10 @@ public:
   {
     if(parameters.size() != kNumParams)
     {
-      throw std::invalid_argument(
-          "[Eigen::Map<geometry::Pose>] Provided span is "
-          "of incorrect size(" +
-          std::to_string(parameters.size()) +
-          "). Required "
-          "size is " +
-          std::to_string(kNumParams) + ".");
+      nioc::common::throwException<std::invalid_argument>(
+          "Provided span is of incorrect size ({}). Required size is {}.",
+          parameters.size(),
+          kNumParams);
     }
     Base::orientation().normalize();
   }
@@ -370,20 +370,16 @@ public:
   {
     if(parameters.size() != kNumParams)
     {
-      throw std::invalid_argument(
-          "[Eigen::Map<const geometry::Pose>] Provided span is "
-          "of incorrect size(" +
-          std::to_string(parameters.size()) +
-          "). Required "
-          "size is " +
-          std::to_string(kNumParams) + ".");
+      nioc::common::throwException<std::invalid_argument>(
+          "Provided span is of incorrect size ({}). Required size is {}.",
+          parameters.size(),
+          kNumParams);
     }
 
     if(std::abs(Base::cOrientation().norm() - Scalar(1)) > std::numeric_limits<Scalar>::epsilon())
     {
-      throw std::invalid_argument(
-          "[Eigen::Map<const geometry::Pose>] The quaternion "
-          "portion of the passed parameters is not unit norm. Cannot proceed.");
+      nioc::common::throwException<std::invalid_argument>(
+          "The quaternion portion of the passed parameters is not unit norm. Cannot proceed.");
     }
   }
 

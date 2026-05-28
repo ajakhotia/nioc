@@ -6,6 +6,7 @@
 #pragma once
 
 #include <filesystem>
+#include <nioc/common/exception.hpp>
 #include <stdexcept>
 
 namespace nioc::common
@@ -19,11 +20,11 @@ inline std::filesystem::path requireExistingDirectory(std::filesystem::path path
 {
   if(not std::filesystem::exists(path))
   {
-    throw std::invalid_argument("[nioc::common] Directory does not exist: " + path.string());
+    throwException<std::invalid_argument>("Directory does not exist: {}", path.string());
   }
   if(not std::filesystem::is_directory(path))
   {
-    throw std::invalid_argument("[nioc::common] Path is not a directory: " + path.string());
+    throwException<std::invalid_argument>("Path is not a directory: {}", path.string());
   }
   return path;
 }
@@ -37,7 +38,7 @@ inline std::filesystem::path requireEmptyDirectory(std::filesystem::path path)
   path = requireExistingDirectory(std::move(path));
   if(not std::filesystem::is_empty(path))
   {
-    throw std::invalid_argument("[nioc::common] Directory is not empty: " + path.string());
+    throwException<std::invalid_argument>("Directory is not empty: {}", path.string());
   }
   return path;
 }

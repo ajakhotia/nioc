@@ -6,6 +6,7 @@
 
 #include "mmapChannelReader.hpp"
 #include "mmapMemoryCrate.hpp"
+#include <nioc/common/exception.hpp>
 #include <nioc/common/filesystem.hpp>
 
 namespace nioc::chronicle
@@ -31,8 +32,9 @@ MemoryCrate MmapChannelReader::read()
 
   if(indexPtrOffset >= mIndexFile.size())
   {
-    throw std::runtime_error(
-        "Reached end of index file at " + (mLogRoot / kIndexFileName).string());
+    common::throwException<std::runtime_error>(
+        "Reached end of index file at {}",
+        (mLogRoot / kIndexFileName).string());
   }
 
   ++mNextReadIndex;

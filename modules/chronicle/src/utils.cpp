@@ -30,9 +30,9 @@ bool fileHasSpace(
 {
   if(spaceRequired > maxFileSizeInBytes)
   {
-    throw std::invalid_argument("[chronicle::Channel] Space requested on a file is greater than "
-                                "the maximum allowed size of the file. This is an impossible "
-                                "constraint to satisfy.");
+    common::throwException<std::invalid_argument>(
+        "Space requested on a file is greater than the maximum allowed size of the file. This is "
+        "an impossible constraint to satisfy.");
   }
 
   return (maxFileSizeInBytes - file.tellp()) >= spaceRequired;
