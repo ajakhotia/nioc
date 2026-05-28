@@ -73,7 +73,7 @@ public:
   [[nodiscard]] virtual MsgHandle msgHandle() const = 0;
 
 protected:
-  friend void write(MsgBase&, chronicle::Writer&);
+  friend void write(MsgBase& msgBase, chronicle::Writer& writer);
 
   /// @brief Accesses internal message variant.
   /// @return Message variant.

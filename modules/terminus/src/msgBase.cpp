@@ -65,9 +65,8 @@ void write(MsgBase& msgBase, chronicle::Writer& writer)
     inserter = static_cast<uint32_t>(segments.size()) - 1;
 
     // Insert size of each segment. The size here is in multiple of capnp::word
-    std::transform(
-        segments.begin(),
-        segments.end(),
+    std::ranges::transform(
+        segments,
         inserter,
         [](const ConstWordArrayPtr& segment)
         {
