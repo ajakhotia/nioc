@@ -98,8 +98,9 @@ public:
 
 namespace helpers
 {
-std::string
-frameCompositionErrorMessage(const std::string& lhsFrameName, const std::string& rhsFrameName);
+std::string frameCompositionErrorMessage(
+    const std::string& lhsFrameName,
+    const std::string& rhsFrameName);
 
 /// @brief Asserts frame equality at compile-time.
 template<

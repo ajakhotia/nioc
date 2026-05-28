@@ -8,8 +8,9 @@
 
 namespace nioc::geometry::helpers
 {
-std::string
-frameCompositionErrorMessage(const std::string& lhsFrameName, const std::string& rhsFrameName)
+std::string frameCompositionErrorMessage(
+    const std::string& lhsFrameName,
+    const std::string& rhsFrameName)
 {
   assert(
       lhsFrameName != rhsFrameName &&
