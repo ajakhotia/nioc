@@ -11,6 +11,7 @@ capnproto_generate_library(
         EXPORT
             niocTargets
         SCHEMA_FILES
+            include/nioc/terminus/idl/frame.capnp
             include/nioc/terminus/idl/sample1.capnp
             include/nioc/terminus/idl/sample2.capnp
         COMPILE_FEATURES
@@ -50,7 +51,6 @@ add_exported_library(
             PRIVATE spdlog::spdlog
             PUBLIC Boost::program_options
             PUBLIC nioc::chronicle
-            PUBLIC nioc::chronicleIdl
             PUBLIC nlohmann_json::nlohmann_json
         COMPILE_FEATURES
             PUBLIC cxx_std_23

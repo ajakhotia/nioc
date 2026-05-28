@@ -4,27 +4,6 @@ endif()
 
 find_package(Boost CONFIG REQUIRED COMPONENTS headers iostreams)
 
-capnproto_generate_library(
-    TARGET
-        chronicleIdl
-    NAMESPACE
-        nioc::
-    EXPORT
-        niocTargets
-    SCHEMA_FILES
-        include/nioc/chronicle/idl/frame.capnp
-    LINK_LIBRARIES
-        nioc::commonIdl
-    COMPILE_FEATURES
-        PUBLIC cxx_std_23
-    COMPILE_OPTIONS
-        PRIVATE $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
-        PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
-        PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
-    COMPILE_DEFINITIONS
-        "")
-
-
 add_exported_library(
     TARGET
         chronicle
@@ -56,7 +35,6 @@ add_exported_library(
         ${CMAKE_CURRENT_SOURCE_DIR}/include
     LINK_LIBRARIES
         PRIVATE Boost::headers
-        PRIVATE nioc::chronicleIdl
         PRIVATE nioc::logger
         PUBLIC Boost::iostreams
         PUBLIC nioc::common
