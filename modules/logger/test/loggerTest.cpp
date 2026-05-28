@@ -12,6 +12,8 @@
 #include <string>
 #include <string_view>
 
+namespace nioc::logger
+{
 namespace
 {
 
@@ -153,3 +155,5 @@ TEST(LoggerSetup, AddSinkFallsBackToExistingLoggerWithoutSetup)
   nioc::logger::info("gone {}", 2);
   EXPECT_TRUE(extra.str().empty());
 }
+
+} // namespace nioc::logger

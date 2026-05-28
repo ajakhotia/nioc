@@ -23,7 +23,7 @@ Writer::Writer(
     mMaxFileSizeInBytes(maxFileSizeInBytes),
     mLockedSequenceFile(mLogDirectory / kSequenceFileName)
 {
-  nioc::logger::info(
+  logger::info(
       "Writing chronicle to {} with unit file size {}.",
       mLogDirectory.string(),
       mMaxFileSizeInBytes);
