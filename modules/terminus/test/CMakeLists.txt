@@ -1,11 +1,15 @@
 find_package(GTest REQUIRED)
 include(GoogleTest)
 
-add_executable(terminusTest terminusTest.cpp)
+add_executable(terminusTest
+    portTest.cpp
+    terminusTest.cpp)
+
 target_link_libraries(terminusTest
     GTest::GTest
     GTest::Main
     nioc::chronicle
+    nioc::logger
     nioc::terminus
     nioc::terminusIdl)
 

@@ -7,50 +7,23 @@
 #include "streamChannelWriter.hpp"
 #include "utils.hpp"
 #include <nioc/chronicle/writer.hpp>
-#include <spdlog/spdlog.h>
+#include <nioc/common/filesystem.hpp>
+#include <nioc/logger/logger.hpp>
 
 namespace nioc::chronicle
 {
-namespace
-{
-namespace fs = std::filesystem;
-
-fs::path requireEmptyDirectory(fs::path path)
-{
-  if(not fs::exists(path))
-  {
-    throw std::invalid_argument(
-        "[Chronicle::Writer] Directory does not exist: " + path.string());
-  }
-
-  if(not fs::is_directory(path))
-  {
-    throw std::invalid_argument(
-        "[Chronicle::Writer] Path is not a directory: " + path.string());
-  }
-
-  if(not fs::is_empty(path))
-  {
-    throw std::invalid_argument(
-        "[Chronicle::Writer] Directory is not empty: " + path.string());
-  }
-
-  return path;
-}
-
-} // namespace
 
 Writer::Writer(
     std::filesystem::path rootDir,
     const IoMechanism ioMechanism,
     const std::size_t maxFileSizeInBytes):
     mIoMechanism(ioMechanism),
-    mLogDirectory(requireEmptyDirectory(std::move(rootDir))),
+    mLogDirectory(common::requireEmptyDirectory(std::move(rootDir))),
     mMaxFileSizeInBytes(maxFileSizeInBytes),
     mLockedSequenceFile(mLogDirectory / kSequenceFileName)
 {
-  spdlog::info(
-      "[Chronicle::Writer] Writing chronicle to {} with unit file size {}.",
+  nioc::logger::info(
+      "Writing chronicle to {} with unit file size {}.",
       mLogDirectory.string(),
       mMaxFileSizeInBytes);
 }

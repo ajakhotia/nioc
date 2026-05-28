@@ -3,7 +3,6 @@ if(NOT BUILD_SHARED_LIBS)
 endif()
 
 find_package(Boost CONFIG REQUIRED COMPONENTS headers iostreams)
-find_package(spdlog REQUIRED)
 
 capnproto_generate_library(
     TARGET
@@ -58,7 +57,7 @@ add_exported_library(
     LINK_LIBRARIES
         PRIVATE Boost::headers
         PRIVATE nioc::chronicleIdl
-        PRIVATE spdlog::spdlog
+        PRIVATE nioc::logger
         PUBLIC Boost::iostreams
         PUBLIC nioc::common
     COMPILE_FEATURES

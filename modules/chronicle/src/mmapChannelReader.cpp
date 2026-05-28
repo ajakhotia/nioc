@@ -6,6 +6,7 @@
 
 #include "mmapChannelReader.hpp"
 #include "mmapMemoryCrate.hpp"
+#include <nioc/common/filesystem.hpp>
 
 namespace nioc::chronicle
 {
@@ -18,7 +19,7 @@ constexpr const auto kLogRollBufferSize = 5UL;
 } // namespace
 
 MmapChannelReader::MmapChannelReader(std::filesystem::path logRoot):
-    mLogRoot(validatePath(std::move(logRoot))),
+    mLogRoot(common::requireExistingDirectory(std::move(logRoot))),
     mIndexFile(mLogRoot / kIndexFileName),
     mLogRollBuffer(kLogRollBufferSize)
 {

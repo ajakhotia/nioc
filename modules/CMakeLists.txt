@@ -1,5 +1,6 @@
 add_subdirectory(example)
 add_subdirectory(common)
+add_subdirectory(logger)
 add_subdirectory(geometry)
 add_subdirectory(sensors)
 add_subdirectory(chronicle)

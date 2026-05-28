@@ -5,8 +5,8 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include <chrono>
 #include <filesystem>
+#include <format>
 #include <nioc/chronicle/defines.hpp>
 #include <span>
 
@@ -43,12 +43,6 @@ struct IndexEntry
 
   std::uint64_t mSize;
 };
-
-/// @brief  Converts a system_clock time_point to date-time string formatted per ISO 8601
-/// @param  timePoint   Time point to be converted.
-/// @return Date-time string.
-std::string iso8601UtcFormat(std::chrono::system_clock::time_point timePoint);
-
 
 /// @brief  Pads the input string such that the output string is paddedLength long. If the size of
 ///         the input is already greater than or equal to the paddedLength, then no padding is
@@ -99,8 +93,10 @@ Integer hexStringToInteger(const std::string& hexString)
 /// @param  spaceRequired       Space required by the client.
 /// @param  maxFileSizeInBytes  Maximum allowable size of the file.
 /// @return True if the required space is available. False otherwise.
-bool
-fileHasSpace(std::ofstream& file, std::uint64_t spaceRequired, std::uint64_t maxFileSizeInBytes);
+bool fileHasSpace(
+    std::ofstream& file,
+    std::uint64_t spaceRequired,
+    std::uint64_t maxFileSizeInBytes);
 
 
 /// @brief  Compute the sum of the length of each byte span in the collection.
@@ -117,9 +113,5 @@ struct ReadWriteUtil
 
   static ValueType read(const char* ptr, std::uint64_t size = sizeof(ValueType));
 };
-
-/// @brief  Ensure that the input path exists and returns the same.
-std::filesystem::path validatePath(std::filesystem::path path);
-
 
 } // namespace nioc::chronicle

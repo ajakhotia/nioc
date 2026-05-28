@@ -6,17 +6,11 @@
 #include "utils.hpp"
 #include <bit>
 #include <boost/endian.hpp>
-#include <format>
 #include <fstream>
 #include <numeric>
 
 namespace nioc::chronicle
 {
-
-std::string iso8601UtcFormat(const std::chrono::system_clock::time_point timePoint)
-{
-  return std::format("{:%FT%TZ}", timePoint);
-}
 
 std::string padString(const std::string& input, const uint64_t paddedLength, const char paddingChar)
 {
@@ -44,8 +38,8 @@ bool fileHasSpace(
   return (maxFileSizeInBytes - file.tellp()) >= spaceRequired;
 }
 
-std::uint64_t
-computeTotalSizeInBytes(const std::span<const std::span<const std::byte>> dataCollection)
+std::uint64_t computeTotalSizeInBytes(
+    const std::span<const std::span<const std::byte>> dataCollection)
 {
   return std::accumulate(
       dataCollection.begin(),
@@ -102,21 +96,11 @@ void ReadWriteUtil<std::span<const std::byte>>::write(
 }
 
 template<>
-std::span<const std::byte>
-ReadWriteUtil<std::span<const std::byte>>::read(const char* ptr, const std::uint64_t size)
+std::span<const std::byte> ReadWriteUtil<std::span<const std::byte>>::read(
+    const char* ptr,
+    const std::uint64_t size)
 {
   return std::as_bytes(std::span(ptr, size));
 }
-
-std::filesystem::path validatePath(std::filesystem::path path)
-{
-  if(not std::filesystem::exists(path))
-  {
-    throw std::invalid_argument("[Logger::utils] Directory " + path.string() + " does not exist.");
-  }
-
-  return path;
-}
-
 
 } // namespace nioc::chronicle

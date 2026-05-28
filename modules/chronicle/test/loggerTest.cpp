@@ -37,37 +37,70 @@ fs::path makeFreshEmptyDir(std::string_view name)
   return path;
 }
 
+/// Verify that every file written under @p logRoot has the size expected for
+/// its type. Sequence and index files have fixed sizes; each roll file must
+/// equal the @p expectedRollSize. Throws std::logic_error on an unrecognised file.
+void expectWrittenFileSizes(const fs::path& logRoot, const std::uintmax_t expectedRollSize)
+{
+  for(const auto& entity: fs::recursive_directory_iterator(logRoot))
+  {
+    if(fs::is_directory(entity))
+    {
+      continue;
+    }
+
+    if(const auto& entityPathString = entity.path().string();
+       entityPathString.ends_with(kSequenceFileName))
+    {
+      EXPECT_EQ(fs::file_size(entity), 16);
+    }
+    else if(entityPathString.ends_with(kIndexFileName))
+    {
+      EXPECT_EQ(fs::file_size(entity), 24);
+    }
+    else if(entityPathString.ends_with(kRollFileNameExtension))
+    {
+      EXPECT_EQ(fs::file_size(entity), expectedRollSize);
+    }
+    else
+    {
+      throw std::logic_error("Unexpected file type encountered: " + entityPathString);
+    }
+  }
+}
+
 } // namespace
 
 TEST(Writer, constructionAcceptsEmptyDirectory)
 {
-  EXPECT_NO_THROW(Writer writer(makeFreshEmptyDir("ctor-default")));
-  EXPECT_NO_THROW(Writer writer(
-      makeFreshEmptyDir("ctor-allArgs"),
-      IoMechanism::Stream,
-      1024UL * 1024UL));
+  EXPECT_NO_THROW(Writer(makeFreshEmptyDir("ctor-default")));
+  EXPECT_NO_THROW(Writer(makeFreshEmptyDir("ctor-allArgs"), IoMechanism::Stream, 1024UL * 1024UL));
 }
 
 TEST(Writer, constructionRejectsMissingDirectory)
 {
   const auto missing = fs::temp_directory_path() / "nioc-chronicleTest" / "doesNotExist";
   fs::remove_all(missing);
-  EXPECT_THROW(Writer writer(missing), std::invalid_argument);
+  EXPECT_THROW(Writer{ missing }, std::invalid_argument);
 }
 
 TEST(Writer, constructionRejectsFilePath)
 {
   const auto parent = makeFreshEmptyDir("ctor-filePath");
-  const auto filePath = parent / "notADirectory";
-  { std::ofstream sink(filePath); }
-  EXPECT_THROW(Writer writer(filePath), std::invalid_argument);
+  auto filePath = parent / "notADirectory";
+  {
+    const auto sink = std::ofstream(filePath);
+  }
+  EXPECT_THROW(Writer{ filePath }, std::invalid_argument);
 }
 
 TEST(Writer, constructionRejectsNonEmptyDirectory)
 {
   const auto dir = makeFreshEmptyDir("ctor-nonEmpty");
-  { std::ofstream sink(dir / "leftover"); }
-  EXPECT_THROW(Writer writer(dir), std::invalid_argument);
+  {
+    const auto sink = std::ofstream(dir / "leftover");
+  }
+  EXPECT_THROW(Writer{ dir }, std::invalid_argument);
 }
 
 TEST(Writer, writeSpan)
@@ -86,31 +119,7 @@ TEST(Writer, writeSpan)
     return writer.path();
   }();
 
-  for(const auto& entity: fs::recursive_directory_iterator(logPath))
-  {
-    if(fs::is_directory(entity))
-    {
-      continue;
-    }
-
-    const auto& entityPathString = entity.path().string();
-    if(entityPathString.ends_with(kSequenceFileName))
-    {
-      EXPECT_EQ(fs::file_size(entity), 16);
-    }
-    else if(entityPathString.ends_with(kIndexFileName))
-    {
-      EXPECT_EQ(fs::file_size(entity), 24);
-    }
-    else if(entityPathString.ends_with(kRollFileNameExtension))
-    {
-      EXPECT_EQ(fs::file_size(entity), data.size());
-    }
-    else
-    {
-      throw std::logic_error("Unexpected file type encountered: " + entityPathString);
-    }
-  }
+  expectWrittenFileSizes(logPath, data.size());
 }
 
 TEST(Writer, writeCollectionOfSpan)
@@ -119,12 +128,8 @@ TEST(Writer, writeCollectionOfSpan)
   constexpr auto channelB = ChannelId{ 68964786UL };
   const auto data = generateData();
 
-  auto spanCollection = std::vector<std::span<const std::byte>>{};
-  spanCollection.reserve(10UL);
-  for(size_t ii = 0UL; ii < 10UL; ++ii)
-  {
-    spanCollection.push_back(std::as_bytes(std::span(data)));
-  }
+  constexpr auto kSpanCount = 10UL;
+  auto spanCollection = std::vector(kSpanCount, std::as_bytes(std::span(data)));
   const auto totalSize = computeTotalSizeInBytes(spanCollection);
 
   const auto logPath = [&]()
@@ -137,37 +142,13 @@ TEST(Writer, writeCollectionOfSpan)
     return writer.path();
   }();
 
-  for(const auto& entity: fs::recursive_directory_iterator(logPath))
-  {
-    if(fs::is_directory(entity))
-    {
-      continue;
-    }
-
-    const auto& entityPathString = entity.path().string();
-    if(entityPathString.ends_with(kSequenceFileName))
-    {
-      EXPECT_EQ(fs::file_size(entity), 16);
-    }
-    else if(entityPathString.ends_with(kIndexFileName))
-    {
-      EXPECT_EQ(fs::file_size(entity), 24);
-    }
-    else if(entityPathString.ends_with(kRollFileNameExtension))
-    {
-      EXPECT_EQ(fs::file_size(entity), totalSize);
-    }
-    else
-    {
-      throw std::logic_error("Unexpected file type encountered: " + entityPathString);
-    }
-  }
+  expectWrittenFileSizes(logPath, totalSize);
 }
 
 TEST(Writer, path)
 {
   const auto dir = makeFreshEmptyDir("writerPath");
-  auto writer = Writer{ dir };
+  const auto writer = Writer{ dir };
   EXPECT_EQ(writer.path(), dir);
 }
 

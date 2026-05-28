@@ -7,13 +7,14 @@
 #include "mmapChannelReader.hpp"
 #include "utils.hpp"
 #include <nioc/chronicle/reader.hpp>
+#include <nioc/common/filesystem.hpp>
 
 namespace nioc::chronicle
 {
 
 Reader::Reader(std::filesystem::path logRoot, const IoMechanism ioMechanism):
     mIoMechanism(ioMechanism),
-    mLogRoot(validatePath(std::move(logRoot))),
+    mLogRoot(common::requireExistingDirectory(std::move(logRoot))),
     mSequenceFile(mLogRoot / kSequenceFileName)
 {
 }

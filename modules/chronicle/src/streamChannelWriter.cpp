@@ -8,7 +8,6 @@
 #include "utils.hpp"
 #include <algorithm>
 #include <numeric>
-#include <spdlog/spdlog.h>
 
 namespace nioc::chronicle
 {

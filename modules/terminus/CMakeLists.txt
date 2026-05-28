@@ -1,4 +1,7 @@
+find_package(Boost CONFIG REQUIRED COMPONENTS headers program_options)
 find_package(CapnProto REQUIRED)
+find_package(nlohmann_json REQUIRED)
+find_package(spdlog REQUIRED)
 
 capnproto_generate_library(
         TARGET
@@ -29,16 +32,26 @@ add_exported_library(
             niocTargets
         SOURCES
             src/msgBase.cpp
+            src/port.cpp
+            src/programOption.cpp
         HEADERS
             PUBLIC include/nioc/terminus/msg.hpp
             PUBLIC include/nioc/terminus/msgBase.hpp
+            PUBLIC include/nioc/terminus/port.hpp
+            PUBLIC include/nioc/terminus/programOption.hpp
         INCLUDE_DIRECTORIES
             ${CMAKE_CURRENT_SOURCE_DIR}/include
         LINK_LIBRARIES
             PRIVATE CapnProto::capnp
             PRIVATE CapnProto::kj
+            PRIVATE Boost::headers
+            PRIVATE nioc::common
+            PRIVATE nioc::logger
+            PRIVATE spdlog::spdlog
+            PUBLIC Boost::program_options
             PUBLIC nioc::chronicle
             PUBLIC nioc::chronicleIdl
+            PUBLIC nlohmann_json::nlohmann_json
         COMPILE_FEATURES
             PUBLIC cxx_std_20
         COMPILE_OPTIONS
@@ -48,6 +61,9 @@ add_exported_library(
         COMPILE_DEFINITIONS
             "")
 
+if(CLANG_TIDY)
+  set_target_properties(terminus PROPERTIES CXX_CLANG_TIDY ${CLANG_TIDY})
+endif()
 
 if(BUILD_TESTING)
     add_subdirectory(test)

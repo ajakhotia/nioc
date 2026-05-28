@@ -24,26 +24,31 @@ capnproto_generate_library(
 add_exported_library(
         TARGET
             common
-        TYPE
-            INTERFACE
         NAMESPACE
             nioc::
         EXPORT
             niocTargets
         SOURCES
-            ""
+            src/utils.cpp
         HEADERS
-            INTERFACE include/nioc/common/cacheManager.hpp
-            INTERFACE include/nioc/common/locked.hpp
-            INTERFACE include/nioc/common/typeTraits.hpp
+            PUBLIC include/nioc/common/annotators.hpp
+            PUBLIC include/nioc/common/cacheManager.hpp
+            PUBLIC include/nioc/common/exception.hpp
+            PUBLIC include/nioc/common/filesystem.hpp
+            PUBLIC include/nioc/common/locked.hpp
+            PUBLIC include/nioc/common/time.hpp
+            PUBLIC include/nioc/common/typeTraits.hpp
+            PUBLIC include/nioc/common/utils.hpp
         INCLUDE_DIRECTORIES
             ${CMAKE_CURRENT_SOURCE_DIR}/include
         LINK_LIBRARIES
-            INTERFACE Boost::headers
+            PUBLIC Boost::headers
         COMPILE_FEATURES
-            INTERFACE cxx_std_20
+            PUBLIC cxx_std_20
         COMPILE_OPTIONS
-            ""
+            PRIVATE $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
+            PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
+            PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
         COMPILE_DEFINITIONS
             "")
 
