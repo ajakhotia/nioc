@@ -10,17 +10,22 @@
 namespace nioc::terminus
 {
 
-/// @brief Typed message container.
+/// @brief Typed message for a single Cap'n Proto schema.
 ///
-/// Wraps Cap'n Proto schema for serialization. Supports both creating and reading messages.
+/// Create one empty to build a message, or from a MemoryCrate to read an existing one. Reach the
+/// payload through @ref builder (write side) or @ref reader (read side).
 ///
-/// Usage:
-/// ```
-/// Msg<MySchema> msg;
+/// @code
+/// // Build a message and hand it to a chronicle writer.
+/// auto msg = nioc::terminus::Msg<MySchema>{};
 /// auto builder = msg.builder();
 /// builder.setField(value);
-/// write(msg, writer);
-/// ```
+/// nioc::terminus::write(msg, writer);
+///
+/// // Open an existing message held in a MemoryCrate.
+/// auto loaded = nioc::terminus::Msg<MySchema>{ memoryCrate };
+/// const auto field = loaded.reader().getField();
+/// @endcode
 ///
 /// @tparam Schema_ Cap'n Proto schema type.
 template<typename Schema_>
@@ -31,27 +36,26 @@ public:
   using Reader = Schema::Reader;
   using Builder = Schema::Builder;
 
+  /// @brief Compile-time message type identifier for this schema.
   static constexpr auto kMsgHandle = static_cast<MsgHandle>(Schema::_capnpPrivate::typeId);
 
-  /// @brief Creates new empty message.
+  /// @brief Creates an empty message ready to be built.
   Msg()
   {
     std::get<capnp::MallocMessageBuilder>(variant()).template initRoot<Schema>();
   }
 
-  /// @brief Loads message from chronicle.
-  /// @param memoryCrate Chronicle data.
+  /// @brief Loads a message for reading from an existing MemoryCrate.
+  /// @param memoryCrate Crate holding one serialized message.
   explicit Msg(chronicle::MemoryCrate memoryCrate): MsgBase(std::move(memoryCrate)) {}
 
-  /// @brief Gets message type ID.
-  /// @return Type identifier.
+  /// @brief Returns this message type's numeric identifier.
   [[nodiscard]] MsgHandle msgHandle() const override
   {
     return kMsgHandle;
   }
 
-  /// @brief Gets reader to access message data.
-  /// @return Message reader.
+  /// @brief Returns a reader over the message payload.
   Reader reader()
   {
     return std::visit(
@@ -62,8 +66,9 @@ public:
         variant());
   }
 
-  /// @brief Gets builder to modify message data.
-  /// @return Message builder.
+  /// @brief Returns a builder for the message payload.
+  ///
+  /// Call only on a message you created empty, not one opened for reading.
   Builder builder()
   {
     return std::get<capnp::MallocMessageBuilder>(variant()).template getRoot<Schema>();

@@ -12,32 +12,28 @@ namespace nioc::common
 {
 /// @brief Thread-safe wrapper for a value.
 ///
-/// Protects a value from concurrent access across threads. Use lambdas to read or modify safely.
+/// Guards a value behind a shared mutex and grants access only through a lambda you pass in. Many
+/// threads may read at once; writes are exclusive. The wrapper itself cannot be copied or moved —
+/// extract the value with @ref copy or @ref move instead.
 ///
-/// **Key features:**
-/// - Multiple threads can read simultaneously
-/// - Only one thread can write at a time
-/// - Cannot be copied or moved (use copy() or move() instead)
+/// @code
+/// nioc::common::Locked<int> counter(0);
 ///
-/// **Usage:**
-/// ```
-/// Locked<int> counter(0);
+/// // Read concurrently: the lambda receives a const reference.
+/// const int value = counter([](const auto& val) { return val; });
 ///
-/// // Read the value (multiple threads can do this concurrently)
-/// int value = counter([](const auto& val) { return val; });
-///
-/// // Modify the value (exclusive access)
+/// // Modify exclusively: the lambda receives a mutable reference.
 /// counter([](auto& val) { val++; });
 ///
-/// // Can also return values when modifying
-/// bool wasZero = counter([](auto& val) {
-///   bool result = (val == 0);
+/// // A modifying lambda may also return a value.
+/// const bool wasZero = counter([](auto& val) {
+///   const bool result = (val == 0);
 ///   val = 42;
 ///   return result;
 /// });
-/// ```
+/// @endcode
 ///
-/// @tparam ValueTypeT Type of value to protect.
+/// @tparam ValueTypeT Type of the protected value.
 template<typename ValueTypeT>
 class Locked
 {
@@ -187,10 +183,10 @@ public:
   }
 
 private:
-  /// Mutex to protect the mLockedValue.
+  /// Guards mLockedValue against concurrent access.
   mutable std::shared_mutex mMutex;
 
-  /// Guarded l-value.
+  /// The protected value.
   ValueType mLockedValue;
 };
 

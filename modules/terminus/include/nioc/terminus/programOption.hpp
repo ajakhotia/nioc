@@ -48,17 +48,14 @@ namespace nioc::terminus
 [[nodiscard]] boost::program_options::options_description programOptions(
     const std::string& programName);
 
-/// @brief Parses a command line against @p options, handling `--help` and errors by exiting.
+/// @brief Parses the command line against @p options and returns the populated variables map.
 ///
-/// Removes the order-sensitive parse boilerplate from every `main`. The steps:
+/// Handles the two terminal cases so the caller never has to: with `--help`, prints @p options to
+/// `stdout` and exits with `EXIT_SUCCESS`; on a parse error, prints the error and @p options to
+/// `stderr` and exits with `EXIT_FAILURE`. Neither path returns.
 ///
-/// - Stores the parse of @p argC / @p argV.
-/// - If `--help` is present, prints @p options to `stdout` and exits with `EXIT_SUCCESS`.
-/// - On a parse error, prints the error and @p options to `stderr` and exits with `EXIT_FAILURE`.
-/// - Otherwise runs `notify`, then adds the verbatim launch command to the map under the key
-///   `"commandLine"` (a non-option key, so `notify` leaves it untouched), and returns the map.
-///
-/// The help and error paths call `std::exit`, so this does not return in those cases.
+/// On success, the returned map also carries a `"commandLine"` string entry holding the verbatim
+/// launch command.
 ///
 /// @param argC Number of entries in @p argV (typically `argc` from `main`).
 ///

@@ -153,8 +153,7 @@ void critical(const common::FormatWithLocation& message, Args&&... args)
 /// timestamp, severity, and source location.
 ///
 /// Call once at program start, before any logging. The logger writes through a sink list that
-/// @ref addSink can extend at run time — for example, a terminus Port adding a file sink so the
-/// run's console output is also captured in its recording.
+/// @ref addSink can extend at run time.
 ///
 /// @param name Name assigned to the logger; identifies it in spdlog's registry and appears in
 /// output when the pattern includes the `%n` flag.

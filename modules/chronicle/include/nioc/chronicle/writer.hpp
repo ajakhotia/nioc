@@ -17,22 +17,26 @@
 namespace nioc::chronicle
 {
 
-/// @brief Writes data to a chronicle for later playback.
+/// @brief Records data frames to a chronicle for later playback.
 ///
-/// Records data to channels in the order it arrives. This preserves the exact
-/// sequence of events for replay.
+/// Appends frames to their channels in arrival order, preserving the exact sequence of events for
+/// replay.
 class Writer
 {
 public:
+  /// @brief Default cap on the size of a single data file (128 MiB).
   static constexpr auto kDefaultMaxFileSizeInBytes = 128ULL * 1024ULL * 1024ULL;
 
-  /// @brief Constructs a Writer that writes into @p rootDir.
-  /// @param rootDir            Existing empty directory that this Writer will populate.
-  /// @param ioMechanism        I/O mechanism to use for writing data.
-  /// @param maxFileSizeInBytes Maximum size of individual data files.
-  /// @throws std::invalid_argument If @p rootDir does not exist, is not a directory, or is
-  ///                               not empty; or if @p ioMechanism is not supported for
-  ///                               writing.
+  /// @brief Constructs a Writer that records into @p rootDir.
+  ///
+  /// @param rootDir Existing empty directory that this Writer populates.
+  ///
+  /// @param ioMechanism I/O mechanism used to write data.
+  ///
+  /// @param maxFileSizeInBytes Maximum size of a single data file.
+  ///
+  /// @throws std::invalid_argument If @p rootDir does not exist, is not a directory, or is not
+  /// empty; or if @p ioMechanism is not supported for writing.
   explicit Writer(
       std::filesystem::path rootDir,
       IoMechanism ioMechanism = IoMechanism::Stream,
@@ -48,18 +52,21 @@ public:
 
   Writer& operator=(Writer&&) noexcept = delete;
 
-  /// @brief Writes a data frame to a channel.
-  /// @param channelId Channel identifier.
-  /// @param data Data to write.
+  /// @brief Appends one data frame to a channel.
+  ///
+  /// @param channelId Channel the frame belongs to.
+  ///
+  /// @param data Frame payload.
   void write(ChannelId channelId, const std::span<const std::byte>& data);
 
-  /// @brief Writes multiple data spans as a single frame to a channel.
-  /// @param channelId Channel identifier.
-  /// @param data Data spans to write as one frame.
+  /// @brief Appends several spans to a channel as a single frame.
+  ///
+  /// @param channelId Channel the frame belongs to.
+  ///
+  /// @param data Spans concatenated into one frame.
   void write(ChannelId channelId, std::span<const std::span<const std::byte>> data);
 
-  /// @brief Gets the chronicle directory path.
-  /// @return Path to the chronicle directory.
+  /// @brief Returns the chronicle directory path.
   [[nodiscard]] const std::filesystem::path& path() const noexcept;
 
 private:

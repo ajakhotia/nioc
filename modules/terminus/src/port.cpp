@@ -68,8 +68,7 @@ void writeJsonFile(const fs::path& path, const nlohmann::json& json)
 }
 
 /// Merges @p configPaths left-to-right (later files override earlier ones), writes the result to
-/// <workingDir>/config.json, and returns it — so the config member is initialized from the same
-/// value that was recorded to disk.
+/// config.json in @p workingDir, and returns it.
 nlohmann::json loadAndWriteConfig(
     const std::vector<fs::path>& configPaths,
     const fs::path& workingDir)
@@ -91,7 +90,7 @@ nlohmann::json loadAndWriteConfig(
 }
 
 /// Creates the console.log file sink and attaches it to the nioc default logger, so log events
-/// are captured from this point on. Returns it so the Port can detach it on destruction.
+/// are captured from this point on.
 spdlog::sink_ptr setupConsoleLogSink(const fs::path& consoleLogPath)
 {
   const spdlog::sink_ptr sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(
@@ -145,7 +144,7 @@ void copyResource(
 }
 
 /// Copies every resource in @p resourcePaths into @p workingDir and returns the resulting
-/// originalPath → basename map, used to initialize the Port's resource map member.
+/// originalPath → basename map.
 std::unordered_map<std::string, std::string> copyResources(
     const std::vector<fs::path>& resourcePaths,
     const fs::path& workingDir)

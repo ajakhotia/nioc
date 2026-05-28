@@ -33,7 +33,7 @@ namespace nioc::terminus
 class Port
 {
 public:
-  /// @brief Constructs a live-mode Port from a parsed command line.
+  /// @brief Constructs a Port from a parsed command line.
   ///
   /// Reads Port's own options and the `"commandLine"` entry (see @ref programOptions and
   /// @ref parseCommandLine) out of @p variableMap.
@@ -49,7 +49,7 @@ public:
   /// @throws nlohmann::json::parse_error If a config file contains malformed JSON.
   explicit Port(const boost::program_options::variables_map& variableMap);
 
-  /// @brief Constructs a live-mode Port and creates a fresh recording directory.
+  /// @brief Constructs a Port and creates a fresh recording directory.
   ///
   /// The recording directory is named `<iso8601>_<uuid>` and lives directly under @p logRoot,
   /// which is created if it does not exist. The run's log output is also written to `console.log`

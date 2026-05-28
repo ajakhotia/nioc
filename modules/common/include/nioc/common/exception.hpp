@@ -15,7 +15,7 @@ namespace nioc::common
 /// @brief Throws @p Exception, its message built with std::format and tagged with the call site.
 ///
 /// The thrown message is `[<file>:<line>] <formatted message>`, with the location captured
-/// automatically — so a hand-written "[Module] " prefix on the message is unnecessary.
+/// automatically.
 ///
 /// @tparam Exception Exception to throw; must be constructible from a std::string
 /// (std::runtime_error, std::invalid_argument, std::logic_error, ...).

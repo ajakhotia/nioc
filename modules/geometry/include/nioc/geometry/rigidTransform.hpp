@@ -47,14 +47,13 @@ public:
 
   RigidTransform& operator=(RigidTransform&&) noexcept = default;
 
-  /// @brief Gets the transformation pose.
-  /// @return Reference to the pose.
+  /// @brief Returns the transformation pose.
   const PoseS& pose() const noexcept
   {
     return mPose;
   }
 
-  /// @brief Computes the inverse transformation.
+  /// @brief Returns the inverse transformation.
   /// @return Transform from parent to child frame.
   RigidTransform<ChildFrame, ParentFrame, Scalar> inverse() const
   {

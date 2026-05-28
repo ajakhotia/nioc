@@ -11,16 +11,17 @@
 namespace nioc::chronicle
 {
 
-/// @brief A container for chronicle data.
+/// @brief A read-only view over a block of bytes.
 ///
-/// Provides read-only access to data from a chronicle entry.
+/// Exposes the bytes through @ref span. Copies and moves are cheap and share the same underlying
+/// storage.
 class MemoryCrate
 {
 public:
   class MmapMemoryCrate;
 
-  /// @brief Constructs a MemoryCrate.
-  /// @param mmapMemoryCratePtr Implementation pointer.
+  /// @brief Constructs a MemoryCrate backed by @p mmapMemoryCratePtr.
+  /// @param mmapMemoryCratePtr Backing storage for the bytes.
   explicit MemoryCrate(std::shared_ptr<MmapMemoryCrate> mmapMemoryCratePtr);
 
   MemoryCrate(const MemoryCrate& memoryCrate);
@@ -33,8 +34,7 @@ public:
 
   MemoryCrate& operator=(MemoryCrate&& memoryCrate) noexcept;
 
-  /// @brief Gets a read-only view of the data.
-  /// @return Span of bytes containing the data.
+  /// @brief Returns a read-only view of the bytes.
   [[nodiscard]] std::span<const std::byte> span() const;
 
 private:

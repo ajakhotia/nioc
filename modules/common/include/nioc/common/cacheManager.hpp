@@ -9,13 +9,13 @@
 
 namespace nioc::common
 {
-/// @brief Lazy cache that rebuilds when stale.
+/// @brief Caches a value and rebuilds it only when it goes stale.
 ///
-/// Holds a cache and checks if it's still valid on each access. Rebuilds only when needed.
+/// On each @ref access the cached value is reused if it is still valid for the given arguments,
+/// otherwise it is rebuilt from them.
 ///
-/// Cache type must provide: `bool validate(args...)` to check validity.
-///
-/// @tparam Cache Type of cache to manage.
+/// @tparam Cache Cached type. Must be constructible from the access arguments and expose
+/// `bool validate(args...)` returning whether the current value is still valid for those arguments.
 template<typename Cache>
 class CacheManager
 {
@@ -32,9 +32,12 @@ public:
 
   CacheManager& operator=(CacheManager&&) noexcept = default;
 
-  /// @brief Gets the cache, rebuilding if needed.
-  /// @param args Passed to cache constructor and validate() method.
-  /// @return Reference to valid cache.
+  /// @brief Returns the cache, rebuilding it first if it is stale or not yet built.
+  ///
+  /// @param args Forwarded to `Cache::validate` and, when a rebuild is needed, to the Cache
+  /// constructor.
+  ///
+  /// @return Reference to the valid cache.
   template<typename... Args>
   Cache& access(Args&&... args)
   {

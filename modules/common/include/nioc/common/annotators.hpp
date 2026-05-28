@@ -14,14 +14,11 @@ namespace nioc::common
 /// @brief A format string paired with the source location of the call that built it.
 ///
 /// Pass a string literal wherever one of these is expected: the literal converts implicitly, and
-/// the conversion captures std::source_location at the call site. This lets a variadic function
-/// record where it was called without a macro — a defaulted trailing source_location cannot follow
-/// a parameter pack, so the location rides in alongside the format string instead.
+/// the conversion captures the call site. This lets a variadic function record where it was called
+/// without a trailing source_location parameter or a macro.
 ///
 /// The format string is held as a std::string_view, with no formatter specifics baked in. The
-/// consumer chooses the formatter — `{fmt}` for nioc::logger, std::format for
-/// nioc::common::throwException — and matches the string to its arguments at run time; a mismatch
-/// is reported by that formatter.
+/// consumer picks the formatter and matches the string to its arguments at run time.
 struct FormatWithLocation
 {
   /// @brief Captures @p format and the call site.

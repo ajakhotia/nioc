@@ -32,10 +32,13 @@ struct Entry
 class Reader
 {
 public:
-  /// @brief Constructs a Reader.
+  /// @brief Constructs a Reader over the chronicle in @p logRoot.
+  ///
   /// @param logRoot Path to the chronicle directory.
-  /// @param ioMechanism I/O mechanism to use for reading data.
-  /// @throws std::invalid_argument If ioMechanism is not supported for reading.
+  ///
+  /// @param ioMechanism I/O mechanism used to read data.
+  ///
+  /// @throws std::invalid_argument If @p ioMechanism is not supported for reading.
   explicit Reader(std::filesystem::path logRoot, IoMechanism ioMechanism = IoMechanism::Mmap);
 
   Reader(const Reader&) = delete;

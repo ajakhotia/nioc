@@ -99,8 +99,7 @@ public:
     return Pose<ResultScalar>(std::span<const Scalar>(cData(), kNumParams));
   }
 
-  /// @brief Computes inverse pose.
-  /// @return Inverted pose.
+  /// @brief Returns the inverse pose.
   Pose<Scalar> inverse() const
   {
     return Pose<Scalar>(derived()).invert();
@@ -116,8 +115,7 @@ public:
     return derived();
   }
 
-  /// @brief Creates identity pose.
-  /// @return Identity transformation.
+  /// @brief Returns the identity pose.
   static constexpr Pose<Scalar> identity()
   {
     return Pose<Scalar>({ 0, 0, 0, 1, 0, 0, 0 });

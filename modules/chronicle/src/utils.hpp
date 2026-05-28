@@ -66,7 +66,7 @@ static constexpr auto kHexPrefix = "0x";
 /// Numeric base used to parse a hexadecimal string.
 static constexpr auto kHexBase = 16U;
 
-/// @brief  Converts an integer to a sting in hexadecimal form (0x...)
+/// @brief  Converts an integer to a string in hexadecimal form (0x...)
 /// @tparam Integer The integer type.
 /// @param  integer Input.
 /// @return A string containing the integer represented in hexadecimal form.
@@ -109,8 +109,8 @@ bool fileHasSpace(
 /// @return Total size in bytes.
 std::uint64_t computeTotalSizeInBytes(std::span<const std::span<const std::byte>> dataCollection);
 
-/// @brief  Struct used to provide read/write functionality for a give type.
-/// @tparam ValueType
+/// @brief  Provides read/write helpers for a given type.
+/// @tparam ValueType Type to read or write.
 template<typename ValueType>
 struct ReadWriteUtil
 {
