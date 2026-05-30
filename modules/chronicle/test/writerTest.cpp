@@ -19,7 +19,7 @@ namespace fs = std::filesystem;
 namespace
 {
 
-std::vector<char> generateData()
+std::vector<char> makeData()
 {
   static constexpr auto kSize = 20UL;
   auto data = std::vector<char>(kSize);
@@ -38,10 +38,15 @@ fs::path makeFreshEmptyDir(std::string_view name)
   return path;
 }
 
-/// Verify that every file written under @p logRoot has the size expected for
-/// its type. Sequence and index files have fixed sizes; each roll file must
-/// equal the @p expectedRollSize. Throws std::logic_error on an unrecognised file.
-void expectWrittenFileSizes(const fs::path& logRoot, const std::uintmax_t expectedRollSize)
+/// Verify that every file written under @p logRoot has its expected size: the
+/// sequence file @p expectedSequenceSize, each channel's index file
+/// @p expectedIndexSize, and each roll file @p expectedRollSize. Throws
+/// std::logic_error on an unrecognised file.
+void expectWrittenFileSizes(
+    const fs::path& logRoot,
+    const std::uintmax_t expectedSequenceSize,
+    const std::uintmax_t expectedIndexSize,
+    const std::uintmax_t expectedRollSize)
 {
   for(const auto& entity: fs::recursive_directory_iterator(logRoot))
   {
@@ -53,11 +58,11 @@ void expectWrittenFileSizes(const fs::path& logRoot, const std::uintmax_t expect
     if(const auto& entityPathString = entity.path().string();
        entityPathString.ends_with(kSequenceFileName))
     {
-      EXPECT_EQ(fs::file_size(entity), 16);
+      EXPECT_EQ(fs::file_size(entity), expectedSequenceSize);
     }
     else if(entityPathString.ends_with(kIndexFileName))
     {
-      EXPECT_EQ(fs::file_size(entity), 24);
+      EXPECT_EQ(fs::file_size(entity), expectedIndexSize);
     }
     else if(entityPathString.ends_with(kRollFileNameExtension))
     {
@@ -110,7 +115,7 @@ TEST(Writer, writeSpan)
 {
   constexpr auto channelA = ChannelId{ 16983UL };
   constexpr auto channelB = ChannelId{ 68964786UL };
-  const auto data = generateData();
+  const auto data = makeData();
 
   const auto logPath = [&]()
   {
@@ -122,14 +127,15 @@ TEST(Writer, writeSpan)
     return writer.path();
   }();
 
-  expectWrittenFileSizes(logPath, data.size());
+  // Two writes (one per channel): two sequence entries in the log, one index entry per channel.
+  expectWrittenFileSizes(logPath, 2 * sizeof(SequenceEntry), sizeof(IndexEntry), data.size());
 }
 
 TEST(Writer, writeCollectionOfSpan)
 {
   constexpr auto channelA = ChannelId{ 16983UL };
   constexpr auto channelB = ChannelId{ 68964786UL };
-  const auto data = generateData();
+  const auto data = makeData();
 
   constexpr auto kSpanCount = 10UL;
   auto spanCollection = std::vector(kSpanCount, std::as_bytes(std::span(data)));
@@ -145,7 +151,8 @@ TEST(Writer, writeCollectionOfSpan)
     return writer.path();
   }();
 
-  expectWrittenFileSizes(logPath, totalSize);
+  // Two writes (one per channel): two sequence entries in the log, one index entry per channel.
+  expectWrittenFileSizes(logPath, 2 * sizeof(SequenceEntry), sizeof(IndexEntry), totalSize);
 }
 
 TEST(Writer, path)

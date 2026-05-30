@@ -42,7 +42,7 @@ const auto dataBAsBytes = std::as_bytes(std::span(dataB));
 
 fs::path createLog()
 {
-  auto writer = Writer{ makeFreshEmptyDir("logReaderTest-createLog") };
+  auto writer = Writer{ makeFreshEmptyDir("readerTest-createLog") };
 
   writer.write(channelA, dataAAsBytes);
   writer.write(channelB, dataBAsBytes);
