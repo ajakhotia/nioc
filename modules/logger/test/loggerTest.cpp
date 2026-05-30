@@ -39,7 +39,7 @@ TEST(Logger, FormatsArgumentsIntoMessage)
   auto buffer = std::ostringstream{};
   installBufferLogger(buffer, "[%Y-%m-%dT%H:%M:%S.%eZ] [%l] %v");
 
-  nioc::logger::info("count={}", 42);
+  info("count={}", 42);
 
   // The timestamp is the only non-deterministic part; assert everything after it.
   EXPECT_EQ(buffer.str().substr(kTimestampPrefixWidth), "[info] count=42\n");
@@ -50,7 +50,7 @@ TEST(Logger, CapturesCallSiteSourceLocation)
   auto buffer = std::ostringstream{};
   installBufferLogger(buffer, "[%s] %v");
 
-  nioc::logger::warn("here");
+  warn("here");
 
   EXPECT_EQ(buffer.str(), "[loggerTest.cpp] here\n");
 }
@@ -61,41 +61,23 @@ TEST(Logger, EveryLevelFormatsAndEmits)
   installBufferLogger(buffer, "[%l] %v");
 
   const auto lvalue = std::string{ "lvalue" };
-  nioc::logger::trace("t {}", 1);
-  nioc::logger::debug("d {} {}", 1, 2);
-  nioc::logger::info("i {}", lvalue);
-  nioc::logger::warn("w");
-  nioc::logger::error("e {}", 3.14);
-  nioc::logger::critical("c {}", lvalue);
+  trace("t {}", 1);
+  debug("d {} {}", 1, 2);
+  info("i {}", lvalue);
+  warn("w");
+  error("e {}", 3.14);
+  critical("c {}", lvalue);
 
   // Only levels at or above the compile-time threshold emit; build the expected output to match.
-  using lvl = spdlog::level::level_enum;
-  constexpr auto active = nioc::logger::kDefaultActiveLevel;
+  using level_enum = spdlog::level::level_enum;
   auto expected = std::string{};
-  if constexpr(lvl::trace >= active)
-  {
-    expected += "[trace] t 1\n";
-  }
-  if constexpr(lvl::debug >= active)
-  {
-    expected += "[debug] d 1 2\n";
-  }
-  if constexpr(lvl::info >= active)
-  {
-    expected += "[info] i lvalue\n";
-  }
-  if constexpr(lvl::warn >= active)
-  {
-    expected += "[warning] w\n";
-  }
-  if constexpr(lvl::err >= active)
-  {
-    expected += "[error] e 3.14\n";
-  }
-  if constexpr(lvl::critical >= active)
-  {
-    expected += "[critical] c lvalue\n";
-  }
+
+  expected += level_enum::trace >= kDefaultActiveLevel ? "[trace] t 1\n" : "";
+  expected += level_enum::debug >= kDefaultActiveLevel ? "[debug] d 1 2\n" : "";
+  expected += level_enum::info >= kDefaultActiveLevel ? "[info] i lvalue\n" : "";
+  expected += level_enum::warn >= kDefaultActiveLevel ? "[warning] w\n" : "";
+  expected += level_enum::err >= kDefaultActiveLevel ? "[error] e 3.14\n" : "";
+  expected += level_enum::critical >= kDefaultActiveLevel ? "[critical] c lvalue\n" : "";
 
   EXPECT_EQ(buffer.str(), expected);
 }
@@ -105,11 +87,11 @@ TEST(Logger, CompileTimeThresholdGatesLowerLevels)
   auto buffer = std::ostringstream{};
   installBufferLogger(buffer, "%v");
 
-  // trace is the lowest severity. The expectation adapts to wherever kActiveLevel sits, so this
-  // holds for whatever threshold the build system later selects.
-  nioc::logger::trace("trace message");
+  // trace is the lowest severity. The expectation adapts to wherever kkDefaultActiveLevelLevel
+  // sits, so this holds for whatever threshold the build system later selects.
+  trace("trace message");
 
-  if constexpr(spdlog::level::trace >= nioc::logger::kDefaultActiveLevel)
+  if constexpr(spdlog::level::trace >= kDefaultActiveLevel)
   {
     EXPECT_EQ(buffer.str(), "trace message\n");
   }
@@ -121,18 +103,18 @@ TEST(Logger, CompileTimeThresholdGatesLowerLevels)
 
 TEST(LoggerSetup, AddedSinkReceivesMessagesUntilRemoved)
 {
-  nioc::logger::setupDefaultLogger("loggerTest");
+  setupDefaultLogger("loggerTest", false);
 
   auto buffer = std::ostringstream{};
   const auto sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(buffer);
-  nioc::logger::addSink(sink);
+  addSink(sink);
 
-  nioc::logger::info("hello {}", 1);
+  info("hello {}", 1);
   EXPECT_NE(buffer.str().find("hello 1"), std::string::npos);
 
-  nioc::logger::removeSink(sink);
+  removeSink(sink);
   buffer.str("");
-  nioc::logger::info("gone {}", 2);
+  info("gone {}", 2);
   EXPECT_TRUE(buffer.str().empty());
 }
 
@@ -145,14 +127,14 @@ TEST(LoggerSetup, AddSinkFallsBackToExistingLoggerWithoutSetup)
 
   auto extra = std::ostringstream{};
   const auto sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(extra);
-  nioc::logger::addSink(sink);
+  addSink(sink);
 
-  nioc::logger::info("hello {}", 1);
+  info("hello {}", 1);
   EXPECT_NE(extra.str().find("hello 1"), std::string::npos);
 
-  nioc::logger::removeSink(sink);
+  removeSink(sink);
   extra.str("");
-  nioc::logger::info("gone {}", 2);
+  info("gone {}", 2);
   EXPECT_TRUE(extra.str().empty());
 }
 
