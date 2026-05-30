@@ -3,8 +3,16 @@
     CMakeLists.txt where it says install(EXPORT ... )). Any reference to this
     library outside this file should be made using the namespaced alias. This
     way, we avoid link-conflicts after the targets are exported. ]]
-add_library(example SHARED src/example.cpp)
+add_library(example SHARED src/example.cpp src/messageCounter.cpp)
 add_library(nioc::example ALIAS example)
+
+
+#[[ MessageCounter is a terminus::Component that subscribes to sensor topics, so the library now
+    exposes terminus and the sensor IDL through its public header and uses the logger internally. ]]
+target_link_libraries(example
+        PUBLIC nioc::terminus
+        PUBLIC nioc::sensorsIdl
+        PRIVATE nioc::logger)
 
 
 #[[ Set the include directories. These directories are passed to the compiler
