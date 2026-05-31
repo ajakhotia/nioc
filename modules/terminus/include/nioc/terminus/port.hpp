@@ -5,19 +5,19 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
+#include "msg.hpp"
+#include "msgBase.hpp"
+#include <boost/circular_buffer.hpp>
 #include <boost/program_options.hpp>
 #include <filesystem>
 #include <memory>
 #include <nioc/chronicle/writer.hpp>
 #include <nlohmann/json.hpp>
+#include <spdlog/sinks/sink.h>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <vector>
-
-namespace spdlog::sinks
-{
-class sink;
-} // namespace spdlog::sinks
 
 namespace nioc::terminus
 {
@@ -33,6 +33,9 @@ namespace nioc::terminus
 class Port
 {
 public:
+  using ChannelId = chronicle::ChannelId;
+  using MsgCallback = std::function<void(ConstMsgBasePtr)>;
+
   /// @brief Constructs a Port from a parsed command line.
   ///
   /// Reads Port's own options and the `"commandLine"` entry (see @ref programOptions and
@@ -74,12 +77,12 @@ public:
   /// @throws std::runtime_error If a config file cannot be opened.
   ///
   /// @throws nlohmann::json::parse_error If a config file contains malformed JSON.
-  Port(
-      const std::filesystem::path& logRoot,
-      const std::vector<std::filesystem::path>& configPaths,
-      const std::vector<std::filesystem::path>& resourcePaths,
-      bool writeChronicle,
-      std::string commandLine);
+  explicit Port(
+      const std::filesystem::path& logRoot = std::filesystem::temp_directory_path() / "niocLogs",
+      const std::vector<std::filesystem::path>& configPaths = {},
+      const std::vector<std::filesystem::path>& resourcePaths = {},
+      bool writeChronicle = true,
+      std::string commandLine = "");
 
   Port(const Port&) = delete;
 
@@ -118,20 +121,38 @@ public:
   ///
   /// @return The path to the resource's copy inside the working directory.
   ///
-  /// @throws std::invalid_argument If @p source was not previously added (see @ref addResource).
+  /// @throws std::invalid_argument If the @p source was not previously added (see @ref
+  /// addResource).
+  [[nodiscard]] std::filesystem::path acquireResource(const std::filesystem::path& source);
+
   [[nodiscard]] std::filesystem::path acquireResource(const std::filesystem::path& source) const;
+
+  void subscribe(ChannelId channelId, std::weak_ptr<const MsgCallback> callbackPtr);
+
+  void publish(ChannelId channelId, ConstMsgBasePtr msgPtr);
+
+  template<typename Schema>
+  void publish(const std::string_view& topic, ConstMsgPtr<Schema> msgPtr)
+  {
+    publish(makeChannelId(Msg<Schema>::kMsgId, topic), std::move(msgPtr));
+  }
 
 private:
   const std::filesystem::path mWorkingDir;
-
-  /// File sink for this run's `console.log`. Attached to the nioc default logger for the Port's
-  /// lifetime and detached in the destructor.
   const std::shared_ptr<spdlog::sinks::sink> mConsoleLogSink;
-
   const nlohmann::json mConfig;
-  const std::string mCommandLine;
   std::unordered_map<std::string, std::string> mResourceMap;
+
+
   const std::unique_ptr<chronicle::Writer> mChronicleWriter;
+  std::jthread mChronicleWriterThread;
+
+  boost::circular_buffer<std::pair<ChannelId, ConstMsgBasePtr>> mInbox;
+
+
+  using SubscriptionList = std::vector<std::weak_ptr<const MsgCallback>>;
+  using SubscriptionMap = std::unordered_map<ChannelId, SubscriptionList>;
+  SubscriptionMap mSubscriptionMap;
 };
 
 } // namespace nioc::terminus

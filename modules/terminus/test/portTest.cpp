@@ -6,11 +6,14 @@
 
 #include <array>
 #include <boost/program_options.hpp>
+#include <filesystem>
 #include <fstream>
 #include <gtest/gtest.h>
 #include <nioc/terminus/port.hpp>
 #include <nioc/terminus/programOption.hpp>
 #include <nlohmann/json.hpp>
+#include <stdexcept>
+#include <string>
 
 namespace nioc::terminus
 {
@@ -19,22 +22,18 @@ namespace fs = std::filesystem;
 namespace
 {
 
-/// Create a fresh empty directory at a deterministic path under the system temp directory.
-/// Any prior contents are wiped.
-fs::path makeFreshEmptyDir(std::string_view name)
-{
-  const auto path = fs::temp_directory_path() / "nioc-portTest" / name;
-  fs::remove_all(path);
-  fs::create_directories(path);
-  return path;
-}
+/// Committed fixtures, located relative to this test's source directory (see CMakeLists.txt).
+const auto kTestDataDir = fs::path{ NIOC_TERMINUS_TEST_DATA_DIR };
+const auto kConfig = kTestDataDir / "testConfig.json";
+const auto kConfigOverride = kTestDataDir / "testConfigOverride.json";
+const auto kMalformedConfig = kTestDataDir / "malformedConfig.json";
+const auto kResource = kTestDataDir / "testResource.bin";
 
-void writeFile(const fs::path& path, std::string_view contents)
-{
-  fs::create_directories(path.parent_path());
-  auto out = std::ofstream(path);
-  out << contents;
-}
+/// Shares testResource.bin's basename from a different directory to exercise the collision guard.
+const auto kResourceDuplicate = kTestDataDir / "duplicate" / "testResource.bin";
+
+/// Recording root for these tests; Port creates it on demand and names a unique recording under it.
+const auto kLogRoot = fs::temp_directory_path() / "niocLogs";
 
 const auto kSampleCommandLine = std::string{ "myRobot --config /etc/foo.json" };
 
@@ -42,17 +41,13 @@ const auto kSampleCommandLine = std::string{ "myRobot --config /etc/foo.json" };
 
 TEST(PortTest, constructionCreatesRecordingDirectory)
 {
-  const auto root = makeFreshEmptyDir("ctor-creates");
-  const auto configPath = root / "in" / "base.json";
-  writeFile(configPath, R"({"hello": "world"})");
-
   fs::path workingDir;
   {
-    auto port = Port{ root, { configPath }, {}, true, kSampleCommandLine };
+    auto port = Port{ kLogRoot, { kConfig }, {}, true, kSampleCommandLine };
     workingDir = port.workingDir();
 
     EXPECT_TRUE(fs::is_directory(workingDir));
-    EXPECT_EQ(workingDir.parent_path(), root);
+    EXPECT_EQ(workingDir.parent_path(), kLogRoot);
     EXPECT_TRUE(fs::is_directory(workingDir / "chronicle"));
     EXPECT_TRUE(fs::is_regular_file(workingDir / "config.json"));
     EXPECT_TRUE(fs::is_regular_file(workingDir / "console.log"));
@@ -62,125 +57,88 @@ TEST(PortTest, constructionCreatesRecordingDirectory)
 
 TEST(PortTest, configMergesPathsLeftToRight)
 {
-  const auto root = makeFreshEmptyDir("config-merge");
-  const auto base = root / "in" / "base.json";
-  const auto override_ = root / "in" / "override.json";
-  writeFile(base, R"({"a": 1, "b": {"x": 10, "y": 20}, "c": "base"})");
-  writeFile(override_, R"({"b": {"y": 99, "z": 30},        "c": "override"})");
-
   auto port = Port{
-    root,
-    { base, override_ },
+    kLogRoot,
+    { kConfig, kConfigOverride },
     {},
     true,
     ""
   };
   const auto& cfg = port.config();
 
-  EXPECT_EQ(cfg.at("a").get<int>(), 1);
-  EXPECT_EQ(cfg.at("b").at("x").get<int>(), 10);
-  EXPECT_EQ(cfg.at("b").at("y").get<int>(), 99);
-  EXPECT_EQ(cfg.at("b").at("z").get<int>(), 30);
-  EXPECT_EQ(cfg.at("c").get<std::string>(), "override");
+  EXPECT_EQ(cfg.at("robot").get<std::string>(), "atlas");          // base only
+  EXPECT_EQ(cfg.at("controlRateHz").get<int>(), 200);              // base only
+  EXPECT_TRUE(cfg.at("sensors").at("imu").get<bool>());            // base only
+  EXPECT_EQ(cfg.at("sensors").at("lidarChannels").get<int>(), 32); // override wins
+  EXPECT_TRUE(cfg.at("sensors").at("camera").get<bool>());         // override only
+  EXPECT_EQ(cfg.at("mode").get<std::string>(), "override");        // override wins
 
   // The merged config is written verbatim to <dir>/config.json.
-  auto onDisk = nlohmann::json::parse(std::ifstream(port.workingDir() / "config.json"));
+  const auto onDisk = nlohmann::json::parse(std::ifstream(port.workingDir() / "config.json"));
   EXPECT_EQ(onDisk, cfg);
 }
 
 TEST(PortTest, metadataIncludesCmdlineAndResources)
 {
-  const auto root = makeFreshEmptyDir("metadata");
-  const auto configPath = root / "in" / "c.json";
-  writeFile(configPath, R"({})");
-  const auto resA = root / "external" / "urdf" / "robot.urdf";
-  const auto resB = root / "external" / "cal" / "imu.yaml";
-  writeFile(resA, "URDF-CONTENTS");
-  writeFile(resB, "CAL-CONTENTS");
-
   fs::path workingDir;
   {
-    auto port = Port{ root, { configPath }, {}, true, kSampleCommandLine };
+    auto port = Port{ kLogRoot, { kConfig }, {}, true, kSampleCommandLine };
     workingDir = port.workingDir();
-    port.addResource(resA);
-    port.addResource(resB);
+    port.addResource(kResource);
 
-    EXPECT_TRUE(fs::is_regular_file(workingDir / "robot.urdf"));
-    EXPECT_TRUE(fs::is_regular_file(workingDir / "imu.yaml"));
+    EXPECT_TRUE(fs::is_regular_file(workingDir / "testResource.bin"));
   }
 
   const auto meta = nlohmann::json::parse(std::ifstream(workingDir / "metadata.json"));
   EXPECT_EQ(meta.at("cmdline").get<std::string>(), kSampleCommandLine);
-  EXPECT_EQ(meta.at("resources").at(resA.string()).get<std::string>(), "robot.urdf");
-  EXPECT_EQ(meta.at("resources").at(resB.string()).get<std::string>(), "imu.yaml");
+  EXPECT_EQ(meta.at("resources").at(kResource.string()).get<std::string>(), "testResource.bin");
 }
 
 TEST(PortTest, acquireResourceRemapsToWorkingDirCopy)
 {
-  const auto root = makeFreshEmptyDir("acquire");
-  writeFile(root / "in" / "c.json", "{}");
-  const auto resource = root / "external" / "thing.bin";
-  writeFile(resource, "bytes");
+  auto port = Port{ kLogRoot, { kConfig }, {}, true, "" };
+  port.addResource(kResource);
 
-  auto port = Port{ root, { root / "in" / "c.json" }, {}, true, "" };
-  port.addResource(resource);
-
-  const auto acquired = port.acquireResource(resource);
-  EXPECT_EQ(acquired, port.workingDir() / "thing.bin");
+  const auto acquired = port.acquireResource(kResource);
+  EXPECT_EQ(acquired, port.workingDir() / "testResource.bin");
   EXPECT_TRUE(fs::is_regular_file(acquired));
 }
 
 TEST(PortTest, acquireResourceRejectsUnaddedResource)
 {
-  const auto root = makeFreshEmptyDir("acquire-unknown");
-  writeFile(root / "in" / "c.json", "{}");
-
-  auto port = Port{ root, { root / "in" / "c.json" }, {}, true, "" };
-  EXPECT_THROW((void)port.acquireResource(root / "never.bin"), std::invalid_argument);
+  auto port = Port{ kLogRoot, { kConfig }, {}, true, "" };
+  EXPECT_THROW((void)port.acquireResource(kTestDataDir / "never.bin"), std::invalid_argument);
 }
 
 TEST(PortTest, addResourceRejectsBasenameCollision)
 {
-  const auto root = makeFreshEmptyDir("collision");
-  writeFile(root / "in" / "c.json", "{}");
-  const auto a = root / "ext" / "a" / "thing.bin";
-  const auto b = root / "ext" / "b" / "thing.bin";
-  writeFile(a, "A");
-  writeFile(b, "B");
-
-  auto port = Port{ root, { root / "in" / "c.json" }, {}, true, "" };
-  port.addResource(a);
-  EXPECT_THROW(port.addResource(b), std::invalid_argument);
+  auto port = Port{ kLogRoot, { kConfig }, {}, true, "" };
+  port.addResource(kResource);
+  EXPECT_THROW(port.addResource(kResourceDuplicate), std::invalid_argument);
 }
 
 TEST(PortTest, addResourceRejectsMissingFile)
 {
-  const auto root = makeFreshEmptyDir("missing-resource");
-  writeFile(root / "in" / "c.json", "{}");
-
-  auto port = Port{ root, { root / "in" / "c.json" }, {}, true, "" };
-  EXPECT_THROW(port.addResource(root / "doesNotExist"), std::invalid_argument);
+  auto port = Port{ kLogRoot, { kConfig }, {}, true, "" };
+  EXPECT_THROW(port.addResource(kTestDataDir / "doesNotExist"), std::invalid_argument);
 }
 
 TEST(PortTest, constructionCreatesMissingLogRoot)
 {
-  const auto root = fs::temp_directory_path() / "nioc-portTest" / "absent-root";
-  fs::remove_all(root);
+  const auto absentRoot = fs::temp_directory_path() / "niocPortTestAbsentRoot";
+  fs::remove_all(absentRoot);
 
-  auto port = Port{ root, {}, {}, true, "" };
+  auto port = Port{ absentRoot, {}, {}, true, "" };
 
-  EXPECT_TRUE(fs::is_directory(root));
-  EXPECT_EQ(port.workingDir().parent_path(), root);
+  EXPECT_TRUE(fs::is_directory(absentRoot));
+  EXPECT_EQ(port.workingDir().parent_path(), absentRoot);
 }
 
 TEST(PortTest, recordChronicleFalseOmitsChronicleDir)
 {
-  const auto root = makeFreshEmptyDir("no-chronicle");
-  writeFile(root / "in" / "c.json", "{}");
-
   fs::path workingDir;
   {
-    auto port = Port{ root, { root / "in" / "c.json" }, {}, false, "" };
+    auto port = Port{ kLogRoot, { kConfig }, {}, false, "" };
     workingDir = port.workingDir();
 
     EXPECT_FALSE(fs::exists(workingDir / "chronicle"));
@@ -192,36 +150,28 @@ TEST(PortTest, recordChronicleFalseOmitsChronicleDir)
 
 TEST(PortTest, constructionAddsListedResources)
 {
-  const auto root = makeFreshEmptyDir("ctor-resources");
-  writeFile(root / "in" / "c.json", "{}");
-  const auto resource = root / "ext" / "robot.urdf";
-  writeFile(resource, "URDF");
-
-  auto port = Port{ root, { root / "in" / "c.json" }, { resource }, true, "" };
-
-  EXPECT_TRUE(fs::is_regular_file(port.workingDir() / "robot.urdf"));
+  auto port = Port{ kLogRoot, { kConfig }, { kResource }, true, "" };
+  EXPECT_TRUE(fs::is_regular_file(port.workingDir() / "testResource.bin"));
 }
 
 TEST(PortTest, constructorFromVariablesMapReadsOptions)
 {
-  const auto root = makeFreshEmptyDir("vm-ctor");
-  const auto cfgA = root / "in" / "a.json";
-  const auto cfgB = root / "in" / "b.json";
-  writeFile(cfgA, R"({"a": 1, "shared": "A"})");
-  writeFile(cfgB, R"({"b": 2, "shared": "B"})");
-  const auto resource = root / "ext" / "thing.bin";
-  writeFile(resource, "bytes");
-
   // Build an argv that exercises every Port option, mirroring a real command line.
-  const auto rootArg = root.string();
-  const auto cfgAArg = cfgA.string();
-  const auto cfgBArg = cfgB.string();
-  const auto resArg = resource.string();
-  const auto argv = std::array<const char*, 11>{
-    "myRobot",       "--log-root",         rootArg.c_str(), "--append-config",
-    cfgAArg.c_str(), "--append-config",    cfgBArg.c_str(), "--append-resource",
-    resArg.c_str(),  "--record-chronicle", "false"
-  };
+  const auto rootArg = kLogRoot.string();
+  const auto configArg = kConfig.string();
+  const auto overrideArg = kConfigOverride.string();
+  const auto resourceArg = kResource.string();
+  const auto argv = std::array<const char*, 11>{ "myRobot",
+                                                 "--log-root",
+                                                 rootArg.c_str(),
+                                                 "--append-config",
+                                                 configArg.c_str(),
+                                                 "--append-config",
+                                                 overrideArg.c_str(),
+                                                 "--append-resource",
+                                                 resourceArg.c_str(),
+                                                 "--record-chronicle",
+                                                 "false" };
   constexpr auto argc = static_cast<int>(argv.size());
 
   auto options = programOptions("myRobot");
@@ -232,26 +182,24 @@ TEST(PortTest, constructorFromVariablesMapReadsOptions)
 
   auto port = Port{ variableMap };
 
-  EXPECT_EQ(port.workingDir().parent_path(), root);
-  EXPECT_EQ(port.config().at("a").get<int>(), 1);
-  EXPECT_EQ(port.config().at("b").get<int>(), 2);
-  EXPECT_EQ(port.config().at("shared").get<std::string>(), "B"); // later config wins
-  EXPECT_TRUE(fs::is_regular_file(port.workingDir() / "thing.bin"));
+  EXPECT_EQ(port.workingDir().parent_path(), kLogRoot);
+  EXPECT_EQ(port.config().at("robot").get<std::string>(), "atlas");
+  EXPECT_EQ(port.config().at("sensors").at("lidarChannels").get<int>(), 32);
+  EXPECT_EQ(port.config().at("mode").get<std::string>(), "override"); // later config wins
+  EXPECT_TRUE(fs::is_regular_file(port.workingDir() / "testResource.bin"));
   EXPECT_FALSE(fs::exists(port.workingDir() / "chronicle")); // --record-chronicle false
 }
 
 TEST(PortTest, constructionRejectsUnreadableConfig)
 {
-  const auto root = makeFreshEmptyDir("bad-config");
-  EXPECT_THROW((Port{ root, { root / "doesNotExist.json" }, {}, true, "" }), std::runtime_error);
+  EXPECT_THROW(
+      (Port{ kLogRoot, { kTestDataDir / "doesNotExist.json" }, {}, true, "" }),
+      std::runtime_error);
 }
 
 TEST(PortTest, constructionRejectsMalformedConfig)
 {
-  const auto root = makeFreshEmptyDir("malformed-config");
-  const auto bad = root / "in" / "bad.json";
-  writeFile(bad, "{ not json");
-  EXPECT_THROW((Port{ root, { bad }, {}, true, "" }), nlohmann::json::parse_error);
+  EXPECT_THROW((Port{ kLogRoot, { kMalformedConfig }, {}, true, "" }), nlohmann::json::parse_error);
 }
 
 } // namespace nioc::terminus

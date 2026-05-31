@@ -89,22 +89,24 @@ nlohmann::json loadAndWriteConfig(
   return config;
 }
 
-/// Creates the console.log file sink and attaches it to the nioc default logger, so log events
-/// are captured from this point on.
-spdlog::sink_ptr setupConsoleLogSink(const fs::path& consoleLogPath)
+/// Attach a file-backed sink to the logger to capture the console log to the working directory
+spdlog::sink_ptr attachLogFileSink(
+    const fs::path& consoleLogPath,
+    const std::string_view pattern = logger::kDefaultLogPattern)
 {
   const spdlog::sink_ptr sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(
       consoleLogPath.string(),
       true);
 
+  sink->set_pattern(std::string{ pattern });
   logger::addSink(sink);
   return sink;
 }
 
-/// Copies @p source into @p workingDir under its flat basename and records the
+/// Copies the @p source into @p workingDir under its flat basename and records the
 /// originalPath → basename mapping in @p fileMap.
 ///
-/// @throws std::invalid_argument If @p source is missing, is not a regular file, was already
+/// @throws std::invalid_argument If the @p source is missing, is not a regular file, was already
 /// added, or its basename collides with an already-copied resource.
 void copyResource(
     const fs::path& source,
@@ -176,28 +178,42 @@ Port::Port(
     const bool writeChronicle,
     std::string commandLine):
     mWorkingDir{ createWorkingDir(logRoot) },
-    mConsoleLogSink{ setupConsoleLogSink(mWorkingDir / "console.log") },
+    mConsoleLogSink{ attachLogFileSink(mWorkingDir / "console.log") },
     mConfig(loadAndWriteConfig(configPaths, mWorkingDir)),
-    mCommandLine{ std::move(commandLine) },
     mResourceMap{ copyResources(resourcePaths, mWorkingDir) },
     mChronicleWriter{ writeChronicle ? makeChronicleWriter(mWorkingDir) : nullptr }
 {
+  auto metadata = nlohmann::json::object();
+  metadata["cmdline"] = commandLine;
+  metadata["resources"] = mResourceMap;
+  writeJsonFile(mWorkingDir / "metadata.json", metadata);
 }
 
 Port::~Port()
 {
+  // Resources may have grown via addResource() since construction, so refresh the resources
+  // section of the metadata written in the constructor. A destructor must not throw, so the
+  // metadata update is guarded.
   try
   {
-    auto metadata = nlohmann::json::object();
-    metadata["cmdline"] = mCommandLine;
-    metadata["resources"] = mResourceMap;
-    writeJsonFile(mWorkingDir / "metadata.json", metadata);
+    const auto metadataPath = mWorkingDir / "metadata.json";
+    if(auto file = std::fstream(metadataPath, std::ios::in | std::ios::out))
+    {
+      auto metadata = nlohmann::json::parse(file);
+      metadata["resources"] = mResourceMap;
+
+      file.clear();
+      file.seekp(0);
+      file << metadata.dump(2) << '\n';
+    }
+    else
+    {
+      logger::error("Failed to update metadata.json: cannot open {}", metadataPath.string());
+    }
   }
   catch(const std::exception& error)
   {
-    // Destructor must not throw. Log and move on so the recording is still finalized as best
-    // we can; chronicle::Writer's destructor will flush whatever it has.
-    logger::error("Failed to write metadata.json: {}", error.what());
+    logger::error("{}", error.what());
   }
 
   // Detach the file sink last, so any error logged above is still captured in console.log.
@@ -219,15 +235,29 @@ void Port::addResource(const fs::path& source)
   copyResource(source, mWorkingDir, mResourceMap);
 }
 
-fs::path Port::acquireResource(const fs::path& source) const
+fs::path Port::acquireResource(const fs::path& source)
 {
-  const auto entry = mResourceMap.find(source.string());
-  if(entry == mResourceMap.end())
+  if(not mResourceMap.contains(source.string()))
   {
-    common::throwException<std::invalid_argument>("Resource {} was not declared.", source.string());
+    copyResource(source, mWorkingDir, mResourceMap);
   }
 
-  return mWorkingDir / entry->second;
+  return mWorkingDir / mResourceMap.at(source.string());
+}
+
+fs::path Port::acquireResource(const fs::path& source) const
+{
+  return mWorkingDir / mResourceMap.at(source.string());
+}
+
+void Port::subscribe(const ChannelId channelId, std::weak_ptr<const MsgCallback> callbackPtr)
+{
+  mSubscriptionMap[channelId].emplace_back(callbackPtr);
+}
+
+void Port::publish(const ChannelId channelId, ConstMsgBasePtr msgPtr)
+{
+  mInbox.push_back(std::pair{ channelId, msgPtr });
 }
 
 } // namespace nioc::terminus

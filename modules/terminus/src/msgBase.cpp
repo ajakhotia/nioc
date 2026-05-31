@@ -8,6 +8,7 @@
 #include <capnp/message.h>
 #include <cassert>
 #include <nioc/terminus/msgBase.hpp>
+#include <string_view>
 #include <vector>
 
 namespace nioc::terminus
@@ -52,9 +53,19 @@ MsgBase::Variant& MsgBase::variant() noexcept
   return mVariant;
 }
 
-void write(MsgBase& msgBase, chronicle::Writer& writer)
+const MsgBase::Variant& MsgBase::variant() const noexcept
 {
-  const auto segments = std::get<MallocMessageBuilder>(msgBase.variant()).getSegmentsForOutput();
+  return mVariant;
+}
+
+void write(const MsgBase& msgBase, const std::string_view& topic, chronicle::Writer& writer)
+{
+  // const_cast: serialization only reads the finalized message; capnp's getSegmentsForOutput is not
+  // const-qualified.
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+  auto& builder = const_cast<MallocMessageBuilder&>(
+      std::get<MallocMessageBuilder>(msgBase.variant()));
+  const auto segments = builder.getSegmentsForOutput();
 
   std::vector<std::uint32_t> table;
   table.reserve(segments.size() + 2);
@@ -96,8 +107,19 @@ void write(MsgBase& msgBase, chronicle::Writer& writer)
         return convert(arrayPtr);
       });
 
-  writer.write(chronicle::ChannelId(msgBase.msgHandle()), spanCollection);
+  writer.write(makeChannelId(msgBase.msgId(), topic), spanCollection);
 }
 
+chronicle::ChannelId makeChannelId(const MsgId& msgId, const std::string_view& topic)
+{
+  // boost::hash_combine mixing: the golden-ratio constant and the two shift amounts.
+  constexpr auto kGoldenRatio = std::uint64_t{ 0x9e3779b97f4a7c15ULL };
+  constexpr auto kLeftShift = 6U;
+  constexpr auto kRightShift = 2U;
+
+  auto seed = std::hash<std::string_view>{}(topic);
+  seed ^= msgId.mValue + kGoldenRatio + (seed << kLeftShift) + (seed >> kRightShift);
+  return chronicle::ChannelId{ seed };
+}
 
 } // namespace nioc::terminus

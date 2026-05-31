@@ -9,7 +9,7 @@ things:
 2. **Owns the recording directory** — creates it, places chronicle inside it, loads and merges
    config into it, copies in any extra files the application calls out as logged resources, and
    writes the metadata that lets a playback binary find everything again.
-3. **Provides lifecycle primitives** (`Runnable`, `Runner`) so applications have a small, readable
+3. **Provides lifecycle primitives** (`Routine`, `Runner`) so applications have a small, readable
    `main()`.
 
 The same binary handles live operation and log playback. Downstream components are mode-agnostic
@@ -17,6 +17,33 @@ because in playback mode the log reader is *itself a driver*. Port routes data t
 modes.
 
 Everything lives in one module: `modules/terminus/`, namespace `nioc::terminus`.
+
+## Implementation status (first slice)
+
+The first vertical slice — driving the bagConverter: a `RosbagPlayer` driver on a `ThreadRunner`
+publishing Imu/PointCloud through Port, a `MessageCounter` component (in `nioc::example`)
+subscribing and counting — is built. What exists today:
+
+- `Routine` (`routine.hpp`): `step()` performs one iteration and returns `State{Continue, Waiting,
+  Done}` (throw = failure). It takes no arguments — the Runner owns the loop and the stop token.
+- `Component` (`component.hpp`): a bounded **inbox**, a `boost::circular_buffer` of
+  `pair<ChannelId, shared_ptr<const MsgBase>>` sized at construction. The port-side subscription
+  callback calls `push(channelId, message)`; `step()` drains one entry and dispatches it to the
+  single handler registered for that channel. `OverflowPolicy{Overwrite, Block}` decides what a
+  full inbox does.
+- `Runner` + `ThreadRunner` (`runner.hpp`): one thread per Routine; the loop watches the stop token
+  between iterations and keeps running/stopped/failed counters.
+- `Publisher<Schema>` and `Port::publisher` / `Port::subscribe` returning a `[[nodiscard]]`
+  `Subscription`; per-topic type binding; channel id = hash(topic, msgType).
+- Port runs two worker threads: one fans each published message out to subscribers, one drains a
+  queue into the chronicle writer. A published message is shared as `shared_ptr<const MsgBase>` to
+  both; it is immutable after publish and the two threads read it concurrently.
+
+Deferred (sketched elsewhere in this document, not yet built): the readiness-based
+`ThreadPoolRunner` scheduler (designed below), the `Disposition` end-state enum, `SignalCatcher`,
+playback mode, `topics.txt`, lock-free dispatch (the first cut guards the subscriber table with a
+mutex — which also gives `Subscription` teardown its wait-for-in-flight guarantee), and the
+`Port::allocator()` zero-copy path.
 
 ## Modes of operation
 
@@ -30,8 +57,8 @@ Everything lives in one module: `modules/terminus/`, namespace `nioc::terminus`.
   fresh recording. The two recordings are independent on disk; the LogReader bridges them. Detailed
   semantics deferred until we have a concrete need.
 
-The mode of the binary is determined by **which Port constructor was used** and **which Runnables
-main() constructs** (hardware drivers vs. LogReader). There is no `Mode` enum on Runnable or
+The mode of the binary is determined by **which Port constructor was used** and **which Routines
+main() constructs** (hardware drivers vs. LogReader). There is no `Mode` enum on Routine or
 Dispatcher.
 
 ## System at a glance
@@ -182,7 +209,7 @@ hardware drivers:
 ```
 
 `port.config()` reads from the recording's `config.json`. `port.acquireResource(originalPath)`
-remaps the path to the in-recording location. `LogReader::run()` reads one entry per iteration;
+remaps the path to the in-recording location. `LogReader::step()` reads one entry per iteration;
 when the recording is exhausted it returns `Done` and `driverRunner` considers it stopped.
 
 ## The pieces
@@ -254,45 +281,79 @@ storage as an `Allocator` interface so components and drivers can build capnp me
 into recording-backed memory; keeping the writer inside Port lets `Port::allocator()` be a clean
 factory method when we get there.
 
-### Runnable, Component, Driver
+### Routine, Component, Driver
 
-`Runnable` is the base for anything that does work in iterations. The **loop lives in the Runner**;
-`run()` performs one iteration and returns a status telling the Runner what to do next.
+`Routine` is the base for anything that does work in iterations. The **loop lives in the Runner**;
+`step()` performs one iteration and returns a `State` telling the Runner what to do next.
 
 ```cpp
-class Runnable {
+class Routine {
 public:
-    enum class Status { Continue, Done };   // Failed → throw
+    enum class State : std::uint8_t { Continue, Waiting, Done };   // failure → throw
 
-    virtual ~Runnable() = default;
-    virtual Status run(std::stop_token) = 0;
-    virtual std::string_view name() const = 0;   // for logs only
+    virtual ~Routine() = default;
+    [[nodiscard]] virtual State step() = 0;
+    [[nodiscard]] virtual std::string_view name() const = 0;   // for logs only
 };
 ```
 
-- `Continue` — call me again.
-- `Done` — I'm finished naturally (end of log, time limit, sentinel reached). Stop scheduling me.
-- Throw — I failed. Runner catches, logs, and stops scheduling me.
+- `Continue` — has more work now; schedule another iteration immediately.
+- `Waiting` — no work right now; reschedule later rather than spinning (an empty inbox is the
+  canonical case).
+- `Done` — finished naturally (end of log, time limit, sentinel reached); stop scheduling.
+- Throw — failed. The Runner catches, logs, and stops scheduling it.
 
-The `stop_token` is passed *into each iteration* so a Runnable that blocks (waiting on hardware, a
-queue, or a sleep) can be cooperatively woken. The Runner also checks the token between
-iterations.
+`step()` takes no arguments. An earlier version passed a `std::stop_token` into every iteration so
+a blocking iteration could be woken; that was removed. The model is a *non-blocking* single
+iteration that signals idleness with `Waiting`, while the Runner owns the stop token and checks it
+between iterations. A Routine that genuinely must block until stop (a driver on a blocking syscall)
+will get its stop hook through a separate mechanism, not a per-iteration argument (see TODOs).
 
-The interface is intentionally small. No `vitals()`, no `state()`, no health enum. Whether a
-Runnable is alive is something the Runner knows (it scheduled it); whether it's "stalled" or
-"degraded" is application territory.
+`State` is purely the routine's *forward* signal — what to do next. It deliberately has no
+`Stopped`/`Failed`/`Error` cases: how a routine's lifetime *ended* (completed vs. stopped
+externally vs. failed) is a separate, backward-looking concern the Runner owns (its
+running/stopped/failed counters; a named `Disposition` enum is a deferred refinement — see TODOs).
+Failure is reported by throwing, which carries a diagnostic message a bare `Error` state could not.
 
-`Component : Runnable` — subscribes via Port, may publish via Port. Held by `main` as
-`std::shared_ptr<Component>` so the Runner can keep a reference for the duration of work, but
-subscription lifetime is managed by `Subscription` tokens, not by the shared_ptr.
+The interface is intentionally small. No `vitals()`, no health enum. Whether a Routine is alive is
+something the Runner knows (it scheduled it); whether it's "stalled" or "degraded" is application
+territory.
 
-`Driver<Wire> : Runnable` — takes a `Publisher<Schema>` and a user-supplied `wire→msg` conversion
-lambda. Publishes only. Same `shared_ptr` ownership.
+`Component : Routine` — subscribes via Port, may publish via Port. Held by `main` as
+`std::shared_ptr<Component>` so the Runner can keep a reference for the duration of work.
+
+Each Component owns a bounded **inbox**: a `boost::circular_buffer` of
+`std::pair<ChannelId, ConstMsgBasePtr>`, sized at construction. The channel id is
+stored alongside the message so a drained entry knows which handler it belongs to.
+
+The two dispatch pathways are set up by the templated `subscribe<Schema>(topic, callback)`:
+
+1. **Port → inbox.** On first subscription to a channel, the Component registers a callback with
+   Port that calls `push(channelId, message)`, with the channel id captured in that callback (where
+   it is known). Port holds the callback weakly; the Component owns the `shared_ptr` that keeps it
+   alive — one per subscribed channel.
+2. **inbox → handler.** `subscribe` stores **one** type-erasing handler per channel (a
+   `std::function<void(ConstMsgBasePtr)>` that down-casts to `Msg<Schema>` and
+   invokes the user callback). Re-subscribing a channel replaces that handler: one handler per
+   channel, last-writer-wins — compose multiple behaviors in one lambda rather than registering
+   several.
+
+`step()` drains one entry under the inbox mutex, then (outside the lock) invokes the handler
+registered for that entry's channel; an empty inbox returns `State::Waiting`. The inbox's
+`OverflowPolicy` decides what a full inbox does: `Overwrite` drops the oldest (live capture — fresh
+data beats stale), `Block` backpressures the producer until a slot frees (playback — lossless).
+
+`Driver : Routine` — a plain base (no `Wire` template). A driver holds one or more
+`Publisher<Schema>` handles and does its `wire→msg` conversion inside `step()`. This is deliberately
+not templated on a single wire type: a real source (a ROS bag, a multi-sensor device) carries
+several message types on several topics, so it owns several typed publishers and routes each input
+to the right one. Publishes only.
 
 The user constructs each Component or Driver with its config and its publishers (if any), then
 registers any subscriptions with Port, then launches it on a Runner. Component and Driver classes
-themselves never see Port — they hold `Publisher` handles and member functions Port can dispatch
-to. Symmetry: both sides see only typed handles, not the facade.
+themselves never see Port for publishing — they hold `Publisher` handles and member functions Port
+can dispatch to. (A subscribing Component does take `Port&` at construction to register its
+subscriptions.) Symmetry: both sides see typed handles for the message flow.
 
 ### Ownership — `Subscription` RAII tokens
 
@@ -332,7 +393,7 @@ order in `main`.
 
 ### Publisher — deferred design
 
-A `Publisher<Schema>` is the handle a Runnable uses to push messages into Port. Open shape
+A `Publisher<Schema>` is the handle a Routine uses to push messages into Port. Open shape
 questions: lifetime model for the message (`std::unique_ptr<Msg<...>>` that can be promoted to
 `shared_ptr<const ...>`, vs. ownership transfer into Port), whether a Component publishes through a
 captured `Port*` instead of a typed handle, whether outputs are namespaced under the Component so
@@ -343,14 +404,14 @@ opaque typed handle obtained from `port.publisher(channel)`.
 
 ### Runner — executor abstraction
 
-Runner owns the iteration loop. It's constructed with a `std::stop_source`; every launched
-Runnable receives a token from that source.
+Runner owns the iteration loop. It's constructed with a `std::stop_source`; the Runner watches that
+source's token between a Routine's iterations (the Routine itself no longer receives the token).
 
 ```cpp
 class Runner {
 public:
     virtual ~Runner() = default;
-    virtual void launch(std::shared_ptr<Runnable>) = 0;
+    virtual void launch(std::shared_ptr<Routine>) = 0;
     virtual void waitUntilAllStopped() = 0;
     virtual std::size_t runningCount() const = 0;
     virtual std::size_t stoppedCount() const = 0;
@@ -361,41 +422,126 @@ public:
 The loop, shared by every Runner implementation:
 
 ```cpp
-void runLoop(std::shared_ptr<Runnable> r, std::stop_token tok) {
+void runLoop(Routine& routine, std::stop_token tok) {
     try {
         while(!tok.stop_requested()) {
-            if(r->run(tok) == Runnable::Status::Done) break;
+            if(routine.step() == Routine::State::Done) break;
         }
     } catch(const std::exception& e) {
-        // log r->name() and e.what() to console; increment failedCount.
+        // log routine.name() and e.what() to console; increment failedCount.
     }
     // increment stoppedCount.
 }
 ```
 
-Per-Runnable diagnostic detail beyond the three counters is not tracked by the framework. If `main`
-needs to know "which Runnable failed and why," it reads the console log written by the catch clause
+`ThreadRunner` today re-runs a `Waiting` routine immediately — a spin. Proper `Waiting` handling
+(parking the routine off-thread until an external wake, rather than re-running or sleeping) is the
+readiness-based `ThreadPoolRunner` design below.
+
+Per-Routine diagnostic detail beyond the three counters is not tracked by the framework. If `main`
+needs to know "which Routine failed and why," it reads the console log written by the catch clause
 above.
 
 Implementations:
 
-- `ThreadRunner` — one `std::jthread` per Runnable. Best for drivers and any long-lived component.
-- `ThreadPoolRunner` — fixed pool; iterations from many Runnables interleave on the pool's
-  threads. Best for many small compute-bound components.
+- `ThreadRunner` — one thread per Routine; the loop watches the stop token between iterations.
+  Best for drivers and any long-lived component. Built today.
+- `ThreadPoolRunner` — fixed pool shared by many Routines, scheduled by readiness. Best for many
+  small, idle-most-of-the-time components. Designed below; not yet built.
 - `FiberRunner` — optional, later.
 
-Mix runners freely. A driver typically wants its own thread; a fleet of compute-bound pipeline
-stages may share a pool.
+Mix runners freely. A driver typically wants its own thread; a fleet of mostly-idle pipeline stages
+may share a pool.
+
+### ThreadPoolRunner — readiness-based scheduling (design, not yet built)
+
+`ThreadRunner` gives each Routine its own thread, so `Waiting` can be a crude spin on that one
+thread. That does not scale: N components that are all idle should cost *zero* running threads, and
+when one of them gets a message exactly that one should run, on a shared pool. This is a
+readiness-based scheduler — the same "don't wait on N things; collapse to one ready queue and
+park/wake against it" move used elsewhere in the system.
+
+**Shape.**
+
+- **Executor** = a fixed thread pool plus one **ready queue** (a mutex + condition variable, or a
+  counting semaphore) of *runnable* scheduling handles. Worker threads block on the ready queue,
+  pop a handle, run one `step()`, then requeue / park / retire by its result.
+- **Runner** (the per-Routine "one each") becomes a lightweight **scheduling record**, not a
+  thread: it owns the Routine, a scheduling state, and a back-pointer to the Executor, and exposes
+  `wake()`.
+- **Wake path.** A Component, after `push()` inserts into its inbox, calls a `wake` callback
+  injected at registration (which keeps Component decoupled from the scheduler). `Runner::wake()`
+  enqueues the record on the Executor and notifies the one ready-queue CV. A free worker pops *that
+  record* and runs it — "which component" is answered by the queue carrying the handle, not by the
+  pool guessing.
+
+**`step()` result → action**, applied by the worker after each `step()`:
+
+- `Continue` → re-enqueue (more work asserted now),
+- `Waiting` → **park** (do nothing; only an external `wake()` brings it back),
+- `Done` / throw → retire.
+
+This finally retires the "`Waiting` spins" gap in `ThreadRunner`: `Waiting` means park, not sleep,
+not re-run.
+
+**The lost-wakeup race.** Between a component observing its inbox empty (deciding `Waiting`) and the
+scheduler parking it, a `push` can land. If that wakeup is processed while the scheduler still
+thinks the record is "running, about to park," it is lost — data sits in the inbox, the component
+parked forever. Close it with a small per-record state machine under one lock plus a "woken while
+running" flag:
+
+```cpp
+enum class Sched { Idle, Queued, Running };   // guarded by mSchedMutex
+
+void Runner::wake() {                          // called by push()
+    std::scoped_lock lock{mSchedMutex};
+    if (mState == Sched::Idle)         { mState = Sched::Queued; executor.enqueue(this); }
+    else if (mState == Sched::Running) { mResubmit = true; }   // honor after step() returns
+    // Queued: already pending — nothing to do
+}
+
+// worker, running one record:
+{ std::scoped_lock l{mSchedMutex}; mState = Sched::Running; mResubmit = false; }
+const auto result = routine.step();            // no lock held during step
+{ std::scoped_lock l{mSchedMutex};
+  if      (result == State::Done /*or threw*/) { /* retire */ }
+  else if (result == State::Continue)          { mState = Sched::Queued; executor.enqueue(this); }
+  else /* Waiting */ {
+      if (mResubmit) { mState = Sched::Queued; executor.enqueue(this); }  // push slipped in → requeue
+      else             mState = Sched::Idle;                              // safe to park
+  }
+}
+```
+
+The invariant: `wake()` and the park decision take the *same* lock, and `push()` always calls
+`wake()` after it has inserted (release the inbox mutex first, then `wake()` — no nested locks). A
+push during `step()` sets `mResubmit` → requeue; a push after parking sees `Idle` → enqueue. The
+`Queued` state also guarantees a record is enqueued once and run by one worker at a time, so a
+component is never `step()`-ed concurrently with itself and per-component ordering is preserved.
+
+**Caveats.**
+
+- **Blocking routines do not belong on a bounded pool.** A driver that blocks inside `step()` ties
+  up a worker for the whole block; enough of them starve the pool. Poll-shaped routines (Components)
+  fit; truly-blocking drivers want their own dedicated threads (`ThreadRunner`) or an async reactor
+  (epoll + eventfd) that calls `wake()` on fd readiness.
+- **Fairness.** A component that always returns `Continue` goes to the back of the ready queue, so
+  others still run; cap consecutive `Continue`s (or drain-until-`Waiting` with a budget) if per-step
+  latency matters.
+
+**Open forks:** run-one-step vs. drain-until-`Waiting` per pop; ready-queue primitive (CV — lets
+stop fold in via `condition_variable_any` + `stop_token` — vs. counting semaphore); whether `wake`
+is an injected `std::function` (decoupled) or a `Runner*` back-pointer.
 
 ### Status reporting — deferred
 
-The previous design had a `Vitals` struct on every Runnable (per-input counts, last-activity
+The previous design had a `Vitals` struct on every Routine (per-input counts, last-activity
 timestamps, expected intervals, terminal flag). It's gone. Terminus is infrastructure; spending
 cycles on observability the framework didn't ask for, on the publish path, is a tax the actual
 robot software pays.
 
 What the framework tracks: the Runner's three counters (running, stopped, failed). What it does
-not track: per-Runnable message counts, timestamps, intervals, health labels.
+not track: per-Routine message counts, timestamps, intervals, health labels.
 
 Applications that want richer observability wire it themselves — typically as a subscriber that
 records what it cares about. This keeps the cost opt-in and out of the hot path. If experience
@@ -517,7 +663,7 @@ timestamp reads, health-flag toggles, exception machinery.
 destruction blocks until any in-flight dispatch on that subscriber completes. This happens once
 per subscriber per lifetime, so it can afford to be careful.
 
-**Iteration boundary:** Between Runnable iterations, the Runner checks the stop_token and the
+**Iteration boundary:** Between Routine iterations, the Runner checks the stop_token and the
 previous return status. Per-work-item, not per-message — amortizes over whatever the iteration did.
 
 **Application diagnostics:** Message counts, last-seen times, health labels, dashboards — the
@@ -542,20 +688,20 @@ not impose it.
    Runner.
 8. **Kick off.** Drivers begin producing data the moment they're launched. Main thread blocks on
    `driverRunner.waitUntilAllStopped()`.
-9. Drivers return `Status::Done` when:
+9. Drivers return `State::Done` when:
    - SIGINT/SIGTERM fires (SignalCatcher requests stop; driver's next iteration returns `Done`).
    - end of log (LogReader's read returns nothing more).
    - configured time limit elapses (driver checks its deadline at iteration boundary).
    - upstream error (driver throws; Runner marks Failed).
 10. Teardown — `componentStop.request_stop()`, `componentRunner.join()`. Components drain in
-    `run()`. Port's destructor flushes chronicle and writes `metadata.json`.
+    `step()`. Port's destructor flushes chronicle and writes `metadata.json`.
 11. `exitStatus(signals, runners...)` returns 0 on clean exit, `128+signum` on signal-triggered,
     non-zero if any runner reports `failedCount() > 0`.
 
 ## Shutdown semantics
 
 - `std::stop_source` and `std::stop_token` are used directly. No framework wrappers.
-- Components decide their own drain policy inside `run()`: drain queue, abandon queue,
+- Components decide their own drain policy inside `step()`: drain queue, abandon queue,
   timeout-bounded drain. Because the loop is in Runner, "drain" just means "keep returning
   `Continue` until the queue is empty, then return `Done`."
 - **Phased shutdown via two stop sources.** Drivers stop first so downstream sees a clean
@@ -576,7 +722,9 @@ modules/terminus/
         topicRegistry.hpp   ← (Port internal; header for tests)
         dispatcher.hpp      ← (Port internal; header for tests)
         configManager.hpp   ← (Port internal; header for tests)
-        runnable.hpp        ← Runnable (and Component, Driver bases)
+        routine.hpp         ← Routine (the base unit of work)
+        component.hpp       ← Component (subscribing Routine base)
+        driver.hpp          ← Driver (publishing Routine base)
         runner.hpp          ← Runner, ThreadRunner, ThreadPoolRunner
         signalCatcher.hpp
         logReader.hpp       ← Driver impl; included in user main()s for playback
@@ -611,13 +759,13 @@ driver they construct, and re-log mode falls out for free.
 
 ### Why the iteration loop lives in Runner
 
-If every Runnable wrote its own `while(!stop_requested()) { ... }` we'd duplicate the same boilerplate
+If every Routine wrote its own `while(!stop_requested()) { ... }` we'd duplicate the same boilerplate
 in every component, every driver. Worse, exception handling and stop-token plumbing would end up
-in the implementor's hands — easy to get wrong, hard to audit. By making `run()` one iteration and
+in the implementor's hands — easy to get wrong, hard to audit. By making `step()` one iteration and
 giving Runner the loop, components and drivers say only what they do per step. The framework
-handles "do this until told to stop" and exception capture in one place. A Runnable that wants
-natural completion returns `Status::Done`; one that wants to keep going returns `Status::Continue`;
-one that wants to fail throws.
+handles "do this until told to stop" and exception capture in one place. A Routine that wants
+natural completion returns `State::Done`; one that wants to keep going returns `State::Continue` (or
+`State::Waiting` when it has nothing to do right now); one that wants to fail throws.
 
 ### Why `Subscription` RAII instead of `weak_ptr` dispatch
 
@@ -646,9 +794,9 @@ another concept to learn, and complicate composition. Using `stop_source` / `sto
 directly means less code we maintain, less onboarding, and interoperability with anything else
 following the standard.
 
-### Why no per-Runnable status struct
+### Why no per-Routine status struct
 
-A previous version had a `Vitals` struct on every Runnable — per-input message counts, last-seen
+A previous version had a `Vitals` struct on every Routine — per-input message counts, last-seen
 timestamps, expected intervals, a tri-state terminal flag. None of it is on the framework's
 critical path, and all of it costs cycles per message to maintain. Worse, a state enum or health
 flag invites an implicit state machine whose transition rules drift as new states get added, and
@@ -659,13 +807,17 @@ Runner level. Applications that want detail wire it as an explicit subscriber. I
 the framework should carry more, that decision will be made against real data rather than
 preemptively.
 
-### Why drivers are wire-type-agnostic
+### Why `Driver` is a plain base, not `Driver<Wire>`
 
-The driver knows the device's wire format; it does not know the application's message schemas. By
-templating drivers on the wire type and taking a user-supplied conversion lambda, the same driver
-can be open-sourced and reused across projects that do not share schemas. It also positions the
-system for zero-copy: the conversion lambda can be handed a writable region from
-`Port::allocator()` and write capnp directly into it.
+An earlier sketch templated a driver on a single wire type plus a `wire→msg` conversion lambda. But
+a real source carries *several* message types: a ROS bag has Imu on one topic and PointCloud2 on
+another; a multi-sensor device is the same. A one-wire template forces either one driver per type
+(and an extra layer to multiplex a single bag) or a fight against the template. So `Driver` is a
+plain `Routine` base; a concrete driver holds the typed `Publisher`s it needs and does the
+conversion inside `step()`, routing each input to the right publisher. The driver still knows only
+its source's wire format, not the application's wider schema set, and the conversion stays the
+natural seam for the future zero-copy path (a publisher handing out a writable, recording-backed
+region from `Port::allocator()`).
 
 ### Why config is plain JSON for now
 
@@ -751,7 +903,7 @@ need shows up.
 
 **Status monitoring from main.** Today `main` waits with `waitUntilAllStopped()`. Periodic
 inspection of `runner.runningCount()` / `failedCount()` would let `main` print a status line or
-abort early on failure. Design later; the framework deliberately doesn't carry per-Runnable
+abort early on failure. Design later; the framework deliberately doesn't carry per-Routine
 detail, so anything richer than counts is an application-side subscriber.
 
 **Failure policy patterns.** Independent / fail-fast / dependency-aware cascade — pick one default
@@ -768,7 +920,7 @@ components) for explicit phasing. A single shared source plus careful join order
 Decide once the first real application exists.
 
 **Termination ordering with pool runners.** When a `ThreadPoolRunner` shuts down, the wrapper
-around `run()` increments `failedCount` on exception. Verify this is clean when one runnable in the
+around `run()` increments `failedCount` on exception. Verify this is clean when one routine in the
 pool throws while others are still running.
 
 **Naming sweeps still open.** None pressing — `Vitals` no longer exists; `Subscription` is the
@@ -776,11 +928,11 @@ returnable RAII token.
 
 ## Setup ergonomics (next iteration)
 
-The per-Runnable block in `main()` repeats — `make_shared` → `port.subscribe(...)` calls → acquire
+The per-Routine block in `main()` repeats — `make_shared` → `port.subscribe(...)` calls → acquire
 publishers → `runner.launch(...)`. Candidate ways to compress this while keeping the wiring
 visible:
 
-- A small `attach()` helper that takes the Runner, Port, and the Runnable's
+- A small `attach()` helper that takes the Runner, Port, and the Routine's
   declared subscriptions/publishers, and returns the shared_ptr it just wired and launched.
 - A declarative trait on the Component class enumerating its channels, with a helper that walks it.
 - A `Wiring` builder that accumulates registrations and launches at the end.
