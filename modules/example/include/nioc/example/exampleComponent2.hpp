@@ -19,9 +19,27 @@
 namespace nioc::example
 {
 
+/// @brief Example @ref terminus::Component that counts the messages it receives on three topics.
+///
+/// A minimal sink showing how to subscribe to several topics at once. It subscribes to `Sample1`,
+/// `Sample2`, and `Sample3` on their own topics; each received message bumps the matching counter
+/// and logs the running totals. The per-type counts are exposed for inspection.
 class ExampleComponent2 final: public terminus::Component
 {
 public:
+  /// @brief Subscribes to all three input topics.
+  ///
+  /// @param port Hub the component subscribes to; must outlive this component.
+  ///
+  /// @param sample1Topic Topic the `Sample1` messages are read from.
+  ///
+  /// @param sample2Topic Topic the `Sample2` messages are read from.
+  ///
+  /// @param sample3Topic Topic the `Sample3` messages are read from.
+  ///
+  /// @param inboxCapacity Maximum number of undelivered messages held at once; must be at least 1.
+  ///
+  /// @param overflowPolicy Behavior when a message arrives while the inbox is full.
   ExampleComponent2(
       terminus::Port& port,
       std::string sample1Topic,
@@ -30,12 +48,16 @@ public:
       std::size_t inboxCapacity,
       terminus::OverflowPolicy overflowPolicy);
 
+  /// @brief Returns the human-readable routine name, `"ExampleComponent2"`.
   [[nodiscard]] std::string_view name() const final;
 
+  /// @brief Returns the number of `Sample1` messages received so far.
   [[nodiscard]] std::uint64_t sample1Count() const noexcept;
 
+  /// @brief Returns the number of `Sample2` messages received so far.
   [[nodiscard]] std::uint64_t sample2Count() const noexcept;
 
+  /// @brief Returns the number of `Sample3` messages received so far.
   [[nodiscard]] std::uint64_t sample3Count() const noexcept;
 
 private:
@@ -44,6 +66,8 @@ private:
   void process(const terminus::ConstMsgPtr<Sample2>& msgPtr);
 
   void process(const terminus::ConstMsgPtr<Sample3>& msgPtr);
+
+  void logCounts() const;
 
   std::string mSample1Topic;
   std::string mSample2Topic;

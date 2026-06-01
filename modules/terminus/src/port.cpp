@@ -9,6 +9,9 @@
 #include <boost/uuid/uuid_io.hpp>
 #include <chrono>
 #include <fstream>
+#include <functional>
+#include <memory>
+#include <mutex>
 #include <nioc/common/exception.hpp>
 #include <nioc/common/time.hpp>
 #include <nioc/logger/logger.hpp>
@@ -17,6 +20,8 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <stdexcept>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace nioc::terminus
 {
@@ -25,6 +30,10 @@ namespace po = boost::program_options;
 
 namespace
 {
+
+/// Bound on the dispatcher and recorder queues. Both use OverflowPolicy::Block, so a full queue
+/// applies backpressure to publishers rather than dropping messages.
+constexpr auto kQueueCapacity = std::size_t{ 1024 };
 
 fs::path createWorkingDir(const fs::path& logRoot)
 {
@@ -187,10 +196,49 @@ Port::Port(
   metadata["cmdline"] = commandLine;
   metadata["resources"] = mResourceMap;
   writeJsonFile(mWorkingDir / "metadata.json", metadata);
+
+  // Bring the recorder up before the dispatcher, so the dispatcher always has somewhere to tee to.
+  if(mChronicleWriter)
+  {
+    mRecorder = std::make_shared<AsyncProcessor<std::pair<ChannelId, ConstMsgBasePtr>>>(
+        kQueueCapacity,
+        OverflowPolicy::Block,
+        [this](const auto item)
+        {
+          write(*item.second, item.first, *mChronicleWriter);
+        });
+    mRecorderRunner = std::make_shared<ThreadedRunner>();
+    mRecorderRunner->launch(mRecorder);
+  }
+
+  mDispatcher = std::make_shared<AsyncProcessor<std::pair<ChannelId, ConstMsgBasePtr>>>(
+      kQueueCapacity,
+      OverflowPolicy::Block,
+      [this](const auto item)
+      {
+        dispatch(item.first, item.second);
+      });
+  mDispatcherRunner = std::make_shared<ThreadedRunner>();
+  mDispatcherRunner->launch(mDispatcher);
 }
 
 Port::~Port()
 {
+  // Stop the dispatcher first so it stops feeding the recorder, then stop the recorder. Keeping the
+  // recorder running until the dispatcher has joined lets any dispatcher push that is blocked on a
+  // full recorder queue complete. Stopping is abrupt: messages still queued are dropped, which a
+  // planned drain-on-close pass (shared with Component) will address.
+  if(mDispatcherRunner)
+  {
+    mDispatcherRunner->requestStop();
+    mDispatcherRunner->waitUntilStopped();
+  }
+  if(mRecorderRunner)
+  {
+    mRecorderRunner->requestStop();
+    mRecorderRunner->waitUntilStopped();
+  }
+
   // Resources may have grown via addResource() since construction, so refresh the resources
   // section of the metadata written in the constructor. A destructor must not throw, so the
   // metadata update is guarded.
@@ -252,12 +300,38 @@ fs::path Port::acquireResource(const fs::path& source) const
 
 void Port::subscribe(const ChannelId channelId, std::weak_ptr<const MsgCallback> callbackPtr)
 {
-  mSubscriptionMap[channelId].emplace_back(callbackPtr);
+  const auto lock = std::scoped_lock(mSubscriptionMutex);
+  mSubscriptionMap[channelId].emplace_back(std::move(callbackPtr));
 }
 
 void Port::publish(const ChannelId channelId, ConstMsgBasePtr msgPtr)
 {
-  mInbox.push_back(std::pair{ channelId, msgPtr });
+  mDispatcher->push_back(std::make_pair(channelId, std::move(msgPtr)));
+}
+
+void Port::dispatch(const ChannelId channelId, const ConstMsgBasePtr& msgBasePtr)
+{
+  {
+    const auto lock = std::scoped_lock(mSubscriptionMutex);
+    if(mSubscriptionMap.contains(channelId))
+    {
+      for(const auto& weakCallback: mSubscriptionMap.at(channelId))
+      {
+        const auto callback = weakCallback.lock();
+        if(not callback)
+        {
+          continue;
+        }
+
+        std::invoke(*callback, msgBasePtr);
+      }
+    }
+  }
+
+  if(mRecorder)
+  {
+    mRecorder->push_back(std::make_pair(channelId, std::move(msgBasePtr)));
+  }
 }
 
 } // namespace nioc::terminus

@@ -58,7 +58,7 @@ const MsgBase::Variant& MsgBase::variant() const noexcept
   return mVariant;
 }
 
-void write(const MsgBase& msgBase, const std::string_view& topic, chronicle::Writer& writer)
+void write(const MsgBase& msgBase, const chronicle::ChannelId channelId, chronicle::Writer& writer)
 {
   // const_cast: serialization only reads the finalized message; capnp's getSegmentsForOutput is not
   // const-qualified.
@@ -107,7 +107,12 @@ void write(const MsgBase& msgBase, const std::string_view& topic, chronicle::Wri
         return convert(arrayPtr);
       });
 
-  writer.write(makeChannelId(msgBase.msgId(), topic), spanCollection);
+  writer.write(channelId, spanCollection);
+}
+
+void write(const MsgBase& msgBase, const std::string_view& topic, chronicle::Writer& writer)
+{
+  write(msgBase, makeChannelId(msgBase.msgId(), topic), writer);
 }
 
 chronicle::ChannelId makeChannelId(const MsgId& msgId, const std::string_view& topic)

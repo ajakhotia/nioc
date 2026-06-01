@@ -41,10 +41,12 @@ add_exported_library(
     src/runner.cpp
     src/threadedRunner.cpp
   HEADERS
+    PUBLIC include/nioc/terminus/asyncProcessor.hpp
     PUBLIC include/nioc/terminus/component.hpp
     PUBLIC include/nioc/terminus/driver.hpp
     PUBLIC include/nioc/terminus/msg.hpp
     PUBLIC include/nioc/terminus/msgBase.hpp
+    PUBLIC include/nioc/terminus/notifyingInbox.hpp
     PUBLIC include/nioc/terminus/port.hpp
     PUBLIC include/nioc/terminus/programOption.hpp
     PUBLIC include/nioc/terminus/routine.hpp

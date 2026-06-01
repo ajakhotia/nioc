@@ -4,10 +4,9 @@
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include <nioc/common/exception.hpp>
-#include <nioc/logger/logger.hpp>
+#include <functional>
 #include <nioc/terminus/component.hpp>
-#include <stdexcept>
+#include <optional>
 #include <utility>
 
 namespace nioc::terminus
@@ -18,72 +17,32 @@ Component::Component(
     const std::size_t inboxCapacity,
     const OverflowPolicy overflowPolicy):
     mPort(port),
-    mInbox(inboxCapacity),
-    mOverflowPolicy{ overflowPolicy }
+    mInbox(
+        inboxCapacity,
+        overflowPolicy,
+        [this]
+        {
+          notifyReady();
+        })
 {
-  if(mInbox.capacity() < 1)
-  {
-    common::throwException<std::invalid_argument>("Component inbox capacity must be at least 1.");
-  }
 }
 
 void Component::push(const ChannelId channelId, ConstMsgBasePtr msgBasePtr)
 {
-  auto shouldNotify = false;
-  {
-    auto lock = std::unique_lock(mInboxMutex);
-
-    if(mInbox.size() == mInbox.capacity())
-    {
-      switch(mOverflowPolicy)
-      {
-        case OverflowPolicy::Block:
-        {
-          mInboundConditionVar.wait(
-              lock,
-              [this]
-              {
-                return mInbox.size() < mInbox.capacity();
-              });
-          break;
-        }
-        case OverflowPolicy::Overwrite:
-        {
-          logger::debug("Component inbox is full. Overwriting oldest message.");
-          break;
-        }
-      }
-    }
-
-    mInbox.push_back({ channelId, std::move(msgBasePtr) });
-    shouldNotify = std::exchange(mNotifyOnPush, false);
-  }
-
-  if(shouldNotify)
-  {
-    notifyReady();
-  }
+  mInbox.push_back(std::make_pair(channelId, std::move(msgBasePtr)));
 }
 
 Component::State Component::step()
 {
-  auto channelMsgPair = std::pair<ChannelId, ConstMsgBasePtr>();
+  auto value = mInbox.try_pop();
+  if(not value)
   {
-    const auto lock = std::scoped_lock(mInboxMutex);
-    if(mInbox.empty())
-    {
-      mNotifyOnPush = true;
-      return State::Waiting;
-    }
-
-    std::swap(channelMsgPair, mInbox.front());
-    mInbox.pop_front();
-    mInboundConditionVar.notify_one();
+    return State::Waiting;
   }
 
-  if(mHandlers.contains(channelMsgPair.first))
+  if(mHandlers.contains(value->first))
   {
-    std::invoke(mHandlers.at(channelMsgPair.first), std::move(channelMsgPair.second));
+    std::invoke(mHandlers.at(value->first), std::move(value->second));
   }
 
   return State::Continue;

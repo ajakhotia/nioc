@@ -7,14 +7,12 @@
 
 #include "msg.hpp"
 #include "msgBase.hpp"
+#include "notifyingInbox.hpp"
 #include "port.hpp"
 #include "routine.hpp"
-#include <boost/circular_buffer.hpp>
-#include <condition_variable>
 #include <cstddef>
 #include <functional>
 #include <memory>
-#include <mutex>
 #include <nioc/common/exception.hpp>
 #include <nioc/common/typeTraits.hpp>
 #include <unordered_map>
@@ -23,12 +21,17 @@
 namespace nioc::terminus
 {
 
-enum class OverflowPolicy : std::uint8_t
-{
-  Overwrite,
-  Block
-};
-
+/// @brief A @ref Routine that receives subscribed messages through a bounded inbox and may publish.
+///
+/// A Component is the worker that reacts to data flowing through a @ref Port: a subclass calls @ref
+/// subscribe to register a typed callback per topic, and the Port delivers matching messages into
+/// the Component's inbox. Each @ref step pops one queued message and runs its callback on the
+/// Runner's thread, so callbacks never run concurrently with one another. A subclass may also @ref
+/// publish to emit messages. Contrast @ref Driver, which only publishes.
+///
+/// The inbox is bounded; its capacity and the @ref OverflowPolicy for a full inbox are fixed at
+/// construction. Construct through a subclass. The Component holds the Port by reference, so the
+/// Port must outlive every Component bound to it.
 class Component: public Routine
 {
 public:
@@ -40,8 +43,20 @@ public:
   Component& operator=(Component&&) noexcept = delete;
   ~Component() noexcept override = default;
 
+  /// @brief Enqueues a message for the channel, applying the inbox overflow policy if it is full.
+  ///
+  /// Called by the Port to deliver a subscribed message; thread-safe. Wakes the Runner when the
+  /// message lands in an otherwise-empty inbox.
+  ///
+  /// @param channelId Channel the message arrived on.
+  ///
+  /// @param msgBasePtr Message to enqueue.
   void push(ChannelId channelId, ConstMsgBasePtr msgBasePtr);
 
+  /// @brief Pops one queued message and runs its subscribed callback.
+  ///
+  /// @return @ref State::Continue after handling a message, or @ref State::Waiting when the inbox
+  /// is empty.
   [[nodiscard]] State step() override;
 
 protected:
@@ -50,8 +65,28 @@ protected:
   template<typename Schema>
   using MsgCallback = std::function<void(ConstMsgPtr<Schema>)>;
 
+  /// @brief Binds the component to its Port and sizes the inbox.
+  ///
+  /// @param port Hub the component subscribes to and publishes onto; must outlive this component.
+  ///
+  /// @param inboxCapacity Maximum number of undelivered messages held at once; must be at least 1.
+  ///
+  /// @param overflowPolicy Behavior when a message arrives while the inbox is full.
   Component(Port& port, std::size_t inboxCapacity, OverflowPolicy overflowPolicy);
 
+  /// @brief Subscribes a typed callback to a topic.
+  ///
+  /// Registers @p msgCallback to receive every message of @p Schema published on @p topic. Messages
+  /// are queued in the inbox and the callback runs from @ref step, never concurrently. A topic may
+  /// be subscribed at most once; any fan-out is the callback's responsibility.
+  ///
+  /// @tparam Schema Cap'n Proto schema of the subscribed message.
+  ///
+  /// @param topic Topic to subscribe to.
+  ///
+  /// @param msgCallback Handler invoked with each received message.
+  ///
+  /// @throws std::logic_error If this topic is already subscribed.
   template<typename Schema>
   void subscribe(const std::string_view& topic, MsgCallback<Schema> msgCallback)
   {
@@ -89,6 +124,13 @@ protected:
     mPortSubscriptions.emplace(channelId, std::move(msgBaseCallbackPtr));
   }
 
+  /// @brief Publishes a typed message onto the bound Port.
+  ///
+  /// @tparam Schema Cap'n Proto schema of the message.
+  ///
+  /// @param topic Topic the message is published on.
+  ///
+  /// @param msgPtr Message to publish; ownership passes to the Port.
   template<typename Schema>
   void publish(const std::string_view& topic, ConstMsgPtr<Schema> msgPtr)
   {
@@ -96,17 +138,8 @@ protected:
   }
 
 private:
-  using Inbox = boost::circular_buffer<std::pair<ChannelId, ConstMsgBasePtr>>;
-
   Port& mPort;
-
-  std::mutex mInboxMutex;
-  Inbox mInbox;
-  std::condition_variable mInboundConditionVar;
-  bool mNotifyOnPush{ false };
-
-  const OverflowPolicy mOverflowPolicy;
-
+  NotifyingInbox<std::pair<ChannelId, ConstMsgBasePtr>> mInbox;
   std::unordered_map<ChannelId, MsgBaseCallback> mHandlers;
   std::unordered_map<ChannelId, std::shared_ptr<const MsgBaseCallback>> mPortSubscriptions;
 };

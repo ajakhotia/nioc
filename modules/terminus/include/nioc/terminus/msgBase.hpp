@@ -87,7 +87,7 @@ public:
 protected:
   friend void write(
       const MsgBase& msgBase,
-      const std::string_view& topic,
+      chronicle::ChannelId channelId,
       chronicle::Writer& writer);
 
   /// @brief Returns the underlying built/read state, used by @ref write.
@@ -107,10 +107,23 @@ using MsgBaseUPtr = std::unique_ptr<MsgBase>;
 using ConstMsgBaseUPtr = std::unique_ptr<const MsgBase>;
 
 
-/// @brief Serializes a built message and appends it to a chronicle on an explicit channel.
+/// @brief Serializes a built message and appends it to a chronicle on a precomputed channel.
 ///
-/// Use this when the channel is keyed by more than the message type (for example by a topic name),
-/// so that two topics carrying the same message type land on distinct channels.
+/// Use this when the caller already holds the channel the message belongs to (for example a hub
+/// that hashed the channel once at publish time and routes by it thereafter).
+///
+/// @param msgBase Message to write; must be one you built, not one opened for reading.
+///
+/// @param channelId Channel the message is appended to.
+///
+/// @param writer Open chronicle writer that receives the serialized message.
+void write(const MsgBase& msgBase, chronicle::ChannelId channelId, chronicle::Writer& writer);
+
+/// @brief Serializes a built message and appends it to a chronicle on the channel for a topic.
+///
+/// Resolves the channel from the message type and @p topic, so that two topics carrying the same
+/// message type land on distinct channels, then appends as @ref write(const MsgBase&,
+/// chronicle::ChannelId, chronicle::Writer&) does.
 ///
 /// @param msgBase Message to write; must be one you built, not one opened for reading.
 ///
@@ -119,6 +132,16 @@ using ConstMsgBaseUPtr = std::unique_ptr<const MsgBase>;
 /// @param writer Open chronicle writer that receives the serialized message.
 void write(const MsgBase& msgBase, const std::string_view& topic, chronicle::Writer& writer);
 
+/// @brief Computes the channel a message type carried on a topic belongs to.
+///
+/// Combines the message type identifier with the topic name, so the same schema on two topics maps
+/// to two distinct channels. Deterministic: equal inputs always yield the same channel.
+///
+/// @param msgId Identifier of the message type (see @ref Msg::kMsgId).
+///
+/// @param topic Topic name.
+///
+/// @return The channel for this type-and-topic pair.
 chronicle::ChannelId makeChannelId(const MsgId& msgId, const std::string_view& topic);
 
 

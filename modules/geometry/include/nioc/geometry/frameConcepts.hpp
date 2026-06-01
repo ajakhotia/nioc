@@ -27,6 +27,7 @@ public:
 
   virtual ~ParentConceptTmpl() = default;
 
+  /// @brief Returns the parent frame as a tuple — empty, since a static frame carries no value.
   [[nodiscard]] constexpr decltype(auto) parentFrameAsTuple() const noexcept
   {
     return std::make_tuple();
@@ -50,6 +51,7 @@ public:
 
   virtual ~ChildConceptTmpl() = default;
 
+  /// @brief Returns the child frame as a tuple — empty, since a static frame carries no value.
   [[nodiscard]] constexpr decltype(auto) childFrameAsTuple() const noexcept
   {
     return std::make_tuple();
@@ -63,6 +65,8 @@ class ParentConceptTmpl<DynamicFrame>
 public:
   using ParentFrame = DynamicFrame;
 
+  /// @brief Stores the runtime parent frame.
+  /// @param parentFrameArgs Identifier the parent @ref DynamicFrame is built from.
   template<typename ParentFrameArgs>
   explicit ParentConceptTmpl(ParentFrameArgs parentFrameArgs) noexcept:
       mParentFrame(std::move(parentFrameArgs))
@@ -71,11 +75,13 @@ public:
 
   virtual ~ParentConceptTmpl() = default;
 
+  /// @brief Returns the stored parent frame.
   [[nodiscard]] constexpr const ParentFrame& parentFrame() const noexcept
   {
     return mParentFrame;
   }
 
+  /// @brief Returns the parent frame as a single-element tuple holding a reference to it.
   [[nodiscard]] constexpr decltype(auto) parentFrameAsTuple() const noexcept
   {
     return std::make_tuple(std::cref(mParentFrame));
@@ -92,6 +98,8 @@ class ChildConceptTmpl<DynamicFrame>
 public:
   using ChildFrame = DynamicFrame;
 
+  /// @brief Stores the runtime child frame.
+  /// @param childFrameArgs Identifier the child @ref DynamicFrame is built from.
   template<typename ChildFrameArgs>
   explicit ChildConceptTmpl(ChildFrameArgs childFrameArgs) noexcept:
       mChildFrame(std::move(childFrameArgs))
@@ -100,11 +108,13 @@ public:
 
   virtual ~ChildConceptTmpl() = default;
 
+  /// @brief Returns the stored child frame.
   [[nodiscard]] constexpr const ChildFrame& childFrame() const noexcept
   {
     return mChildFrame;
   }
 
+  /// @brief Returns the child frame as a single-element tuple holding a reference to it.
   [[nodiscard]] constexpr decltype(auto) childFrameAsTuple() const noexcept
   {
     return std::make_tuple(std::cref(mChildFrame));

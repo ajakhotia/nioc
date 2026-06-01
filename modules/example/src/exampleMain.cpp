@@ -15,7 +15,7 @@
 int main()
 {
   constexpr auto kInboxCapacity = std::size_t{ 16 };
-  constexpr auto kDriverRounds = std::size_t{ 8 };
+  constexpr auto kDriverRounds = std::size_t{ 1000 };
 
   auto port = nioc::terminus::Port{};
 
@@ -29,7 +29,7 @@ int main()
       "sample3",
       "sample2",
       kInboxCapacity,
-      nioc::terminus::OverflowPolicy::Overwrite);
+      nioc::terminus::OverflowPolicy::Block);
 
   // ExampleComponent2 consumes Sample1, Sample2, and Sample3 and logs the running counts.
   const auto exampleComponent2 = std::make_shared<nioc::example::ExampleComponent2>(
@@ -38,7 +38,7 @@ int main()
       "sample2",
       "sample3",
       kInboxCapacity,
-      nioc::terminus::OverflowPolicy::Overwrite);
+      nioc::terminus::OverflowPolicy::Block);
 
   const auto component1Runner = std::make_shared<nioc::terminus::ThreadedRunner>();
   component1Runner->launch(exampleComponent1);

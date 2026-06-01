@@ -48,51 +48,62 @@ public:
 
   using Vector3ConstMap = Eigen::Map<const Vector3>;
 
+  /// @brief Returns a const pointer to the 7 contiguous parameters [qx, qy, qz, qw, px, py, pz].
   constexpr const Scalar* cData() const noexcept
   {
     return cDerived().cParameters().data();
   }
 
+  /// @brief Returns a const pointer to the parameters; const overload, same as @ref cData.
   constexpr const Scalar* data() const noexcept
   {
     return cData();
   }
 
+  /// @brief Returns a mutable pointer to the parameters.
   constexpr Scalar* data() noexcept
   {
     return derived().parameters().data();
   }
 
+  /// @brief Returns a read-only quaternion view of the orientation.
   QuaternionConstMap cOrientation() const noexcept
   {
     return QuaternionConstMap(cData());
   }
 
+  /// @brief Returns a read-only quaternion view of the orientation; same as @ref cOrientation.
   QuaternionConstMap orientation() const noexcept
   {
     return cOrientation();
   }
 
+  /// @brief Returns a writable quaternion view of the orientation.
   QuaternionMap orientation() noexcept
   {
     return QuaternionMap(data());
   }
 
+  /// @brief Returns a read-only vector view of the position.
   Vector3ConstMap cPosition() const noexcept
   {
     return Vector3ConstMap(cData() + kNumOrientationParams);
   }
 
+  /// @brief Returns a read-only vector view of the position; same as @ref cPosition.
   Vector3ConstMap position() const noexcept
   {
     return cPosition();
   }
 
+  /// @brief Returns a writable vector view of the position.
   Vector3Map position() noexcept
   {
     return Vector3Map(data() + kNumOrientationParams);
   }
 
+  /// @brief Returns a copy of this pose with its parameters converted to another scalar type.
+  /// @tparam ResultScalar Floating-point type of the returned pose.
   template<typename ResultScalar>
   Pose<ResultScalar> cast() const noexcept
   {
@@ -233,16 +244,19 @@ public:
 
   Pose& operator=(Pose&&) noexcept = default;
 
+  /// @brief Returns the underlying 7-element parameter array [qx, qy, qz, qw, px, py, pz].
   constexpr const Parameters& cParameters() const noexcept
   {
     return mParameters;
   }
 
+  /// @brief Returns the parameter array; const overload, same as @ref cParameters.
   constexpr const Parameters& parameters() const noexcept
   {
     return cParameters();
   }
 
+  /// @brief Returns the mutable parameter array.
   constexpr Parameters& parameters() noexcept
   {
     return mParameters;
@@ -324,21 +338,25 @@ public:
 
   Map& operator=(Map&&) noexcept = default;
 
+  /// @brief Returns a read-only view of the mapped 7 parameters.
   constexpr std::span<const Scalar> cParameters() const noexcept
   {
     return mParameters;
   }
 
+  /// @brief Returns a read-only view of the mapped parameters; same as @ref cParameters.
   constexpr std::span<const Scalar> parameters() const noexcept
   {
     return cParameters();
   }
 
+  /// @brief Returns a writable view of the mapped parameters.
   constexpr std::span<Scalar> parameters() noexcept
   {
     return mParameters;
   }
 
+  /// @brief Copies the mapped parameters into an owned @ref Pose.
   explicit operator nioc::geometry::Pose<Scalar>() const
   {
     return nioc::geometry::Pose<Scalar>(cParameters());
@@ -391,16 +409,19 @@ public:
 
   Map& operator=(Map&&) noexcept = default;
 
+  /// @brief Returns a read-only view of the mapped 7 parameters.
   constexpr std::span<const Scalar> cParameters() const noexcept
   {
     return mParameters;
   }
 
+  /// @brief Returns a read-only view of the mapped parameters; same as @ref cParameters.
   constexpr std::span<const Scalar> parameters() const noexcept
   {
     return cParameters();
   }
 
+  /// @brief Copies the mapped parameters into an owned @ref Pose.
   explicit operator nioc::geometry::Pose<Scalar>() const
   {
     return nioc::geometry::Pose<Scalar>(cParameters());

@@ -5,17 +5,18 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
+#include "asyncProcessor.hpp"
 #include "msg.hpp"
 #include "msgBase.hpp"
-#include <boost/circular_buffer.hpp>
+#include "threadedRunner.hpp"
 #include <boost/program_options.hpp>
 #include <filesystem>
 #include <memory>
+#include <mutex>
 #include <nioc/chronicle/writer.hpp>
 #include <nlohmann/json.hpp>
 #include <spdlog/sinks/sink.h>
 #include <string>
-#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -26,8 +27,8 @@ namespace nioc::terminus
 ///
 /// One Port instance owns the on-disk recording for one run of a nioc binary. It creates the
 /// recording directory, captures the launch command, loads and merges the JSON configuration,
-/// adds a file sink to the nioc default logger so the run's log output is also written into the
-/// recording, and opens the chronicle writer that downstream code uses to record time-series data.
+/// and adds a file sink to the nioc default logger so the run's log output is also written into the
+/// recording. It opens the chronicle writer that downstream code uses to record time-series data.
 /// On destruction, it detaches that file sink and finalizes the recording by writing
 /// `metadata.json` (the verbatim launch command plus the resource manifest).
 class Port
@@ -113,7 +114,7 @@ public:
 
   /// @brief Resolves a previously added resource to its copy inside the working directory.
   ///
-  /// @p source is the original path that was passed to @ref addResource. The returned path points
+  /// The @p source is the original path passed to @ref addResource. The returned path points
   /// at the flat copy that addResource made under the working directory, so callers read from the
   /// self-contained recording rather than the resource's original location.
   ///
@@ -125,12 +126,40 @@ public:
   /// addResource).
   [[nodiscard]] std::filesystem::path acquireResource(const std::filesystem::path& source);
 
+  /// @brief Resolves a previously added resource to its copy; const overload, same behavior.
   [[nodiscard]] std::filesystem::path acquireResource(const std::filesystem::path& source) const;
 
+  /// @brief Registers a callback to receive every message published on a channel.
+  ///
+  /// The Port holds @p callbackPtr weakly: the subscription ends on its own once the callback
+  /// expires, so the subscriber controls its own lifetime by keeping the pointer alive. Usually
+  /// reached through @ref Component::subscribe rather than called directly.
+  ///
+  /// @param channelId Channel to receive messages from (see @ref makeChannelId).
+  ///
+  /// @param callbackPtr Callback invoked with each published message; held weakly.
   void subscribe(ChannelId channelId, std::weak_ptr<const MsgCallback> callbackPtr);
 
+  /// @brief Publishes a message on a channel, fanning it out to subscribers and recording it.
+  ///
+  /// The message is queued and delivered asynchronously: every live subscriber on @p channelId
+  /// receives it, and a copy is appended to the chronicle when this run records. Thread-safe.
+  ///
+  /// @param channelId Channel to publish on (see @ref makeChannelId).
+  ///
+  /// @param msgPtr Message to publish; ownership passes to the Port.
   void publish(ChannelId channelId, ConstMsgBasePtr msgPtr);
 
+  /// @brief Publishes a typed message on the channel for a topic.
+  ///
+  /// Resolves the channel from the message type and @p topic — so two topics carrying the same
+  /// schema stay distinct — then publishes as @ref publish(ChannelId, ConstMsgBasePtr) does.
+  ///
+  /// @tparam Schema Cap'n Proto schema of the message.
+  ///
+  /// @param topic Topic to publish on.
+  ///
+  /// @param msgPtr Message to publish; ownership passes to the Port.
   template<typename Schema>
   void publish(const std::string_view& topic, ConstMsgPtr<Schema> msgPtr)
   {
@@ -138,21 +167,28 @@ public:
   }
 
 private:
+  using SubscriptionList = std::vector<std::weak_ptr<const MsgCallback>>;
+  using SubscriptionMap = std::unordered_map<ChannelId, SubscriptionList>;
+
+  /// @brief Fans one queued message out to its live subscribers and tees a copy to the recorder.
+  void dispatch(ChannelId channelId, const ConstMsgBasePtr& msgBasePtr);
+
   const std::filesystem::path mWorkingDir;
   const std::shared_ptr<spdlog::sinks::sink> mConsoleLogSink;
   const nlohmann::json mConfig;
   std::unordered_map<std::string, std::string> mResourceMap;
-
-
   const std::unique_ptr<chronicle::Writer> mChronicleWriter;
-  std::jthread mChronicleWriterThread;
 
-  boost::circular_buffer<std::pair<ChannelId, ConstMsgBasePtr>> mInbox;
-
-
-  using SubscriptionList = std::vector<std::weak_ptr<const MsgCallback>>;
-  using SubscriptionMap = std::unordered_map<ChannelId, SubscriptionList>;
+  std::mutex mSubscriptionMutex;
   SubscriptionMap mSubscriptionMap;
+
+  // The recorder appends to the chronicle; present only when this run records. The dispatcher
+  // drains published messages, fans them out to subscribers, and tees a copy to the recorder. Each
+  // is driven by its own thread. They are stopped, dispatcher first, in the destructor.
+  std::shared_ptr<AsyncProcessor<std::pair<ChannelId, ConstMsgBasePtr>>> mRecorder;
+  std::shared_ptr<ThreadedRunner> mRecorderRunner;
+  std::shared_ptr<AsyncProcessor<std::pair<ChannelId, ConstMsgBasePtr>>> mDispatcher;
+  std::shared_ptr<ThreadedRunner> mDispatcherRunner;
 };
 
 } // namespace nioc::terminus

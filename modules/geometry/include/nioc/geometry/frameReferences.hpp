@@ -99,6 +99,13 @@ public:
 
 namespace helpers
 {
+/// @brief Builds a @ref FrameCompositionException message from the two clashing frame names.
+///
+/// @param lhsFrameName Name of the frame on the left of the composition.
+///
+/// @param rhsFrameName Name of the frame on the right of the composition.
+///
+/// @return The formatted error message.
 std::string frameCompositionErrorMessage(
     const std::string& lhsFrameName,
     const std::string& rhsFrameName);

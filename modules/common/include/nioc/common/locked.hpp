@@ -13,8 +13,8 @@ namespace nioc::common
 /// @brief Thread-safe wrapper for a value.
 ///
 /// Guards a value behind a shared mutex and grants access only through a lambda you pass in. Many
-/// threads may read at once; writes are exclusive. The wrapper itself cannot be copied or moved —
-/// extract the value with @ref copy or @ref move instead.
+/// threads may be read at once; writes are exclusive. The wrapper itself cannot be copied or moved
+/// — extract the value with @ref copy or @ref move instead.
 ///
 /// @code
 /// nioc::common::Locked<int> counter(0);
@@ -33,12 +33,12 @@ namespace nioc::common
 /// });
 /// @endcode
 ///
-/// @tparam ValueTypeT Type of the protected value.
-template<typename ValueTypeT>
+/// @tparam ValueType_ Type of the protected value.
+template<typename ValueType_>
 class Locked
 {
 public:
-  using ValueType = typename std::remove_const_t<ValueTypeT>;
+  using ValueType = std::remove_const_t<ValueType_>;
 
   /// @brief Constructs the protected value.
   /// @param args Arguments forwarded to value constructor.
@@ -121,7 +121,7 @@ public:
 
   /// @brief Replaces the value with a copy.
   ///
-  /// Thread-safe assignment. Example: `locked = 42;`
+  /// Thread-safe assignment. Example: `locked = 42`;
   ///
   /// @param other Value to copy in.
   /// @return Reference to this.
@@ -168,7 +168,7 @@ public:
         });
   }
 
-  /// @brief Moves the value out, leaving it in moved-from state.
+  /// @brief Moves the value out, leaving it in the moved-from state.
   ///
   /// The protected value remains valid but unspecified after this.
   ///
@@ -190,7 +190,7 @@ private:
   ValueType mLockedValue;
 };
 
-/// @brief Compares locked value with another value.
+/// @brief Compares a locked value with another value.
 ///
 /// Thread-safe comparison. Example: `if (locked == 42) { ... }`
 ///
@@ -220,7 +220,7 @@ constexpr bool operator==(const Other& otherValue, const Locked<ValueType>& lock
       });
 }
 
-/// @brief Compares locked value with another value.
+/// @brief Compares a locked value with another value.
 ///
 /// Thread-safe inequality check.
 ///
@@ -250,7 +250,7 @@ constexpr bool operator!=(const Other& otherValue, const Locked<ValueType>& lock
       });
 }
 
-/// @brief Compares locked value with another value.
+/// @brief Compares a locked value with another value.
 ///
 /// Thread-safe less-than comparison.
 ///
@@ -280,7 +280,7 @@ constexpr bool operator<(const Other& otherValue, const Locked<ValueType>& locke
       });
 }
 
-/// @brief Compares locked value with another value.
+/// @brief Compares a locked value with another value.
 ///
 /// Thread-safe less-than-or-equal comparison.
 ///
@@ -310,7 +310,7 @@ constexpr bool operator<=(const Other& otherValue, const Locked<ValueType>& lock
       });
 }
 
-/// @brief Compares locked value with another value.
+/// @brief Compares a locked value with another value.
 ///
 /// Thread-safe greater-than comparison.
 ///
@@ -340,7 +340,7 @@ constexpr bool operator>(const Other& otherValue, const Locked<ValueType>& locke
       });
 }
 
-/// @brief Compares locked value with another value.
+/// @brief Compares a locked value with another value.
 ///
 /// Thread-safe greater-than-or-equal comparison.
 ///

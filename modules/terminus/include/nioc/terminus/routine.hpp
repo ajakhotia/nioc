@@ -63,12 +63,23 @@ public:
   /// @brief Returns a human-readable name.
   [[nodiscard]] virtual std::string_view name() const = 0;
 
+  /// @brief Installs the callback the routine uses to announce it has work again.
+  ///
+  /// Called by the @ref Runner that drives this routine. A routine that returned @ref
+  /// State::Waiting invokes the notifier (through @ref notifyReady) once new work arrives, so the
+  /// Runner can resume it instead of polling.
+  ///
+  /// @param notifier Callback that wakes the driving Runner.
   void attachNotifier(std::function<void()> notifier)
   {
     mNotifyReady = std::move(notifier);
   }
 
 protected:
+  /// @brief Signals the driving @ref Runner that work is available, if a notifier is attached.
+  ///
+  /// A subclass calls this when it transitions from idle to having work, to wake a Runner parked
+  /// after a @ref State::Waiting return. No-op until @ref attachNotifier has run.
   void notifyReady()
   {
     if(mNotifyReady)

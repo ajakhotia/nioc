@@ -114,8 +114,13 @@ std::uint64_t computeTotalSizeInBytes(std::span<const std::span<const std::byte>
 template<typename ValueType>
 struct ReadWriteUtil
 {
+  /// @brief Writes the raw bytes of @p value to @p stream.
   static void write(std::ostream& stream, ValueType value);
 
+  /// @brief Reads a @p ValueType from the raw bytes at @p ptr.
+  /// @param ptr Start of the bytes to read.
+  /// @param size Number of bytes to read; defaults to `sizeof(ValueType)`.
+  /// @return The reconstructed value.
   static ValueType read(const char* ptr, std::uint64_t size = sizeof(ValueType));
 };
 

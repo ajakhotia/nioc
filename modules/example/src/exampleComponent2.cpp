@@ -67,17 +67,29 @@ std::uint64_t ExampleComponent2::sample3Count() const noexcept
 
 void ExampleComponent2::process(const terminus::ConstMsgPtr<Sample1>& /* msgPtr */)
 {
-  logger::info("ExampleComponent2 received Sample1. Count: {}", mSample1Count.fetch_add(1) + 1);
+  mSample1Count.fetch_add(1);
+  logCounts();
 }
 
 void ExampleComponent2::process(const terminus::ConstMsgPtr<Sample2>& /* msgPtr */)
 {
-  logger::info("ExampleComponent2 received Sample2. Count: {}", mSample2Count.fetch_add(1) + 1);
+  mSample2Count.fetch_add(1);
+  logCounts();
 }
 
 void ExampleComponent2::process(const terminus::ConstMsgPtr<Sample3>& /* msgPtr */)
 {
-  logger::info("ExampleComponent2 received Sample3. Count: {}", mSample3Count.fetch_add(1) + 1);
+  mSample3Count.fetch_add(1);
+  logCounts();
+}
+
+void ExampleComponent2::logCounts() const
+{
+  logger::info(
+      "ExampleComponent2 counts. Sample1: {}, Sample2: {}, Sample3: {}",
+      sample1Count(),
+      sample2Count(),
+      sample3Count());
 }
 
 } // namespace nioc::example
