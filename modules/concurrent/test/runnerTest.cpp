@@ -11,7 +11,6 @@
 #include <nioc/concurrent/routine.hpp>
 #include <nioc/concurrent/threadedRunner.hpp>
 #include <stdexcept>
-#include <string_view>
 #include <thread>
 
 namespace nioc::concurrent

@@ -41,17 +41,18 @@ const auto kSampleCommandLine = std::string{ "myRobot --config /etc/foo.json" };
 
 TEST(PortTest, constructionCreatesRecordingDirectory)
 {
-  fs::path workingDir;
+  const auto workingDir = [&]
   {
     auto port = Port{ kLogRoot, { kConfig }, {}, true, kSampleCommandLine };
-    workingDir = port.workingDir();
+    const auto recordingDir = port.workingDir();
 
-    EXPECT_TRUE(fs::is_directory(workingDir));
-    EXPECT_EQ(workingDir.parent_path(), kLogRoot);
-    EXPECT_TRUE(fs::is_directory(workingDir / "chronicle"));
-    EXPECT_TRUE(fs::is_regular_file(workingDir / "config.json"));
-    EXPECT_TRUE(fs::is_regular_file(workingDir / "console.log"));
-  }
+    EXPECT_TRUE(fs::is_directory(recordingDir));
+    EXPECT_EQ(recordingDir.parent_path(), kLogRoot);
+    EXPECT_TRUE(fs::is_directory(recordingDir / "chronicle"));
+    EXPECT_TRUE(fs::is_regular_file(recordingDir / "config.json"));
+    EXPECT_TRUE(fs::is_regular_file(recordingDir / "console.log"));
+    return recordingDir;
+  }();
   EXPECT_TRUE(fs::is_regular_file(workingDir / "metadata.json"));
 }
 
@@ -80,14 +81,15 @@ TEST(PortTest, configMergesPathsLeftToRight)
 
 TEST(PortTest, metadataIncludesCmdlineAndResources)
 {
-  fs::path workingDir;
+  const auto workingDir = [&]
   {
     auto port = Port{ kLogRoot, { kConfig }, {}, true, kSampleCommandLine };
-    workingDir = port.workingDir();
+    const auto recordingDir = port.workingDir();
     port.addResource(kResource);
 
-    EXPECT_TRUE(fs::is_regular_file(workingDir / "testResource.bin"));
-  }
+    EXPECT_TRUE(fs::is_regular_file(recordingDir / "testResource.bin"));
+    return recordingDir;
+  }();
 
   const auto meta = nlohmann::json::parse(std::ifstream(workingDir / "metadata.json"));
   EXPECT_EQ(meta.at("cmdline").get<std::string>(), kSampleCommandLine);
@@ -136,14 +138,15 @@ TEST(PortTest, constructionCreatesMissingLogRoot)
 
 TEST(PortTest, recordChronicleFalseOmitsChronicleDir)
 {
-  fs::path workingDir;
+  const auto workingDir = [&]
   {
     auto port = Port{ kLogRoot, { kConfig }, {}, false, "" };
-    workingDir = port.workingDir();
+    const auto recordingDir = port.workingDir();
 
-    EXPECT_FALSE(fs::exists(workingDir / "chronicle"));
-    EXPECT_TRUE(fs::is_regular_file(workingDir / "config.json"));
-  }
+    EXPECT_FALSE(fs::exists(recordingDir / "chronicle"));
+    EXPECT_TRUE(fs::is_regular_file(recordingDir / "config.json"));
+    return recordingDir;
+  }();
   // The recording is still finalized even with the chronicle disabled.
   EXPECT_TRUE(fs::is_regular_file(workingDir / "metadata.json"));
 }

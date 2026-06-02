@@ -112,7 +112,7 @@ TEST(CacheManager, construction)
 
 TEST(CacheManager, access)
 {
-  CacheManager<TestCache> cacheManager;
+  auto cacheManager = CacheManager<TestCache>{};
   {
     auto& cacheRef = cacheManager.access(19);
 
@@ -144,7 +144,7 @@ TEST(Caching, construction)
 
 TEST(Caching, squareArea)
 {
-  TestClass testClass(31);
+  auto testClass = TestClass{ 31 };
   auto& internalIntRef = testClass.acquireReference();
 
   EXPECT_EQ(gTestCacheMessage, "");

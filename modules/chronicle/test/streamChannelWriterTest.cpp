@@ -24,7 +24,7 @@ constexpr auto kNumFramesToWrite = 256UL;
 
 std::vector<char> generateTestDataFrame()
 {
-  std::vector<char> data(kDataSize);
+  auto data = std::vector<char>(kDataSize);
   std::ranges::iota(data, kDataIotaStart);
   return data;
 }
@@ -52,7 +52,7 @@ TEST(StreamChannelWriter, rollAndIndexFileSizeChecks)
 
   // Create a channel and write frames to it.
   {
-    StreamChannelWriter channel(testLogDirectoryPath, kMaxFileSizeInBytes);
+    auto channel = StreamChannelWriter{ testLogDirectoryPath, kMaxFileSizeInBytes };
 
     const auto data = generateTestDataFrame();
     for(size_t ii = 0U; ii < kNumFramesToWrite; ++ii)
@@ -67,7 +67,7 @@ TEST(StreamChannelWriter, rollAndIndexFileSizeChecks)
   constexpr auto expectedLastFileSize = numFramesInLastFile * kDataSize;
   constexpr auto expectedIndexFileSize = kNumFramesToWrite * 3 * sizeof(uint64_t);
 
-  std::vector<fs::directory_entry> directoryEntries;
+  auto directoryEntries = std::vector<fs::directory_entry>{};
   for(const auto& entity: fs::directory_iterator(testLogDirectoryPath))
   {
     directoryEntries.emplace_back(entity);

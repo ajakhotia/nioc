@@ -23,12 +23,12 @@ TEST(LoggerBoostUsageExample, MMapFileWriting)
   namespace bio = boost::iostreams;
   std::filesystem::remove_all("/tmp/mmapFileWriting.txt");
 
-  bio::mapped_file_params mappedFileParams;
+  auto mappedFileParams = bio::mapped_file_params{};
   mappedFileParams.new_file_size = kNumBytes;
   mappedFileParams.path = "/tmp/mmapFileWriting.txt";
   mappedFileParams.flags = bio::mapped_file::mapmode::readwrite;
 
-  bio::mapped_file file(mappedFileParams);
+  auto file = bio::mapped_file{ mappedFileParams };
 
   const auto tic = std::clock();
   {
@@ -52,7 +52,7 @@ TEST(LoggerBoostUsageExample, SerialFileWrite)
   std::filesystem::remove_all("/tmp/serialFileWriting.txt");
 
   // Create a file and  write 'a' to it.
-  std::ofstream file("/tmp/serialFileWriting.txt");
+  auto file = std::ofstream{ "/tmp/serialFileWriting.txt" };
 
   const auto tic = std::clock();
   {

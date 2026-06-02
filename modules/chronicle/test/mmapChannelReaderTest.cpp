@@ -25,7 +25,7 @@ constexpr auto kNumFramesToWrite = 256UL;
 
 std::vector<char> generateTestDataFrame()
 {
-  std::vector<char> data(kGeneratedDataSize);
+  auto data = std::vector<char>(kGeneratedDataSize);
   std::ranges::iota(data, 0);
   return data;
 }
