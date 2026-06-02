@@ -228,20 +228,20 @@ public:
   /// @param angle Rotation angle in radians.
   /// @param axis Rotation axis (normalized automatically).
   Rotation3(const Scalar angle, const Vector3 axis):
-      Rotation3(axis.normalized() * std::tan(angle / Scalar(4)))
+    Rotation3(axis.normalized() * std::tan(angle / Scalar(4)))
   {
   }
 
   /// @brief Constructs from quaternion.
   /// @param quaternion Rotation quaternion (normalized automatically).
   explicit Rotation3(const Quaternion& quaternion):
-      Rotation3(std::invoke(
-          [](const Quaternion& normalizedQuaternion)
-          {
-            assert(normalizedQuaternion.norm() == Scalar(1));
-            return (normalizedQuaternion.vec() / (Scalar(1) + normalizedQuaternion.w())).eval();
-          },
-          quaternion.normalized()))
+    Rotation3(std::invoke(
+        [](const Quaternion& normalizedQuaternion)
+        {
+          assert(normalizedQuaternion.norm() == Scalar(1));
+          return (normalizedQuaternion.vec() / (Scalar(1) + normalizedQuaternion.w())).eval();
+        },
+        quaternion.normalized()))
   {
   }
 
@@ -295,7 +295,7 @@ private:
 /// @tparam mapOptions_ Eigen map options.
 template<typename Scalar_, int mapOptions_>
 class Eigen::Map<nioc::geometry::Rotation3<Scalar_>, mapOptions_>:
-    public nioc::geometry::Mrp3<Map<nioc::geometry::Rotation3<Scalar_>, mapOptions_>>
+  public nioc::geometry::Mrp3<Map<nioc::geometry::Rotation3<Scalar_>, mapOptions_>>
 {
 public:
   using Base = nioc::geometry::Mrp3<Map<nioc::geometry::Rotation3<Scalar_>, mapOptions_>>;
@@ -365,7 +365,7 @@ private:
 /// @tparam mapOptions_ Eigen map options.
 template<typename Scalar_, int mapOptions_>
 class Eigen::Map<const nioc::geometry::Rotation3<Scalar_>, mapOptions_>:
-    public nioc::geometry::Mrp3<Map<const nioc::geometry::Rotation3<Scalar_>, mapOptions_>>
+  public nioc::geometry::Mrp3<Map<const nioc::geometry::Rotation3<Scalar_>, mapOptions_>>
 {
 public:
   using Base = nioc::geometry::Mrp3<Map<const nioc::geometry::Rotation3<Scalar_>, mapOptions_>>;

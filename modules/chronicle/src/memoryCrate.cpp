@@ -10,7 +10,7 @@ namespace nioc::chronicle
 {
 
 MemoryCrate::MemoryCrate(std::shared_ptr<MmapMemoryCrate> mmapMemoryCratePtr):
-    mMmapMemoryCratePtr(std::move(mmapMemoryCratePtr))
+  mMmapMemoryCratePtr(std::move(mmapMemoryCratePtr))
 {
 }
 

@@ -25,8 +25,8 @@ ConstByteSpan retrieveSpan(const MappedFile& mappedFile, const IndexEntry& index
 MemoryCrate::MmapMemoryCrate::MmapMemoryCrate(
     MappedFilePtr mappedFilePtr,
     const IndexEntry& indexEntry):
-    mMappedFilePtr(std::move(mappedFilePtr)),
-    mSpan(retrieveSpan(*mMappedFilePtr, indexEntry))
+  mMappedFilePtr(std::move(mappedFilePtr)),
+  mSpan(retrieveSpan(*mMappedFilePtr, indexEntry))
 {
 }
 

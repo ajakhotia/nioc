@@ -14,9 +14,9 @@ namespace nioc::chronicle
 {
 
 Reader::Reader(std::filesystem::path logRoot, const IoMechanism ioMechanism):
-    mIoMechanism(ioMechanism),
-    mLogRoot(common::requireExistingDirectory(std::move(logRoot))),
-    mSequenceFile(mLogRoot / kSequenceFileName)
+  mIoMechanism(ioMechanism),
+  mLogRoot(common::requireExistingDirectory(std::move(logRoot))),
+  mSequenceFile(mLogRoot / kSequenceFileName)
 {
 }
 

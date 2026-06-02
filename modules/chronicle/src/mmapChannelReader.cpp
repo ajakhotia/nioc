@@ -20,9 +20,9 @@ constexpr const auto kLogRollBufferSize = 5UL;
 } // namespace
 
 MmapChannelReader::MmapChannelReader(std::filesystem::path logRoot):
-    mLogRoot(common::requireExistingDirectory(std::move(logRoot))),
-    mIndexFile(mLogRoot / kIndexFileName),
-    mLogRollBuffer(kLogRollBufferSize)
+  mLogRoot(common::requireExistingDirectory(std::move(logRoot))),
+  mIndexFile(mLogRoot / kIndexFileName),
+  mLogRollBuffer(kLogRollBufferSize)
 {
 }
 

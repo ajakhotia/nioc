@@ -69,7 +69,7 @@ public:
   /// @param parentFrameArgs Identifier the parent @ref DynamicFrame is built from.
   template<typename ParentFrameArgs>
   explicit ParentConceptTmpl(ParentFrameArgs parentFrameArgs) noexcept:
-      mParentFrame(std::move(parentFrameArgs))
+    mParentFrame(std::move(parentFrameArgs))
   {
   }
 
@@ -102,7 +102,7 @@ public:
   /// @param childFrameArgs Identifier the child @ref DynamicFrame is built from.
   template<typename ChildFrameArgs>
   explicit ChildConceptTmpl(ChildFrameArgs childFrameArgs) noexcept:
-      mChildFrame(std::move(childFrameArgs))
+    mChildFrame(std::move(childFrameArgs))
   {
   }
 

@@ -19,10 +19,10 @@ ExampleDriver::ExampleDriver(
     std::string sample1Topic,
     std::string sample3Topic,
     const std::size_t roundCount):
-    Driver{ port },
-    mSample1Topic{ std::move(sample1Topic) },
-    mSample3Topic{ std::move(sample3Topic) },
-    mRoundCount{ roundCount }
+  Driver{ port },
+  mSample1Topic{ std::move(sample1Topic) },
+  mSample3Topic{ std::move(sample3Topic) },
+  mRoundCount{ roundCount }
 {
 }
 

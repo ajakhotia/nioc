@@ -307,7 +307,7 @@ Pose<typename LhsDerived::Scalar> operator*(const Se3<LhsDerived>& lhs, const Se
 /// @tparam Scalar_ Floating-point type.
 template<typename Scalar_>
 class Eigen::Map<nioc::geometry::Pose<Scalar_>>:
-    public nioc::geometry::Se3<Eigen::Map<nioc::geometry::Pose<Scalar_>>>
+  public nioc::geometry::Se3<Eigen::Map<nioc::geometry::Pose<Scalar_>>>
 {
 public:
   using Base = nioc::geometry::Se3<Eigen::Map<nioc::geometry::Pose<Scalar_>>>;
@@ -373,7 +373,7 @@ private:
 /// @tparam Scalar_ Floating-point type.
 template<typename Scalar_>
 class Eigen::Map<const nioc::geometry::Pose<Scalar_>>:
-    public nioc::geometry::Se3<Eigen::Map<const nioc::geometry::Pose<Scalar_>>>
+  public nioc::geometry::Se3<Eigen::Map<const nioc::geometry::Pose<Scalar_>>>
 {
 public:
   using Base = nioc::geometry::Se3<Eigen::Map<const nioc::geometry::Pose<Scalar_>>>;

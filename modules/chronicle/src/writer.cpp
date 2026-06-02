@@ -18,10 +18,10 @@ Writer::Writer(
     std::filesystem::path rootDir,
     const IoMechanism ioMechanism,
     const std::size_t maxFileSizeInBytes):
-    mIoMechanism(ioMechanism),
-    mLogDirectory(common::requireEmptyDirectory(std::move(rootDir))),
-    mMaxFileSizeInBytes(maxFileSizeInBytes),
-    mLockedSequenceFile(mLogDirectory / kSequenceFileName)
+  mIoMechanism(ioMechanism),
+  mLogDirectory(common::requireEmptyDirectory(std::move(rootDir))),
+  mMaxFileSizeInBytes(maxFileSizeInBytes),
+  mLockedSequenceFile(mLogDirectory / kSequenceFileName)
 {
   logger::info(
       "Writing chronicle to {} with unit file size {}.",

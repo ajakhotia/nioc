@@ -33,8 +33,8 @@ struct FormatWithLocation
   consteval FormatWithLocation(
       const char* format,
       const std::source_location& location = std::source_location::current()) noexcept:
-      mFormat{ format },
-      mLocation{ location }
+    mFormat{ format },
+    mLocation{ location }
   {
   }
 
