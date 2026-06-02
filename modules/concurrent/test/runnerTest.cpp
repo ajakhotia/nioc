@@ -8,13 +8,13 @@
 #include <chrono>
 #include <gtest/gtest.h>
 #include <memory>
-#include <nioc/terminus/routine.hpp>
-#include <nioc/terminus/threadedRunner.hpp>
+#include <nioc/concurrent/routine.hpp>
+#include <nioc/concurrent/threadedRunner.hpp>
 #include <stdexcept>
 #include <string_view>
 #include <thread>
 
-namespace nioc::terminus
+namespace nioc::concurrent
 {
 namespace
 {
@@ -25,7 +25,9 @@ using namespace std::chrono_literals;
 class CountingRoutine final: public Routine
 {
 public:
-  explicit CountingRoutine(const int doneAfter): mDoneAfter{ doneAfter } {}
+  explicit CountingRoutine(const int doneAfter): Routine("CountingRoutine"), mDoneAfter{ doneAfter }
+  {
+  }
 
   State step() final
   {
@@ -34,11 +36,6 @@ public:
       return State::Done;
     }
     return State::Continue;
-  }
-
-  [[nodiscard]] std::string_view name() const final
-  {
-    return "CountingRoutine";
   }
 
   [[nodiscard]] int iterations() const
@@ -56,15 +53,12 @@ private:
 class ForeverRoutine final: public Routine
 {
 public:
+  ForeverRoutine(): Routine("ForeverRoutine") {}
+
   State step() final
   {
     std::this_thread::sleep_for(1ms);
     return State::Continue;
-  }
-
-  [[nodiscard]] std::string_view name() const final
-  {
-    return "ForeverRoutine";
   }
 };
 
@@ -72,14 +66,11 @@ public:
 class ThrowingRoutine final: public Routine
 {
 public:
+  ThrowingRoutine(): Routine("ThrowingRoutine") {}
+
   State step() final
   {
     throw std::runtime_error("boom");
-  }
-
-  [[nodiscard]] std::string_view name() const final
-  {
-    return "ThrowingRoutine";
   }
 };
 
@@ -138,4 +129,4 @@ TEST(ThreadedRunnerTest, drivesSeveralRoutines)
   EXPECT_EQ(routineB->iterations(), 5);
 }
 
-} // namespace nioc::terminus
+} // namespace nioc::concurrent

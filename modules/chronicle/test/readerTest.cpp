@@ -19,7 +19,7 @@ namespace
 std::vector<char> generateData(std::uint64_t size)
 {
   auto data = std::vector<char>(size);
-  std::iota(data.begin(), data.end(), size);
+  std::ranges::iota(data, size);
   return data;
 }
 
@@ -35,19 +35,19 @@ fs::path makeFreshEmptyDir(std::string_view name)
 
 constexpr auto channelA = ChannelId{ 16983UL };
 constexpr auto channelB = ChannelId{ 68964786UL };
-const auto dataA = generateData(20ULL);
-const auto dataB = generateData(34ULL);
-const auto dataAAsBytes = std::as_bytes(std::span(dataA));
-const auto dataBAsBytes = std::as_bytes(std::span(dataB));
+const auto kDataA = generateData(20ULL);
+const auto kDataB = generateData(34ULL);
+const auto kDataAAsBytes = std::as_bytes(std::span(kDataA));
+const auto kDataBAsBytes = std::as_bytes(std::span(kDataB));
 
 fs::path createLog()
 {
   auto writer = Writer{ makeFreshEmptyDir("readerTest-createLog") };
 
-  writer.write(channelA, dataAAsBytes);
-  writer.write(channelB, dataBAsBytes);
-  writer.write(channelA, dataAAsBytes);
-  writer.write(channelB, dataBAsBytes);
+  writer.write(channelA, kDataAAsBytes);
+  writer.write(channelB, kDataBAsBytes);
+  writer.write(channelA, kDataAAsBytes);
+  writer.write(channelB, kDataBAsBytes);
 
   return writer.path();
 }
@@ -67,25 +67,25 @@ TEST(Reader, read)
   {
     const auto entry = reader.read();
     EXPECT_EQ(channelA, entry.mChannelId);
-    expectSpanEqual(dataAAsBytes, entry.mMemoryCrate.span());
+    expectSpanEqual(kDataAAsBytes, entry.mMemoryCrate.span());
   }
 
   {
     const auto entry = reader.read();
     EXPECT_EQ(channelB, entry.mChannelId);
-    expectSpanEqual(dataBAsBytes, entry.mMemoryCrate.span());
+    expectSpanEqual(kDataBAsBytes, entry.mMemoryCrate.span());
   }
 
   {
     const auto entry = reader.read();
     EXPECT_EQ(channelA, entry.mChannelId);
-    expectSpanEqual(dataAAsBytes, entry.mMemoryCrate.span());
+    expectSpanEqual(kDataAAsBytes, entry.mMemoryCrate.span());
   }
 
   {
     const auto entry = reader.read();
     EXPECT_EQ(channelB, entry.mChannelId);
-    expectSpanEqual(dataBAsBytes, entry.mMemoryCrate.span());
+    expectSpanEqual(kDataBAsBytes, entry.mMemoryCrate.span());
   }
 
   EXPECT_THROW(reader.read(), std::runtime_error);

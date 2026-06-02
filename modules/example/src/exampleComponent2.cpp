@@ -17,11 +17,11 @@ ExampleComponent2::ExampleComponent2(
     std::string sample2Topic,
     std::string sample3Topic,
     const std::size_t inboxCapacity,
-    const terminus::OverflowPolicy overflowPolicy):
-    Component{ port, inboxCapacity, overflowPolicy },
-    mSample1Topic{ std::move(sample1Topic) },
-    mSample2Topic{ std::move(sample2Topic) },
-    mSample3Topic{ std::move(sample3Topic) }
+    const concurrent::BufferMode bufferMode):
+  Component{ port, inboxCapacity, bufferMode, "ExampleComponent2" },
+  mSample1Topic{ std::move(sample1Topic) },
+  mSample2Topic{ std::move(sample2Topic) },
+  mSample3Topic{ std::move(sample3Topic) }
 {
   subscribe<Sample1>(
       mSample1Topic,
@@ -43,11 +43,6 @@ ExampleComponent2::ExampleComponent2(
       {
         process(msgPtr);
       });
-}
-
-std::string_view ExampleComponent2::name() const
-{
-  return "ExampleComponent2";
 }
 
 std::uint64_t ExampleComponent2::sample1Count() const noexcept
@@ -86,7 +81,8 @@ void ExampleComponent2::process(const terminus::ConstMsgPtr<Sample3>& /* msgPtr 
 void ExampleComponent2::logCounts() const
 {
   logger::info(
-      "ExampleComponent2 counts. Sample1: {}, Sample2: {}, Sample3: {}",
+      "[{}] counts. Sample1: {}, Sample2: {}, Sample3: {}",
+      name(),
       sample1Count(),
       sample2Count(),
       sample3Count());

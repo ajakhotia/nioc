@@ -6,25 +6,29 @@
 
 #include <gtest/gtest.h>
 #include <nioc/common/typeTraits.hpp>
-#include <nioc/geometry/constants.hpp>
 #include <nioc/geometry/pose.hpp>
+#include <numbers>
 #include <span>
 
 namespace nioc::geometry
 {
 namespace
 {
-const auto kAngleAxisD1 = Eigen::AngleAxisd(kPi<double> / 2.0, Eigen::Vector3d::UnitZ());
-const auto kAngleAxisF1 = Eigen::AngleAxisf(kPi<float> / 2.f, Eigen::Vector3f::UnitZ());
+const auto kAngleAxisD1 = Eigen::AngleAxisd(
+    std::numbers::pi_v<double> / 2.0,
+    Eigen::Vector3d::UnitZ());
+const auto kAngleAxisF1 = Eigen::AngleAxisf(
+    std::numbers::pi_v<float> / 2.F,
+    Eigen::Vector3f::UnitZ());
 const auto kQuaternionD1 = Eigen::Quaterniond(kAngleAxisD1);
 const auto kQuaternionF1 = Eigen::Quaternionf(kAngleAxisF1);
 const auto kVec3D1 = Eigen::Vector3d(0.1, 0.2, 0.3);
-const auto kVec3F1 = Eigen::Vector3f(0.1f, 0.2f, 0.3f);
+const auto kVec3F1 = Eigen::Vector3f(0.1F, 0.2F, 0.3F);
 
-const auto sinPiBy4D = std::sin(kPi<double> / 4.0);
-const auto sinPiBy4F = std::sin(kPi<float> / 4.f);
-const auto cosPiBy4D = std::sin(kPi<double> / 4.0);
-const auto cosPiBy4F = std::sin(kPi<float> / 4.f);
+const auto kSinPiBy4D = std::sin(std::numbers::pi_v<double> / 4.0);
+const auto kSinPiBy4F = std::sin(std::numbers::pi_v<float> / 4.F);
+const auto kCosPiBy4D = std::sin(std::numbers::pi_v<double> / 4.0);
+const auto kCosPiBy4F = std::sin(std::numbers::pi_v<float> / 4.F);
 
 template<typename Scalar>
 void poseParamCheck(
@@ -66,22 +70,25 @@ TEST(Pose, ConstructionFromQuaternionAndVector3)
     EXPECT_NO_THROW(Pose<double>(kQuaternionD1, kVec3D1));
 
     const Pose<double> test(kQuaternionD1, kVec3D1);
-    poseParamCheck(test, { 0.0, 0.0, sinPiBy4D, cosPiBy4D, 0.1, 0.2, 0.3 }, test_info_->name());
+    poseParamCheck(test, { 0.0, 0.0, kSinPiBy4D, kCosPiBy4D, 0.1, 0.2, 0.3 }, test_info_->name());
   }
 
   {
     EXPECT_NO_THROW(Pose<float>(kQuaternionF1, kVec3F1));
 
     const Pose<float> test(kQuaternionF1, kVec3F1);
-    poseParamCheck(test, { 0.f, 0.f, sinPiBy4F, cosPiBy4F, 0.1f, 0.2f, 0.3f }, test_info_->name());
+    poseParamCheck(
+        test,
+        { 0.F, 0.F, kSinPiBy4F, kCosPiBy4F, 0.1F, 0.2F, 0.3F },
+        test_info_->name());
   }
 }
 
-// TODO: Test with move semantics.
+// TODO(ajakhotia): Test with move semantics.
 TEST(Pose, ConstrutionFromParameterArray)
 {
   {
-    std::array<double, 7> paramArray = { 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7 };
+    std::array<double, 7> const paramArray = { 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7 };
     EXPECT_NO_THROW((Pose<double>(paramArray)));
 
     const Pose<double> test(paramArray);
@@ -89,7 +96,7 @@ TEST(Pose, ConstrutionFromParameterArray)
   }
 
   {
-    std::array<float, 7> paramArray = { 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f };
+    std::array<float, 7> const paramArray = { 0.1F, 0.2F, 0.3F, 0.4F, 0.5F, 0.6F, 0.7F };
     EXPECT_NO_THROW((Pose<float>(paramArray)));
 
     const Pose<float> test(paramArray);
@@ -97,7 +104,7 @@ TEST(Pose, ConstrutionFromParameterArray)
   }
 }
 
-// TODO: Test with move semantics.
+// TODO(ajakhotia): Test with move semantics.
 TEST(Pose, ConstructionFromParamterSpan)
 {
   {
@@ -111,7 +118,7 @@ TEST(Pose, ConstructionFromParamterSpan)
   }
 
   {
-    std::array<float, 7> paramArray = { 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f };
+    std::array<float, 7> paramArray = { 0.1F, 0.2F, 0.3F, 0.4F, 0.5F, 0.6F, 0.7F };
     auto paramSpan = std::span<float>(paramArray.data(), paramArray.size());
 
     // EXPECT_NO_THROW((Pose<float>(paramSpan)));
@@ -132,8 +139,8 @@ TEST(Pose, Cast)
 {
   const Pose<double> testD(kQuaternionD1, kVec3D1);
   auto testF = testD.cast<float>();
-  poseParamCheck(testD, { 0.0, 0.0, sinPiBy4D, cosPiBy4D, 0.1, 0.2, 0.3 }, test_info_->name());
-  poseParamCheck(testF, { 0.f, 0.f, sinPiBy4F, cosPiBy4F, 0.1f, 0.2f, 0.3f }, test_info_->name());
+  poseParamCheck(testD, { 0.0, 0.0, kSinPiBy4D, kCosPiBy4D, 0.1, 0.2, 0.3 }, test_info_->name());
+  poseParamCheck(testF, { 0.F, 0.F, kSinPiBy4F, kCosPiBy4F, 0.1F, 0.2F, 0.3F }, test_info_->name());
 }
 
 TEST(Pose, StreamOperator)
@@ -141,7 +148,7 @@ TEST(Pose, StreamOperator)
   const Pose<double> testD(kQuaternionD1, kVec3D1);
 
   std::stringstream stringStream;
-  stringStream << testD << std::endl;
+  stringStream << testD << '\n';
   EXPECT_EQ(
       stringStream.str(),
       "{ Orientation:[       0,        0, 0.707107, "

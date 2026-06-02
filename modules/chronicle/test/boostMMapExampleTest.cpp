@@ -42,7 +42,9 @@ TEST(LoggerBoostUsageExample, MMapFileWriting)
   const auto toc = std::clock();
   const auto duration = toc - tic;
   std::filesystem::remove("/tmp/mmapFileWriting.txt");
-  std::cout << "MMap write time: " << double(duration) / double(CLOCKS_PER_SEC) << std::endl;
+  std::cout
+      << "MMap write time: " << static_cast<double>(duration) / static_cast<double>(CLOCKS_PER_SEC)
+      << '\n';
 }
 
 TEST(LoggerBoostUsageExample, SerialFileWrite)
@@ -64,7 +66,8 @@ TEST(LoggerBoostUsageExample, SerialFileWrite)
   const auto toc = std::clock();
   const auto duration = toc - tic;
   std::filesystem::remove("/tmp/serialFileWriting.txt");
-  std::cout << "Serial write time: " << double(duration) / double(CLOCKS_PER_SEC) << std::endl;
+  std::cout << "Serial write time: "
+            << static_cast<double>(duration) / static_cast<double>(CLOCKS_PER_SEC) << '\n';
 }
 
 

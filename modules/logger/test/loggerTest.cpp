@@ -69,15 +69,15 @@ TEST(Logger, EveryLevelFormatsAndEmits)
   critical("c {}", lvalue);
 
   // Only levels at or above the compile-time threshold emit; build the expected output to match.
-  using level_enum = spdlog::level::level_enum;
+  using LevelEnum = spdlog::level::level_enum;
   auto expected = std::string{};
 
-  expected += level_enum::trace >= kDefaultActiveLevel ? "[trace] t 1\n" : "";
-  expected += level_enum::debug >= kDefaultActiveLevel ? "[debug] d 1 2\n" : "";
-  expected += level_enum::info >= kDefaultActiveLevel ? "[info] i lvalue\n" : "";
-  expected += level_enum::warn >= kDefaultActiveLevel ? "[warning] w\n" : "";
-  expected += level_enum::err >= kDefaultActiveLevel ? "[error] e 3.14\n" : "";
-  expected += level_enum::critical >= kDefaultActiveLevel ? "[critical] c lvalue\n" : "";
+  expected += LevelEnum::trace >= kDefaultActiveLevel ? "[trace] t 1\n" : "";
+  expected += LevelEnum::debug >= kDefaultActiveLevel ? "[debug] d 1 2\n" : "";
+  expected += LevelEnum::info >= kDefaultActiveLevel ? "[info] i lvalue\n" : "";
+  expected += LevelEnum::warn >= kDefaultActiveLevel ? "[warning] w\n" : "";
+  expected += LevelEnum::err >= kDefaultActiveLevel ? "[error] e 3.14\n" : "";
+  expected += LevelEnum::critical >= kDefaultActiveLevel ? "[critical] c lvalue\n" : "";
 
   EXPECT_EQ(buffer.str(), expected);
 }

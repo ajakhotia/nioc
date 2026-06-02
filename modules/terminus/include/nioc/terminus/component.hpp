@@ -7,14 +7,16 @@
 
 #include "msg.hpp"
 #include "msgBase.hpp"
-#include "notifyingInbox.hpp"
 #include "port.hpp"
-#include "routine.hpp"
 #include <cstddef>
 #include <functional>
 #include <memory>
 #include <nioc/common/exception.hpp>
 #include <nioc/common/typeTraits.hpp>
+#include <nioc/concurrent/anyMpsc.hpp>
+#include <nioc/concurrent/notifyingInbox.hpp>
+#include <nioc/concurrent/routine.hpp>
+#include <nioc/logger/logger.hpp>
 #include <unordered_map>
 #include <utility>
 
@@ -24,15 +26,15 @@ namespace nioc::terminus
 /// @brief A @ref Routine that receives subscribed messages through a bounded inbox and may publish.
 ///
 /// A Component is the worker that reacts to data flowing through a @ref Port: a subclass calls @ref
-/// subscribe to register a typed callback per topic, and the Port delivers matching messages into
-/// the Component's inbox. Each @ref step pops one queued message and runs its callback on the
+/// subscription to register a typed callback per topic, and the Port delivers matching messages
+/// into the Component's inbox. Each @ref step pops one queued message and runs its callback on the
 /// Runner's thread, so callbacks never run concurrently with one another. A subclass may also @ref
 /// publish to emit messages. Contrast @ref Driver, which only publishes.
 ///
-/// The inbox is bounded; its capacity and the @ref OverflowPolicy for a full inbox are fixed at
+/// The inbox's storage discipline (concurrent::BufferMode) and capacity are fixed at
 /// construction. Construct through a subclass. The Component holds the Port by reference, so the
 /// Port must outlive every Component bound to it.
-class Component: public Routine
+class Component: public concurrent::Routine
 {
 public:
   using ChannelId = chronicle::ChannelId;
@@ -69,16 +71,25 @@ protected:
   ///
   /// @param port Hub the component subscribes to and publishes onto; must outlive this component.
   ///
-  /// @param inboxCapacity Maximum number of undelivered messages held at once; must be at least 1.
+  /// @param inboxCapacity Maximum number of undelivered messages held at once for a bounded
+  /// @p bufferMode; ignored when unbounded.
   ///
-  /// @param overflowPolicy Behavior when a message arrives while the inbox is full.
-  Component(Port& port, std::size_t inboxCapacity, OverflowPolicy overflowPolicy);
+  /// @param bufferMode Storage discipline of the inbox (see @ref concurrent::BufferMode).
+  ///
+  /// @param name Human-readable identity for this component (see @ref Routine::name); a subclass
+  /// passes its own type name.
+  Component(
+      Port& port,
+      std::size_t inboxCapacity,
+      concurrent::BufferMode bufferMode,
+      std::string name);
 
   /// @brief Subscribes a typed callback to a topic.
   ///
-  /// Registers @p msgCallback to receive every message of @p Schema published on @p topic. Messages
-  /// are queued in the inbox and the callback runs from @ref step, never concurrently. A topic may
-  /// be subscribed at most once; any fan-out is the callback's responsibility.
+  /// Registers @p msgCallback to receive every message of @p Schema published on the @p topic.
+  /// Messages are queued in the inbox, and the callback runs from the @ref step, never
+  /// concurrently. A topic may be subscribed at most once; any fan-out is the callback's
+  /// responsibility.
   ///
   /// @tparam Schema Cap'n Proto schema of the subscribed message.
   ///
@@ -93,7 +104,7 @@ protected:
     const auto channelId = makeChannelId(Msg<Schema>::kMsgId, topic);
 
     // Strictly disallow duplicate subscriptions. Any necessary fan-out must be handled by the
-    // passed lamda passed-in by the user.
+    // lambda passed in by the user.
     if(mHandlers.contains(channelId) or mPortSubscriptions.contains(channelId))
     {
       common::throwException<std::logic_error>(
@@ -122,6 +133,13 @@ protected:
 
     mPort.subscribe(channelId, msgBaseCallbackPtr);
     mPortSubscriptions.emplace(channelId, std::move(msgBaseCallbackPtr));
+
+    logger::debug(
+        "[{}] subscribed to topic '{}' (schema {}, channel {})",
+        name(),
+        topic,
+        common::prettyName<Schema>(),
+        channelId.mValue);
   }
 
   /// @brief Publishes a typed message onto the bound Port.
@@ -139,7 +157,7 @@ protected:
 
 private:
   Port& mPort;
-  NotifyingInbox<std::pair<ChannelId, ConstMsgBasePtr>> mInbox;
+  concurrent::NotifyingInbox<concurrent::AnyMpsc<std::pair<ChannelId, ConstMsgBasePtr>>> mInbox;
   std::unordered_map<ChannelId, MsgBaseCallback> mHandlers;
   std::unordered_map<ChannelId, std::shared_ptr<const MsgBaseCallback>> mPortSubscriptions;
 };

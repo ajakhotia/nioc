@@ -32,18 +32,16 @@ public:
   ///
   /// @param sample2Topic Topic the outgoing `Sample2` messages are published on.
   ///
-  /// @param inboxCapacity Maximum number of undelivered messages held at once; must be at least 1.
+  /// @param inboxCapacity Maximum number of undelivered messages held at once for a bounded
+  /// @p bufferMode; ignored when unbounded.
   ///
-  /// @param overflowPolicy Behavior when a message arrives while the inbox is full.
+  /// @param bufferMode Storage discipline of the inbox (see @ref concurrent::BufferMode).
   ExampleComponent1(
       terminus::Port& port,
       std::string sample3Topic,
       std::string sample2Topic,
       std::size_t inboxCapacity,
-      terminus::OverflowPolicy overflowPolicy);
-
-  /// @brief Returns the human-readable routine name, `"ExampleComponent1"`.
-  [[nodiscard]] std::string_view name() const final;
+      concurrent::BufferMode bufferMode);
 
 private:
   void process(const terminus::ConstMsgPtr<Sample3>& msgPtr);

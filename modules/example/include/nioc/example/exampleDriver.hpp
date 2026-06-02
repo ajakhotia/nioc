@@ -18,7 +18,7 @@ namespace nioc::example
 ///
 /// A minimal source showing how to write a Driver. Each @ref step publishes one `Sample1` and one
 /// `Sample3` message, then advances the round counter; after the configured number of rounds it
-/// reports @ref terminus::Routine::State::Done.
+/// reports @ref concurrent::Routine::State::Done.
 class ExampleDriver final: public terminus::Driver
 {
 public:
@@ -39,12 +39,9 @@ public:
 
   /// @brief Publishes one round of messages, or finishes once every round has been published.
   ///
-  /// @return @ref terminus::Routine::State::Continue while rounds remain, or @ref
-  /// terminus::Routine::State::Done once the round count is reached.
-  [[nodiscard]] terminus::Routine::State step() final;
-
-  /// @brief Returns the human-readable routine name, `"ExampleDriver"`.
-  [[nodiscard]] std::string_view name() const final;
+  /// @return @ref concurrent::Routine::State::Continue while rounds remain, or @ref
+  /// concurrent::Routine::State::Done once the round count is reached.
+  [[nodiscard]] concurrent::Routine::State step() final;
 
 private:
   std::string mSample1Topic;

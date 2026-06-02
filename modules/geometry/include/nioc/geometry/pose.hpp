@@ -49,13 +49,13 @@ public:
   using Vector3ConstMap = Eigen::Map<const Vector3>;
 
   /// @brief Returns a const pointer to the 7 contiguous parameters [qx, qy, qz, qw, px, py, pz].
-  constexpr const Scalar* cData() const noexcept
+  [[nodiscard]] constexpr const Scalar* cData() const noexcept
   {
     return cDerived().cParameters().data();
   }
 
   /// @brief Returns a const pointer to the parameters; const overload, same as @ref cData.
-  constexpr const Scalar* data() const noexcept
+  [[nodiscard]] constexpr const Scalar* data() const noexcept
   {
     return cData();
   }
@@ -67,13 +67,13 @@ public:
   }
 
   /// @brief Returns a read-only quaternion view of the orientation.
-  QuaternionConstMap cOrientation() const noexcept
+  [[nodiscard]] QuaternionConstMap cOrientation() const noexcept
   {
     return QuaternionConstMap(cData());
   }
 
   /// @brief Returns a read-only quaternion view of the orientation; same as @ref cOrientation.
-  QuaternionConstMap orientation() const noexcept
+  [[nodiscard]] QuaternionConstMap orientation() const noexcept
   {
     return cOrientation();
   }
@@ -85,13 +85,13 @@ public:
   }
 
   /// @brief Returns a read-only vector view of the position.
-  Vector3ConstMap cPosition() const noexcept
+  [[nodiscard]] Vector3ConstMap cPosition() const noexcept
   {
     return Vector3ConstMap(cData() + kNumOrientationParams);
   }
 
   /// @brief Returns a read-only vector view of the position; same as @ref cPosition.
-  Vector3ConstMap position() const noexcept
+  [[nodiscard]] Vector3ConstMap position() const noexcept
   {
     return cPosition();
   }
@@ -105,13 +105,13 @@ public:
   /// @brief Returns a copy of this pose with its parameters converted to another scalar type.
   /// @tparam ResultScalar Floating-point type of the returned pose.
   template<typename ResultScalar>
-  Pose<ResultScalar> cast() const noexcept
+  [[nodiscard]] Pose<ResultScalar> cast() const noexcept
   {
     return Pose<ResultScalar>(std::span<const Scalar>(cData(), kNumParams));
   }
 
   /// @brief Returns the inverse pose.
-  Pose<Scalar> inverse() const
+  [[nodiscard]] Pose<Scalar> inverse() const
   {
     return Pose<Scalar>(derived()).invert();
   }
@@ -133,12 +133,18 @@ public:
   }
 
 protected:
+private:
   Se3() noexcept = default;
 
+protected:
+private:
   Se3(const Se3&) noexcept = default;
 
+protected:
+private:
   Se3(Se3&&) noexcept = default;
 
+protected:
   ~Se3() noexcept = default;
 
   Se3& operator=(const Se3&) noexcept = default;
@@ -146,20 +152,24 @@ protected:
   Se3& operator=(Se3&&) noexcept = default;
 
 private:
-  inline constexpr const Derived& cDerived() const noexcept
+  [[nodiscard]] constexpr const Derived& cDerived() const noexcept
   {
     return static_cast<const Derived&>(*this);
   }
 
-  inline constexpr const Derived& derived() const noexcept
+  [[nodiscard]] constexpr const Derived& derived() const noexcept
   {
     return cDerived();
   }
 
-  inline constexpr Derived& derived() noexcept
+  constexpr Derived& derived() noexcept
   {
     return static_cast<Derived&>(*this);
   }
+
+  friend Derived;
+  friend Derived;
+  friend Derived;
 };
 
 /// @brief 3D pose with owned storage.
@@ -245,13 +255,13 @@ public:
   Pose& operator=(Pose&&) noexcept = default;
 
   /// @brief Returns the underlying 7-element parameter array [qx, qy, qz, qw, px, py, pz].
-  constexpr const Parameters& cParameters() const noexcept
+  [[nodiscard]] constexpr const Parameters& cParameters() const noexcept
   {
     return mParameters;
   }
 
   /// @brief Returns the parameter array; const overload, same as @ref cParameters.
-  constexpr const Parameters& parameters() const noexcept
+  [[nodiscard]] constexpr const Parameters& parameters() const noexcept
   {
     return cParameters();
   }
@@ -273,12 +283,12 @@ private:
 template<typename Derived>
 std::ostream& operator<<(std::ostream& stream, const Se3<Derived>& se3)
 {
-  static const auto ioFormat =
+  static const auto kIoFormat =
       Eigen::IOFormat(Eigen::StreamPrecision, 0, ", ", "\n", "", "", "[", "]");
 
 
-  stream << "{ Orientation:" << se3.cOrientation().coeffs().transpose().format(ioFormat)
-         << ", Position:" << se3.cPosition().transpose().format(ioFormat) << " }";
+  stream << "{ Orientation:" << se3.cOrientation().coeffs().transpose().format(kIoFormat)
+         << ", Position:" << se3.cPosition().transpose().format(kIoFormat) << " }";
 
   return stream;
 }

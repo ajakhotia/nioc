@@ -9,7 +9,7 @@
 #include <functional>
 #include <memory>
 
-namespace nioc::terminus
+namespace nioc::concurrent
 {
 
 /// @brief Drives one @ref Routine's iteration loop: repeatedly call @ref Routine::step until done.
@@ -67,4 +67,4 @@ protected:
   virtual void wake() = 0;
 };
 
-} // namespace nioc::terminus
+} // namespace nioc::concurrent

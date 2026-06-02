@@ -36,15 +36,15 @@ ConstByteSpan convert(const ConstWordArrayPtr& data)
 } // namespace
 
 MMappedMessageReader::MMappedMessageReader(MemoryCrate memoryCrate):
-    MemoryCrate(std::move(memoryCrate)),
-    FlatArrayMessageReader(convert(span()))
+  MemoryCrate(std::move(memoryCrate)),
+  FlatArrayMessageReader(convert(span()))
 {
 }
 
 MsgBase::MsgBase(): mVariant(std::in_place_type<MallocMessageBuilder>) {}
 
 MsgBase::MsgBase(chronicle::MemoryCrate memoryCrate):
-    mVariant(std::in_place_type<MMappedMessageReader>, std::move(memoryCrate))
+  mVariant(std::in_place_type<MMappedMessageReader>, std::move(memoryCrate))
 {
 }
 

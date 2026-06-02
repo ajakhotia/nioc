@@ -41,21 +41,21 @@ public:
 
   RigidTransform(RigidTransform&&) noexcept = default;
 
-  ~RigidTransform() = default;
+  ~RigidTransform() override = default;
 
   RigidTransform& operator=(const RigidTransform&) = default;
 
   RigidTransform& operator=(RigidTransform&&) noexcept = default;
 
   /// @brief Returns the transformation pose.
-  const PoseS& pose() const noexcept
+  [[nodiscard]] const PoseS& pose() const noexcept
   {
     return mPose;
   }
 
   /// @brief Returns the inverse transformation.
   /// @return Transform from parent to child frame.
-  RigidTransform<ChildFrame, ParentFrame, Scalar> inverse() const
+  [[nodiscard]] RigidTransform<ChildFrame, ParentFrame, Scalar> inverse() const
   {
     return RigidTransform<ChildFrame, ParentFrame, Scalar>(
         pose().inverse(),

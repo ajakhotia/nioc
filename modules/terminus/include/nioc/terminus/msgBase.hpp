@@ -21,8 +21,8 @@ namespace nioc::terminus
 /// Exposes the bytes held by a MemoryCrate as a Cap'n Proto message reader, without copying them.
 /// Obtain one through @ref Msg rather than constructing it directly.
 class MMappedMessageReader final:
-    public chronicle::MemoryCrate,
-    public capnp::FlatArrayMessageReader
+  public chronicle::MemoryCrate,
+  public capnp::FlatArrayMessageReader
 {
 public:
   /// @brief Wraps a crate's bytes for reading.

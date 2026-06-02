@@ -7,19 +7,17 @@
 #include "testComponent.hpp"
 #include <gtest/gtest.h>
 #include <memory>
+#include <nioc/concurrent/routine.hpp>
 #include <nioc/terminus/component.hpp>
 #include <nioc/terminus/idl/testSchema.capnp.h>
 #include <nioc/terminus/msg.hpp>
 #include <nioc/terminus/port.hpp>
-#include <nioc/terminus/routine.hpp>
 #include <stdexcept>
 
 namespace nioc::terminus
 {
 namespace
 {
-
-using namespace std::chrono_literals;
 
 /// A finalized message to push. step() drains by pointer and never inspects the payload, so any
 /// real message exercises the inbox identically.
@@ -36,64 +34,60 @@ constexpr auto kChannel = Component::ChannelId{ 1 };
 TEST(ComponentTest, zeroCapacityThrows)
 {
   auto port = Port{};
-  EXPECT_THROW((EarthComponent{ port, 0, OverflowPolicy::Overwrite }), std::invalid_argument);
+  EXPECT_THROW(
+      (EarthComponent{ port, 0, concurrent::BufferMode::Overwriting }),
+      std::invalid_argument);
 }
 
 TEST(ComponentTest, emptyInboxWaits)
 {
   auto port = Port{};
-  auto component = EarthComponent{ port, 4, OverflowPolicy::Overwrite };
-  EXPECT_EQ(component.step(), Routine::State::Waiting);
+  auto component = EarthComponent{ port, 4, concurrent::BufferMode::Overwriting };
+  EXPECT_EQ(component.step(), concurrent::Routine::State::Waiting);
 }
 
 TEST(ComponentTest, drainsOneMessagePerRun)
 {
   auto port = Port{};
-  auto component = EarthComponent{ port, 4, OverflowPolicy::Overwrite };
+  auto component = EarthComponent{ port, 4, concurrent::BufferMode::Overwriting };
   component.push(kChannel, makeMessage());
   component.push(kChannel, makeMessage());
 
-  EXPECT_EQ(component.step(), Routine::State::Continue);
-  EXPECT_EQ(component.step(), Routine::State::Continue);
-  EXPECT_EQ(component.step(), Routine::State::Waiting);
+  EXPECT_EQ(component.step(), concurrent::Routine::State::Continue);
+  EXPECT_EQ(component.step(), concurrent::Routine::State::Continue);
+  EXPECT_EQ(component.step(), concurrent::Routine::State::Waiting);
 }
 
 TEST(ComponentTest, overwriteDropsOldestWhenFull)
 {
   auto port = Port{};
-  auto component = EarthComponent{ port, 2, OverflowPolicy::Overwrite };
+  auto component = EarthComponent{ port, 2, concurrent::BufferMode::Overwriting };
   for(auto count = 0; count < 5; ++count)
   {
     component.push(kChannel, makeMessage());
   }
 
   // Two slots keep the newest two; the other three were overwritten.
-  EXPECT_EQ(component.step(), Routine::State::Continue);
-  EXPECT_EQ(component.step(), Routine::State::Continue);
-  EXPECT_EQ(component.step(), Routine::State::Waiting);
+  EXPECT_EQ(component.step(), concurrent::Routine::State::Continue);
+  EXPECT_EQ(component.step(), concurrent::Routine::State::Continue);
+  EXPECT_EQ(component.step(), concurrent::Routine::State::Waiting);
 }
 
-TEST(ComponentTest, blockPolicyWaitsForSpace)
+TEST(ComponentTest, unboundedRetainsEveryMessage)
 {
   auto port = Port{};
-  auto component = EarthComponent{ port, 1, OverflowPolicy::Block };
-  component.push(kChannel, makeMessage()); // inbox is now full
+  auto component = EarthComponent{ port, 1, concurrent::BufferMode::Unbounded };
+  for(auto count = 0; count < 5; ++count)
+  {
+    component.push(kChannel, makeMessage());
+  }
 
-  auto posted = std::atomic{ false };
-  auto producer = std::thread{ [&component, &posted]
-                               {
-                                 component.push(kChannel, makeMessage());
-                                 posted.store(true);
-                               } };
-
-  // The producer must be parked on the full inbox.
-  std::this_thread::sleep_for(50ms);
-  EXPECT_FALSE(posted.load());
-
-  // Freeing a slot releases it.
-  EXPECT_EQ(component.step(), Routine::State::Continue);
-  producer.join();
-  EXPECT_TRUE(posted.load());
+  // Unbounded keeps all five despite a nominal capacity of 1.
+  for(auto count = 0; count < 5; ++count)
+  {
+    EXPECT_EQ(component.step(), concurrent::Routine::State::Continue);
+  }
+  EXPECT_EQ(component.step(), concurrent::Routine::State::Waiting);
 }
 
 } // namespace nioc::terminus

@@ -31,22 +31,22 @@ TEST(DynamicFrame, construction)
 
 TEST(DynamicFrame, name)
 {
-  DynamicFrame df("testFrame145");
+  DynamicFrame const df("testFrame145");
   EXPECT_EQ("testFrame145", df.name());
 }
 
 TEST(DynamicFrame, EqualityCheck)
 {
-  DynamicFrame d1("Test125");
+  DynamicFrame const d1("Test125");
 
   {
-    DynamicFrame d2("Test125");
+    DynamicFrame const d2("Test125");
     EXPECT_TRUE(d1 == d2);
     EXPECT_FALSE(d1 != d2);
   }
 
   {
-    DynamicFrame d3("Test43");
+    DynamicFrame const d3("Test43");
     EXPECT_FALSE(d1 == d3);
     EXPECT_TRUE(d1 != d3);
   }

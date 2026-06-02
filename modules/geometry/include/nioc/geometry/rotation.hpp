@@ -8,6 +8,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <ostream>
+#include <utility>
 
 namespace nioc::geometry
 {
@@ -19,13 +20,13 @@ class Rotation3;
 
 
 /// Forward declare Eigen::Map for Rotation3.
-template<typename Scalar_, int mapOptions_>
-class Eigen::Map<nioc::geometry::Rotation3<Scalar_>, mapOptions_>;
+template<typename Scalar_, int MapOptions>
+class Eigen::Map<nioc::geometry::Rotation3<Scalar_>, MapOptions>;
 
 
 /// Forward declare Eigen::Map for const Rotation3.
-template<typename Scalar_, int mapOptions_>
-class Eigen::Map<const nioc::geometry::Rotation3<Scalar_>, mapOptions_>;
+template<typename Scalar_, int MapOptions>
+class Eigen::Map<const nioc::geometry::Rotation3<Scalar_>, MapOptions>;
 
 namespace nioc::geometry
 {
@@ -45,87 +46,87 @@ class Mrp3
 public:
   static constexpr auto kDimensions = 3U;
 
-  inline constexpr const Derived& cDerived() const noexcept
+  [[nodiscard]] constexpr const Derived& cDerived() const noexcept
   {
     return static_cast<const Derived&>(*this);
   }
 
-  inline constexpr const Derived& derived() const noexcept
+  [[nodiscard]] constexpr const Derived& derived() const noexcept
   {
     return cDerived();
   }
 
-  inline constexpr Derived& derived() noexcept
+  constexpr Derived& derived() noexcept
   {
     return static_cast<Derived&>(*this);
   }
 
   /// @brief Gets pointer to parameter data.
   /// @return Pointer to 3-element parameter array.
-  inline decltype(auto) cData() const noexcept
+  [[nodiscard]] decltype(auto) cData() const noexcept
   {
     return cDerived().cParameters().data();
   }
 
   /// @brief Gets pointer to parameter data (const).
   /// @return Pointer to parameter array.
-  inline decltype(auto) data() const noexcept
+  [[nodiscard]] decltype(auto) data() const noexcept
   {
     return cData();
   }
 
   /// @brief Gets pointer to parameter data (mutable).
   /// @return Pointer to parameter array.
-  inline decltype(auto) data() noexcept
+  decltype(auto) data() noexcept
   {
     return derived().parameters().data();
   }
 
   /// @brief Gets x parameter.
   /// @return X component.
-  inline decltype(auto) x() const noexcept
+  [[nodiscard]] decltype(auto) x() const noexcept
   {
     return cDerived().cParameters().x();
   }
 
   /// @brief Gets y parameter.
   /// @return Y component.
-  inline decltype(auto) y() const noexcept
+  [[nodiscard]] decltype(auto) y() const noexcept
   {
     return cDerived().cParameters().y();
   }
 
   /// @brief Gets z parameter.
   /// @return Z component.
-  inline decltype(auto) z() const noexcept
+  [[nodiscard]] decltype(auto) z() const noexcept
   {
     return cDerived().cParameters().z();
   }
 
   /// @brief Gets x parameter (mutable).
   /// @return X component reference.
-  inline decltype(auto) x() noexcept
+  decltype(auto) x() noexcept
   {
     return derived().parameters().x();
   }
 
   /// @brief Gets y parameter (mutable).
   /// @return Y component reference.
-  inline decltype(auto) y() noexcept
+  decltype(auto) y() noexcept
   {
     return derived().parameters().y();
   }
 
   /// @brief Gets z parameter (mutable).
   /// @return Z component reference.
-  inline decltype(auto) z() noexcept
+  decltype(auto) z() noexcept
   {
     return derived().parameters().z();
   }
 
   /// @brief Gets rotation angle.
   /// @return Angle in radians.
-  inline decltype(auto) angle() const noexcept
+  [[nodiscard]] decltype(auto) angle() const noexcept
   {
     using Scalar = typename Derived::Scalar;
     return Scalar(4) * std::atan(cDerived().cParameters().norm());
@@ -133,14 +134,14 @@ public:
 
   /// @brief Gets rotation axis.
   /// @return Normalized axis vector.
-  inline decltype(auto) axis() const noexcept
+  [[nodiscard]] decltype(auto) axis() const noexcept
   {
     return cDerived().cParameters().normalized().eval();
   }
 
   /// @brief Computes inverse rotation.
   /// @return Inverted rotation.
-  inline decltype(auto) inverse() const
+  [[nodiscard]] decltype(auto) inverse() const
   {
     return Rotation3<typename Derived::Scalar>(
         typename Derived::Scalar(-1) * cDerived().cParameters());
@@ -149,7 +150,7 @@ public:
   /// @brief Composes two rotations.
   /// @param rhsBase Second rotation.
   /// @return Composed rotation.
-  inline decltype(auto) operator*(const Mrp3& rhsBase) const
+  decltype(auto) operator*(const Mrp3& rhsBase) const
   {
     using Scalar = typename Derived::Scalar;
 
@@ -159,26 +160,35 @@ public:
     const auto lhsNorm2 = lhsMrp.squaredNorm();
     const auto rhsNorm2 = rhsMrp.squaredNorm();
 
-    const auto vec = (Scalar(1) - rhsNorm2) * lhsMrp + (Scalar(1) - lhsNorm2) * rhsMrp +
-                     Scalar(2) * lhsMrp.cross(rhsMrp);
+    const auto vec = ((Scalar(1) - rhsNorm2) * lhsMrp) + ((Scalar(1) - lhsNorm2) * rhsMrp) +
+                     (Scalar(2) * lhsMrp.cross(rhsMrp));
 
-    const auto scale = Scalar(1) + lhsNorm2 * rhsNorm2 - Scalar(2) * lhsMrp.dot(rhsMrp);
+    const auto scale = Scalar(1) + (lhsNorm2 * rhsNorm2) - (Scalar(2) * lhsMrp.dot(rhsMrp));
 
     return Rotation3<Scalar>(vec / scale);
   }
 
 protected:
+private:
   Mrp3() = default;
 
+protected:
+private:
   Mrp3(const Mrp3&) noexcept = default;
 
+protected:
+private:
   Mrp3(Mrp3&&) noexcept = default;
 
+protected:
   ~Mrp3() = default;
 
   Mrp3& operator=(const Mrp3&) noexcept = default;
 
   Mrp3& operator=(Mrp3&&) noexcept = default;
+  friend Derived;
+  friend Derived;
+  friend Derived;
 };
 
 /// @brief Outputs rotation to stream.
@@ -188,10 +198,10 @@ protected:
 template<typename Derived>
 std::ostream& operator<<(std::ostream& stream, const Mrp3<Derived>& mrp3)
 {
-  static const auto ioFormat =
+  static const auto kIoFormat =
       Eigen::IOFormat(Eigen::FullPrecision, 0, ", ", "\n", "", "", "[", "]");
 
-  stream << mrp3.cDerived().cParameters().transpose().format(ioFormat);
+  stream << mrp3.cDerived().cParameters().transpose().format(kIoFormat);
   return stream;
 }
 
@@ -222,12 +232,12 @@ public:
 
   /// @brief Constructs from MRP parameters.
   /// @param parameters Modified Rodrigues parameters (x, y, z).
-  explicit Rotation3(const Vector3& parameters): mParameters(parameters) {}
+  explicit Rotation3(Vector3 parameters): mParameters(std::move(parameters)) {}
 
   /// @brief Constructs from angle-axis representation.
   /// @param angle Rotation angle in radians.
   /// @param axis Rotation axis (normalized automatically).
-  Rotation3(const Scalar angle, const Vector3 axis):
+  Rotation3(const Scalar angle, const Vector3& axis):
     Rotation3(axis.normalized() * std::tan(angle / Scalar(4)))
   {
   }
@@ -261,21 +271,21 @@ public:
 
   /// @brief Gets parameters (const).
   /// @return Parameter vector.
-  inline const Parameters& cParameters() const noexcept
+  [[nodiscard]] const Parameters& cParameters() const noexcept
   {
     return mParameters;
   }
 
   /// @brief Gets parameters (const).
   /// @return Parameter vector.
-  inline const Parameters& parameters() const noexcept
+  [[nodiscard]] const Parameters& parameters() const noexcept
   {
     return cParameters();
   }
 
   /// @brief Gets parameters (mutable).
   /// @return Parameter vector reference.
-  inline Parameters& parameters() noexcept
+  Parameters& parameters() noexcept
   {
     return mParameters;
   }
@@ -293,12 +303,12 @@ private:
 ///
 /// @tparam Scalar_ Floating-point type.
 /// @tparam mapOptions_ Eigen map options.
-template<typename Scalar_, int mapOptions_>
-class Eigen::Map<nioc::geometry::Rotation3<Scalar_>, mapOptions_>:
-  public nioc::geometry::Mrp3<Map<nioc::geometry::Rotation3<Scalar_>, mapOptions_>>
+template<typename Scalar_, int MapOptions>
+class Eigen::Map<nioc::geometry::Rotation3<Scalar_>, MapOptions>:
+  public nioc::geometry::Mrp3<Map<nioc::geometry::Rotation3<Scalar_>, MapOptions>>
 {
 public:
-  using Base = nioc::geometry::Mrp3<Map<nioc::geometry::Rotation3<Scalar_>, mapOptions_>>;
+  using Base = nioc::geometry::Mrp3<Map<nioc::geometry::Rotation3<Scalar_>, MapOptions>>;
 
   static constexpr auto kDimensions = Base::kDimensions;
 
@@ -308,7 +318,7 @@ public:
 
   using Matrix3 [[maybe_unused]] = Matrix<Scalar, kDimensions, kDimensions>;
 
-  using Parameters = Map<Vector3, mapOptions_>;
+  using Parameters = Map<Vector3, MapOptions>;
 
   /// @brief Constructs map from pointer.
   /// @param ptr Pointer to 3-element array.
@@ -326,21 +336,21 @@ public:
 
   /// @brief Gets parameters (const).
   /// @return Parameter vector.
-  inline const Parameters& cParameters() const noexcept
+  [[nodiscard]] const Parameters& cParameters() const noexcept
   {
     return mParameters;
   }
 
   /// @brief Gets parameters (const).
   /// @return Parameter vector.
-  inline const Parameters& parameters() const noexcept
+  [[nodiscard]] const Parameters& parameters() const noexcept
   {
     return cParameters();
   }
 
   /// @brief Gets parameters (mutable).
   /// @return Parameter vector reference.
-  inline Parameters& parameters() noexcept
+  Parameters& parameters() noexcept
   {
     return mParameters;
   }
@@ -363,12 +373,12 @@ private:
 ///
 /// @tparam Scalar_ Floating-point type.
 /// @tparam mapOptions_ Eigen map options.
-template<typename Scalar_, int mapOptions_>
-class Eigen::Map<const nioc::geometry::Rotation3<Scalar_>, mapOptions_>:
-  public nioc::geometry::Mrp3<Map<const nioc::geometry::Rotation3<Scalar_>, mapOptions_>>
+template<typename Scalar_, int MapOptions>
+class Eigen::Map<const nioc::geometry::Rotation3<Scalar_>, MapOptions>:
+  public nioc::geometry::Mrp3<Map<const nioc::geometry::Rotation3<Scalar_>, MapOptions>>
 {
 public:
-  using Base = nioc::geometry::Mrp3<Map<const nioc::geometry::Rotation3<Scalar_>, mapOptions_>>;
+  using Base = nioc::geometry::Mrp3<Map<const nioc::geometry::Rotation3<Scalar_>, MapOptions>>;
 
   static constexpr auto kDimensions = Base::kDimensions;
 
@@ -378,7 +388,7 @@ public:
 
   using Matrix3 [[maybe_unused]] = Matrix<Scalar, kDimensions, kDimensions>;
 
-  using Parameters = Map<const Vector3, mapOptions_>;
+  using Parameters = Map<const Vector3, MapOptions>;
 
   /// @brief Constructs map from const pointer.
   /// @param ptr Pointer to 3-element array.
@@ -396,14 +406,14 @@ public:
 
   /// @brief Gets parameters.
   /// @return Parameter vector.
-  inline const Parameters& cParameters() const noexcept
+  [[nodiscard]] const Parameters& cParameters() const noexcept
   {
     return mParameters;
   }
 
   /// @brief Gets parameters.
   /// @return Parameter vector.
-  inline const Parameters& parameters() const noexcept
+  [[nodiscard]] const Parameters& parameters() const noexcept
   {
     return cParameters();
   }

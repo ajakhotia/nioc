@@ -19,7 +19,7 @@ ExampleDriver::ExampleDriver(
     std::string sample1Topic,
     std::string sample3Topic,
     const std::size_t roundCount):
-  Driver{ port },
+  Driver{ port, "ExampleDriver" },
   mSample1Topic{ std::move(sample1Topic) },
   mSample3Topic{ std::move(sample3Topic) },
   mRoundCount{ roundCount }
@@ -47,11 +47,6 @@ ExampleDriver::State ExampleDriver::step()
 
   ++mRound;
   return State::Continue;
-}
-
-std::string_view ExampleDriver::name() const
-{
-  return "ExampleDriver";
 }
 
 } // namespace nioc::example

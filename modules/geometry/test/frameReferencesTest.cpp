@@ -155,8 +155,8 @@ TEST(composeFrameReferences, StaticStaticStaticStatic)
   using SunFromUranusFrames = FrameReferences<StaticFrame<Sun>, StaticFrame<Uranus>>;
   using UranusFromPlutoFrames = FrameReferences<StaticFrame<Uranus>, StaticFrame<Pluto>>;
 
-  SunFromUranusFrames lhs;
-  UranusFromPlutoFrames rhs;
+  SunFromUranusFrames const lhs;
+  UranusFromPlutoFrames const rhs;
 
   EXPECT_NO_THROW(composeFrameReferences(lhs, rhs));
   const auto result = composeFrameReferences(lhs, rhs);
@@ -171,8 +171,8 @@ TEST(composeFrameReferences, StaticStaticStaticDynamic)
   using SunFromUranusFrames = FrameReferences<StaticFrame<Sun>, StaticFrame<Uranus>>;
   using UranusFromDynaimcFrames = FrameReferences<StaticFrame<Uranus>, DynamicFrame>;
 
-  SunFromUranusFrames lhs;
-  UranusFromDynaimcFrames rhs("milkyWay");
+  SunFromUranusFrames const lhs;
+  UranusFromDynaimcFrames const rhs("milkyWay");
 
   EXPECT_NO_THROW(composeFrameReferences(lhs, rhs));
   const auto result = composeFrameReferences(lhs, rhs);
@@ -189,8 +189,8 @@ TEST(composeFrameReferences, StaticStaticDynamicStatic)
   using DynamicFromPlutoFrames = FrameReferences<DynamicFrame, StaticFrame<Pluto>>;
 
   {
-    SunFromUranusFrames lhs;
-    DynamicFromPlutoFrames rhs("nioc::geometry::Uranus");
+    SunFromUranusFrames const lhs;
+    DynamicFromPlutoFrames const rhs("nioc::geometry::Uranus");
 
     EXPECT_NO_THROW(composeFrameReferences(lhs, rhs));
     const auto result = composeFrameReferences(lhs, rhs);
@@ -201,8 +201,8 @@ TEST(composeFrameReferences, StaticStaticDynamicStatic)
   }
 
   {
-    SunFromUranusFrames lhs;
-    DynamicFromPlutoFrames rhs("milkyWay");
+    SunFromUranusFrames const lhs;
+    DynamicFromPlutoFrames const rhs("milkyWay");
 
     EXPECT_THROW(composeFrameReferences(lhs, rhs), FrameCompositionException);
   }
@@ -214,8 +214,8 @@ TEST(composeFrameReferences, StaticDynamicStaticStatic)
   using DynamicFromPlutoFrames = FrameReferences<StaticFrame<Uranus>, StaticFrame<Pluto>>;
 
   {
-    SunFromDynamicFrames lhs("nioc::geometry::Uranus");
-    DynamicFromPlutoFrames rhs;
+    SunFromDynamicFrames const lhs("nioc::geometry::Uranus");
+    DynamicFromPlutoFrames const rhs;
 
     EXPECT_NO_THROW(composeFrameReferences(lhs, rhs));
     const auto result = composeFrameReferences(lhs, rhs);
@@ -226,8 +226,8 @@ TEST(composeFrameReferences, StaticDynamicStaticStatic)
   }
 
   {
-    SunFromDynamicFrames lhs("milkyWay");
-    DynamicFromPlutoFrames rhs;
+    SunFromDynamicFrames const lhs("milkyWay");
+    DynamicFromPlutoFrames const rhs;
 
     EXPECT_THROW(composeFrameReferences(lhs, rhs), FrameCompositionException);
   }
@@ -239,8 +239,8 @@ TEST(composeFrameReferences, StaticDynamicDynamicStatic)
   using DynamicFromPlutoFrames = FrameReferences<DynamicFrame, StaticFrame<Pluto>>;
 
   {
-    SunFromDynamicFrames lhs("nioc::geometry::Uranus");
-    DynamicFromPlutoFrames rhs("nioc::geometry::Uranus");
+    SunFromDynamicFrames const lhs("nioc::geometry::Uranus");
+    DynamicFromPlutoFrames const rhs("nioc::geometry::Uranus");
 
     EXPECT_NO_THROW(composeFrameReferences(lhs, rhs));
     const auto result = composeFrameReferences(lhs, rhs);
@@ -251,8 +251,8 @@ TEST(composeFrameReferences, StaticDynamicDynamicStatic)
   }
 
   {
-    SunFromDynamicFrames lhs("MilkyWay");
-    DynamicFromPlutoFrames rhs("Andromeda");
+    SunFromDynamicFrames const lhs("MilkyWay");
+    DynamicFromPlutoFrames const rhs("Andromeda");
 
     EXPECT_THROW(composeFrameReferences(lhs, rhs), FrameCompositionException);
   }
@@ -264,8 +264,8 @@ TEST(composeFrameReferences, DynamicStaticStaticDynamic)
   using UranusFromDynamicFrames = FrameReferences<StaticFrame<Uranus>, DynamicFrame>;
 
   {
-    DynamicFromUranusFrames lhs("nioc::geometry::Sun");
-    UranusFromDynamicFrames rhs("nioc::geometry::Pluto");
+    DynamicFromUranusFrames const lhs("nioc::geometry::Sun");
+    UranusFromDynamicFrames const rhs("nioc::geometry::Pluto");
 
     EXPECT_NO_THROW(composeFrameReferences(lhs, rhs));
     const auto result = composeFrameReferences(lhs, rhs);
@@ -286,7 +286,7 @@ TEST(invertFrameReferences, allCases)
   using DynamicFromDynamicFrames = FrameReferences<DynamicFrame, DynamicFrame>;
 
   {
-    SunFromUranusFrames input;
+    SunFromUranusFrames const input;
     auto result = invertFrameReferences(input);
     using ResultType = decltype(result);
 
@@ -295,7 +295,7 @@ TEST(invertFrameReferences, allCases)
   }
 
   {
-    UranusFromDynamicFrames input("nioc::geometry::Pluto");
+    UranusFromDynamicFrames const input("nioc::geometry::Pluto");
     auto result = invertFrameReferences(input);
     using ResultType = decltype(result);
 
@@ -305,7 +305,7 @@ TEST(invertFrameReferences, allCases)
   }
 
   {
-    DynamicFromUranusFrames input("nioc::geometry::Sun");
+    DynamicFromUranusFrames const input("nioc::geometry::Sun");
     auto result = invertFrameReferences(input);
     using ResultType = decltype(result);
 
@@ -315,7 +315,7 @@ TEST(invertFrameReferences, allCases)
   }
 
   {
-    DynamicFromDynamicFrames input("nioc::geometry::Sun", "nioc::geometry::Uranus");
+    DynamicFromDynamicFrames const input("nioc::geometry::Sun", "nioc::geometry::Uranus");
     auto result = invertFrameReferences(input);
     using ResultType = decltype(result);
 

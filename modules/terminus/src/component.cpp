@@ -5,6 +5,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include <functional>
+#include <nioc/logger/logger.hpp>
 #include <nioc/terminus/component.hpp>
 #include <optional>
 #include <utility>
@@ -15,26 +16,29 @@ namespace nioc::terminus
 Component::Component(
     Port& port,
     const std::size_t inboxCapacity,
-    const OverflowPolicy overflowPolicy):
-    mPort(port),
-    mInbox(
-        inboxCapacity,
-        overflowPolicy,
-        [this]
-        {
-          notifyReady();
-        })
+    const concurrent::BufferMode bufferMode,
+    std::string name):
+  Routine(std::move(name)),
+  mPort(port),
+  mInbox(
+      [this]
+      {
+        wakeRunner();
+      },
+      bufferMode,
+      inboxCapacity)
 {
 }
 
 void Component::push(const ChannelId channelId, ConstMsgBasePtr msgBasePtr)
 {
-  mInbox.push_back(std::make_pair(channelId, std::move(msgBasePtr)));
+  logger::trace("[{}] inbox enqueue on channel {}", name(), channelId.mValue);
+  mInbox.push(std::make_pair(channelId, std::move(msgBasePtr)));
 }
 
 Component::State Component::step()
 {
-  auto value = mInbox.try_pop();
+  auto value = mInbox.tryPop();
   if(not value)
   {
     return State::Waiting;
@@ -42,7 +46,12 @@ Component::State Component::step()
 
   if(mHandlers.contains(value->first))
   {
+    logger::trace("[{}] handling channel {}", name(), value->first.mValue);
     std::invoke(mHandlers.at(value->first), std::move(value->second));
+  }
+  else
+  {
+    logger::trace("[{}] no handler for channel {}; dropping", name(), value->first.mValue);
   }
 
   return State::Continue;

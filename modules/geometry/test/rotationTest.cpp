@@ -5,7 +5,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include <gtest/gtest.h>
-#include <nioc/geometry/constants.hpp>
 #include <nioc/geometry/rotation.hpp>
 
 namespace nioc::geometry
@@ -58,17 +57,17 @@ void mrpEquivalenceOverRotationsAroundPrincipleAxes(const double angle)
 
 TEST(Rotation3, construction)
 {
-  const auto angleAxis = Eigen::AngleAxisd(kPi<double>, Eigen::Vector3d::UnitZ());
+  const auto angleAxis = Eigen::AngleAxisd(std::numbers::pi_v<double>, Eigen::Vector3d::UnitZ());
   const auto quaternion = Eigen::Quaterniond(angleAxis);
-  const auto vector3d = Eigen::Vector3d(0.0, 0.0, std::tan(kPi<double> / 4.0));
+  const auto vector3d = Eigen::Vector3d(0.0, 0.0, std::tan(std::numbers::pi_v<double> / 4.0));
 
   EXPECT_NO_THROW((Rotation3<>(vector3d)));
   EXPECT_NO_THROW((Rotation3<>(angleAxis.angle(), angleAxis.axis())));
   EXPECT_NO_THROW((Rotation3<>(quaternion)));
   EXPECT_NO_THROW((Rotation3<>(angleAxis)));
 
-  mrpEquivalenceOverRotationsAroundPrincipleAxes(-1.77 * kPi<double>);
-  mrpEquivalenceOverRotationsAroundPrincipleAxes(1.0 * kPi<double>);
+  mrpEquivalenceOverRotationsAroundPrincipleAxes(-1.77 * std::numbers::pi_v<double>);
+  mrpEquivalenceOverRotationsAroundPrincipleAxes(1.0 * std::numbers::pi_v<double>);
 }
 
 TEST(Rotation3, parameters) {}
@@ -131,10 +130,10 @@ TEST(ConstMapOfRotation3, construction)
 TEST(Assignment, RotationAndMap)
 {
   std::array<double, 3> data = { 0.1, 0.2, 0.3 };
-  Eigen::Map<Rotation3<double>> map(data.data());
-  Eigen::Map<const Rotation3<double>> constMap(data.data());
-  Rotation3<double> rot3(kPi<double> / 2.0, Eigen::Vector3d::UnitZ());
-  Rotation3<double> rot4(kPi<double> / 2.0, Eigen::Vector3d::UnitZ());
+  Eigen::Map<Rotation3<double>> const map(data.data());
+  Eigen::Map<const Rotation3<double>> const constMap(data.data());
+  Rotation3<double> rot3(std::numbers::pi_v<double> / 2.0, Eigen::Vector3d::UnitZ());
+  Rotation3<double> rot4(std::numbers::pi_v<double> / 2.0, Eigen::Vector3d::UnitZ());
 
   rot3 = map;
   rot4 = constMap;

@@ -13,7 +13,7 @@
 #include <stop_token>
 #include <thread>
 
-namespace nioc::terminus
+namespace nioc::concurrent
 {
 
 /// @brief A @ref Runner that drives its routine's step loop on a dedicated thread.
@@ -48,7 +48,7 @@ protected:
   void wake() final;
 
 private:
-  void run(std::stop_token stopToken);
+  void run(const std::stop_token& stopToken);
 
   std::weak_ptr<Routine> mRoutine;
   std::mutex mMutex;
@@ -57,4 +57,4 @@ private:
   std::jthread mThread;
 };
 
-} // namespace nioc::terminus
+} // namespace nioc::concurrent

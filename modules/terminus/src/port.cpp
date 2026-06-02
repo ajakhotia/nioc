@@ -31,8 +31,8 @@ namespace po = boost::program_options;
 namespace
 {
 
-/// Bound on the dispatcher and recorder queues. Both use OverflowPolicy::Block, so a full queue
-/// applies backpressure to publishers rather than dropping messages.
+/// Inbox capacity used if the dispatcher and recorder ever run bounded. They currently run
+/// BufferMode::Unbounded (lossless, no backpressure), so this value is presently ignored.
 constexpr auto kQueueCapacity = std::size_t{ 1024 };
 
 fs::path createWorkingDir(const fs::path& logRoot)
@@ -171,12 +171,12 @@ std::unordered_map<std::string, std::string> copyResources(
 } // namespace
 
 Port::Port(const po::variables_map& variableMap):
-    Port(
-        variableMap.at("log-root").as<std::string>(),
-        pathsFromOption(variableMap, "append-config"),
-        pathsFromOption(variableMap, "append-resource"),
-        variableMap.at("record-chronicle").as<bool>(),
-        variableMap.at("commandLine").as<std::string>())
+  Port(
+      variableMap.at("log-root").as<std::string>(),
+      pathsFromOption(variableMap, "append-config"),
+      pathsFromOption(variableMap, "append-resource"),
+      variableMap.at("record-chronicle").as<bool>(),
+      variableMap.at("commandLine").as<std::string>())
 {
 }
 
@@ -185,54 +185,42 @@ Port::Port(
     const std::vector<fs::path>& configPaths,   // NOLINT(bugprone-easily-swappable-parameters)
     const std::vector<fs::path>& resourcePaths, // NOLINT(bugprone-easily-swappable-parameters)
     const bool writeChronicle,
-    std::string commandLine):
-    mWorkingDir{ createWorkingDir(logRoot) },
-    mConsoleLogSink{ attachLogFileSink(mWorkingDir / "console.log") },
-    mConfig(loadAndWriteConfig(configPaths, mWorkingDir)),
-    mResourceMap{ copyResources(resourcePaths, mWorkingDir) },
-    mChronicleWriter{ writeChronicle ? makeChronicleWriter(mWorkingDir) : nullptr }
+    const std::string& commandLine):
+  mWorkingDir{ createWorkingDir(logRoot) },
+  mConsoleLogSink{ attachLogFileSink(mWorkingDir / "console.log") },
+  mConfig(loadAndWriteConfig(configPaths, mWorkingDir)),
+  mResourceMap{ copyResources(resourcePaths, mWorkingDir) },
+  mChronicleWriter{ writeChronicle ? makeChronicleWriter(mWorkingDir) : nullptr }
 {
   auto metadata = nlohmann::json::object();
   metadata["cmdline"] = commandLine;
   metadata["resources"] = mResourceMap;
   writeJsonFile(mWorkingDir / "metadata.json", metadata);
 
+  logger::debug("recording run to working directory {}", mWorkingDir);
+
   // Bring the recorder up before the dispatcher, so the dispatcher always has somewhere to tee to.
   if(mChronicleWriter)
   {
-    mRecorder = std::make_shared<AsyncProcessor<std::pair<ChannelId, ConstMsgBasePtr>>>(
+    mRecorder = std::make_shared<concurrent::AsyncProcessor<std::pair<ChannelId, ConstMsgBasePtr>>>(
+        "Port.recorder",
+        concurrent::BufferMode::Unbounded,
         kQueueCapacity,
-        OverflowPolicy::Block,
-        [this](const auto item)
+        [this](const auto& item)
         {
+          logger::trace("writing channel {} to chronicle", item.first.mValue);
           write(*item.second, item.first, *mChronicleWriter);
         });
-    mRecorderRunner = std::make_shared<ThreadedRunner>();
+    mRecorderRunner = std::make_shared<concurrent::ThreadedRunner>();
     mRecorderRunner->launch(mRecorder);
+    logger::debug("chronicle recorder started");
   }
-
-  mDispatcher = std::make_shared<AsyncProcessor<std::pair<ChannelId, ConstMsgBasePtr>>>(
-      kQueueCapacity,
-      OverflowPolicy::Block,
-      [this](const auto item)
-      {
-        dispatch(item.first, item.second);
-      });
-  mDispatcherRunner = std::make_shared<ThreadedRunner>();
-  mDispatcherRunner->launch(mDispatcher);
 }
 
 Port::~Port()
 {
-  // Stop the dispatcher first so it stops feeding the recorder, then stop the recorder. Keeping the
-  // recorder running until the dispatcher has joined lets any dispatcher push that is blocked on a
-  // full recorder queue complete. Stopping is abrupt: messages still queued are dropped, which a
+  // Stop the recorder. Stopping is abrupt: messages still queued in its inbox are dropped, which a
   // planned drain-on-close pass (shared with Component) will address.
-  if(mDispatcherRunner)
-  {
-    mDispatcherRunner->requestStop();
-    mDispatcherRunner->waitUntilStopped();
-  }
   if(mRecorderRunner)
   {
     mRecorderRunner->requestStop();
@@ -304,33 +292,44 @@ void Port::subscribe(const ChannelId channelId, std::weak_ptr<const MsgCallback>
   mSubscriptionMap[channelId].emplace_back(std::move(callbackPtr));
 }
 
-void Port::publish(const ChannelId channelId, ConstMsgBasePtr msgPtr)
+void Port::publish(const ChannelId channelId, const ConstMsgBasePtr& msgPtr)
 {
-  mDispatcher->push_back(std::make_pair(channelId, std::move(msgPtr)));
+  dispatch(channelId, msgPtr);
 }
 
 void Port::dispatch(const ChannelId channelId, const ConstMsgBasePtr& msgBasePtr)
 {
+  // Snapshot the live subscribers under the lock, then invoke them unlocked: a subscriber callback
+  // must never run while we hold the subscription lock, or one that publishes would re-enter it.
+  const auto callbacks = [&]
   {
+    auto live = std::vector<std::shared_ptr<const MsgCallback>>{};
     const auto lock = std::scoped_lock(mSubscriptionMutex);
     if(mSubscriptionMap.contains(channelId))
     {
       for(const auto& weakCallback: mSubscriptionMap.at(channelId))
       {
-        const auto callback = weakCallback.lock();
-        if(not callback)
+        if(auto callback = weakCallback.lock())
         {
-          continue;
+          live.push_back(std::move(callback));
         }
-
-        std::invoke(*callback, msgBasePtr);
       }
     }
+    return live;
+  }();
+
+  for(const auto& callback: callbacks)
+  {
+    std::invoke(*callback, msgBasePtr);
   }
+
+  // A message with no live subscriber is only recorded, never handled — usually a topic-wiring
+  // mismatch between the publisher and the intended component.
+  logger::trace("dispatched channel {} to {} subscriber(s)", channelId.mValue, callbacks.size());
 
   if(mRecorder)
   {
-    mRecorder->push_back(std::make_pair(channelId, std::move(msgBasePtr)));
+    mRecorder->push(std::make_pair(channelId, msgBasePtr));
   }
 }
 

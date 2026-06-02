@@ -5,15 +5,16 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include "asyncProcessor.hpp"
 #include "msg.hpp"
 #include "msgBase.hpp"
-#include "threadedRunner.hpp"
 #include <boost/program_options.hpp>
 #include <filesystem>
 #include <memory>
 #include <mutex>
 #include <nioc/chronicle/writer.hpp>
+#include <nioc/concurrent/asyncProcessor.hpp>
+#include <nioc/concurrent/threadedRunner.hpp>
+#include <nioc/logger/logger.hpp>
 #include <nlohmann/json.hpp>
 #include <spdlog/sinks/sink.h>
 #include <string>
@@ -83,7 +84,7 @@ public:
       const std::vector<std::filesystem::path>& configPaths = {},
       const std::vector<std::filesystem::path>& resourcePaths = {},
       bool writeChronicle = true,
-      std::string commandLine = "");
+      const std::string& commandLine = "");
 
   Port(const Port&) = delete;
 
@@ -142,13 +143,14 @@ public:
 
   /// @brief Publishes a message on a channel, fanning it out to subscribers and recording it.
   ///
-  /// The message is queued and delivered asynchronously: every live subscriber on @p channelId
-  /// receives it, and a copy is appended to the chronicle when this run records. Thread-safe.
+  /// Delivered synchronously on the caller's thread: every live subscriber on @p channelId is
+  /// handed the message into its own inbox, and a copy is teed to the chronicle recorder when this
+  /// run records. Thread-safe.
   ///
   /// @param channelId Channel to publish on (see @ref makeChannelId).
   ///
   /// @param msgPtr Message to publish; ownership passes to the Port.
-  void publish(ChannelId channelId, ConstMsgBasePtr msgPtr);
+  void publish(ChannelId channelId, const ConstMsgBasePtr& msgPtr);
 
   /// @brief Publishes a typed message on the channel for a topic.
   ///
@@ -163,14 +165,16 @@ public:
   template<typename Schema>
   void publish(const std::string_view& topic, ConstMsgPtr<Schema> msgPtr)
   {
-    publish(makeChannelId(Msg<Schema>::kMsgId, topic), std::move(msgPtr));
+    const auto channelId = makeChannelId(Msg<Schema>::kMsgId, topic);
+    logger::trace("publish on topic '{}' (channel {})", topic, channelId.mValue);
+    publish(channelId, std::move(msgPtr));
   }
 
 private:
   using SubscriptionList = std::vector<std::weak_ptr<const MsgCallback>>;
   using SubscriptionMap = std::unordered_map<ChannelId, SubscriptionList>;
 
-  /// @brief Fans one queued message out to its live subscribers and tees a copy to the recorder.
+  /// @brief Fans a message out to its live subscribers and tees a copy to the recorder.
   void dispatch(ChannelId channelId, const ConstMsgBasePtr& msgBasePtr);
 
   const std::filesystem::path mWorkingDir;
@@ -182,13 +186,10 @@ private:
   std::mutex mSubscriptionMutex;
   SubscriptionMap mSubscriptionMap;
 
-  // The recorder appends to the chronicle; present only when this run records. The dispatcher
-  // drains published messages, fans them out to subscribers, and tees a copy to the recorder. Each
-  // is driven by its own thread. They are stopped, dispatcher first, in the destructor.
-  std::shared_ptr<AsyncProcessor<std::pair<ChannelId, ConstMsgBasePtr>>> mRecorder;
-  std::shared_ptr<ThreadedRunner> mRecorderRunner;
-  std::shared_ptr<AsyncProcessor<std::pair<ChannelId, ConstMsgBasePtr>>> mDispatcher;
-  std::shared_ptr<ThreadedRunner> mDispatcherRunner;
+  // The recorder appends teed messages to the chronicle on its own thread; present only when this
+  // run records. publish() fans out to subscribers synchronously, then tees a copy here.
+  std::shared_ptr<concurrent::AsyncProcessor<std::pair<ChannelId, ConstMsgBasePtr>>> mRecorder;
+  std::shared_ptr<concurrent::ThreadedRunner> mRecorderRunner;
 };
 
 } // namespace nioc::terminus

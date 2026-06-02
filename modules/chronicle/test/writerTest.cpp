@@ -23,7 +23,7 @@ std::vector<char> makeData()
 {
   static constexpr auto kSize = 20UL;
   auto data = std::vector<char>(kSize);
-  std::iota(data.begin(), data.end(), kSize);
+  std::ranges::iota(data, kSize);
   return data;
 }
 

@@ -7,10 +7,10 @@
 
 #include <cstdint>
 #include <functional>
-#include <string_view>
-#include <utility>
+#include <spdlog/fmt/bundled/chrono.h>
+#include <string>
 
-namespace nioc::terminus
+namespace nioc::concurrent
 {
 
 /// @brief A unit of work executed one iteration at a time by a @ref Runner.
@@ -40,7 +40,14 @@ public:
     Done
   };
 
-  Routine() = default;
+  /// @brief Names the routine and, optionally, installs its ready-notifier.
+  ///
+  /// @param name Human-readable identity for this routine; see @ref name.
+  ///
+  /// @param notifier Callback the routine fires (through @ref wakeRunner) to wake its driving
+  /// Runner when work arrives. Defaults to none; the Runner may instead install one later via @ref
+  /// attachNotifier.
+  explicit Routine(std::string name, std::function<void()> notifier = nullptr);
 
   Routine(const Routine&) = delete;
 
@@ -60,36 +67,36 @@ public:
   /// @throws std::exception  Actual throw depends on the implementation and may vary.
   [[nodiscard]] virtual State step() = 0;
 
-  /// @brief Returns a human-readable name.
-  [[nodiscard]] virtual std::string_view name() const = 0;
+  /// @brief Returns this routine's name: its human-readable identity.
+  ///
+  /// Fixed at construction. Used to lead the routine's diagnostic log lines, and available to a
+  /// Driver or Component as a prefix so two instances of the same type can namespace the topics
+  /// they publish on without colliding.
+  [[nodiscard]] const std::string& name() const noexcept
+  {
+    return mName;
+  }
 
   /// @brief Installs the callback the routine uses to announce it has work again.
   ///
   /// Called by the @ref Runner that drives this routine. A routine that returned @ref
-  /// State::Waiting invokes the notifier (through @ref notifyReady) once new work arrives, so the
+  /// State::Waiting invokes the notifier (through @ref wakeRunner) once new work arrives, so the
   /// Runner can resume it instead of polling.
   ///
   /// @param notifier Callback that wakes the driving Runner.
-  void attachNotifier(std::function<void()> notifier)
-  {
-    mNotifyReady = std::move(notifier);
-  }
+  void attachNotifier(std::function<void()> notifier);
 
 protected:
   /// @brief Signals the driving @ref Runner that work is available, if a notifier is attached.
   ///
   /// A subclass calls this when it transitions from idle to having work, to wake a Runner parked
-  /// after a @ref State::Waiting return. No-op until @ref attachNotifier has run.
-  void notifyReady()
-  {
-    if(mNotifyReady)
-    {
-      mNotifyReady();
-    }
-  }
+  /// after a @ref State::Waiting return. No-op while no notifier is set (none passed at
+  /// construction and @ref attachNotifier not yet called).
+  void wakeRunner() const;
 
 private:
-  std::function<void()> mNotifyReady;
+  const std::string mName;
+  std::function<void()> mNotifier;
 };
 
-} // namespace nioc::terminus
+} // namespace nioc::concurrent

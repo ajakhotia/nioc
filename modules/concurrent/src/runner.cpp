@@ -6,9 +6,9 @@
 
 #include <functional>
 #include <memory>
-#include <nioc/terminus/runner.hpp>
+#include <nioc/concurrent/runner.hpp>
 
-namespace nioc::terminus
+namespace nioc::concurrent
 {
 
 std::function<void()> Runner::makeNotifier()
@@ -22,4 +22,4 @@ std::function<void()> Runner::makeNotifier()
   };
 }
 
-} // namespace nioc::terminus
+} // namespace nioc::concurrent

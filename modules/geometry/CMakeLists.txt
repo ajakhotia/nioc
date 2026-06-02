@@ -31,7 +31,6 @@ add_exported_library(
             src/frame.cpp
             src/frameReferences.cpp
         HEADERS
-            PUBLIC include/nioc/geometry/constants.hpp
             PUBLIC include/nioc/geometry/frame.hpp
             PUBLIC include/nioc/geometry/frameConcepts.hpp
             PUBLIC include/nioc/geometry/frameReferences.hpp

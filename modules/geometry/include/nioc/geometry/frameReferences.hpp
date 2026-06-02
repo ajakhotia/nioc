@@ -31,11 +31,12 @@ public:
 
   /// @brief Constructs with compile-time frame identities.
   template<
-      typename ParentFrame = typename SelfType::ParentFrame,
-      typename ChildFrame = typename SelfType::ChildFrame,
-      typename = typename std::enable_if_t<common::isSpecialization<ParentFrame, StaticFrame>>,
-      typename = typename std::enable_if_t<common::isSpecialization<ChildFrame, StaticFrame>>>
-  FrameReferences() noexcept: ParentConcept(), ChildConcept()
+      typename ParentFrame = SelfType::ParentFrame,
+      typename ChildFrame = SelfType::ChildFrame,
+      typename = std::enable_if_t<common::isSpecialization<ParentFrame, StaticFrame>>>
+  FrameReferences() noexcept
+    requires(common::isSpecialization<ChildFrame, StaticFrame>)
+    : ParentConcept(), ChildConcept()
   {
   }
 
@@ -43,13 +44,12 @@ public:
   /// @param childId Child frame identifier (string or DynamicFrame).
   template<
       typename ChildConceptArgs,
-      typename ParentFrame = typename SelfType::ParentFrame,
-      typename ChildFrame = typename SelfType::ChildFrame,
-      typename = typename std::enable_if_t<common::isSpecialization<ParentFrame, StaticFrame>>,
-      typename = typename std::enable_if_t<std::is_same_v<ChildFrame, DynamicFrame>>>
-  [[maybe_unused]] explicit FrameReferences(ChildConceptArgs&& childId) noexcept:
-    ParentConcept(),
-    ChildConcept(std::forward<ChildConceptArgs>(childId))
+      typename ParentFrame = SelfType::ParentFrame,
+      typename ChildFrame = SelfType::ChildFrame,
+      typename = std::enable_if_t<common::isSpecialization<ParentFrame, StaticFrame>>>
+  [[maybe_unused]] explicit FrameReferences(ChildConceptArgs&& childId) noexcept
+    requires(std::is_same_v<ChildFrame, DynamicFrame>)
+    : ParentConcept(), ChildConcept(std::forward<ChildConceptArgs>(childId))
   {
   }
 
@@ -57,13 +57,14 @@ public:
   /// @param parentId Parent frame identifier (string or DynamicFrame).
   template<
       typename ParentConceptArgs,
-      typename ParentFrame = typename SelfType::ParentFrame,
-      typename ChildFrame = typename SelfType::ChildFrame,
-      typename = typename std::enable_if_t<std::is_same_v<ParentFrame, DynamicFrame>>,
-      typename = typename std::enable_if_t<common::isSpecialization<ChildFrame, StaticFrame>>>
-  [[maybe_unused]] explicit FrameReferences(ParentConceptArgs&& parentId, int = 0) noexcept:
-    ParentConcept(std::forward<ParentConceptArgs>(parentId)),
-    ChildConcept()
+      typename ParentFrame = SelfType::ParentFrame,
+      typename ChildFrame = SelfType::ChildFrame,
+      typename = std::enable_if_t<std::is_same_v<ParentFrame, DynamicFrame>>>
+  [[maybe_unused]] explicit FrameReferences(
+      ParentConceptArgs&& parentId,
+      int /*unused*/ = 0) noexcept
+    requires(common::isSpecialization<ChildFrame, StaticFrame>)
+    : ParentConcept(std::forward<ParentConceptArgs>(parentId)), ChildConcept()
   {
   }
 
@@ -73,25 +74,26 @@ public:
   template<
       typename ParentConceptArgs,
       typename ChildConceptArgs,
-      typename ParentFrame = typename SelfType::ParentFrame,
-      typename ChildFrame = typename SelfType::ChildFrame,
-      typename = typename std::enable_if_t<std::is_same_v<ParentFrame, DynamicFrame>>,
-      typename = typename std::enable_if_t<std::is_same_v<ChildFrame, DynamicFrame>>>
+      typename ParentFrame = SelfType::ParentFrame,
+      typename ChildFrame = SelfType::ChildFrame,
+      typename = std::enable_if_t<std::is_same_v<ParentFrame, DynamicFrame>>>
   [[maybe_unused]] FrameReferences(
       ParentConceptArgs&& parentId,
-      ChildConceptArgs&& childId) noexcept:
+      ChildConceptArgs&& childId) noexcept
+    requires(std::is_same_v<ChildFrame, DynamicFrame>)
+    :
     ParentConcept(std::forward<ParentConceptArgs>(parentId)),
     ChildConcept(std::forward<ChildConceptArgs>(childId))
   {
   }
 
-  virtual ~FrameReferences() = default;
+  ~FrameReferences() override = default;
 };
 
 /// @brief Exception for mismatched frame composition.
 ///
 /// Thrown when composing transformations with incompatible frames.
-class FrameCompositionException: public std::runtime_error
+class FrameCompositionException final: public std::runtime_error
 {
 public:
   using std::runtime_error::runtime_error;
@@ -111,24 +113,20 @@ std::string frameCompositionErrorMessage(
     const std::string& rhsFrameName);
 
 /// @brief Asserts frame equality at compile-time.
-template<
-    typename LhsFrame,
-    typename RhsFrame,
-    typename = typename std::enable_if_t<
-        common::isSpecialization<LhsFrame, StaticFrame> and
-        common::isSpecialization<RhsFrame, StaticFrame> and LhsFrame::name() == RhsFrame::name()>>
-inline constexpr void assertFrameEqual() noexcept
+template<typename LhsFrame, typename RhsFrame>
+constexpr void assertFrameEqual() noexcept
+  requires(
+      common::isSpecialization<LhsFrame, StaticFrame> and
+      common::isSpecialization<RhsFrame, StaticFrame> and LhsFrame::name() == RhsFrame::name())
 {
 }
 
 /// @brief Asserts static frame matches dynamic frame at runtime.
 /// @param rhsFrame Dynamic frame to check.
-template<
-    typename LhsFrame,
-    typename RhsFrame,
-    typename = typename std::enable_if_t<
-        common::isSpecialization<LhsFrame, StaticFrame> and std::is_same_v<RhsFrame, DynamicFrame>>>
+template<typename LhsFrame, typename RhsFrame>
 inline void assertFrameEqual(const RhsFrame& rhsFrame)
+  requires(
+      common::isSpecialization<LhsFrame, StaticFrame> and std::is_same_v<RhsFrame, DynamicFrame>)
 {
   if(LhsFrame::name() != rhsFrame.name())
   {
@@ -140,12 +138,10 @@ inline void assertFrameEqual(const RhsFrame& rhsFrame)
 
 /// @brief Asserts dynamic frame matches static frame at runtime.
 /// @param lhsFrame Dynamic frame to check.
-template<
-    typename LhsFrame,
-    typename RhsFrame,
-    typename = typename std::enable_if_t<
-        std::is_same_v<LhsFrame, DynamicFrame> and common::isSpecialization<RhsFrame, StaticFrame>>>
+template<typename LhsFrame, typename RhsFrame>
 inline void assertFrameEqual(const LhsFrame& lhsFrame)
+  requires(
+      std::is_same_v<LhsFrame, DynamicFrame> and common::isSpecialization<RhsFrame, StaticFrame>)
 {
   if(lhsFrame.name() != RhsFrame::name())
   {
@@ -158,12 +154,9 @@ inline void assertFrameEqual(const LhsFrame& lhsFrame)
 /// @brief Asserts two dynamic frames match at runtime.
 /// @param lhsFrame First dynamic frame.
 /// @param rhsFrame Second dynamic frame.
-template<
-    typename LhsFrame,
-    typename RhsFrame,
-    typename = typename std::enable_if_t<
-        std::is_same_v<LhsFrame, DynamicFrame> and std::is_same_v<RhsFrame, DynamicFrame>>>
+template<typename LhsFrame, typename RhsFrame>
 inline void assertFrameEqual(const LhsFrame& lhsFrame, const RhsFrame& rhsFrame)
+  requires(std::is_same_v<LhsFrame, DynamicFrame> and std::is_same_v<RhsFrame, DynamicFrame>)
 {
   if(lhsFrame.name() != rhsFrame.name())
   {

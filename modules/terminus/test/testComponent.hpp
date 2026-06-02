@@ -21,11 +21,9 @@ namespace nioc::terminus
 class EarthComponent final: public Component
 {
 public:
-  EarthComponent(Port& port, std::size_t inboxCapacity, OverflowPolicy overflowPolicy);
+  EarthComponent(Port& port, std::size_t inboxCapacity, concurrent::BufferMode bufferMode);
 
   [[nodiscard]] State step() override;
-
-  [[nodiscard]] std::string_view name() const final;
 
   /// @brief Returns the number of times @ref step has been called.
   [[nodiscard]] std::size_t stepCount() const;
@@ -42,11 +40,9 @@ private:
 class MarsComponent final: public Component
 {
 public:
-  MarsComponent(Port& port, std::size_t inboxCapacity, OverflowPolicy overflowPolicy);
+  MarsComponent(Port& port, std::size_t inboxCapacity, concurrent::BufferMode bufferMode);
 
   [[nodiscard]] State step() override;
-
-  [[nodiscard]] std::string_view name() const final;
 
   /// @brief Returns the number of times @ref step has been called.
   [[nodiscard]] std::size_t stepCount() const;

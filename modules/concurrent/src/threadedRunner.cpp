@@ -6,13 +6,13 @@
 
 #include <exception>
 #include <mutex>
+#include <nioc/concurrent/threadedRunner.hpp>
 #include <nioc/logger/logger.hpp>
-#include <nioc/terminus/threadedRunner.hpp>
 #include <stop_token>
 #include <thread>
 #include <utility>
 
-namespace nioc::terminus
+namespace nioc::concurrent
 {
 
 void ThreadedRunner::launch(std::weak_ptr<Routine> routine)
@@ -20,13 +20,14 @@ void ThreadedRunner::launch(std::weak_ptr<Routine> routine)
   if(const auto locked = routine.lock())
   {
     locked->attachNotifier(makeNotifier());
+    logger::debug("[{}] launching", locked->name());
   }
 
   mRoutine = std::move(routine);
   mThread = std::jthread(
-      [this](std::stop_token stopToken)
+      [this](const std::stop_token& stopToken)
       {
-        run(std::move(stopToken));
+        run(stopToken);
       });
 }
 
@@ -45,6 +46,7 @@ void ThreadedRunner::requestStop() noexcept
 
 void ThreadedRunner::wake()
 {
+  logger::trace("wake requested");
   {
     const auto lock = std::scoped_lock(mMutex);
     mReady = true;
@@ -52,7 +54,7 @@ void ThreadedRunner::wake()
   mCondition.notify_one();
 }
 
-void ThreadedRunner::run(std::stop_token stopToken)
+void ThreadedRunner::run(const std::stop_token& stopToken)
 {
   while(not stopToken.stop_requested())
   {
@@ -69,17 +71,19 @@ void ThreadedRunner::run(std::stop_token stopToken)
     }
     catch(const std::exception& exception)
     {
-      logger::error("Routine '{}' failed and will stop: {}", routine->name(), exception.what());
+      logger::error("[{}] step failed and will stop: {}", routine->name(), exception.what());
       return;
     }
 
     if(state == Routine::State::Done)
     {
+      logger::debug("[{}] finished (Done)", routine->name());
       return;
     }
 
     if(state == Routine::State::Waiting)
     {
+      logger::trace("[{}] waiting; parking until notified", routine->name());
       routine.reset();
 
       auto lock = std::unique_lock(mMutex);
@@ -95,4 +99,4 @@ void ThreadedRunner::run(std::stop_token stopToken)
   }
 }
 
-} // namespace nioc::terminus
+} // namespace nioc::concurrent

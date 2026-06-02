@@ -4,7 +4,6 @@ include(GoogleTest)
 add_executable(terminusTest
   testComponent.cpp
   componentTest.cpp
-  runnerTest.cpp
   portTest.cpp)
 
 target_link_libraries(terminusTest

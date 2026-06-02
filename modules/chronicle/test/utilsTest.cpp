@@ -17,7 +17,7 @@ std::vector<char> generateData()
 {
   static constexpr auto kSize = 20UL;
   auto data = std::vector<char>(kSize);
-  std::iota(data.begin(), data.end(), 63);
+  std::ranges::iota(data, 63);
   return data;
 }
 
@@ -85,7 +85,9 @@ TEST(LoggerUtils, ReadWriteUtilSequenceEntry)
 TEST(LoggerUtils, ReadWriteUtilIndexEntry)
 {
   auto stream = std::stringstream{};
-  const auto value = IndexEntry{ 53519839189237, 9065316618953, 281591230 };
+  const auto value = IndexEntry{ .mRollId = 53519839189237,
+                                 .mOffset = 9065316618953,
+                                 .mSize = 281591230 };
 
   ReadWriteUtil<IndexEntry>::write(stream, value);
   const auto readValue = ReadWriteUtil<IndexEntry>::read(stream.str().data());

@@ -38,20 +38,13 @@ add_exported_library(
     src/msgBase.cpp
     src/port.cpp
     src/programOption.cpp
-    src/runner.cpp
-    src/threadedRunner.cpp
   HEADERS
-    PUBLIC include/nioc/terminus/asyncProcessor.hpp
     PUBLIC include/nioc/terminus/component.hpp
     PUBLIC include/nioc/terminus/driver.hpp
     PUBLIC include/nioc/terminus/msg.hpp
     PUBLIC include/nioc/terminus/msgBase.hpp
-    PUBLIC include/nioc/terminus/notifyingInbox.hpp
     PUBLIC include/nioc/terminus/port.hpp
     PUBLIC include/nioc/terminus/programOption.hpp
-    PUBLIC include/nioc/terminus/routine.hpp
-    PUBLIC include/nioc/terminus/runner.hpp
-    PUBLIC include/nioc/terminus/threadedRunner.hpp
   INCLUDE_DIRECTORIES
     ${CMAKE_CURRENT_SOURCE_DIR}/include
   LINK_LIBRARIES
@@ -59,9 +52,10 @@ add_exported_library(
     PRIVATE CapnProto::capnp
     PRIVATE CapnProto::kj
     PRIVATE nioc::common
-    PRIVATE nioc::logger
     PUBLIC Boost::program_options
     PUBLIC nioc::chronicle
+    PUBLIC nioc::concurrent
+    PUBLIC nioc::logger
     PUBLIC nlohmann_json::nlohmann_json
     PUBLIC spdlog::spdlog
   COMPILE_FEATURES
@@ -74,9 +68,9 @@ add_exported_library(
     ""
 )
 
-#if(CLANG_TIDY)
-#  set_target_properties(terminus PROPERTIES CXX_CLANG_TIDY ${CLANG_TIDY})
-#endif()
+if(CLANG_TIDY)
+  set_target_properties(terminus PROPERTIES CXX_CLANG_TIDY ${CLANG_TIDY})
+endif()
 
 if(BUILD_TESTING)
   add_subdirectory(test)

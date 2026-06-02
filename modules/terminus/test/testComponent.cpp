@@ -12,8 +12,8 @@ namespace nioc::terminus
 EarthComponent::EarthComponent(
     Port& port,
     const std::size_t inboxCapacity,
-    const OverflowPolicy overflowPolicy):
-    Component{ port, inboxCapacity, overflowPolicy }
+    const concurrent::BufferMode bufferMode):
+  Component{ port, inboxCapacity, bufferMode, "EarthComponent" }
 {
 }
 
@@ -21,11 +21,6 @@ EarthComponent::State EarthComponent::step()
 {
   ++mStepCount;
   return Component::step();
-}
-
-std::string_view EarthComponent::name() const
-{
-  return "EarthComponent";
 }
 
 std::size_t EarthComponent::stepCount() const
@@ -36,8 +31,8 @@ std::size_t EarthComponent::stepCount() const
 MarsComponent::MarsComponent(
     Port& port,
     const std::size_t inboxCapacity,
-    const OverflowPolicy overflowPolicy):
-    Component{ port, inboxCapacity, overflowPolicy }
+    const concurrent::BufferMode bufferMode):
+  Component{ port, inboxCapacity, bufferMode, "MarsComponent" }
 {
 }
 
@@ -45,11 +40,6 @@ MarsComponent::State MarsComponent::step()
 {
   ++mStepCount;
   return Component::step();
-}
-
-std::string_view MarsComponent::name() const
-{
-  return "MarsComponent";
 }
 
 std::size_t MarsComponent::stepCount() const

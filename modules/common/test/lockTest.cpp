@@ -12,7 +12,7 @@ namespace nioc::common
 namespace
 {
 // A lambda function to extract value from pointer types.
-const auto valueExtractorHelper = [](const auto& value)
+const auto kValueExtractorHelper = [](const auto& value)
 {
   return *value;
 };
@@ -37,7 +37,7 @@ TEST(Locked, LockedConstruction)
   {
     const Locked<std::vector<int>> locked;
     EXPECT_EQ(
-        0u,
+        0U,
         locked(
             [](const auto& value)
             {
@@ -49,7 +49,7 @@ TEST(Locked, LockedConstruction)
   {
     const Locked<std::vector<int>> locked(std::initializer_list<int>({ 1, 2, 3, 4, 5 }));
     EXPECT_EQ(
-        5u,
+        5U,
         locked(
             [](const auto& value)
             {
@@ -59,14 +59,14 @@ TEST(Locked, LockedConstruction)
 
   // Default construction of movable-only entities.
   {
-    Locked<std::unique_ptr<int>> locked;
+    Locked<std::unique_ptr<int>> const locked;
     EXPECT_EQ(nullptr, locked);
   }
 
   // Construction of movable-only entities with an initial value.
   {
     Locked<std::unique_ptr<int>> locked(std::make_unique<int>(7));
-    EXPECT_EQ(7, locked(valueExtractorHelper));
+    EXPECT_EQ(7, locked(kValueExtractorHelper));
   }
 }
 
@@ -194,7 +194,7 @@ TEST(Locked, LockedMoveAssignment)
   EXPECT_EQ(nullptr, locked);
 
   locked = std::make_unique<int>(7);
-  EXPECT_EQ(7, locked(valueExtractorHelper));
+  EXPECT_EQ(7, locked(kValueExtractorHelper));
 
   auto anotherPtr = std::make_unique<int>(13);
 
@@ -203,12 +203,12 @@ TEST(Locked, LockedMoveAssignment)
   // locked = anotherPtr;
 
   locked = std::move(anotherPtr);
-  EXPECT_EQ(13, locked(valueExtractorHelper));
+  EXPECT_EQ(13, locked(kValueExtractorHelper));
 }
 
 TEST(Locked, LockedCopyExtraction)
 {
-  Locked<int> locked(12);
+  Locked<int> const locked(12);
   const auto extractedValue = locked.copy();
 
   EXPECT_EQ(12, extractedValue);
@@ -227,7 +227,7 @@ TEST(Locked, LockedMoveExtraction)
 
 TEST(Locked, LockedEqualityCheck)
 {
-  Locked<int> locked(13);
+  Locked<int> const locked(13);
 
   EXPECT_TRUE(locked == 13);
   EXPECT_TRUE(13 == locked);
@@ -238,7 +238,7 @@ TEST(Locked, LockedEqualityCheck)
 
 TEST(Locked, LockedInEqualityCheck)
 {
-  Locked<int> locked(13);
+  Locked<int> const locked(13);
 
   EXPECT_FALSE(locked != 13);
   EXPECT_FALSE(13 != locked);
@@ -249,7 +249,7 @@ TEST(Locked, LockedInEqualityCheck)
 
 TEST(Locked, LockedLesserThanCheck)
 {
-  Locked<int> locked(13);
+  Locked<int> const locked(13);
 
   EXPECT_TRUE(locked < 14);
   EXPECT_FALSE(locked < 13);
@@ -262,7 +262,7 @@ TEST(Locked, LockedLesserThanCheck)
 
 TEST(Locked, LockedLesserThanOrEqualCheck)
 {
-  Locked<int> locked(13);
+  Locked<int> const locked(13);
 
   EXPECT_TRUE(locked <= 14);
   EXPECT_TRUE(locked <= 13);
@@ -275,7 +275,7 @@ TEST(Locked, LockedLesserThanOrEqualCheck)
 
 TEST(Locked, LockedGreaterThanCheck)
 {
-  Locked<int> locked(13);
+  Locked<int> const locked(13);
 
   EXPECT_FALSE(locked > 14);
   EXPECT_FALSE(locked > 13);
@@ -288,7 +288,7 @@ TEST(Locked, LockedGreaterThanCheck)
 
 TEST(Locked, LockedGreaterThanOrEqualCheck)
 {
-  Locked<int> locked(13);
+  Locked<int> const locked(13);
 
   EXPECT_FALSE(locked >= 14);
   EXPECT_TRUE(locked >= 13);

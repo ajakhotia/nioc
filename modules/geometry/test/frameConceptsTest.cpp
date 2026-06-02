@@ -32,8 +32,8 @@ TEST(ParentConceptTmpl, StaticParentFrame)
 
 TEST(ParentConceptTmpl, DynamicParentFrame)
 {
-  ParentConceptTmpl<DynamicFrame> p1("Test845");
-  ParentConceptTmpl<DynamicFrame> p2(DynamicFrame("Test943"));
+  const ParentConceptTmpl<DynamicFrame>  p1("Test845");
+  const ParentConceptTmpl<DynamicFrame>  p2(DynamicFrame("Test943"));
 
   EXPECT_EQ(DynamicFrame("Test845"), p1.parentFrame());
   EXPECT_EQ(DynamicFrame("Test943"), p2.parentFrame());
@@ -59,8 +59,8 @@ TEST(ParentConceptTmpl, StaticChildFrame)
 
 TEST(ChildConceptTmpl, DynamicChildFrame)
 {
-  ChildConceptTmpl<DynamicFrame> p1("Test845");
-  ChildConceptTmpl<DynamicFrame> p2(DynamicFrame("Test943"));
+  const ChildConceptTmpl<DynamicFrame>  p1("Test845");
+  const ChildConceptTmpl<DynamicFrame>  p2(DynamicFrame("Test943"));
 
   EXPECT_EQ(DynamicFrame("Test845"), p1.childFrame());
   EXPECT_EQ(DynamicFrame("Test943"), p2.childFrame());
