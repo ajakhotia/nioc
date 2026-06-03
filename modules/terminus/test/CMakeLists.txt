@@ -14,9 +14,9 @@ target_link_libraries(terminusTest
   nioc::terminus
   nioc::terminusIdl)
 
-# Path to the committed test fixtures (config and resource files) read by portTest.
-target_compile_definitions(terminusTest PRIVATE
-  NIOC_TERMINUS_TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data")
+# Stage the committed test fixtures (config and resource files) next to the binary so portTest
+# finds them via its ctest working directory, independent of the source tree.
+file(COPY data DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 target_compile_options(terminusTest PRIVATE
   $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>

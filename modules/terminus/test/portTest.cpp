@@ -22,8 +22,8 @@ namespace fs = std::filesystem;
 namespace
 {
 
-/// Committed fixtures, located relative to this test's source directory (see CMakeLists.txt).
-const auto kTestDataDir = fs::path{ NIOC_TERMINUS_TEST_DATA_DIR };
+/// Committed fixtures, staged into this test's working directory by CMake (see CMakeLists.txt).
+const auto kTestDataDir = fs::path{ "data" };
 const auto kConfig = kTestDataDir / "testConfig.json";
 const auto kConfigOverride = kTestDataDir / "testConfigOverride.json";
 const auto kMalformedConfig = kTestDataDir / "malformedConfig.json";
