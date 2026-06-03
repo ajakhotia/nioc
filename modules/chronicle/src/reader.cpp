@@ -42,7 +42,7 @@ Entry Reader::read()
       [&](ChannelReaderMap& channelReaderMap) -> Entry
       {
         auto& channelReader = acquireChannel(sequenceEntry.mChannelId, channelReaderMap);
-        return { .mChannelId = sequenceEntry.mChannelId, .mMemoryCrate = channelReader.read() };
+        return {.mChannelId = sequenceEntry.mChannelId, .mMemoryCrate = channelReader.read()};
       });
 }
 

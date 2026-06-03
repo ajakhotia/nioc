@@ -20,7 +20,7 @@ namespace nioc::concurrent
 ///
 /// Producers call @ref push from any thread; the Routine's @ref step pops one value at a time and
 /// runs the callback on the Runner's thread, so the callback never runs concurrently with itself.
-/// When the inbox empties, step reports @ref State::Waiting and the inbox reschedules the Routine
+/// When the inbox empties, a step reports @ref State::Waiting and the inbox reschedules the Routine
 /// once the next value arrives. The @ref BufferMode chosen at construction decides whether a full
 /// bounded inbox sacrifices a value or the inbox grows unbounded.
 ///

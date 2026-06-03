@@ -71,18 +71,15 @@ TEST(Pose, ConstructionFromQuaternionAndVector3)
   {
     EXPECT_NO_THROW(Pose<double>(kQuaternionD1, kVec3D1));
 
-    const auto test = Pose<double>{ kQuaternionD1, kVec3D1 };
-    poseParamCheck(test, { 0.0, 0.0, kSinPiBy4D, kCosPiBy4D, 0.1, 0.2, 0.3 }, test_info_->name());
+    const auto test = Pose<double>{kQuaternionD1, kVec3D1};
+    poseParamCheck(test, {0.0, 0.0, kSinPiBy4D, kCosPiBy4D, 0.1, 0.2, 0.3}, test_info_->name());
   }
 
   {
     EXPECT_NO_THROW(Pose<float>(kQuaternionF1, kVec3F1));
 
-    const auto test = Pose<float>{ kQuaternionF1, kVec3F1 };
-    poseParamCheck(
-        test,
-        { 0.F, 0.F, kSinPiBy4F, kCosPiBy4F, 0.1F, 0.2F, 0.3F },
-        test_info_->name());
+    const auto test = Pose<float>{kQuaternionF1, kVec3F1};
+    poseParamCheck(test, {0.F, 0.F, kSinPiBy4F, kCosPiBy4F, 0.1F, 0.2F, 0.3F}, test_info_->name());
   }
 }
 
@@ -90,18 +87,18 @@ TEST(Pose, ConstructionFromQuaternionAndVector3)
 TEST(Pose, ConstrutionFromParameterArray)
 {
   {
-    const std::array<double, 7> paramArray = { 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7 };
+    const std::array<double, 7> paramArray = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7};
     EXPECT_NO_THROW((Pose<double>(paramArray)));
 
-    const auto test = Pose<double>{ paramArray };
+    const auto test = Pose<double>{paramArray};
     poseParamCheck(test, paramArray, test_info_->name());
   }
 
   {
-    const std::array<float, 7> paramArray = { 0.1F, 0.2F, 0.3F, 0.4F, 0.5F, 0.6F, 0.7F };
+    const std::array<float, 7> paramArray = {0.1F, 0.2F, 0.3F, 0.4F, 0.5F, 0.6F, 0.7F};
     EXPECT_NO_THROW((Pose<float>(paramArray)));
 
-    const auto test = Pose<float>{ paramArray };
+    const auto test = Pose<float>{paramArray};
     poseParamCheck(test, paramArray, test_info_->name());
   }
 }
@@ -110,27 +107,27 @@ TEST(Pose, ConstrutionFromParameterArray)
 TEST(Pose, ConstructionFromParamterSpan)
 {
   {
-    const std::array<double, 7> paramArray = { 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7 };
+    const std::array<double, 7> paramArray = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7};
     auto paramSpan = std::span(paramArray.data(), paramArray.size());
 
     // EXPECT_NO_THROW((Pose<double>(paramSpan)));
 
-    const auto test = Pose<double>{ paramSpan };
+    const auto test = Pose<double>{paramSpan};
     poseParamCheck(test, paramArray, test_info_->name());
   }
 
   {
-    std::array<float, 7> paramArray = { 0.1F, 0.2F, 0.3F, 0.4F, 0.5F, 0.6F, 0.7F };
+    std::array<float, 7> paramArray = {0.1F, 0.2F, 0.3F, 0.4F, 0.5F, 0.6F, 0.7F};
     auto paramSpan = std::span<float>(paramArray.data(), paramArray.size());
 
     // EXPECT_NO_THROW((Pose<float>(paramSpan)));
 
-    const auto test = Pose<float>{ paramSpan };
+    const auto test = Pose<float>{paramSpan};
     poseParamCheck(test, paramArray, test_info_->name());
   }
 
   {
-    std::array<double, 6> paramArray = { 0.1, 0.2, 0.3, 0.4, 0.5, 0.6 };
+    std::array<double, 6> paramArray = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6};
     auto paramSpan = std::span(paramArray.data(), paramArray.size());
 
     EXPECT_THROW((Pose<double>(paramSpan)), std::invalid_argument);
@@ -139,15 +136,15 @@ TEST(Pose, ConstructionFromParamterSpan)
 
 TEST(Pose, Cast)
 {
-  const auto testD = Pose<double>{ kQuaternionD1, kVec3D1 };
+  const auto testD = Pose<double>{kQuaternionD1, kVec3D1};
   auto testF = testD.cast<float>();
-  poseParamCheck(testD, { 0.0, 0.0, kSinPiBy4D, kCosPiBy4D, 0.1, 0.2, 0.3 }, test_info_->name());
-  poseParamCheck(testF, { 0.F, 0.F, kSinPiBy4F, kCosPiBy4F, 0.1F, 0.2F, 0.3F }, test_info_->name());
+  poseParamCheck(testD, {0.0, 0.0, kSinPiBy4D, kCosPiBy4D, 0.1, 0.2, 0.3}, test_info_->name());
+  poseParamCheck(testF, {0.F, 0.F, kSinPiBy4F, kCosPiBy4F, 0.1F, 0.2F, 0.3F}, test_info_->name());
 }
 
 TEST(Pose, StreamOperator)
 {
-  const auto testD = Pose<double>{ kQuaternionD1, kVec3D1 };
+  const auto testD = Pose<double>{kQuaternionD1, kVec3D1};
 
   auto stringStream = std::stringstream{};
   stringStream << testD << '\n';

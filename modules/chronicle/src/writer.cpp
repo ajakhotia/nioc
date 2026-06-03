@@ -37,7 +37,7 @@ void Writer::write(const ChannelId channelId, const std::span<const std::byte>& 
   mLockedSequenceFile(
       [&](std::ofstream& sequenceFile)
       {
-        ReadWriteUtil<SequenceEntry>::write(sequenceFile, SequenceEntry{ channelId });
+        ReadWriteUtil<SequenceEntry>::write(sequenceFile, SequenceEntry{channelId});
       });
 
   mLockedChannelPtrMap(
@@ -54,7 +54,7 @@ void Writer::write(const ChannelId channelId, std::span<const std::span<const st
   mLockedSequenceFile(
       [&](std::ofstream& sequenceFile)
       {
-        ReadWriteUtil<SequenceEntry>::write(sequenceFile, SequenceEntry{ channelId });
+        ReadWriteUtil<SequenceEntry>::write(sequenceFile, SequenceEntry{channelId});
       });
 
   mLockedChannelPtrMap(

@@ -36,11 +36,11 @@ namespace nioc::common
 template<typename Exception, typename... Args>
 [[noreturn]] void throwException(const FormatWithLocation& format, const Args&... args)
 {
-  throw Exception{ std::format(
+  throw Exception{std::format(
       "[{}:{}] {}",
-      std::filesystem::path{ format.mLocation.file_name() }.filename().string(),
+      std::filesystem::path{format.mLocation.file_name()}.filename().string(),
       format.mLocation.line(),
-      std::vformat(format.mFormat, std::make_format_args(args...))) };
+      std::vformat(format.mFormat, std::make_format_args(args...)))};
 }
 
 } // namespace nioc::common

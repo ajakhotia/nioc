@@ -26,12 +26,12 @@ static_assert(MpscQueue<DroppingMpsc<int>>);
 
 TEST(OverwritingMpsc, RejectsZeroCapacity)
 {
-  EXPECT_ANY_THROW((OverwritingMpsc<int>{ 0 }));
+  EXPECT_ANY_THROW((OverwritingMpsc<int>{0}));
 }
 
 TEST(OverwritingMpsc, PushReturnsNulloptWhileRoomRemains)
 {
-  auto queue = OverwritingMpsc<int>{ 3 };
+  auto queue = OverwritingMpsc<int>{3};
   EXPECT_FALSE(queue.push(1).has_value());
   EXPECT_FALSE(queue.push(2).has_value());
   EXPECT_FALSE(queue.push(3).has_value());
@@ -40,7 +40,7 @@ TEST(OverwritingMpsc, PushReturnsNulloptWhileRoomRemains)
 
 TEST(OverwritingMpsc, OccupancyReflectsFillFraction)
 {
-  auto queue = OverwritingMpsc<int>{ 4 };
+  auto queue = OverwritingMpsc<int>{4};
   EXPECT_DOUBLE_EQ(queue.occupancy(), 0.0);
 
   queue.push(1);
@@ -58,7 +58,7 @@ TEST(OverwritingMpsc, OccupancyReflectsFillFraction)
 
 TEST(OverwritingMpsc, PopsInFifoOrder)
 {
-  auto queue = OverwritingMpsc<int>{ 4 };
+  auto queue = OverwritingMpsc<int>{4};
   queue.push(10);
   queue.push(20);
   queue.push(30);
@@ -71,7 +71,7 @@ TEST(OverwritingMpsc, PopsInFifoOrder)
 
 TEST(OverwritingMpsc, EvictsOldestWhenFull)
 {
-  auto queue = OverwritingMpsc<int>{ 2 };
+  auto queue = OverwritingMpsc<int>{2};
   EXPECT_FALSE(queue.push(1).has_value());
   EXPECT_FALSE(queue.push(2).has_value());
 
@@ -86,7 +86,7 @@ TEST(OverwritingMpsc, EvictsOldestWhenFull)
 
 TEST(OverwritingMpsc, SupportsMoveOnlyValues)
 {
-  auto queue = OverwritingMpsc<std::unique_ptr<int>>{ 1 };
+  auto queue = OverwritingMpsc<std::unique_ptr<int>>{1};
   EXPECT_FALSE(queue.push(std::make_unique<int>(7)).has_value());
 
   // Full at capacity 1: the next push evicts and returns the first value.
@@ -103,14 +103,14 @@ TEST(OverwritingMpsc, SupportsMoveOnlyValues)
 // pushed == popped + evicted + size() must hold exactly, whatever the interleaving.
 TEST(OverwritingMpsc, ConservesValuesUnderConcurrentProducers)
 {
-  constexpr auto kProducers = std::size_t{ 8 };
-  constexpr auto kPerProducer = std::size_t{ 10000 };
-  constexpr auto kCapacity = std::size_t{ 16 };
+  constexpr auto kProducers = std::size_t{8};
+  constexpr auto kPerProducer = std::size_t{10000};
+  constexpr auto kCapacity = std::size_t{16};
 
-  auto queue = OverwritingMpsc<int>{ kCapacity };
-  auto evicted = std::atomic<std::size_t>{ 0 };
-  auto popped = std::atomic<std::size_t>{ 0 };
-  auto producersDone = std::atomic<bool>{ false };
+  auto queue = OverwritingMpsc<int>{kCapacity};
+  auto evicted = std::atomic<std::size_t>{0};
+  auto popped = std::atomic<std::size_t>{0};
+  auto producersDone = std::atomic<bool>{false};
 
   auto consumer = std::thread(
       [&]
@@ -131,12 +131,12 @@ TEST(OverwritingMpsc, ConservesValuesUnderConcurrentProducers)
       });
 
   auto producers = std::vector<std::thread>{};
-  for(auto producer = std::size_t{ 0 }; producer < kProducers; ++producer)
+  for(auto producer = std::size_t{0}; producer < kProducers; ++producer)
   {
     producers.emplace_back(
         [&]
         {
-          for(auto i = std::size_t{ 0 }; i < kPerProducer; ++i)
+          for(auto i = std::size_t{0}; i < kPerProducer; ++i)
           {
             if(queue.push(1).has_value())
             {

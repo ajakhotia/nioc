@@ -89,7 +89,7 @@ TEST(Writer, constructionRejectsMissingDirectory)
 {
   const auto missing = fs::temp_directory_path() / "nioc-chronicleTest" / "doesNotExist";
   fs::remove_all(missing);
-  EXPECT_THROW(Writer{ missing }, std::invalid_argument);
+  EXPECT_THROW(Writer{missing}, std::invalid_argument);
 }
 
 TEST(Writer, constructionRejectsFilePath)
@@ -99,7 +99,7 @@ TEST(Writer, constructionRejectsFilePath)
   {
     const auto sink = std::ofstream(filePath);
   }
-  EXPECT_THROW(Writer{ filePath }, std::invalid_argument);
+  EXPECT_THROW(Writer{filePath}, std::invalid_argument);
 }
 
 TEST(Writer, constructionRejectsNonEmptyDirectory)
@@ -108,18 +108,18 @@ TEST(Writer, constructionRejectsNonEmptyDirectory)
   {
     const auto sink = std::ofstream(dir / "leftover");
   }
-  EXPECT_THROW(Writer{ dir }, std::invalid_argument);
+  EXPECT_THROW(Writer{dir}, std::invalid_argument);
 }
 
 TEST(Writer, writeSpan)
 {
-  constexpr auto channelA = ChannelId{ 16983UL };
-  constexpr auto channelB = ChannelId{ 68964786UL };
+  constexpr auto channelA = ChannelId{16983UL};
+  constexpr auto channelB = ChannelId{68964786UL};
   const auto data = makeData();
 
   const auto logPath = [&]()
   {
-    auto writer = Writer{ makeFreshEmptyDir("writeSpan") };
+    auto writer = Writer{makeFreshEmptyDir("writeSpan")};
 
     writer.write(channelA, std::as_bytes(std::span(data)));
     writer.write(channelB, std::as_bytes(std::span(data)));
@@ -133,8 +133,8 @@ TEST(Writer, writeSpan)
 
 TEST(Writer, writeCollectionOfSpan)
 {
-  constexpr auto channelA = ChannelId{ 16983UL };
-  constexpr auto channelB = ChannelId{ 68964786UL };
+  constexpr auto channelA = ChannelId{16983UL};
+  constexpr auto channelB = ChannelId{68964786UL};
   const auto data = makeData();
 
   constexpr auto kSpanCount = 10UL;
@@ -143,7 +143,7 @@ TEST(Writer, writeCollectionOfSpan)
 
   const auto logPath = [&]()
   {
-    auto writer = Writer{ makeFreshEmptyDir("writeCollectionOfSpan") };
+    auto writer = Writer{makeFreshEmptyDir("writeCollectionOfSpan")};
 
     writer.write(channelA, spanCollection);
     writer.write(channelB, spanCollection);
@@ -158,7 +158,7 @@ TEST(Writer, writeCollectionOfSpan)
 TEST(Writer, path)
 {
   const auto dir = makeFreshEmptyDir("writerPath");
-  const auto writer = Writer{ dir };
+  const auto writer = Writer{dir};
   EXPECT_EQ(writer.path(), dir);
 }
 

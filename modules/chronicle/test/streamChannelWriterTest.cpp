@@ -52,7 +52,7 @@ TEST(StreamChannelWriter, rollAndIndexFileSizeChecks)
 
   // Create a channel and write frames to it.
   {
-    auto channel = StreamChannelWriter{ testLogDirectoryPath, kMaxFileSizeInBytes };
+    auto channel = StreamChannelWriter{testLogDirectoryPath, kMaxFileSizeInBytes};
 
     const auto data = generateTestDataFrame();
     for(size_t ii = 0U; ii < kNumFramesToWrite; ++ii)

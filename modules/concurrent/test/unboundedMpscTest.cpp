@@ -68,8 +68,8 @@ TEST(UnboundedMpsc, SupportsMoveOnlyValues)
 // consumer must receive exactly the union [0, kTotal) regardless of interleaving.
 TEST(UnboundedMpsc, DeliversEveryValueUnderConcurrentProducers)
 {
-  constexpr auto kProducers = std::size_t{ 8 };
-  constexpr auto kPerProducer = std::size_t{ 10000 };
+  constexpr auto kProducers = std::size_t{8};
+  constexpr auto kPerProducer = std::size_t{10000};
   constexpr auto kTotal = kProducers * kPerProducer;
 
   auto queue = UnboundedMpsc<std::size_t>{};
@@ -89,12 +89,12 @@ TEST(UnboundedMpsc, DeliversEveryValueUnderConcurrentProducers)
       });
 
   auto producers = std::vector<std::thread>{};
-  for(auto producer = std::size_t{ 0 }; producer < kProducers; ++producer)
+  for(auto producer = std::size_t{0}; producer < kProducers; ++producer)
   {
     producers.emplace_back(
         [&queue, producer]
         {
-          for(auto i = std::size_t{ 0 }; i < kPerProducer; ++i)
+          for(auto i = std::size_t{0}; i < kPerProducer; ++i)
           {
             queue.push((producer * kPerProducer) + i);
           }
@@ -109,7 +109,7 @@ TEST(UnboundedMpsc, DeliversEveryValueUnderConcurrentProducers)
 
   std::ranges::sort(received);
   auto expected = std::vector<std::size_t>(kTotal);
-  std::ranges::iota(expected, std::size_t{ 0 });
+  std::ranges::iota(expected, std::size_t{0});
   EXPECT_EQ(received, expected);
 }
 

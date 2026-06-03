@@ -44,9 +44,7 @@ MemoryCrate MmapChannelReader::read()
 
   auto logRollPtr = acquireLogRoll(index.mRollId);
 
-  return MemoryCrate{
-    std::make_shared<MemoryCrate::MmapMemoryCrate>(std::move(logRollPtr), index)
-  };
+  return MemoryCrate{std::make_shared<MemoryCrate::MmapMemoryCrate>(std::move(logRollPtr), index)};
 }
 
 MmapChannelReader::MappedFilePtr MmapChannelReader::acquireLogRoll(const std::uint64_t rollId)
@@ -62,7 +60,7 @@ MmapChannelReader::MappedFilePtr MmapChannelReader::acquireLogRoll(const std::ui
   if(iter == mLogRollBuffer.end())
   {
     auto mappedFilePtr = std::make_shared<MappedFile>(mLogRoot / buildRollName(rollId));
-    mLogRollBuffer.push_back({ rollId, mappedFilePtr });
+    mLogRollBuffer.push_back({rollId, mappedFilePtr});
     return mappedFilePtr;
   }
 

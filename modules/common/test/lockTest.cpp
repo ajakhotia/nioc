@@ -29,7 +29,7 @@ TEST(Locked, LockedConstruction)
 
   // Construction of a trivial type with an initial value.
   {
-    const auto locked = Locked<int>{ 7 };
+    const auto locked = Locked<int>{7};
     EXPECT_EQ(7, locked);
   }
 
@@ -47,7 +47,7 @@ TEST(Locked, LockedConstruction)
 
   // Construction of a non-trivial type with an initial value.
   {
-    const auto locked = Locked<std::vector<int>>{ std::initializer_list<int>({ 1, 2, 3, 4, 5 }) };
+    const auto locked = Locked<std::vector<int>>{std::initializer_list<int>({1, 2, 3, 4, 5})};
     EXPECT_EQ(
         5U,
         locked(
@@ -65,7 +65,7 @@ TEST(Locked, LockedConstruction)
 
   // Construction of movable-only entities with an initial value.
   {
-    auto locked = Locked<std::unique_ptr<int>>{ std::make_unique<int>(7) };
+    auto locked = Locked<std::unique_ptr<int>>{std::make_unique<int>(7)};
     EXPECT_EQ(7, locked(kValueExtractorHelper));
   }
 }
@@ -74,7 +74,7 @@ TEST(Locked, LockedConstExecution)
 {
   // With cExecute.
   {
-    const auto locked = Locked<int>{ 7 };
+    const auto locked = Locked<int>{7};
     const auto valueCopy = locked.cExecute(
         [](const auto& value)
         {
@@ -85,7 +85,7 @@ TEST(Locked, LockedConstExecution)
 
   // With execute. Should automatically resolve to the const-overload.
   {
-    const auto locked = Locked<int>{ 7 };
+    const auto locked = Locked<int>{7};
     const auto valueCopy = locked.execute(
         [](const auto& value)
         {
@@ -96,7 +96,7 @@ TEST(Locked, LockedConstExecution)
 
   // With the ()-operator. Should automatically resolve to the const-overload
   {
-    const auto locked = Locked<int>{ 7 };
+    const auto locked = Locked<int>{7};
     const auto valueCopy = locked(
         [](const auto& value)
         {
@@ -107,7 +107,7 @@ TEST(Locked, LockedConstExecution)
 
   // With ()-operator and const-pass-by-value semantics.
   {
-    const auto locked = Locked<int>{ 7 };
+    const auto locked = Locked<int>{7};
     const auto valueCopy = locked(
         [](const auto value)
         {
@@ -118,7 +118,7 @@ TEST(Locked, LockedConstExecution)
 
   // With ()-operator and pass-by-value semantics.
   {
-    const auto locked = Locked<int>{ 7 };
+    const auto locked = Locked<int>{7};
     const auto valueCopy = locked(
         [](auto value)
         {
@@ -132,7 +132,7 @@ TEST(Locked, LockedNonConstExecution)
 {
   // Pass by l-value reference.
   {
-    auto locked = Locked<int>{ 7 };
+    auto locked = Locked<int>{7};
     const auto valueCopy = locked.execute(
         [](auto& value)
         {
@@ -144,7 +144,7 @@ TEST(Locked, LockedNonConstExecution)
 
   // Pass by forwarding reference.
   {
-    auto locked = Locked<int>{ 7 };
+    auto locked = Locked<int>{7};
     const auto valueCopy = locked.execute(
         [](auto&& value)
         {
@@ -156,7 +156,7 @@ TEST(Locked, LockedNonConstExecution)
 
   // Pass by l-value reference. Using the non-const operator().
   {
-    auto locked = Locked<int>{ 7 };
+    auto locked = Locked<int>{7};
     const auto valueCopy = locked(
         [](auto& value)
         {
@@ -168,7 +168,7 @@ TEST(Locked, LockedNonConstExecution)
 
   // Pass by forwarding reference. Using the non-const operator() overload
   {
-    auto locked = Locked<int>{ 7 };
+    auto locked = Locked<int>{7};
     const auto valueCopy = locked(
         [](auto&& value)
         {
@@ -181,7 +181,7 @@ TEST(Locked, LockedNonConstExecution)
 
 TEST(Locked, LockedCopyAssignment)
 {
-  auto locked = Locked<int>{ 12 };
+  auto locked = Locked<int>{12};
   EXPECT_EQ(12, locked);
 
   locked = 13;
@@ -208,7 +208,7 @@ TEST(Locked, LockedMoveAssignment)
 
 TEST(Locked, LockedCopyExtraction)
 {
-  const auto locked = Locked<int>{ 12 };
+  const auto locked = Locked<int>{12};
   const auto extractedValue = locked.copy();
 
   EXPECT_EQ(12, extractedValue);
@@ -217,7 +217,7 @@ TEST(Locked, LockedCopyExtraction)
 
 TEST(Locked, LockedMoveExtraction)
 {
-  auto locked = Locked<std::unique_ptr<int>>{ std::make_unique<int>(13) };
+  auto locked = Locked<std::unique_ptr<int>>{std::make_unique<int>(13)};
 
   const auto extracted = locked.move();
 
@@ -227,7 +227,7 @@ TEST(Locked, LockedMoveExtraction)
 
 TEST(Locked, LockedEqualityCheck)
 {
-  const auto locked = Locked<int>{ 13 };
+  const auto locked = Locked<int>{13};
 
   EXPECT_TRUE(locked == 13);
   EXPECT_TRUE(13 == locked);
@@ -238,7 +238,7 @@ TEST(Locked, LockedEqualityCheck)
 
 TEST(Locked, LockedInEqualityCheck)
 {
-  const auto locked = Locked<int>{ 13 };
+  const auto locked = Locked<int>{13};
 
   EXPECT_FALSE(locked != 13);
   EXPECT_FALSE(13 != locked);
@@ -249,7 +249,7 @@ TEST(Locked, LockedInEqualityCheck)
 
 TEST(Locked, LockedLesserThanCheck)
 {
-  const auto locked = Locked<int>{ 13 };
+  const auto locked = Locked<int>{13};
 
   EXPECT_TRUE(locked < 14);
   EXPECT_FALSE(locked < 13);
@@ -262,7 +262,7 @@ TEST(Locked, LockedLesserThanCheck)
 
 TEST(Locked, LockedLesserThanOrEqualCheck)
 {
-  const auto locked = Locked<int>{ 13 };
+  const auto locked = Locked<int>{13};
 
   EXPECT_TRUE(locked <= 14);
   EXPECT_TRUE(locked <= 13);
@@ -275,7 +275,7 @@ TEST(Locked, LockedLesserThanOrEqualCheck)
 
 TEST(Locked, LockedGreaterThanCheck)
 {
-  const auto locked = Locked<int>{ 13 };
+  const auto locked = Locked<int>{13};
 
   EXPECT_FALSE(locked > 14);
   EXPECT_FALSE(locked > 13);
@@ -288,7 +288,7 @@ TEST(Locked, LockedGreaterThanCheck)
 
 TEST(Locked, LockedGreaterThanOrEqualCheck)
 {
-  const auto locked = Locked<int>{ 13 };
+  const auto locked = Locked<int>{13};
 
   EXPECT_FALSE(locked >= 14);
   EXPECT_TRUE(locked >= 13);

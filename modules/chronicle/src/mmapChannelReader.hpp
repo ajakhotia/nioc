@@ -54,7 +54,7 @@ private:
 
   const MappedFile mIndexFile;
 
-  std::uint64_t mNextReadIndex{ 0ULL };
+  std::uint64_t mNextReadIndex{0ULL};
 
   boost::circular_buffer<MappedLogRoll> mLogRollBuffer;
 

@@ -47,7 +47,7 @@ private:
   std::string mSample1Topic;
   std::string mSample3Topic;
   std::size_t mRoundCount;
-  std::size_t mRound{ 0 };
+  std::size_t mRound{0};
 };
 
 } // namespace nioc::example

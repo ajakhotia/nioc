@@ -63,7 +63,7 @@ void setupDefaultLogger(
   if(enableStderrSink)
   {
     auto sink = std::make_shared<spdlog::sinks::stderr_color_sink_mt>();
-    sink->set_pattern(std::string{ pattern });
+    sink->set_pattern(std::string{pattern});
 
     fanOut->add_sink(std::move(sink));
   }
@@ -73,7 +73,7 @@ void addSink(spdlog::sink_ptr sink, const std::string_view pattern)
 {
   // Set the pattern per sink: dist_sink does not carry its formatter to sinks added later, so a
   // sink attached here would otherwise render with spdlog's default pattern instead of ours.
-  sink->set_pattern(std::string{ pattern });
+  sink->set_pattern(std::string{pattern});
 
   // When setupDefaultLogger installed our fan-out, attach there: add_sink on a dist_sink is
   // synchronized, so sinks can be added while other threads log.

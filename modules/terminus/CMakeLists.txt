@@ -34,11 +34,13 @@ add_exported_library(
   EXPORT
     niocTargets
   SOURCES
+    src/asyncChronicleWriter.cpp
     src/component.cpp
     src/msgBase.cpp
     src/port.cpp
     src/programOption.cpp
   HEADERS
+    PUBLIC include/nioc/terminus/asyncChronicleWriter.hpp
     PUBLIC include/nioc/terminus/component.hpp
     PUBLIC include/nioc/terminus/driver.hpp
     PUBLIC include/nioc/terminus/msg.hpp

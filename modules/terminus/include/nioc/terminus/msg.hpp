@@ -37,7 +37,7 @@ public:
   using Builder = Schema::Builder;
 
   /// @brief Compile-time message type identifier for this schema.
-  static constexpr auto kMsgId = MsgId{ static_cast<std::uint64_t>(Schema::_capnpPrivate::typeId) };
+  static constexpr auto kMsgId = MsgId{static_cast<std::uint64_t>(Schema::_capnpPrivate::typeId)};
 
   /// @brief Creates an empty message ready to be built.
   Msg()

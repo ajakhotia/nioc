@@ -70,9 +70,9 @@ private:
   std::string mSample1Topic;
   std::string mSample2Topic;
   std::string mSample3Topic;
-  std::atomic<std::uint64_t> mSample1Count{ 0 };
-  std::atomic<std::uint64_t> mSample2Count{ 0 };
-  std::atomic<std::uint64_t> mSample3Count{ 0 };
+  std::atomic<std::uint64_t> mSample1Count{0};
+  std::atomic<std::uint64_t> mSample2Count{0};
+  std::atomic<std::uint64_t> mSample3Count{0};
 };
 
 } // namespace nioc::example

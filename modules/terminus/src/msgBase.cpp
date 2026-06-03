@@ -23,14 +23,16 @@ namespace
 
 ConstWordArrayPtr convert(const std::span<const std::byte>& data)
 {
-  return { std::bit_cast<const capnp::word*>(data.data()),
-           data.size() * sizeof(std::byte) / sizeof(capnp::word) };
+  return {
+      std::bit_cast<const capnp::word*>(data.data()),
+      data.size() * sizeof(std::byte) / sizeof(capnp::word)};
 }
 
 ConstByteSpan convert(const ConstWordArrayPtr& data)
 {
-  return { std::bit_cast<const std::byte*>(data.begin()),
-           data.size() * sizeof(capnp::word) / sizeof(std::byte) };
+  return {
+      std::bit_cast<const std::byte*>(data.begin()),
+      data.size() * sizeof(capnp::word) / sizeof(std::byte)};
 }
 
 } // namespace
@@ -118,13 +120,13 @@ void write(const MsgBase& msgBase, const std::string_view& topic, chronicle::Wri
 chronicle::ChannelId makeChannelId(const MsgId& msgId, const std::string_view& topic)
 {
   // boost::hash_combine mixing: the golden-ratio constant and the two shift amounts.
-  constexpr auto kGoldenRatio = std::uint64_t{ 0x9e3779b97f4a7c15ULL };
+  constexpr auto kGoldenRatio = std::uint64_t{0x9e3779b97f4a7c15ULL};
   constexpr auto kLeftShift = 6U;
   constexpr auto kRightShift = 2U;
 
   auto seed = std::hash<std::string_view>{}(topic);
   seed ^= msgId.mValue + kGoldenRatio + (seed << kLeftShift) + (seed >> kRightShift);
-  return chronicle::ChannelId{ seed };
+  return chronicle::ChannelId{seed};
 }
 
 } // namespace nioc::terminus

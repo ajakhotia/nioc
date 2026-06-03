@@ -28,7 +28,7 @@ TEST(LoggerBoostUsageExample, MMapFileWriting)
   mappedFileParams.path = "/tmp/mmapFileWriting.txt";
   mappedFileParams.flags = bio::mapped_file::mapmode::readwrite;
 
-  auto file = bio::mapped_file{ mappedFileParams };
+  auto file = bio::mapped_file{mappedFileParams};
 
   const auto tic = std::clock();
   {
@@ -52,7 +52,7 @@ TEST(LoggerBoostUsageExample, SerialFileWrite)
   std::filesystem::remove_all("/tmp/serialFileWriting.txt");
 
   // Create a file and  write 'a' to it.
-  auto file = std::ofstream{ "/tmp/serialFileWriting.txt" };
+  auto file = std::ofstream{"/tmp/serialFileWriting.txt"};
 
   const auto tic = std::clock();
   {

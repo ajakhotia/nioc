@@ -17,7 +17,7 @@ static_assert(MpscQueue<AnyMpsc<int>>);
 
 TEST(AnyMpsc, OverwritingModeEvictsOldestWhenFull)
 {
-  auto queue = AnyMpsc<int>{ BufferMode::Overwriting, 2 };
+  auto queue = AnyMpsc<int>{BufferMode::Overwriting, 2};
   EXPECT_FALSE(queue.push(1).has_value());
   EXPECT_FALSE(queue.push(2).has_value());
 
@@ -29,7 +29,7 @@ TEST(AnyMpsc, OverwritingModeEvictsOldestWhenFull)
 
 TEST(AnyMpsc, UnboundedModeNeverDiscards)
 {
-  auto queue = AnyMpsc<int>{ BufferMode::Unbounded };
+  auto queue = AnyMpsc<int>{BufferMode::Unbounded};
   for(auto i = 0; i < 100; ++i)
   {
     EXPECT_FALSE(queue.push(i).has_value());
@@ -41,16 +41,16 @@ TEST(AnyMpsc, UnboundedModeNeverDiscards)
 
 TEST(AnyMpsc, OverwritingModeRejectsZeroCapacity)
 {
-  EXPECT_ANY_THROW((AnyMpsc<int>{ BufferMode::Overwriting, 0 }));
+  EXPECT_ANY_THROW((AnyMpsc<int>{BufferMode::Overwriting, 0}));
 }
 
 TEST(AnyMpsc, OccupancyForwardsToChosenStorage)
 {
-  auto bounded = AnyMpsc<int>{ BufferMode::Overwriting, 2 };
+  auto bounded = AnyMpsc<int>{BufferMode::Overwriting, 2};
   bounded.push(1);
   EXPECT_DOUBLE_EQ(bounded.occupancy(), 0.5);
 
-  auto unbounded = AnyMpsc<int>{ BufferMode::Unbounded };
+  auto unbounded = AnyMpsc<int>{BufferMode::Unbounded};
   unbounded.push(1);
   EXPECT_DOUBLE_EQ(unbounded.occupancy(), 0.0);
 }

@@ -29,7 +29,7 @@ public:
   [[nodiscard]] std::size_t stepCount() const;
 
 private:
-  std::atomic<std::size_t> mStepCount{ 0 };
+  std::atomic<std::size_t> mStepCount{0};
 };
 
 /// @brief Concrete Component for tests, named "MarsComponent".
@@ -48,7 +48,7 @@ public:
   [[nodiscard]] std::size_t stepCount() const;
 
 private:
-  std::atomic<std::size_t> mStepCount{ 0 };
+  std::atomic<std::size_t> mStepCount{0};
 };
 
 } // namespace nioc::terminus

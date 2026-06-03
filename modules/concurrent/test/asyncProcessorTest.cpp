@@ -42,13 +42,13 @@ TEST(AsyncProcessor, ProcessesPushedValuesOnePerStepInOrder)
   EXPECT_EQ(processor.step(), Routine::State::Continue);
   EXPECT_EQ(processor.step(), Routine::State::Waiting);
 
-  EXPECT_EQ(received, (std::vector<int>{ 1, 2 }));
+  EXPECT_EQ(received, (std::vector<int>{1, 2}));
 }
 
 TEST(AsyncProcessor, NameReturnsTheLabel)
 {
   const auto processor = AsyncProcessor<int>("recorder", BufferMode::Unbounded, 0, [](int) {});
-  EXPECT_EQ(processor.name(), std::string_view{ "recorder" });
+  EXPECT_EQ(processor.name(), std::string_view{"recorder"});
 }
 
 } // namespace

@@ -15,8 +15,8 @@
 
 int main()
 {
-  constexpr auto kInboxCapacity = std::size_t{ 16 };
-  constexpr auto kDriverRounds = std::size_t{ 1000 };
+  constexpr auto kInboxCapacity = std::size_t{16};
+  constexpr auto kDriverRounds = std::size_t{1000};
 
   // Install the default logger so the terminus diagnostic traces reach the console. Its level
   // defaults to the compile-time floor (SPDLOG_ACTIVE_LEVEL), so a trace-floor build prints traces.

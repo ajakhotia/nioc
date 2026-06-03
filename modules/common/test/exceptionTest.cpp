@@ -22,7 +22,7 @@ TEST(ThrowException, ThrowsRequestedTypeWithFormattedMessage)
   }
   catch(const std::invalid_argument& e)
   {
-    const auto what = std::string{ e.what() };
+    const auto what = std::string{e.what()};
     EXPECT_NE(what.find("value 7 is out of range [0, 5]"), std::string::npos);
 
     // The call site is captured automatically and prepended as "[file:line] ".

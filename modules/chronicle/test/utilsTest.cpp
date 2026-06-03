@@ -25,7 +25,7 @@ std::vector<char> generateData()
 
 TEST(LoggerUtils, padString)
 {
-  const auto input = std::string{ "682" };
+  const auto input = std::string{"682"};
 
   {
     const auto output = padString(input, 13U, '0');
@@ -74,7 +74,7 @@ TEST(LoggerUtils, computeTotalSizeInBytes)
 TEST(LoggerUtils, ReadWriteUtilSequenceEntry)
 {
   auto stream = std::stringstream{};
-  const auto value = SequenceEntry{ ChannelId{ 53519839189237 } };
+  const auto value = SequenceEntry{ChannelId{53519839189237}};
 
   ReadWriteUtil<SequenceEntry>::write(stream, value);
   const auto readValue = ReadWriteUtil<SequenceEntry>::read(stream.str().data());
@@ -85,9 +85,8 @@ TEST(LoggerUtils, ReadWriteUtilSequenceEntry)
 TEST(LoggerUtils, ReadWriteUtilIndexEntry)
 {
   auto stream = std::stringstream{};
-  const auto value = IndexEntry{ .mRollId = 53519839189237,
-                                 .mOffset = 9065316618953,
-                                 .mSize = 281591230 };
+  const auto value =
+      IndexEntry{.mRollId = 53519839189237, .mOffset = 9065316618953, .mSize = 281591230};
 
   ReadWriteUtil<IndexEntry>::write(stream, value);
   const auto readValue = ReadWriteUtil<IndexEntry>::read(stream.str().data());

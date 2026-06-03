@@ -16,9 +16,9 @@ namespace nioc::concurrent
 ///
 /// A Runner owns the loop a @ref Routine deliberately lacks. After @ref launch, it calls the
 /// routine's @ref Routine::step over and over: @ref State::Continue runs again immediately, @ref
-/// State::Waiting parks until the routine signals it has work, and @ref State::Done (or a thrown
-/// exception) ends the loop. The waiting/wake handshake lets an idle routine sleep instead of
-/// spinning; @ref ThreadedRunner is the thread-backed implementation.
+/// State::Waiting parks until the routine signals it has some work, and @ref State::Done (or a
+/// thrown exception) ends the loop. The waiting/wake handshake lets an idle routine sleep instead
+/// of spinning; @ref ThreadedRunner is the thread-backed implementation.
 ///
 /// A Runner is held through a `shared_ptr` (it derives from `enable_shared_from_this` so it can
 /// hand the routine a notifier that outlives the call). Each Runner drives a single routine.

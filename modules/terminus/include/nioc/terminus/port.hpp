@@ -7,13 +7,13 @@
 
 #include "msg.hpp"
 #include "msgBase.hpp"
+#include <atomic>
 #include <boost/program_options.hpp>
+#include <cstdint>
 #include <filesystem>
 #include <memory>
 #include <mutex>
 #include <nioc/chronicle/writer.hpp>
-#include <nioc/concurrent/asyncProcessor.hpp>
-#include <nioc/concurrent/threadedRunner.hpp>
 #include <nioc/logger/logger.hpp>
 #include <nlohmann/json.hpp>
 #include <spdlog/sinks/sink.h>
@@ -23,6 +23,8 @@
 
 namespace nioc::terminus
 {
+
+class AsyncChronicleWriter;
 
 /// @brief Central data hub for a nioc binary.
 ///
@@ -144,8 +146,8 @@ public:
   /// @brief Publishes a message on a channel, fanning it out to subscribers and recording it.
   ///
   /// Delivered synchronously on the caller's thread: every live subscriber on @p channelId is
-  /// handed the message into its own inbox, and a copy is teed to the chronicle recorder when this
-  /// run records. Thread-safe.
+  /// handed the message into its own inbox, and a copy is recorded to the chronicle when this run
+  /// records. Thread-safe.
   ///
   /// @param channelId Channel to publish on (see @ref makeChannelId).
   ///
@@ -174,22 +176,25 @@ private:
   using SubscriptionList = std::vector<std::weak_ptr<const MsgCallback>>;
   using SubscriptionMap = std::unordered_map<ChannelId, SubscriptionList>;
 
-  /// @brief Fans a message out to its live subscribers and tees a copy to the recorder.
+  /// @brief Fans a message out to its live subscribers and records a copy to the chronicle.
   void dispatch(ChannelId channelId, const ConstMsgBasePtr& msgBasePtr);
 
   const std::filesystem::path mWorkingDir;
   const std::shared_ptr<spdlog::sinks::sink> mConsoleLogSink;
   const nlohmann::json mConfig;
   std::unordered_map<std::string, std::string> mResourceMap;
-  const std::unique_ptr<chronicle::Writer> mChronicleWriter;
 
   std::mutex mSubscriptionMutex;
   SubscriptionMap mSubscriptionMap;
 
-  // The recorder appends teed messages to the chronicle on its own thread; present only when this
-  // run records. publish() fans out to subscribers synchronously, then tees a copy here.
-  std::shared_ptr<concurrent::AsyncProcessor<std::pair<ChannelId, ConstMsgBasePtr>>> mRecorder;
-  std::shared_ptr<concurrent::ThreadedRunner> mRecorderRunner;
+  // Count of messages accepted into a consumer inbox but not yet processed. Reaching zero, once all
+  // drivers are Done, is the quiescence signal a graceful drain-on-close waits for before tearing
+  // down. Not yet wired to the inbox accept/complete points.
+  std::atomic<std::uint32_t> mInFlight{0};
+
+  // Writes published messages to the chronicle on its own thread; present only when this run
+  // records. publish() fans out to subscribers synchronously, then records a copy here.
+  std::unique_ptr<AsyncChronicleWriter> mChronicleWriter;
 };
 
 } // namespace nioc::terminus

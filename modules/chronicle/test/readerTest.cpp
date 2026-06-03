@@ -33,8 +33,8 @@ fs::path makeFreshEmptyDir(std::string_view name)
   return path;
 }
 
-constexpr auto channelA = ChannelId{ 16983UL };
-constexpr auto channelB = ChannelId{ 68964786UL };
+constexpr auto channelA = ChannelId{16983UL};
+constexpr auto channelB = ChannelId{68964786UL};
 const auto kDataA = generateData(20ULL);
 const auto kDataB = generateData(34ULL);
 const auto kDataAAsBytes = std::as_bytes(std::span(kDataA));
@@ -42,7 +42,7 @@ const auto kDataBAsBytes = std::as_bytes(std::span(kDataB));
 
 fs::path createLog()
 {
-  auto writer = Writer{ makeFreshEmptyDir("readerTest-createLog") };
+  auto writer = Writer{makeFreshEmptyDir("readerTest-createLog")};
 
   writer.write(channelA, kDataAAsBytes);
   writer.write(channelB, kDataBAsBytes);
@@ -62,7 +62,7 @@ void expectSpanEqual(const std::span<const std::byte>& lhs, const std::span<cons
 TEST(Reader, read)
 {
   const auto logPath = createLog();
-  auto reader = Reader{ logPath };
+  auto reader = Reader{logPath};
 
   {
     const auto entry = reader.read();

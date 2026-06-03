@@ -24,11 +24,11 @@ static_assert(MpscQueue<NotifyingInbox<AnyMpsc<int>>>);
 
 TEST(NotifyingInbox, FiresNotifyOnEveryPush)
 {
-  auto notifications = std::size_t{ 0 };
-  auto inbox = NotifyingInbox<UnboundedMpsc<int>>{ [&notifications]
-                                                   {
-                                                     ++notifications;
-                                                   } };
+  auto notifications = std::size_t{0};
+  auto inbox = NotifyingInbox<UnboundedMpsc<int>>{[&notifications]
+                                                  {
+                                                    ++notifications;
+                                                  }};
 
   inbox.push(1);
   inbox.push(2);
@@ -39,7 +39,7 @@ TEST(NotifyingInbox, FiresNotifyOnEveryPush)
 
 TEST(NotifyingInbox, ForwardsPushAndPop)
 {
-  auto inbox = NotifyingInbox<UnboundedMpsc<int>>{ nullptr };
+  auto inbox = NotifyingInbox<UnboundedMpsc<int>>{nullptr};
 
   EXPECT_FALSE(inbox.push(10).has_value());
   EXPECT_EQ(inbox.size(), 1U);
@@ -49,7 +49,7 @@ TEST(NotifyingInbox, ForwardsPushAndPop)
 
 TEST(NotifyingInbox, ForwardsSacrificedValueFromBoundedQueue)
 {
-  auto inbox = NotifyingInbox<AnyMpsc<int>>{ nullptr, BufferMode::Overwriting, 1 };
+  auto inbox = NotifyingInbox<AnyMpsc<int>>{nullptr, BufferMode::Overwriting, 1};
 
   EXPECT_FALSE(inbox.push(1).has_value());
   EXPECT_EQ(inbox.push(2), 1);
@@ -57,7 +57,7 @@ TEST(NotifyingInbox, ForwardsSacrificedValueFromBoundedQueue)
 
 TEST(NotifyingInbox, ForwardsOccupancy)
 {
-  auto inbox = NotifyingInbox<AnyMpsc<int>>{ nullptr, BufferMode::Overwriting, 2 };
+  auto inbox = NotifyingInbox<AnyMpsc<int>>{nullptr, BufferMode::Overwriting, 2};
 
   EXPECT_DOUBLE_EQ(inbox.occupancy(), 0.0);
   inbox.push(1);

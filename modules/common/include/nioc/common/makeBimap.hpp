@@ -39,7 +39,7 @@ auto makeBimap(std::initializer_list<PairType> list)
       list.end(),
       [&](const auto& item)
       {
-        result.insert({ item.first, item.second });
+        result.insert({item.first, item.second});
       });
   return result;
 }

@@ -144,7 +144,7 @@ TEST(Caching, construction)
 
 TEST(Caching, squareArea)
 {
-  auto testClass = TestClass{ 31 };
+  auto testClass = TestClass{31};
   auto& internalIntRef = testClass.acquireReference();
 
   EXPECT_EQ(gTestCacheMessage, "");

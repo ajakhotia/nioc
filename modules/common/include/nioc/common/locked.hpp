@@ -43,7 +43,7 @@ public:
   /// @brief Constructs the protected value.
   /// @param args Arguments forwarded to value constructor.
   template<typename... Args>
-  explicit Locked(Args&&... args): mLockedValue{ std::forward<Args>(args)... }
+  explicit Locked(Args&&... args): mLockedValue{std::forward<Args>(args)...}
   {
   }
 

@@ -48,7 +48,7 @@ public:
   /// @param capacity Capacity of a bounded mode; ignored when the @p mode is @ref
   /// BufferMode::Unbounded.
   explicit AnyMpsc(const BufferMode mode, const size_type capacity = 0):
-    mStorage{ makeStorage(mode, capacity) }
+    mStorage{makeStorage(mode, capacity)}
   {
   }
 
@@ -126,10 +126,10 @@ private:
     switch(mode)
     {
       case BufferMode::Overwriting:
-        return Storage{ std::in_place_type<OverwritingMpsc<value_type>>, capacity };
+        return Storage{std::in_place_type<OverwritingMpsc<value_type>>, capacity};
 
       case BufferMode::Unbounded:
-        return Storage{ std::in_place_type<UnboundedMpsc<value_type>> };
+        return Storage{std::in_place_type<UnboundedMpsc<value_type>>};
     }
 
     std::unreachable();

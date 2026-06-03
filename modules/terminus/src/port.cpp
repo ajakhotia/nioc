@@ -15,6 +15,7 @@
 #include <nioc/common/exception.hpp>
 #include <nioc/common/time.hpp>
 #include <nioc/logger/logger.hpp>
+#include <nioc/terminus/asyncChronicleWriter.hpp>
 #include <nioc/terminus/port.hpp>
 #include <ranges>
 #include <spdlog/sinks/basic_file_sink.h>
@@ -31,10 +32,6 @@ namespace po = boost::program_options;
 namespace
 {
 
-/// Inbox capacity used if the dispatcher and recorder ever run bounded. They currently run
-/// BufferMode::Unbounded (lossless, no backpressure), so this value is presently ignored.
-constexpr auto kQueueCapacity = std::size_t{ 1024 };
-
 fs::path createWorkingDir(const fs::path& logRoot)
 {
   fs::create_directories(logRoot);
@@ -48,13 +45,6 @@ fs::path createWorkingDir(const fs::path& logRoot)
   return dir;
 }
 
-std::unique_ptr<chronicle::Writer> makeChronicleWriter(const fs::path& workingDir)
-{
-  const auto chronicleDir = workingDir / "chronicle";
-  fs::create_directories(chronicleDir);
-  return std::make_unique<chronicle::Writer>(chronicleDir);
-}
-
 /// Extracts a repeatable path option (absent → empty), preserving command-line order.
 std::vector<fs::path> pathsFromOption(const po::variables_map& variableMap, const std::string& key)
 {
@@ -63,7 +53,7 @@ std::vector<fs::path> pathsFromOption(const po::variables_map& variableMap, cons
     return {};
   }
   const auto& values = variableMap.at(key).as<std::vector<std::string>>();
-  return { values.begin(), values.end() };
+  return {values.begin(), values.end()};
 }
 
 void writeJsonFile(const fs::path& path, const nlohmann::json& json)
@@ -107,7 +97,7 @@ spdlog::sink_ptr attachLogFileSink(
       consoleLogPath.string(),
       true);
 
-  sink->set_pattern(std::string{ pattern });
+  sink->set_pattern(std::string{pattern});
   logger::addSink(sink);
   return sink;
 }
@@ -186,11 +176,12 @@ Port::Port(
     const std::vector<fs::path>& resourcePaths, // NOLINT(bugprone-easily-swappable-parameters)
     const bool writeChronicle,
     const std::string& commandLine):
-  mWorkingDir{ createWorkingDir(logRoot) },
-  mConsoleLogSink{ attachLogFileSink(mWorkingDir / "console.log") },
+  mWorkingDir{createWorkingDir(logRoot)},
+  mConsoleLogSink{attachLogFileSink(mWorkingDir / "console.log")},
   mConfig(loadAndWriteConfig(configPaths, mWorkingDir)),
-  mResourceMap{ copyResources(resourcePaths, mWorkingDir) },
-  mChronicleWriter{ writeChronicle ? makeChronicleWriter(mWorkingDir) : nullptr }
+  mResourceMap{copyResources(resourcePaths, mWorkingDir)},
+  mChronicleWriter{
+      writeChronicle ? std::make_unique<AsyncChronicleWriter>(mWorkingDir / "chronicle") : nullptr}
 {
   auto metadata = nlohmann::json::object();
   metadata["cmdline"] = commandLine;
@@ -198,34 +189,14 @@ Port::Port(
   writeJsonFile(mWorkingDir / "metadata.json", metadata);
 
   logger::debug("recording run to working directory {}", mWorkingDir);
-
-  // Bring the recorder up before the dispatcher, so the dispatcher always has somewhere to tee to.
-  if(mChronicleWriter)
-  {
-    mRecorder = std::make_shared<concurrent::AsyncProcessor<std::pair<ChannelId, ConstMsgBasePtr>>>(
-        "Port.recorder",
-        concurrent::BufferMode::Unbounded,
-        kQueueCapacity,
-        [this](const auto& item)
-        {
-          logger::trace("writing channel {} to chronicle", item.first.mValue);
-          write(*item.second, item.first, *mChronicleWriter);
-        });
-    mRecorderRunner = std::make_shared<concurrent::ThreadedRunner>();
-    mRecorderRunner->launch(mRecorder);
-    logger::debug("chronicle recorder started");
-  }
 }
 
 Port::~Port()
 {
-  // Stop the recorder. Stopping is abrupt: messages still queued in its inbox are dropped, which a
-  // planned drain-on-close pass (shared with Component) will address.
-  if(mRecorderRunner)
-  {
-    mRecorderRunner->requestStop();
-    mRecorderRunner->waitUntilStopped();
-  }
+  // Stop the chronicle writer first: it joins its thread, so no further chronicle write or trace
+  // log races the metadata update and log-sink removal below. A no-op when this run does not
+  // record.
+  mChronicleWriter.reset();
 
   // Resources may have grown via addResource() since construction, so refresh the resources
   // section of the metadata written in the constructor. A destructor must not throw, so the
@@ -327,9 +298,9 @@ void Port::dispatch(const ChannelId channelId, const ConstMsgBasePtr& msgBasePtr
   // mismatch between the publisher and the intended component.
   logger::trace("dispatched channel {} to {} subscriber(s)", channelId.mValue, callbacks.size());
 
-  if(mRecorder)
+  if(mChronicleWriter)
   {
-    mRecorder->push(std::make_pair(channelId, msgBasePtr));
+    mChronicleWriter->push(channelId, msgBasePtr);
   }
 }
 

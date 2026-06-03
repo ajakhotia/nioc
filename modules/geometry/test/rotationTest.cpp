@@ -76,7 +76,7 @@ TEST(Rotation3, data) {}
 
 TEST(Rotation3, components)
 {
-  auto test = Rotation3<double>({ 0.2, 0.3, 0.5 });
+  auto test = Rotation3<double>({0.2, 0.3, 0.5});
   EXPECT_EQ(0.2, test.x());
   EXPECT_EQ(0.3, test.y());
   EXPECT_EQ(0.5, test.z());
@@ -88,7 +88,7 @@ TEST(Rotation3, components)
   test.z() = 0.13;
   EXPECT_EQ(0.13, test.z());
 
-  const auto constTest = Rotation3<double>({ 0.2, 0.3, 0.5 });
+  const auto constTest = Rotation3<double>({0.2, 0.3, 0.5});
   EXPECT_EQ(0.2, constTest.x());
   EXPECT_EQ(0.3, constTest.y());
   EXPECT_EQ(0.5, constTest.z());
@@ -112,7 +112,7 @@ TEST(Rotation3, composition) {}
 
 TEST(MapOfRotation3, construction)
 {
-  std::array<double, 3> data = { 0.1, 0.2, 0.3 };
+  std::array<double, 3> data = {0.1, 0.2, 0.3};
   auto map = Eigen::Map<Rotation3<double>>(data.data());
 
   EXPECT_EQ(0.1, map.x());
@@ -122,14 +122,14 @@ TEST(MapOfRotation3, construction)
 
 TEST(ConstMapOfRotation3, construction)
 {
-  const std::array<double, 3> data = { 0.1, 0.2, 0.3 };
+  const std::array<double, 3> data = {0.1, 0.2, 0.3};
   auto map = Eigen::Map<const Rotation3<double>>(data.data());
   EXPECT_EQ(0.1, map.x());
 }
 
 TEST(Assignment, RotationAndMap)
 {
-  std::array<double, 3> data = { 0.1, 0.2, 0.3 };
+  std::array<double, 3> data = {0.1, 0.2, 0.3};
   const auto map = Eigen::Map<Rotation3<double>>(data.data());
   const auto constMap = Eigen::Map<const Rotation3<double>>(data.data());
   auto rot3 = Rotation3<double>(std::numbers::pi_v<double> / 2.0, Eigen::Vector3d::UnitZ());

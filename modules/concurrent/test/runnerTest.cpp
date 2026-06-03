@@ -24,7 +24,7 @@ using namespace std::chrono_literals;
 class CountingRoutine final: public Routine
 {
 public:
-  explicit CountingRoutine(const int doneAfter): Routine("CountingRoutine"), mDoneAfter{ doneAfter }
+  explicit CountingRoutine(const int doneAfter): Routine("CountingRoutine"), mDoneAfter{doneAfter}
   {
   }
 
@@ -43,7 +43,7 @@ public:
   }
 
 private:
-  std::atomic<int> mIterations{ 0 };
+  std::atomic<int> mIterations{0};
   int mDoneAfter;
 };
 

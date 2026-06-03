@@ -129,7 +129,7 @@ public:
   /// @brief Returns the identity pose.
   static constexpr Pose<Scalar> identity()
   {
-    return Pose<Scalar>({ 0, 0, 0, 1, 0, 0, 0 });
+    return Pose<Scalar>({0, 0, 0, 1, 0, 0, 0});
   }
 
 protected:
@@ -304,8 +304,9 @@ Pose<typename LhsDerived::Scalar> operator*(const Se3<LhsDerived>& lhs, const Se
       std::is_same_v<typename LhsDerived::Scalar, typename RhsDerived::Scalar>,
       "Requested composition of Pose<> objects that differ in the scalar representation.");
 
-  return { lhs.cOrientation() * rhs.cOrientation(),
-           lhs.cPosition() + lhs.cOrientation() * rhs.cPosition() };
+  return {
+      lhs.cOrientation() * rhs.cOrientation(),
+      lhs.cPosition() + lhs.cOrientation() * rhs.cPosition()};
 }
 
 } // namespace nioc::geometry

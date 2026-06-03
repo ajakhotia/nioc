@@ -53,7 +53,7 @@ private:
   std::weak_ptr<Routine> mRoutine;
   std::mutex mMutex;
   std::condition_variable_any mCondition;
-  bool mReady{ false };
+  bool mReady{false};
   std::jthread mThread;
 };
 

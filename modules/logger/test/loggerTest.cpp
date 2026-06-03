@@ -20,7 +20,7 @@ namespace
 // spdlog renders the ISO 8601 timestamp "%Y-%m-%dT%H:%M:%S.%eZ" as a fixed-width field, e.g.
 // "2026-05-27T14:02:11.337Z". With the surrounding brackets and trailing space the prefix is
 // always this many characters, so a test can skip the timestamp and assert the remainder exactly.
-constexpr auto kTimestampPrefixWidth = std::string_view{ "[2026-05-27T14:02:11.337Z] " }.size();
+constexpr auto kTimestampPrefixWidth = std::string_view{"[2026-05-27T14:02:11.337Z] "}.size();
 
 /// Installs a default logger that writes to @p buffer using @p pattern.
 void installBufferLogger(std::ostringstream& buffer, std::string pattern)
@@ -60,7 +60,7 @@ TEST(Logger, EveryLevelFormatsAndEmits)
   auto buffer = std::ostringstream{};
   installBufferLogger(buffer, "[%l] %v");
 
-  const auto lvalue = std::string{ "lvalue" };
+  const auto lvalue = std::string{"lvalue"};
   trace("t {}", 1);
   debug("d {} {}", 1, 2);
   info("i {}", lvalue);

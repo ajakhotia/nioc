@@ -243,9 +243,10 @@ void logAt(const common::FormatWithLocation& message, Args&&... args) noexcept
     try
     {
       spdlog::default_logger_raw()->log(
-          spdlog::source_loc{ message.mLocation.file_name(),
-                              static_cast<int>(message.mLocation.line()),
-                              message.mLocation.function_name() },
+          spdlog::source_loc{
+              message.mLocation.file_name(),
+              static_cast<int>(message.mLocation.line()),
+              message.mLocation.function_name()},
           Level,
           fmt::runtime(message.mFormat),
           std::forward<Args>(args)...);

@@ -7,7 +7,6 @@
 
 #include <cstdint>
 #include <functional>
-#include <spdlog/fmt/bundled/chrono.h>
 #include <string>
 
 namespace nioc::concurrent
@@ -15,7 +14,7 @@ namespace nioc::concurrent
 
 /// @brief A unit of work executed one iteration at a time by a @ref Runner.
 ///
-/// The iteration loop lives in the Runner, not here: @ref step performs a single iteration and
+/// The iteration loop lives in the Runner, not here: the @ref step performs a single iteration and
 /// reports what should happen next. This keeps every Routine free of stop-token plumbing and
 /// exception bookkeeping, which the Runner owns in one place.
 ///
@@ -44,7 +43,7 @@ public:
   ///
   /// @param name Human-readable identity for this routine; see @ref name.
   ///
-  /// @param notifier Callback the routine fires (through @ref wakeRunner) to wake its driving
+  /// @param notifier A trigger the routine fires (through @ref wakeRunner) to wake its driving
   /// Runner when work arrives. Defaults to none; the Runner may instead install one later via @ref
   /// attachNotifier.
   explicit Routine(std::string name, std::function<void()> notifier = nullptr);
@@ -70,14 +69,14 @@ public:
   /// @brief Returns this routine's name: its human-readable identity.
   ///
   /// Fixed at construction. Used to lead the routine's diagnostic log lines, and available to a
-  /// Driver or Component as a prefix so two instances of the same type can namespace the topics
+  /// Driver or Component as a prefix, so two instances of the same type can namespace the topics
   /// they publish on without colliding.
   [[nodiscard]] const std::string& name() const noexcept
   {
     return mName;
   }
 
-  /// @brief Installs the callback the routine uses to announce it has work again.
+  /// @brief Installs the callback the routine uses to announce it has some work again.
   ///
   /// Called by the @ref Runner that drives this routine. A routine that returned @ref
   /// State::Waiting invokes the notifier (through @ref wakeRunner) once new work arrives, so the

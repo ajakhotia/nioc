@@ -13,7 +13,7 @@ EarthComponent::EarthComponent(
     Port& port,
     const std::size_t inboxCapacity,
     const concurrent::BufferMode bufferMode):
-  Component{ port, inboxCapacity, bufferMode, "EarthComponent" }
+  Component{port, inboxCapacity, bufferMode, "EarthComponent"}
 {
 }
 
@@ -32,7 +32,7 @@ MarsComponent::MarsComponent(
     Port& port,
     const std::size_t inboxCapacity,
     const concurrent::BufferMode bufferMode):
-  Component{ port, inboxCapacity, bufferMode, "MarsComponent" }
+  Component{port, inboxCapacity, bufferMode, "MarsComponent"}
 {
 }
 

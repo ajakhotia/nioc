@@ -18,10 +18,10 @@ ExampleComponent2::ExampleComponent2(
     std::string sample3Topic,
     const std::size_t inboxCapacity,
     const concurrent::BufferMode bufferMode):
-  Component{ port, inboxCapacity, bufferMode, "ExampleComponent2" },
-  mSample1Topic{ std::move(sample1Topic) },
-  mSample2Topic{ std::move(sample2Topic) },
-  mSample3Topic{ std::move(sample3Topic) }
+  Component{port, inboxCapacity, bufferMode, "ExampleComponent2"},
+  mSample1Topic{std::move(sample1Topic)},
+  mSample2Topic{std::move(sample2Topic)},
+  mSample3Topic{std::move(sample3Topic)}
 {
   subscribe<Sample1>(
       mSample1Topic,

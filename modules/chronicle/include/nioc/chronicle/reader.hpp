@@ -64,7 +64,7 @@ private:
   const IoMechanism mIoMechanism;
   const std::filesystem::path mLogRoot;
   const boost::iostreams::mapped_file_source mSequenceFile;
-  std::uint64_t mNextReadIndex{ 0ULL };
+  std::uint64_t mNextReadIndex{0ULL};
   common::Locked<ChannelReaderMap> mLockedChannelReaderMap;
 };
 
