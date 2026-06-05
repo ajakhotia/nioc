@@ -6,6 +6,7 @@ add_executable(commonTest
     exceptionTest.cpp
     filesystemTest.cpp
     lockTest.cpp
+    raiiTokenTest.cpp
     timeTest.cpp
     typeTraitsTest.cpp
     utilsTest.cpp)

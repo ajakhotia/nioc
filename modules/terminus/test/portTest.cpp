@@ -44,7 +44,7 @@ TEST(PortTest, constructionCreatesRecordingDirectory)
   const auto workingDir = [&]
   {
     auto port = Port{kLogRoot, {kConfig}, {}, true, kSampleCommandLine};
-    const auto recordingDir = port.workingDir();
+    const auto& recordingDir = port.workingDir();
 
     EXPECT_TRUE(fs::is_directory(recordingDir));
     EXPECT_EQ(recordingDir.parent_path(), kLogRoot);
@@ -141,7 +141,7 @@ TEST(PortTest, recordChronicleFalseOmitsChronicleDir)
   const auto workingDir = [&]
   {
     auto port = Port{kLogRoot, {kConfig}, {}, false, ""};
-    const auto recordingDir = port.workingDir();
+    const auto& recordingDir = port.workingDir();
 
     EXPECT_FALSE(fs::exists(recordingDir / "chronicle"));
     EXPECT_TRUE(fs::is_regular_file(recordingDir / "config.json"));
