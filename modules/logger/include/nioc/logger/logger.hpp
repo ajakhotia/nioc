@@ -169,7 +169,7 @@ void critical(const common::FormatWithLocation& message, Args&&... args) noexcep
 }
 
 /// @brief Installs the process-wide default logger, optionally with a colored stderr sink whose
-/// output carries an ISO 8601 UTC timestamp, severity, and source location.
+/// output carries an ISO 8601 local timestamp with a UTC offset, severity, and source location.
 ///
 /// Call once at program start, before any logging. The logger writes through a sink list that
 /// @ref addSink can extend at run time.

@@ -5,6 +5,8 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "testComponent.hpp"
+#include <nioc/terminus/idl/testSchema.capnp.h>
+#include <nioc/terminus/msg.hpp>
 
 namespace nioc::terminus
 {
@@ -15,6 +17,7 @@ EarthComponent::EarthComponent(
     const concurrent::BufferMode bufferMode):
   Component{port, inboxCapacity, bufferMode, "EarthComponent"}
 {
+  subscribe<TestSchema>(kTopic, [](ConstMsgPtr<TestSchema>) {});
 }
 
 EarthComponent::State EarthComponent::step()
@@ -34,6 +37,7 @@ MarsComponent::MarsComponent(
     const concurrent::BufferMode bufferMode):
   Component{port, inboxCapacity, bufferMode, "MarsComponent"}
 {
+  subscribe<TestSchema>(kTopic, [](ConstMsgPtr<TestSchema>) {});
 }
 
 MarsComponent::State MarsComponent::step()

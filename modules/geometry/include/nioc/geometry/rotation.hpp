@@ -46,16 +46,22 @@ class Mrp3
 public:
   static constexpr auto kDimensions = 3U;
 
+  /// @brief Returns a const reference to the derived object.
+  /// @return Const reference to the CRTP derived type.
   [[nodiscard]] constexpr const Derived& cDerived() const noexcept
   {
     return static_cast<const Derived&>(*this);
   }
 
+  /// @brief Returns a const reference to the derived object.
+  /// @return Const reference to the CRTP derived type.
   [[nodiscard]] constexpr const Derived& derived() const noexcept
   {
     return cDerived();
   }
 
+  /// @brief Returns a mutable reference to the derived object.
+  /// @return Reference to the CRTP derived type.
   constexpr Derived& derived() noexcept
   {
     return static_cast<Derived&>(*this);
@@ -302,7 +308,7 @@ private:
 /// Maps existing memory as rotation parameters.
 ///
 /// @tparam Scalar_ Floating-point type.
-/// @tparam mapOptions_ Eigen map options.
+/// @tparam MapOptions Eigen map options.
 template<typename Scalar_, int MapOptions>
 class Eigen::Map<nioc::geometry::Rotation3<Scalar_>, MapOptions>:
   public nioc::geometry::Mrp3<Map<nioc::geometry::Rotation3<Scalar_>, MapOptions>>
@@ -372,7 +378,7 @@ private:
 /// Maps const memory as rotation parameters.
 ///
 /// @tparam Scalar_ Floating-point type.
-/// @tparam mapOptions_ Eigen map options.
+/// @tparam MapOptions Eigen map options.
 template<typename Scalar_, int MapOptions>
 class Eigen::Map<const nioc::geometry::Rotation3<Scalar_>, MapOptions>:
   public nioc::geometry::Mrp3<Map<const nioc::geometry::Rotation3<Scalar_>, MapOptions>>

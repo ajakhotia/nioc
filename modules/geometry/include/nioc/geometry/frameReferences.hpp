@@ -123,6 +123,7 @@ constexpr void assertFrameEqual() noexcept
 
 /// @brief Asserts static frame matches dynamic frame at runtime.
 /// @param rhsFrame Dynamic frame to check.
+/// @throws FrameCompositionException If the frame names differ.
 template<typename LhsFrame, typename RhsFrame>
 inline void assertFrameEqual(const RhsFrame& rhsFrame)
   requires(
@@ -138,6 +139,7 @@ inline void assertFrameEqual(const RhsFrame& rhsFrame)
 
 /// @brief Asserts dynamic frame matches static frame at runtime.
 /// @param lhsFrame Dynamic frame to check.
+/// @throws FrameCompositionException If the frame names differ.
 template<typename LhsFrame, typename RhsFrame>
 inline void assertFrameEqual(const LhsFrame& lhsFrame)
   requires(
@@ -154,6 +156,7 @@ inline void assertFrameEqual(const LhsFrame& lhsFrame)
 /// @brief Asserts two dynamic frames match at runtime.
 /// @param lhsFrame First dynamic frame.
 /// @param rhsFrame Second dynamic frame.
+/// @throws FrameCompositionException If the frame names differ.
 template<typename LhsFrame, typename RhsFrame>
 inline void assertFrameEqual(const LhsFrame& lhsFrame, const RhsFrame& rhsFrame)
   requires(std::is_same_v<LhsFrame, DynamicFrame> and std::is_same_v<RhsFrame, DynamicFrame>)
@@ -169,13 +172,14 @@ inline void assertFrameEqual(const LhsFrame& lhsFrame, const RhsFrame& rhsFrame)
 
 } // namespace helpers
 
-/// @brief Composes two frame relationships.
+/// @brief Composes two frame relationships into one.
 ///
-/// Combines two transformations. Throws FrameCompositionException if frames don't match.
+/// Combines two transformations end to end.
 ///
 /// @param lhsFrameReferences First frame relationship.
 /// @param rhsFrameReferences Second frame relationship.
 /// @return Composed frame relationship.
+/// @throws FrameCompositionException If the inner frames do not match.
 template<typename LhsFrameReferences, typename RhsFrameReferences>
 constexpr FrameReferences<
     typename LhsFrameReferences::ParentFrame,

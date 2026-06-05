@@ -19,15 +19,15 @@ namespace nioc::terminus
 namespace
 {
 
-/// A finalized message to push. step() drains by pointer and never inspects the payload, so any
-/// real message exercises the inbox identically.
+/// A finalized message to publish. step() drains by pointer and the test handler never inspects the
+/// payload, so any real message exercises the inbox identically.
 ConstMsgBasePtr makeMessage()
 {
   return std::make_shared<const Msg<TestSchema>>();
 }
 
-/// Arbitrary channel id; the foundation inbox tests never dispatch, so its value is irrelevant.
-constexpr auto kChannel = Component::ChannelId{1};
+/// Channel EarthComponent subscribes to; publishing here feeds its inbox and lets step() dispatch.
+const auto kChannel = makeChannelId(Msg<TestSchema>::kMsgId, EarthComponent::kTopic);
 
 } // namespace
 
@@ -50,8 +50,8 @@ TEST(ComponentTest, drainsOneMessagePerRun)
 {
   auto port = Port{};
   auto component = EarthComponent{port, 4, concurrent::BufferMode::Overwriting};
-  component.push(kChannel, makeMessage());
-  component.push(kChannel, makeMessage());
+  port.publish(kChannel, makeMessage());
+  port.publish(kChannel, makeMessage());
 
   EXPECT_EQ(component.step(), concurrent::Routine::State::Continue);
   EXPECT_EQ(component.step(), concurrent::Routine::State::Continue);
@@ -64,7 +64,7 @@ TEST(ComponentTest, overwriteDropsOldestWhenFull)
   auto component = EarthComponent{port, 2, concurrent::BufferMode::Overwriting};
   for(auto count = 0; count < 5; ++count)
   {
-    component.push(kChannel, makeMessage());
+    port.publish(kChannel, makeMessage());
   }
 
   // Two slots keep the newest two; the other three were overwritten.
@@ -79,7 +79,7 @@ TEST(ComponentTest, unboundedRetainsEveryMessage)
   auto component = EarthComponent{port, 1, concurrent::BufferMode::Unbounded};
   for(auto count = 0; count < 5; ++count)
   {
-    component.push(kChannel, makeMessage());
+    port.publish(kChannel, makeMessage());
   }
 
   // Unbounded keeps all five despite a nominal capacity of 1.

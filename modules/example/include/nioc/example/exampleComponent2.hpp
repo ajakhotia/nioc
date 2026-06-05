@@ -22,8 +22,8 @@ namespace nioc::example
 /// @brief Example @ref terminus::Component that counts the messages it receives on three topics.
 ///
 /// A minimal sink showing how to subscribe to several topics at once. It subscribes to `Sample1`,
-/// `Sample2`, and `Sample3` on their own topics; each received message bumps the matching counter
-/// and logs the running totals. The per-type counts are exposed for inspection.
+/// `Sample2`, and `Sample3` on their own topics; each received message increments the matching
+/// counter and logs the running totals. The per-type counts are exposed for inspection.
 class ExampleComponent2 final: public terminus::Component
 {
 public:

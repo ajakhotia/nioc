@@ -13,8 +13,8 @@ namespace nioc::common
 /// @brief Thread-safe wrapper for a value.
 ///
 /// Guards a value behind a shared mutex and grants access only through a lambda you pass in. Many
-/// threads may be read at once; writes are exclusive. The wrapper itself cannot be copied or moved
-/// — extract the value with @ref copy or @ref move instead.
+/// threads may read at the same time; writes are exclusive. The wrapper itself cannot be copied or
+/// moved — extract the value with @ref copy or @ref move instead.
 ///
 /// @code
 /// nioc::common::Locked<int> counter(0);
@@ -38,6 +38,7 @@ template<typename ValueType_>
 class Locked
 {
 public:
+  /// @brief The protected value type, with any top-level const removed.
   using ValueType = std::remove_const_t<ValueType_>;
 
   /// @brief Constructs the protected value.

@@ -26,11 +26,14 @@ public:
 
   using ConstByteSpan = std::span<const std::byte>;
 
-  /// @brief Opens (or creates) the channel directory and its index file.
+  /// @brief Creates the channel directory and its index file.
   ///
-  /// @param logRoot Path to the channel directory to write into.
+  /// @param logRoot Path to the channel directory to create. Must not exist yet.
   ///
   /// @param maxFileSizeInBytes Size cap that triggers a roll to a new data file.
+  ///
+  /// @throws std::logic_error if @p logRoot already exists.
+  /// @throws std::runtime_error if the directory cannot be created.
   explicit StreamChannelWriter(
       std::filesystem::path logRoot,
       std::uint64_t maxFileSizeInBytes = kDefaultMaxFileSizeInBytes);

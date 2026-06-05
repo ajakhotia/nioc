@@ -14,6 +14,7 @@ namespace nioc::chronicle
 /// @brief Unique identifier for a data channel.
 struct ChannelId
 {
+  /// @brief Raw 64-bit identifier value.
   std::uint64_t mValue;
 
   constexpr bool operator==(const ChannelId&) const = default;

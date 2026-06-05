@@ -68,6 +68,7 @@ private:
 
 /// @brief Chains two transformations together.
 /// @return Composed transformation from child to parent frame.
+/// @throws FrameCompositionException if the intermediate frames carry mismatched runtime names.
 template<typename ParentFrame, typename IntermediateFrame, typename ChildFrame, typename Scalar>
 RigidTransform<ParentFrame, ChildFrame, Scalar> operator*(
     const RigidTransform<ParentFrame, IntermediateFrame, Scalar>& lhs,

@@ -42,6 +42,7 @@ add_exported_library(
   HEADERS
     PUBLIC include/nioc/terminus/asyncChronicleWriter.hpp
     PUBLIC include/nioc/terminus/component.hpp
+    PUBLIC include/nioc/terminus/consignment.hpp
     PUBLIC include/nioc/terminus/driver.hpp
     PUBLIC include/nioc/terminus/msg.hpp
     PUBLIC include/nioc/terminus/msgBase.hpp

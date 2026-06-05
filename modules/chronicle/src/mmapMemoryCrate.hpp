@@ -17,7 +17,7 @@ namespace nioc::chronicle
 ///
 /// Holds a shared memory mapping of a data roll plus the byte range of one frame within it. The
 /// frame stays valid as long as any crate keeps the mapping alive, so handing out the bytes costs
-/// no copy. Constructed by @ref MmapChannelReader and reached through @ref MemoryCrate.
+/// no copy.
 class MemoryCrate::MmapMemoryCrate
 {
 public:

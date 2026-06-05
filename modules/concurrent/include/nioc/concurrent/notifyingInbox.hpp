@@ -39,7 +39,7 @@ public:
 
   /// @brief Constructs the inbox, building the wrapped queue in place.
   ///
-  /// @param notify Callback fired after every push to wake the consumer. Maybe empty, in which
+  /// @param notify Callback fired after every push to wake the consumer. May be empty, in which
   /// case push performs no notification.
   ///
   /// @param queueArgs Arguments forwarded to the wrapped queue's constructor.

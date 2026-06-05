@@ -20,7 +20,7 @@ namespace nioc::terminus
 /// auto msg = nioc::terminus::Msg<MySchema>{};
 /// auto builder = msg.builder();
 /// builder.setField(value);
-/// nioc::terminus::write(msg, writer);
+/// nioc::terminus::write(msg, "myTopic", writer);
 ///
 /// // Open an existing message held in a MemoryCrate.
 /// auto loaded = nioc::terminus::Msg<MySchema>{ memoryCrate };
@@ -67,9 +67,6 @@ public:
   }
 
   /// @brief Returns a reader over the message payload of a const message.
-  ///
-  /// Reading a finalized message is logically const, but Cap'n Proto's `getRoot` accessors are not
-  /// const-qualified, so this reuses the non-const path through a `const_cast`. It only reads.
   [[nodiscard]] Reader reader() const
   {
     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
@@ -85,15 +82,19 @@ public:
   }
 };
 
+/// @brief Shared-ownership pointer to a mutable message.
 template<typename Schema>
 using MsgPtr = std::shared_ptr<Msg<Schema>>;
 
+/// @brief Shared-ownership pointer to a read-only message.
 template<typename Schema>
 using ConstMsgPtr = std::shared_ptr<const Msg<Schema>>;
 
+/// @brief Sole-ownership pointer to a mutable message.
 template<typename Schema>
 using MsgUPtr = std::unique_ptr<Msg<Schema>>;
 
+/// @brief Sole-ownership pointer to a read-only message.
 template<typename Schema>
 using ConstMsgUPtr = std::unique_ptr<const Msg<Schema>>;
 

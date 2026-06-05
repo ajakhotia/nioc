@@ -5,7 +5,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include "msgBase.hpp"
+#include "consignment.hpp"
 #include <filesystem>
 #include <memory>
 #include <nioc/chronicle/writer.hpp>
@@ -18,9 +18,9 @@ namespace nioc::terminus
 
 /// @brief Writes published messages to a chronicle on a dedicated thread.
 ///
-/// Owns the chronicle writer, the queue that buffers messages handed to @ref record, and the thread
+/// Owns the chronicle writer, the queue that buffers messages handed to @ref push, and the thread
 /// that drains it. Construction opens the chronicle under the given directory and launches the
-/// writer thread; destruction stops that thread. @ref record returns immediately — the on-disk
+/// writer thread; destruction stops that thread. @ref push returns immediately — the on-disk
 /// write happens on the writer's own thread, off the publishing thread.
 class AsyncChronicleWriter
 {
@@ -38,8 +38,7 @@ public:
 
   /// @brief Stops the writer thread, joining it before returning.
   ///
-  /// Stopping is abrupt: messages still queued are dropped, which a planned drain-on-close pass
-  /// (shared with Component) will address.
+  /// Messages still queued at this point are dropped; they are not flushed to disk.
   ~AsyncChronicleWriter();
 
   AsyncChronicleWriter& operator=(const AsyncChronicleWriter&) = delete;
@@ -53,11 +52,11 @@ public:
   ///
   /// @param channelId Channel the message was published on.
   ///
-  /// @param msgPtr Message to record.
-  void push(ChannelId channelId, const ConstMsgBasePtr& msgPtr);
+  /// @param consignment Message to record.
+  void push(ChannelId channelId, Consignment consignment);
 
 private:
-  using Processor = concurrent::AsyncProcessor<std::pair<ChannelId, ConstMsgBasePtr>>;
+  using Processor = concurrent::AsyncProcessor<std::pair<ChannelId, Consignment>>;
 
   chronicle::Writer mWriter;
   std::shared_ptr<Processor> mProcessor;

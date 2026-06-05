@@ -36,7 +36,7 @@ public:
   /// @param maxFileSizeInBytes Maximum size of a single data file.
   ///
   /// @throws std::invalid_argument If @p rootDir does not exist, is not a directory, or is not
-  /// empty; or if @p ioMechanism is not supported for writing.
+  /// empty.
   explicit Writer(
       std::filesystem::path rootDir,
       IoMechanism ioMechanism = IoMechanism::Stream,
@@ -57,6 +57,9 @@ public:
   /// @param channelId Channel the frame belongs to.
   ///
   /// @param data Frame payload.
+  ///
+  /// @throws std::invalid_argument On the first frame of a channel if the Writer's I/O mechanism
+  /// does not support writing.
   void write(ChannelId channelId, const std::span<const std::byte>& data);
 
   /// @brief Appends several spans to a channel as a single frame.
@@ -64,6 +67,9 @@ public:
   /// @param channelId Channel the frame belongs to.
   ///
   /// @param data Spans concatenated into one frame.
+  ///
+  /// @throws std::invalid_argument On the first frame of a channel if the Writer's I/O mechanism
+  /// does not support writing.
   void write(ChannelId channelId, std::span<const std::span<const std::byte>> data);
 
   /// @brief Returns the chronicle directory path.

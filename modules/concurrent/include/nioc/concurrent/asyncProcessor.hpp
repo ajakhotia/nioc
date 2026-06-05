@@ -29,6 +29,7 @@ template<typename ValueType>
 class AsyncProcessor final: public Routine
 {
 public:
+  /// @brief Callback that handles one dequeued value, run on the Runner's thread.
   using Process = std::function<void(ValueType)>;
 
   /// @brief Constructs the processor with its inbox and the callback that handles each value.
@@ -74,6 +75,10 @@ public:
     mInbox.push(std::move(value));
   }
 
+  /// @brief Pops one queued value and runs the callback on it.
+  ///
+  /// @return @ref State::Continue after handling a value, or @ref State::Waiting when the inbox is
+  /// empty.
   [[nodiscard]] State step() final
   {
     auto value = mInbox.tryPop();

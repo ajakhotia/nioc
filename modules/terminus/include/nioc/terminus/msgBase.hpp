@@ -117,6 +117,8 @@ using ConstMsgBaseUPtr = std::unique_ptr<const MsgBase>;
 /// @param channelId Channel the message is appended to.
 ///
 /// @param writer Open chronicle writer that receives the serialized message.
+///
+/// @throws std::bad_variant_access if @p msgBase was opened for reading rather than built.
 void write(const MsgBase& msgBase, chronicle::ChannelId channelId, chronicle::Writer& writer);
 
 /// @brief Serializes a built message and appends it to a chronicle on the channel for a topic.
@@ -130,6 +132,8 @@ void write(const MsgBase& msgBase, chronicle::ChannelId channelId, chronicle::Wr
 /// @param topic Topic name.
 ///
 /// @param writer Open chronicle writer that receives the serialized message.
+///
+/// @throws std::bad_variant_access if @p msgBase was opened for reading rather than built.
 void write(const MsgBase& msgBase, const std::string_view& topic, chronicle::Writer& writer);
 
 /// @brief Computes the channel a message type carried on a topic belongs to.

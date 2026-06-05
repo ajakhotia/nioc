@@ -67,10 +67,6 @@ public:
   [[nodiscard]] virtual State step() = 0;
 
   /// @brief Returns this routine's name: its human-readable identity.
-  ///
-  /// Fixed at construction. Used to lead the routine's diagnostic log lines, and available to a
-  /// Driver or Component as a prefix, so two instances of the same type can namespace the topics
-  /// they publish on without colliding.
   [[nodiscard]] const std::string& name() const noexcept
   {
     return mName;

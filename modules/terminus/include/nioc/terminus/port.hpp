@@ -5,16 +5,13 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include "msg.hpp"
+#include "asyncChronicleWriter.hpp"
+#include "consignment.hpp"
 #include "msgBase.hpp"
 #include <atomic>
 #include <boost/program_options.hpp>
-#include <cstdint>
 #include <filesystem>
 #include <memory>
-#include <mutex>
-#include <nioc/chronicle/writer.hpp>
-#include <nioc/logger/logger.hpp>
 #include <nlohmann/json.hpp>
 #include <spdlog/sinks/sink.h>
 #include <string>
@@ -23,8 +20,6 @@
 
 namespace nioc::terminus
 {
-
-class AsyncChronicleWriter;
 
 /// @brief Central data hub for a nioc binary.
 ///
@@ -38,7 +33,7 @@ class Port
 {
 public:
   using ChannelId = chronicle::ChannelId;
-  using MsgCallback = std::function<void(ConstMsgBasePtr)>;
+  using ConsignmentCallback = std::function<void(Consignment)>;
 
   /// @brief Constructs a Port from a parsed command line.
   ///
@@ -115,21 +110,30 @@ public:
   /// filename collides with a previously added resource.
   void addResource(const std::filesystem::path& source);
 
-  /// @brief Resolves a previously added resource to its copy inside the working directory.
+  /// @brief Returns the working-directory copy of a resource, adding it first if needed.
   ///
-  /// The @p source is the original path passed to @ref addResource. The returned path points
-  /// at the flat copy that addResource made under the working directory, so callers read from the
-  /// self-contained recording rather than the resource's original location.
+  /// Looks up the copy of @p source inside the working directory. If @p source was not added yet,
+  /// copies it in first (see @ref addResource). Callers then read from the self-contained recording
+  /// rather than the resource's original location.
   ///
-  /// @param source The original path previously passed to @ref addResource.
+  /// @param source The resource's original path.
   ///
   /// @return The path to the resource's copy inside the working directory.
   ///
-  /// @throws std::invalid_argument If the @p source was not previously added (see @ref
-  /// addResource).
+  /// @throws std::invalid_argument If @p source must be added but is missing, is not a regular
+  /// file, or its filename collides with an already-added resource.
   [[nodiscard]] std::filesystem::path acquireResource(const std::filesystem::path& source);
 
-  /// @brief Resolves a previously added resource to its copy; const overload, same behavior.
+  /// @brief Returns the working-directory copy of a previously added resource.
+  ///
+  /// Const overload. Unlike the non-const overload, it never adds a resource; @p source must
+  /// already be added (see @ref addResource).
+  ///
+  /// @param source The original path of a previously added resource.
+  ///
+  /// @return The path to the resource's copy inside the working directory.
+  ///
+  /// @throws std::out_of_range If @p source was not previously added.
   [[nodiscard]] std::filesystem::path acquireResource(const std::filesystem::path& source) const;
 
   /// @brief Registers a callback to receive every message published on a channel.
@@ -141,7 +145,7 @@ public:
   /// @param channelId Channel to receive messages from (see @ref makeChannelId).
   ///
   /// @param callbackPtr Callback invoked with each published message; held weakly.
-  void subscribe(ChannelId channelId, std::weak_ptr<const MsgCallback> callbackPtr);
+  void subscribe(ChannelId channelId, std::weak_ptr<const ConsignmentCallback> callbackPtr);
 
   /// @brief Publishes a message on a channel, fanning it out to subscribers and recording it.
   ///
@@ -151,49 +155,20 @@ public:
   ///
   /// @param channelId Channel to publish on (see @ref makeChannelId).
   ///
-  /// @param msgPtr Message to publish; ownership passes to the Port.
-  void publish(ChannelId channelId, const ConstMsgBasePtr& msgPtr);
-
-  /// @brief Publishes a typed message on the channel for a topic.
-  ///
-  /// Resolves the channel from the message type and @p topic — so two topics carrying the same
-  /// schema stay distinct — then publishes as @ref publish(ChannelId, ConstMsgBasePtr) does.
-  ///
-  /// @tparam Schema Cap'n Proto schema of the message.
-  ///
-  /// @param topic Topic to publish on.
-  ///
-  /// @param msgPtr Message to publish; ownership passes to the Port.
-  template<typename Schema>
-  void publish(const std::string_view& topic, ConstMsgPtr<Schema> msgPtr)
-  {
-    const auto channelId = makeChannelId(Msg<Schema>::kMsgId, topic);
-    logger::trace("publish on topic '{}' (channel {})", topic, channelId.mValue);
-    publish(channelId, std::move(msgPtr));
-  }
+  /// @param msgBasePtr Message to publish; ownership passes to the Port.
+  void publish(ChannelId channelId, const ConstMsgBasePtr& msgBasePtr);
 
 private:
-  using SubscriptionList = std::vector<std::weak_ptr<const MsgCallback>>;
+  using SubscriptionList = std::vector<std::weak_ptr<const ConsignmentCallback>>;
   using SubscriptionMap = std::unordered_map<ChannelId, SubscriptionList>;
-
-  /// @brief Fans a message out to its live subscribers and records a copy to the chronicle.
-  void dispatch(ChannelId channelId, const ConstMsgBasePtr& msgBasePtr);
 
   const std::filesystem::path mWorkingDir;
   const std::shared_ptr<spdlog::sinks::sink> mConsoleLogSink;
   const nlohmann::json mConfig;
+
   std::unordered_map<std::string, std::string> mResourceMap;
-
-  std::mutex mSubscriptionMutex;
   SubscriptionMap mSubscriptionMap;
-
-  // Count of messages accepted into a consumer inbox but not yet processed. Reaching zero, once all
-  // drivers are Done, is the quiescence signal a graceful drain-on-close waits for before tearing
-  // down. Not yet wired to the inbox accept/complete points.
-  std::atomic<std::uint32_t> mInFlight{0};
-
-  // Writes published messages to the chronicle on its own thread; present only when this run
-  // records. publish() fans out to subscribers synchronously, then records a copy here.
+  std::atomic_uint32_t mPendingConsignments{0};
   std::unique_ptr<AsyncChronicleWriter> mChronicleWriter;
 };
 

@@ -17,8 +17,8 @@ namespace nioc::common
 /// the conversion captures the call site. This lets a variadic function record where it was called
 /// without a trailing source_location parameter or a macro.
 ///
-/// The format string is held as a std::string_view, with no formatter specifics baked in. The
-/// consumer picks the formatter and matches the string to its arguments at run time.
+/// The format string is held as a std::string_view, with no formatter details fixed in advance.
+/// The consumer picks the formatter and matches the string to its arguments at run time.
 struct FormatWithLocation
 {
   /// @brief Captures @p format and the call site.
@@ -38,7 +38,10 @@ struct FormatWithLocation
   {
   }
 
+  /// @brief The format string, with no formatter details fixed in advance.
   std::string_view mFormat;
+
+  /// @brief The source location of the call that built this wrapper.
   std::source_location mLocation;
 };
 

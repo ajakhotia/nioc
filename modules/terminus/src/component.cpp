@@ -30,12 +30,6 @@ Component::Component(
 {
 }
 
-void Component::push(const ChannelId channelId, ConstMsgBasePtr msgBasePtr)
-{
-  logger::trace("[{}] inbox enqueue on channel {}", name(), channelId.mValue);
-  mInbox.push(std::make_pair(channelId, std::move(msgBasePtr)));
-}
-
 Component::State Component::step()
 {
   auto value = mInbox.tryPop();
@@ -44,17 +38,17 @@ Component::State Component::step()
     return State::Waiting;
   }
 
-  if(mHandlers.contains(value->first))
-  {
-    logger::trace("[{}] handling channel {}", name(), value->first.mValue);
-    std::invoke(mHandlers.at(value->first), std::move(value->second));
-  }
-  else
-  {
-    logger::trace("[{}] no handler for channel {}; dropping", name(), value->first.mValue);
-  }
+  // Dispatch moves the message into the handler. When this consignment is later destroyed, its
+  // RaiiToken runs Release, decrementing the port's in-flight counter to report the delivery.
+  std::invoke(mHandlers.at(value->first), std::move(value->second.mMsgBasePtr));
 
   return State::Continue;
+}
+
+void Component::push(ChannelId channelId, Consignment consignment)
+{
+  logger::trace("[{}] inbox enqueue on channel {}", name(), channelId.mValue);
+  mInbox.push({channelId, std::move(consignment)});
 }
 
 } // namespace nioc::terminus

@@ -87,8 +87,8 @@ TEST(Logger, CompileTimeThresholdGatesLowerLevels)
   auto buffer = std::ostringstream{};
   installBufferLogger(buffer, "%v");
 
-  // trace is the lowest severity. The expectation adapts to wherever kkDefaultActiveLevelLevel
-  // sits, so this holds for whatever threshold the build system later selects.
+  // trace is the lowest severity. The expectation adapts to wherever kDefaultActiveLevel
+  // sits, so this holds for whatever threshold the build selects.
   trace("trace message");
 
   if constexpr(spdlog::level::trace >= kDefaultActiveLevel)

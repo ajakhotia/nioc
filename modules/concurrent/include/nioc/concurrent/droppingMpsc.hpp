@@ -22,10 +22,6 @@ namespace nioc::concurrent
 ///
 /// Models @ref MpscQueue. See it for the producer/consumer contract.
 ///
-/// @note The name is reserved and the contract pinned, but the implementation is deferred until a
-/// reject-newest use case appears. The member functions are declared, not defined; instantiating a
-/// call is a link-time error until then.
-///
 /// @tparam ValueType Type of the queued values.
 template<typename ValueType>
 class DroppingMpsc
@@ -33,6 +29,8 @@ class DroppingMpsc
 public:
   using value_type = ValueType;
   using size_type = std::size_t;
+
+  // TODO(anurag): Define the member functions below; they are declared but not yet implemented.
 
   /// @brief Constructs an empty queue.
   /// @param capacity Maximum number of values held at once; must be at least 1.

@@ -327,6 +327,9 @@ public:
 
   using Scalar = typename Base::Scalar;
 
+  /// @brief Maps an existing writable 7-element parameter buffer.
+  /// @param parameters View over 7 values [qx, qy, qz, qw, px, py, pz].
+  /// @throws std::invalid_argument if the view size is not 7.
   explicit Map(const std::span<Scalar> parameters): mParameters(parameters)
   {
     if(parameters.size() != kNumParams)
@@ -393,6 +396,10 @@ public:
 
   using Scalar = typename Base::Scalar;
 
+  /// @brief Maps an existing read-only 7-element parameter buffer.
+  /// @param parameters View over 7 values [qx, qy, qz, qw, px, py, pz].
+  /// @throws std::invalid_argument if the view size is not 7, or the quaternion part is not unit
+  /// norm.
   explicit Map(const std::span<const Scalar> parameters): mParameters(parameters)
   {
     if(parameters.size() != kNumParams)

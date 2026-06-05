@@ -20,7 +20,7 @@ namespace nioc::concurrent
 namespace
 {
 
-// Both bounded queues model the contract; the reserved (unimplemented) one does so by declaration.
+// Both bounded queues model the MpscQueue contract.
 static_assert(MpscQueue<OverwritingMpsc<int>>);
 static_assert(MpscQueue<DroppingMpsc<int>>);
 

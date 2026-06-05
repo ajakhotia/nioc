@@ -49,7 +49,10 @@ TEST(RaiiToken, EntryReceivesForwardedArguments)
         {
           sum = a + b;
         },
-        [&sum]() noexcept { --sum; },
+        [&sum]() noexcept
+        {
+          --sum;
+        },
         3,
         4};
 
@@ -129,8 +132,9 @@ TEST(RaiiToken, CircularBufferOverwriteRunsExitExactlyOnce)
     tokens.push_back(makeCountingToken(liveCount));
     EXPECT_EQ(2, liveCount);
 
-    tokens.push_back(makeCountingToken(liveCount)); // full: overwrites the oldest via move-assignment
-    EXPECT_EQ(2, liveCount);                        // the evicted token's exit ran exactly once
+    tokens.push_back(
+        makeCountingToken(liveCount)); // full: overwrites the oldest via move-assignment
+    EXPECT_EQ(2, liveCount);           // the evicted token's exit ran exactly once
 
     tokens.pop_front();
     EXPECT_EQ(1, liveCount);

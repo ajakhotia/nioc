@@ -88,7 +88,7 @@ nlohmann::json loadAndWriteConfig(
   return config;
 }
 
-/// Attach a file-backed sink to the logger to capture the console log to the working directory
+/// Attaches a file-backed sink to the logger to capture the console log to the working directory.
 spdlog::sink_ptr attachLogFileSink(
     const fs::path& consoleLogPath,
     const std::string_view pattern = logger::kDefaultLogPattern)
@@ -257,51 +257,41 @@ fs::path Port::acquireResource(const fs::path& source) const
   return mWorkingDir / mResourceMap.at(source.string());
 }
 
-void Port::subscribe(const ChannelId channelId, std::weak_ptr<const MsgCallback> callbackPtr)
+void Port::subscribe(
+    const ChannelId channelId,
+    std::weak_ptr<const ConsignmentCallback> callbackPtr)
 {
-  const auto lock = std::scoped_lock(mSubscriptionMutex);
   mSubscriptionMap[channelId].emplace_back(std::move(callbackPtr));
 }
 
-void Port::publish(const ChannelId channelId, const ConstMsgBasePtr& msgPtr)
+void Port::publish(const ChannelId channelId, const ConstMsgBasePtr& msgBasePtr)
 {
-  dispatch(channelId, msgPtr);
-}
-
-void Port::dispatch(const ChannelId channelId, const ConstMsgBasePtr& msgBasePtr)
-{
-  // Snapshot the live subscribers under the lock, then invoke them unlocked: a subscriber callback
-  // must never run while we hold the subscription lock, or one that publishes would re-enter it.
-  const auto callbacks = [&]
+  if(const auto subscriptions = mSubscriptionMap.find(channelId);
+     subscriptions != mSubscriptionMap.end())
   {
-    auto live = std::vector<std::shared_ptr<const MsgCallback>>{};
-    const auto lock = std::scoped_lock(mSubscriptionMutex);
-    if(mSubscriptionMap.contains(channelId))
+    for(const auto& weakCallback: subscriptions->second)
     {
-      for(const auto& weakCallback: mSubscriptionMap.at(channelId))
+      if(const auto callback = weakCallback.lock())
       {
-        if(auto callback = weakCallback.lock())
-        {
-          live.push_back(std::move(callback));
-        }
+        std::invoke(
+            *callback,
+            Consignment{
+                msgBasePtr,
+                Consignment::Acquire{&mPendingConsignments},
+                Consignment::Release{&mPendingConsignments}});
       }
     }
-    return live;
-  }();
-
-  for(const auto& callback: callbacks)
-  {
-    std::invoke(*callback, msgBasePtr);
   }
-
-  // A message with no live subscriber is only recorded, never handled — usually a topic-wiring
-  // mismatch between the publisher and the intended component.
-  logger::trace("dispatched channel {} to {} subscriber(s)", channelId.mValue, callbacks.size());
 
   if(mChronicleWriter)
   {
-    mChronicleWriter->push(channelId, msgBasePtr);
+    mChronicleWriter->push(
+        channelId,
+        {msgBasePtr,
+         Consignment::Acquire{&mPendingConsignments},
+         Consignment::Release{&mPendingConsignments}});
   }
 }
+
 
 } // namespace nioc::terminus

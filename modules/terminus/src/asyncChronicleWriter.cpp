@@ -20,8 +20,8 @@ namespace fs = std::filesystem;
 namespace
 {
 
-/// Inbox capacity used if the writer ever runs bounded. It currently runs BufferMode::Unbounded
-/// (lossless, no backpressure), so this value is presently ignored.
+/// Inbox capacity. Applies only under a bounded BufferMode; AsyncProcessor ignores it under
+/// BufferMode::Unbounded, which this writer uses.
 constexpr auto kQueueCapacity = std::size_t{1024};
 
 /// Creates @p dir if it does not exist and returns it, so a chronicle::Writer can be initialized
@@ -42,8 +42,7 @@ AsyncChronicleWriter::AsyncChronicleWriter(const fs::path& chronicleDir):
       kQueueCapacity,
       [this](const auto& item)
       {
-        logger::trace("writing channel {} to chronicle", item.first.mValue);
-        write(*item.second, item.first, mWriter);
+        write(*item.second.mMsgBasePtr, item.first, mWriter);
       })},
   mRunner{std::make_shared<concurrent::ThreadedRunner>()}
 {
@@ -57,9 +56,9 @@ AsyncChronicleWriter::~AsyncChronicleWriter()
   mRunner->waitUntilStopped();
 }
 
-void AsyncChronicleWriter::push(const ChannelId channelId, const ConstMsgBasePtr& msgPtr)
+void AsyncChronicleWriter::push(const ChannelId channelId, Consignment consignment)
 {
-  processor().push(std::make_pair(channelId, msgPtr));
+  processor().push({channelId, std::move(consignment)});
 }
 
 AsyncChronicleWriter::Processor& AsyncChronicleWriter::processor()

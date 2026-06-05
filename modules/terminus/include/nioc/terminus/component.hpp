@@ -45,16 +45,6 @@ public:
   Component& operator=(Component&&) noexcept = delete;
   ~Component() noexcept override = default;
 
-  /// @brief Enqueues a message for the channel, applying the inbox overflow policy if it is full.
-  ///
-  /// Called by the Port to deliver a subscribed message; thread-safe. Wakes the Runner when the
-  /// message lands in an otherwise-empty inbox.
-  ///
-  /// @param channelId Channel the message arrived on.
-  ///
-  /// @param msgBasePtr Message to enqueue.
-  void push(ChannelId channelId, ConstMsgBasePtr msgBasePtr);
-
   /// @brief Pops one queued message and runs its subscribed callback.
   ///
   /// @return @ref State::Continue after handling a message, or @ref State::Waiting when the inbox
@@ -63,6 +53,7 @@ public:
 
 protected:
   using MsgBaseCallback = std::function<void(ConstMsgBasePtr)>;
+  using ConsignmentCallback = std::function<void(Consignment)>;
 
   template<typename Schema>
   using MsgCallback = std::function<void(ConstMsgPtr<Schema>)>;
@@ -108,7 +99,8 @@ protected:
     if(mHandlers.contains(channelId) or mPortSubscriptions.contains(channelId))
     {
       common::throwException<std::logic_error>(
-          "Subscription already exists. Topic: {}, Schema: {}, ChannelId: {}",
+          "[{}] Subscription already exists. Topic: {}, Schema: {}, ChannelId: {}",
+          name(),
           topic,
           common::prettyName<Schema>(),
           channelId.mValue);
@@ -124,15 +116,15 @@ protected:
               std::static_pointer_cast<const Msg<Schema>>(std::move(msgBasePtr)));
         });
 
-    // Set up dispatch pathway from port to component's queue
-    auto msgBaseCallbackPtr = std::make_shared<MsgBaseCallback>(
-        [this, channelId](ConstMsgBasePtr msgBasePtr)
+    // Set up dispatch pathway for the consignments from port to component's queue
+    auto consignmentCallbackPtr = std::make_shared<ConsignmentCallback>(
+        [this, channelId](Consignment consignment)
         {
-          push(channelId, std::move(msgBasePtr));
+          push(channelId, std::move(consignment));
         });
 
-    mPort.subscribe(channelId, msgBaseCallbackPtr);
-    mPortSubscriptions.emplace(channelId, std::move(msgBaseCallbackPtr));
+    mPort.subscribe(channelId, consignmentCallbackPtr);
+    mPortSubscriptions.emplace(channelId, std::move(consignmentCallbackPtr));
 
     logger::debug(
         "[{}] subscribed to topic '{}' (schema {}, channel {})",
@@ -152,14 +144,21 @@ protected:
   template<typename Schema>
   void publish(const std::string_view& topic, ConstMsgPtr<Schema> msgPtr)
   {
-    mPort.publish<Schema>(topic, std::move(msgPtr));
+    mPort.publish(makeChannelId(Msg<Schema>::kMsgId, topic), std::move(msgPtr));
   }
 
 private:
   Port& mPort;
-  concurrent::NotifyingInbox<concurrent::AnyMpsc<std::pair<ChannelId, ConstMsgBasePtr>>> mInbox;
+  concurrent::NotifyingInbox<concurrent::AnyMpsc<std::pair<ChannelId, Consignment>>> mInbox;
   std::unordered_map<ChannelId, MsgBaseCallback> mHandlers;
-  std::unordered_map<ChannelId, std::shared_ptr<const MsgBaseCallback>> mPortSubscriptions;
+  std::unordered_map<ChannelId, std::shared_ptr<const ConsignmentCallback>> mPortSubscriptions;
+
+  /// @brief Enqueues a consignment for the channel.
+  ///
+  /// @param channelId Channel the message arrived on.
+  ///
+  /// @param consignment Consignment to enqueue.
+  void push(ChannelId channelId, Consignment consignment);
 };
 
 } // namespace nioc::terminus
