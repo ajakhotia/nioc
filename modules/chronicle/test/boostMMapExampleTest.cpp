@@ -21,14 +21,16 @@ constexpr const auto kNumBytes = 1024ULL * 1024ULL;
 TEST(LoggerBoostUsageExample, MMapFileWriting)
 {
   namespace bio = boost::iostreams;
-  std::filesystem::remove_all("/tmp/mmapFileWriting.txt");
+  const auto path = std::string{"/tmp/mmapFileWriting.txt"};
+  std::filesystem::remove(path);
 
-  auto mappedFileParams = bio::mapped_file_params{};
-  mappedFileParams.new_file_size = kNumBytes;
-  mappedFileParams.path = "/tmp/mmapFileWriting.txt";
-  mappedFileParams.flags = bio::mapped_file::mapmode::readwrite;
+  // Create the file by openining an ofsteam to it.
+  {
+    (void)std::ofstream{path, std::ios::binary};
+  }
+  std::filesystem::resize_file(path, kNumBytes);
 
-  auto file = bio::mapped_file{mappedFileParams};
+  auto file = bio::mapped_file{path, bio::mapped_file::readwrite};
 
   const auto tic = std::clock();
   {
@@ -41,7 +43,7 @@ TEST(LoggerBoostUsageExample, MMapFileWriting)
   }
   const auto toc = std::clock();
   const auto duration = toc - tic;
-  std::filesystem::remove("/tmp/mmapFileWriting.txt");
+  std::filesystem::remove(path);
   std::cout
       << "MMap write time: " << static_cast<double>(duration) / static_cast<double>(CLOCKS_PER_SEC)
       << '\n';

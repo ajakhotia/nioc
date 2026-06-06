@@ -16,9 +16,15 @@ namespace
 
 TEST(ThrowException, ThrowsRequestedTypeWithFormattedMessage)
 {
+  constexpr auto kOutOfRangeValue = 7;
+  constexpr auto kRangeMax = 5;
   try
   {
-    throwException<std::invalid_argument>("value {} is out of range [{}, {}]", 7, 0, 5);
+    throwException<std::invalid_argument>(
+        "value {} is out of range [{}, {}]",
+        kOutOfRangeValue,
+        0,
+        kRangeMax);
   }
   catch(const std::invalid_argument& e)
   {

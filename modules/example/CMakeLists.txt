@@ -62,6 +62,7 @@ add_exported_executable(
   SOURCES
     src/exampleMain.cpp
   LINK_LIBRARIES
+    PRIVATE nioc::concurrent
     PRIVATE nioc::example
     PRIVATE nioc::terminus
   COMPILE_FEATURES

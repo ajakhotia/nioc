@@ -16,8 +16,9 @@ namespace
 std::vector<char> generateData()
 {
   static constexpr auto kSize = 20UL;
+  static constexpr auto kStartValue = 63;
   auto data = std::vector<char>(kSize);
-  std::ranges::iota(data, 63);
+  std::ranges::iota(data, kStartValue);
   return data;
 }
 

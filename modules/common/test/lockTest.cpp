@@ -65,7 +65,8 @@ TEST(Locked, LockedConstruction)
 
   // Construction of movable-only entities with an initial value.
   {
-    auto locked = Locked<std::unique_ptr<int>>{std::make_unique<int>(7)};
+    constexpr auto kStoredValue = 7;
+    auto locked = Locked<std::unique_ptr<int>>{std::make_unique<int>(kStoredValue)};
     EXPECT_EQ(7, locked(kValueExtractorHelper));
   }
 }
@@ -130,13 +131,16 @@ TEST(Locked, LockedConstExecution)
 
 TEST(Locked, LockedNonConstExecution)
 {
+  constexpr auto kInitialValue = 7;
+  constexpr auto kIncrement = 9;
+
   // Pass by l-value reference.
   {
-    auto locked = Locked<int>{7};
+    auto locked = Locked<int>{kInitialValue};
     const auto valueCopy = locked.execute(
         [](auto& value)
         {
-          value += 9;
+          value += kIncrement;
           return value;
         });
     EXPECT_EQ(16, valueCopy);
@@ -144,11 +148,11 @@ TEST(Locked, LockedNonConstExecution)
 
   // Pass by forwarding reference.
   {
-    auto locked = Locked<int>{7};
+    auto locked = Locked<int>{kInitialValue};
     const auto valueCopy = locked.execute(
         [](auto&& value)
         {
-          value += 9;
+          value += kIncrement;
           return value;
         });
     EXPECT_EQ(16, valueCopy);
@@ -156,11 +160,11 @@ TEST(Locked, LockedNonConstExecution)
 
   // Pass by l-value reference. Using the non-const operator().
   {
-    auto locked = Locked<int>{7};
+    auto locked = Locked<int>{kInitialValue};
     const auto valueCopy = locked(
         [](auto& value)
         {
-          value += 9;
+          value += kIncrement;
           return value;
         });
     EXPECT_EQ(16, valueCopy);
@@ -168,11 +172,11 @@ TEST(Locked, LockedNonConstExecution)
 
   // Pass by forwarding reference. Using the non-const operator() overload
   {
-    auto locked = Locked<int>{7};
+    auto locked = Locked<int>{kInitialValue};
     const auto valueCopy = locked(
         [](auto&& value)
         {
-          value += 9;
+          value += kIncrement;
           return value;
         });
     EXPECT_EQ(16, valueCopy);
@@ -181,22 +185,26 @@ TEST(Locked, LockedNonConstExecution)
 
 TEST(Locked, LockedCopyAssignment)
 {
-  auto locked = Locked<int>{12};
+  constexpr auto kInitialValue = 12;
+  constexpr auto kReassignedValue = 13;
+  auto locked = Locked<int>{kInitialValue};
   EXPECT_EQ(12, locked);
 
-  locked = 13;
+  locked = kReassignedValue;
   EXPECT_EQ(13, locked);
 }
 
 TEST(Locked, LockedMoveAssignment)
 {
+  constexpr auto kStoredValue = 7;
+  constexpr auto kReassignedValue = 13;
   auto locked = Locked<std::unique_ptr<int>>{};
   EXPECT_EQ(nullptr, locked);
 
-  locked = std::make_unique<int>(7);
+  locked = std::make_unique<int>(kStoredValue);
   EXPECT_EQ(7, locked(kValueExtractorHelper));
 
-  auto anotherPtr = std::make_unique<int>(13);
+  auto anotherPtr = std::make_unique<int>(kReassignedValue);
 
   // Line below is illegal because unique_ptr<> is not copyable and anotherPtr is an
   // l-value and hence cannot be implicitly moved.
@@ -217,7 +225,8 @@ TEST(Locked, LockedCopyExtraction)
 
 TEST(Locked, LockedMoveExtraction)
 {
-  auto locked = Locked<std::unique_ptr<int>>{std::make_unique<int>(13)};
+  constexpr auto kStoredValue = 13;
+  auto locked = Locked<std::unique_ptr<int>>{std::make_unique<int>(kStoredValue)};
 
   const auto extracted = locked.move();
 

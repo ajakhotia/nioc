@@ -30,6 +30,16 @@ public:
       not(common::isSpecialization<FrameId, StaticFrame>),
       "FrameId cannot be a StaticFrame specialization.");
 
+  StaticFrame() = delete;
+
+  StaticFrame(const StaticFrame&) = delete;
+
+  StaticFrame(StaticFrame&&) = delete;
+
+  StaticFrame& operator=(const StaticFrame&) = delete;
+
+  StaticFrame& operator=(StaticFrame&&) = delete;
+
   ~StaticFrame() = delete;
 
   /// @brief Returns the frame's name.

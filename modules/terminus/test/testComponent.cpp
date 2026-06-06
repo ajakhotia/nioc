@@ -17,7 +17,7 @@ EarthComponent::EarthComponent(
     const concurrent::BufferMode bufferMode):
   Component{port, inboxCapacity, bufferMode, "EarthComponent"}
 {
-  subscribe<TestSchema>(kTopic, [](ConstMsgPtr<TestSchema>) {});
+  subscribe<TestSchema>(kTopic, [](const ConstMsgPtr<TestSchema>&) {});
 }
 
 EarthComponent::State EarthComponent::step()
@@ -37,7 +37,7 @@ MarsComponent::MarsComponent(
     const concurrent::BufferMode bufferMode):
   Component{port, inboxCapacity, bufferMode, "MarsComponent"}
 {
-  subscribe<TestSchema>(kTopic, [](ConstMsgPtr<TestSchema>) {});
+  subscribe<TestSchema>(kTopic, [](const ConstMsgPtr<TestSchema>&) {});
 }
 
 MarsComponent::State MarsComponent::step()

@@ -8,10 +8,33 @@
 #include "frameConcepts.hpp"
 #include <nioc/common/exception.hpp>
 #include <nioc/common/typeTraits.hpp>
+#include <string>
 #include <type_traits>
+#include <utility>
 
 namespace nioc::geometry
 {
+namespace detail
+{
+/// @brief Normalizes a frame identifier so it can be passed on without array-to-pointer decay.
+///
+/// A character buffer (such as a string literal) becomes an owned @ref std::string through an
+/// explicit cast; an identifier of any other type (@ref std::string, @ref DynamicFrame) is
+/// forwarded unchanged.
+template<typename FrameArg>
+auto normalizeFrameId(FrameArg&& frameId)
+{
+  if constexpr(std::is_array_v<std::remove_reference_t<FrameArg>>)
+  {
+    return std::string(static_cast<const char*>(std::forward<FrameArg>(frameId)));
+  }
+  else
+  {
+    return std::forward<FrameArg>(frameId);
+  }
+}
+} // namespace detail
+
 /// @brief Manages parent and child frame relationships.
 ///
 /// Stores frame identities for geometric transformations. Supports both compile-time (StaticFrame)
@@ -30,12 +53,10 @@ public:
   using SelfType = FrameReferences<ParentFrame_, ChildFrame_>;
 
   /// @brief Constructs with compile-time frame identities.
-  template<
-      typename ParentFrame = SelfType::ParentFrame,
-      typename ChildFrame = SelfType::ChildFrame,
-      typename = std::enable_if_t<common::isSpecialization<ParentFrame, StaticFrame>>>
+  template<typename ParentFrame = SelfType::ParentFrame, typename ChildFrame = SelfType::ChildFrame>
   FrameReferences() noexcept
-    requires(common::isSpecialization<ChildFrame, StaticFrame>)
+    requires(common::isSpecialization<ParentFrame, StaticFrame> and
+             common::isSpecialization<ChildFrame, StaticFrame>)
     : ParentConcept(), ChildConcept()
   {
   }
@@ -45,11 +66,13 @@ public:
   template<
       typename ChildConceptArgs,
       typename ParentFrame = SelfType::ParentFrame,
-      typename ChildFrame = SelfType::ChildFrame,
-      typename = std::enable_if_t<common::isSpecialization<ParentFrame, StaticFrame>>>
+      typename ChildFrame = SelfType::ChildFrame>
   [[maybe_unused]] explicit FrameReferences(ChildConceptArgs&& childId) noexcept
-    requires(std::is_same_v<ChildFrame, DynamicFrame>)
-    : ParentConcept(), ChildConcept(std::forward<ChildConceptArgs>(childId))
+    requires(common::isSpecialization<ParentFrame, StaticFrame> and
+             std::is_same_v<ChildFrame, DynamicFrame>)
+    :
+    ParentConcept(),
+    ChildConcept(detail::normalizeFrameId(std::forward<ChildConceptArgs>(childId)))
   {
   }
 
@@ -58,13 +81,15 @@ public:
   template<
       typename ParentConceptArgs,
       typename ParentFrame = SelfType::ParentFrame,
-      typename ChildFrame = SelfType::ChildFrame,
-      typename = std::enable_if_t<std::is_same_v<ParentFrame, DynamicFrame>>>
+      typename ChildFrame = SelfType::ChildFrame>
   [[maybe_unused]] explicit FrameReferences(
       ParentConceptArgs&& parentId,
       int /*unused*/ = 0) noexcept
-    requires(common::isSpecialization<ChildFrame, StaticFrame>)
-    : ParentConcept(std::forward<ParentConceptArgs>(parentId)), ChildConcept()
+    requires(std::is_same_v<ParentFrame, DynamicFrame> and
+             common::isSpecialization<ChildFrame, StaticFrame>)
+    :
+    ParentConcept(detail::normalizeFrameId(std::forward<ParentConceptArgs>(parentId))),
+    ChildConcept()
   {
   }
 
@@ -75,17 +100,24 @@ public:
       typename ParentConceptArgs,
       typename ChildConceptArgs,
       typename ParentFrame = SelfType::ParentFrame,
-      typename ChildFrame = SelfType::ChildFrame,
-      typename = std::enable_if_t<std::is_same_v<ParentFrame, DynamicFrame>>>
+      typename ChildFrame = SelfType::ChildFrame>
   [[maybe_unused]] FrameReferences(
       ParentConceptArgs&& parentId,
       ChildConceptArgs&& childId) noexcept
-    requires(std::is_same_v<ChildFrame, DynamicFrame>)
+    requires(std::is_same_v<ParentFrame, DynamicFrame> and std::is_same_v<ChildFrame, DynamicFrame>)
     :
-    ParentConcept(std::forward<ParentConceptArgs>(parentId)),
-    ChildConcept(std::forward<ChildConceptArgs>(childId))
+    ParentConcept(detail::normalizeFrameId(std::forward<ParentConceptArgs>(parentId))),
+    ChildConcept(detail::normalizeFrameId(std::forward<ChildConceptArgs>(childId)))
   {
   }
+
+  FrameReferences(const FrameReferences&) = default;
+
+  FrameReferences(FrameReferences&&) noexcept = default;
+
+  FrameReferences& operator=(const FrameReferences&) = default;
+
+  FrameReferences& operator=(FrameReferences&&) noexcept = default;
 
   ~FrameReferences() override = default;
 };

@@ -39,7 +39,8 @@ TEST(Logger, FormatsArgumentsIntoMessage)
   auto buffer = std::ostringstream{};
   installBufferLogger(buffer, "[%Y-%m-%dT%H:%M:%S.%eZ] [%l] %v");
 
-  info("count={}", 42);
+  constexpr auto kCount = 42;
+  info("count={}", kCount);
 
   // The timestamp is the only non-deterministic part; assert everything after it.
   EXPECT_EQ(buffer.str().substr(kTimestampPrefixWidth), "[info] count=42\n");
@@ -60,12 +61,13 @@ TEST(Logger, EveryLevelFormatsAndEmits)
   auto buffer = std::ostringstream{};
   installBufferLogger(buffer, "[%l] %v");
 
+  constexpr auto kErrorValue = 3.14;
   const auto lvalue = std::string{"lvalue"};
   trace("t {}", 1);
   debug("d {} {}", 1, 2);
   info("i {}", lvalue);
   warn("w");
-  error("e {}", 3.14);
+  error("e {}", kErrorValue);
   critical("c {}", lvalue);
 
   // Only levels at or above the compile-time threshold emit; build the expected output to match.

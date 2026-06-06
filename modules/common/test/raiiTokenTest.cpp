@@ -45,9 +45,9 @@ TEST(RaiiToken, EntryReceivesForwardedArguments)
   auto sum = 0;
   {
     const auto token = RaiiToken{
-        [&sum](const int a, const int b)
+        [&sum](const int lhs, const int rhs)
         {
-          sum = a + b;
+          sum = lhs + rhs;
         },
         [&sum]() noexcept
         {
@@ -65,7 +65,8 @@ TEST(RaiiToken, EntryReceivesForwardedArguments)
 TEST(RaiiToken, ExitDoesNotRunWhenEntryThrows)
 {
   auto exitCount = 0;
-  try
+
+  const auto buildTokenWithThrowingEntry = [&exitCount]
   {
     const auto token = RaiiToken{
         []
@@ -76,13 +77,9 @@ TEST(RaiiToken, ExitDoesNotRunWhenEntryThrows)
         {
           ++exitCount;
         }};
+  };
 
-    FAIL() << "expected the entry action to throw";
-  }
-  catch(const std::runtime_error&)
-  {
-  }
-
+  EXPECT_THROW(buildTokenWithThrowingEntry(), std::runtime_error);
   EXPECT_EQ(0, exitCount);
 }
 

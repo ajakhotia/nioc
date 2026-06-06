@@ -35,19 +35,32 @@ fs::path makeFreshEmptyDir(std::string_view name)
 
 constexpr auto channelA = ChannelId{16983UL};
 constexpr auto channelB = ChannelId{68964786UL};
-const auto kDataA = generateData(20ULL);
-const auto kDataB = generateData(34ULL);
-const auto kDataAAsBytes = std::as_bytes(std::span(kDataA));
-const auto kDataBAsBytes = std::as_bytes(std::span(kDataB));
+constexpr auto dataASize = 20ULL;
+constexpr auto dataBSize = 34ULL;
+
+std::vector<char> dataA()
+{
+  return generateData(dataASize);
+}
+
+std::vector<char> dataB()
+{
+  return generateData(dataBSize);
+}
 
 fs::path createLog()
 {
+  const auto dataAValue = dataA();
+  const auto dataBValue = dataB();
+  const auto dataAAsBytes = std::as_bytes(std::span(dataAValue));
+  const auto dataBAsBytes = std::as_bytes(std::span(dataBValue));
+
   auto writer = Writer{makeFreshEmptyDir("readerTest-createLog")};
 
-  writer.write(channelA, kDataAAsBytes);
-  writer.write(channelB, kDataBAsBytes);
-  writer.write(channelA, kDataAAsBytes);
-  writer.write(channelB, kDataBAsBytes);
+  writer.write(channelA, dataAAsBytes);
+  writer.write(channelB, dataBAsBytes);
+  writer.write(channelA, dataAAsBytes);
+  writer.write(channelB, dataBAsBytes);
 
   return writer.path();
 }
@@ -64,28 +77,33 @@ TEST(Reader, read)
   const auto logPath = createLog();
   auto reader = Reader{logPath};
 
+  const auto dataAValue = dataA();
+  const auto dataBValue = dataB();
+  const auto dataAAsBytes = std::as_bytes(std::span(dataAValue));
+  const auto dataBAsBytes = std::as_bytes(std::span(dataBValue));
+
   {
     const auto entry = reader.read();
     EXPECT_EQ(channelA, entry.mChannelId);
-    expectSpanEqual(kDataAAsBytes, entry.mMemoryCrate.span());
+    expectSpanEqual(dataAAsBytes, entry.mMemoryCrate.span());
   }
 
   {
     const auto entry = reader.read();
     EXPECT_EQ(channelB, entry.mChannelId);
-    expectSpanEqual(kDataBAsBytes, entry.mMemoryCrate.span());
+    expectSpanEqual(dataBAsBytes, entry.mMemoryCrate.span());
   }
 
   {
     const auto entry = reader.read();
     EXPECT_EQ(channelA, entry.mChannelId);
-    expectSpanEqual(kDataAAsBytes, entry.mMemoryCrate.span());
+    expectSpanEqual(dataAAsBytes, entry.mMemoryCrate.span());
   }
 
   {
     const auto entry = reader.read();
     EXPECT_EQ(channelB, entry.mChannelId);
-    expectSpanEqual(kDataBAsBytes, entry.mMemoryCrate.span());
+    expectSpanEqual(dataBAsBytes, entry.mMemoryCrate.span());
   }
 
   EXPECT_THROW(reader.read(), std::runtime_error);

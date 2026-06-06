@@ -43,25 +43,34 @@ TEST(UnboundedMpsc, OccupancyIsAlwaysZeroWhileSizeTracksBacklog)
 
 TEST(UnboundedMpsc, PopsInFifoOrder)
 {
-  auto queue = UnboundedMpsc<int>{};
-  queue.push(10);
-  queue.push(20);
-  queue.push(30);
+  constexpr auto firstValue = 10;
+  constexpr auto secondValue = 20;
+  constexpr auto thirdValue = 30;
 
-  EXPECT_EQ(queue.tryPop(), 10);
-  EXPECT_EQ(queue.tryPop(), 20);
-  EXPECT_EQ(queue.tryPop(), 30);
+  auto queue = UnboundedMpsc<int>{};
+  queue.push(firstValue);
+  queue.push(secondValue);
+  queue.push(thirdValue);
+
+  EXPECT_EQ(queue.tryPop(), firstValue);
+  EXPECT_EQ(queue.tryPop(), secondValue);
+  EXPECT_EQ(queue.tryPop(), thirdValue);
   EXPECT_FALSE(queue.tryPop().has_value());
 }
 
 TEST(UnboundedMpsc, SupportsMoveOnlyValues)
 {
-  auto queue = UnboundedMpsc<std::unique_ptr<int>>{};
-  EXPECT_FALSE(queue.push(std::make_unique<int>(7)).has_value());
+  constexpr auto expectedValue = 7;
 
-  auto popped = queue.tryPop();
+  auto queue = UnboundedMpsc<std::unique_ptr<int>>{};
+  EXPECT_FALSE(queue.push(std::make_unique<int>(expectedValue)).has_value());
+
+  const auto popped = queue.tryPop();
   ASSERT_TRUE(popped.has_value());
-  EXPECT_EQ(**popped, 7);
+  if(popped.has_value())
+  {
+    EXPECT_EQ(**popped, expectedValue);
+  }
 }
 
 // Lossless and duplicate-free: with every producer emitting a disjoint range of values, the

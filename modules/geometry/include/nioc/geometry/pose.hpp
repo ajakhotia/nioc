@@ -8,6 +8,7 @@
 #include "traits.hpp"
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+#include <iterator>
 #include <nioc/common/exception.hpp>
 #include <span>
 #include <stdexcept>
@@ -87,7 +88,7 @@ public:
   /// @brief Returns a read-only vector view of the position.
   [[nodiscard]] Vector3ConstMap cPosition() const noexcept
   {
-    return Vector3ConstMap(cData() + kNumOrientationParams);
+    return Vector3ConstMap(std::next(cData(), kNumOrientationParams));
   }
 
   /// @brief Returns a read-only vector view of the position; same as @ref cPosition.
@@ -99,13 +100,13 @@ public:
   /// @brief Returns a writable vector view of the position.
   Vector3Map position() noexcept
   {
-    return Vector3Map(data() + kNumOrientationParams);
+    return Vector3Map(std::next(data(), kNumOrientationParams));
   }
 
   /// @brief Returns a copy of this pose with its parameters converted to another scalar type.
   /// @tparam ResultScalar Floating-point type of the returned pose.
   template<typename ResultScalar>
-  [[nodiscard]] Pose<ResultScalar> cast() const noexcept
+  [[nodiscard]] Pose<ResultScalar> cast() const
   {
     return Pose<ResultScalar>(std::span<const Scalar>(cData(), kNumParams));
   }
@@ -120,9 +121,10 @@ public:
   /// @return Reference to this.
   Derived& invert()
   {
-    const auto inverseOrientation = orientation().inverse();
-    const auto negativeInversePosition = inverseOrientation * position();
-    *this = Pose<Scalar>(inverseOrientation, Scalar(-1) * negativeInversePosition);
+    const Quaternion inverseOrientation = orientation().inverse();
+    const Vector3 invertedPosition = Scalar(-1) * (inverseOrientation * position());
+    orientation() = inverseOrientation;
+    position() = invertedPosition;
     return derived();
   }
 

@@ -37,6 +37,7 @@ add_exported_library(
             PUBLIC include/nioc/geometry/pose.hpp
             PUBLIC include/nioc/geometry/rigidTransform.hpp
             PUBLIC include/nioc/geometry/rotation.hpp
+            PUBLIC include/nioc/geometry/traits.hpp
         INCLUDE_DIRECTORIES
             ${CMAKE_CURRENT_SOURCE_DIR}/include
         LINK_LIBRARIES
@@ -50,6 +51,10 @@ add_exported_library(
             PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
         COMPILE_DEFINITIONS
             "")
+
+if(CLANG_TIDY)
+    set_target_properties(geometry PROPERTIES CXX_CLANG_TIDY ${CLANG_TIDY})
+endif()
 
 if(BUILD_TESTING)
     add_subdirectory(test)

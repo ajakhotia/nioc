@@ -27,7 +27,10 @@ ConstMsgBasePtr makeMessage()
 }
 
 /// Channel EarthComponent subscribes to; publishing here feeds its inbox and lets step() dispatch.
-const auto kChannel = makeChannelId(Msg<TestSchema>::kMsgId, EarthComponent::kTopic);
+auto channelId()
+{
+  return makeChannelId(Msg<TestSchema>::kMsgId, EarthComponent::kTopic);
+}
 
 } // namespace
 
@@ -50,8 +53,8 @@ TEST(ComponentTest, drainsOneMessagePerRun)
 {
   auto port = Port{};
   auto component = EarthComponent{port, 4, concurrent::BufferMode::Overwriting};
-  port.publish(kChannel, makeMessage());
-  port.publish(kChannel, makeMessage());
+  port.publish(channelId(), makeMessage());
+  port.publish(channelId(), makeMessage());
 
   EXPECT_EQ(component.step(), concurrent::Routine::State::Continue);
   EXPECT_EQ(component.step(), concurrent::Routine::State::Continue);
@@ -62,9 +65,10 @@ TEST(ComponentTest, overwriteDropsOldestWhenFull)
 {
   auto port = Port{};
   auto component = EarthComponent{port, 2, concurrent::BufferMode::Overwriting};
-  for(auto count = 0; count < 5; ++count)
+  constexpr auto kPublishCount = 5;
+  for(auto count = 0; count < kPublishCount; ++count)
   {
-    port.publish(kChannel, makeMessage());
+    port.publish(channelId(), makeMessage());
   }
 
   // Two slots keep the newest two; the other three were overwritten.
@@ -77,13 +81,14 @@ TEST(ComponentTest, unboundedRetainsEveryMessage)
 {
   auto port = Port{};
   auto component = EarthComponent{port, 1, concurrent::BufferMode::Unbounded};
-  for(auto count = 0; count < 5; ++count)
+  constexpr auto kPublishCount = 5;
+  for(auto count = 0; count < kPublishCount; ++count)
   {
-    port.publish(kChannel, makeMessage());
+    port.publish(channelId(), makeMessage());
   }
 
   // Unbounded keeps all five despite a nominal capacity of 1.
-  for(auto count = 0; count < 5; ++count)
+  for(auto count = 0; count < kPublishCount; ++count)
   {
     EXPECT_EQ(component.step(), concurrent::Routine::State::Continue);
   }

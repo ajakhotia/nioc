@@ -31,24 +31,24 @@ TEST(DynamicFrame, construction)
 
 TEST(DynamicFrame, name)
 {
-  const auto df = DynamicFrame{"testFrame145"};
-  EXPECT_EQ("testFrame145", df.name());
+  const auto frame = DynamicFrame{"testFrame145"};
+  EXPECT_EQ("testFrame145", frame.name());
 }
 
 TEST(DynamicFrame, EqualityCheck)
 {
-  const auto d1 = DynamicFrame{"Test125"};
+  const auto frameOne = DynamicFrame{"Test125"};
 
   {
-    const auto d2 = DynamicFrame{"Test125"};
-    EXPECT_TRUE(d1 == d2);
-    EXPECT_FALSE(d1 != d2);
+    const auto frameTwo = DynamicFrame{"Test125"};
+    EXPECT_TRUE(frameOne == frameTwo);
+    EXPECT_FALSE(frameOne != frameTwo);
   }
 
   {
-    const auto d3 = DynamicFrame{"Test43"};
-    EXPECT_FALSE(d1 == d3);
-    EXPECT_TRUE(d1 != d3);
+    const auto frameThree = DynamicFrame{"Test43"};
+    EXPECT_FALSE(frameOne == frameThree);
+    EXPECT_TRUE(frameOne != frameThree);
   }
 }
 

@@ -4,6 +4,7 @@
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#include <cstddef>
 #include <gtest/gtest.h>
 #include <nioc/concurrent/anyMpsc.hpp>
 #include <nioc/concurrent/mpscQueue.hpp>
@@ -29,13 +30,15 @@ TEST(AnyMpsc, OverwritingModeEvictsOldestWhenFull)
 
 TEST(AnyMpsc, UnboundedModeNeverDiscards)
 {
+  constexpr auto pushCount = 100;
+
   auto queue = AnyMpsc<int>{BufferMode::Unbounded};
-  for(auto i = 0; i < 100; ++i)
+  for(auto i = 0; i < pushCount; ++i)
   {
     EXPECT_FALSE(queue.push(i).has_value());
   }
 
-  EXPECT_EQ(queue.size(), 100U);
+  EXPECT_EQ(queue.size(), static_cast<std::size_t>(pushCount));
   EXPECT_EQ(queue.tryPop(), 0);
 }
 

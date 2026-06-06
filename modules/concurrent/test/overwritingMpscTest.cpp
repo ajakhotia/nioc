@@ -40,6 +40,8 @@ TEST(OverwritingMpsc, PushReturnsNulloptWhileRoomRemains)
 
 TEST(OverwritingMpsc, OccupancyReflectsFillFraction)
 {
+  constexpr auto overflowValue = 5;
+
   auto queue = OverwritingMpsc<int>{4};
   EXPECT_DOUBLE_EQ(queue.occupancy(), 0.0);
 
@@ -52,20 +54,24 @@ TEST(OverwritingMpsc, OccupancyReflectsFillFraction)
   EXPECT_DOUBLE_EQ(queue.occupancy(), 1.0);
 
   // At capacity, occupancy stays 1.0 as further pushes evict rather than grow.
-  queue.push(5);
+  queue.push(overflowValue);
   EXPECT_DOUBLE_EQ(queue.occupancy(), 1.0);
 }
 
 TEST(OverwritingMpsc, PopsInFifoOrder)
 {
-  auto queue = OverwritingMpsc<int>{4};
-  queue.push(10);
-  queue.push(20);
-  queue.push(30);
+  constexpr auto firstValue = 10;
+  constexpr auto secondValue = 20;
+  constexpr auto thirdValue = 30;
 
-  EXPECT_EQ(queue.tryPop(), 10);
-  EXPECT_EQ(queue.tryPop(), 20);
-  EXPECT_EQ(queue.tryPop(), 30);
+  auto queue = OverwritingMpsc<int>{4};
+  queue.push(firstValue);
+  queue.push(secondValue);
+  queue.push(thirdValue);
+
+  EXPECT_EQ(queue.tryPop(), firstValue);
+  EXPECT_EQ(queue.tryPop(), secondValue);
+  EXPECT_EQ(queue.tryPop(), thirdValue);
   EXPECT_FALSE(queue.tryPop().has_value());
 }
 
@@ -86,17 +92,26 @@ TEST(OverwritingMpsc, EvictsOldestWhenFull)
 
 TEST(OverwritingMpsc, SupportsMoveOnlyValues)
 {
+  constexpr auto firstValue = 7;
+  constexpr auto secondValue = 8;
+
   auto queue = OverwritingMpsc<std::unique_ptr<int>>{1};
-  EXPECT_FALSE(queue.push(std::make_unique<int>(7)).has_value());
+  EXPECT_FALSE(queue.push(std::make_unique<int>(firstValue)).has_value());
 
   // Full at capacity 1: the next push evicts and returns the first value.
-  auto evicted = queue.push(std::make_unique<int>(8));
+  const auto evicted = queue.push(std::make_unique<int>(secondValue));
   ASSERT_TRUE(evicted.has_value());
-  EXPECT_EQ(**evicted, 7);
+  if(evicted.has_value())
+  {
+    EXPECT_EQ(**evicted, firstValue);
+  }
 
-  auto popped = queue.tryPop();
+  const auto popped = queue.tryPop();
   ASSERT_TRUE(popped.has_value());
-  EXPECT_EQ(**popped, 8);
+  if(popped.has_value())
+  {
+    EXPECT_EQ(**popped, secondValue);
+  }
 }
 
 // Every value that enters is later popped, evicted, or still resident — never duplicated or lost.

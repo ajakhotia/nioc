@@ -36,6 +36,7 @@ add_exported_library(
             PUBLIC include/nioc/common/exception.hpp
             PUBLIC include/nioc/common/filesystem.hpp
             PUBLIC include/nioc/common/locked.hpp
+            PUBLIC include/nioc/common/makeBimap.hpp
             PUBLIC include/nioc/common/raiiToken.hpp
             PUBLIC include/nioc/common/time.hpp
             PUBLIC include/nioc/common/typeTraits.hpp

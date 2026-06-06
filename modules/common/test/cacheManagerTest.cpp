@@ -15,14 +15,18 @@ namespace nioc::common
 {
 namespace
 {
-std::string gTestCacheMessage;
+std::string& testCacheMessage()
+{
+  static std::string message;
+  return message;
+}
 
 class TestCache
 {
 public:
   explicit TestCache(int value): mCached(value)
   {
-    gTestCacheMessage = "Created cache for: " + std::to_string(mCached);
+    testCacheMessage() = "Created cache for: " + std::to_string(mCached);
   }
 
   [[nodiscard]] bool validate(const int& value) const noexcept
@@ -34,12 +38,12 @@ public:
   {
     if(not mSquare)
     {
-      gTestCacheMessage = "Computing for value: " + std::to_string(mCached);
+      testCacheMessage() = "Computing for value: " + std::to_string(mCached);
       mSquare = std::pow(mCached, 2);
     }
     else
     {
-      gTestCacheMessage = "Reusing for value: " + std::to_string(mCached);
+      testCacheMessage() = "Reusing for value: " + std::to_string(mCached);
     }
 
     return *mSquare;
@@ -79,106 +83,112 @@ private:
 TEST(TestCache, construction)
 {
   EXPECT_NO_THROW(TestCache(7));
-  EXPECT_EQ(gTestCacheMessage, "Created cache for: 7");
+  EXPECT_EQ(testCacheMessage(), "Created cache for: 7");
 }
 
 TEST(TestCache, valid)
 {
   const auto testCache = TestCache(13);
-  EXPECT_EQ(gTestCacheMessage, "Created cache for: 13");
+  EXPECT_EQ(testCacheMessage(), "Created cache for: 13");
   EXPECT_TRUE(testCache.validate(13));
   EXPECT_FALSE(testCache.validate(0));
 }
 
 TEST(TestCache, squareArea)
 {
-  auto testCache = TestCache(17);
+  constexpr auto kSideLength = 17;
+  auto testCache = TestCache(kSideLength);
 
-  EXPECT_EQ(gTestCacheMessage, "Created cache for: 17");
-
-  EXPECT_EQ(289, testCache.squareArea());
-  EXPECT_EQ(gTestCacheMessage, "Computing for value: 17");
+  EXPECT_EQ(testCacheMessage(), "Created cache for: 17");
 
   EXPECT_EQ(289, testCache.squareArea());
-  EXPECT_EQ(gTestCacheMessage, "Reusing for value: 17");
+  EXPECT_EQ(testCacheMessage(), "Computing for value: 17");
+
+  EXPECT_EQ(289, testCache.squareArea());
+  EXPECT_EQ(testCacheMessage(), "Reusing for value: 17");
 }
 
 TEST(CacheManager, construction)
 {
-  gTestCacheMessage = "";
-  EXPECT_NO_THROW(CacheManager<TestCache> cacheManager);
-  EXPECT_EQ(gTestCacheMessage, "");
+  testCacheMessage() = "";
+  EXPECT_NO_THROW(const CacheManager<TestCache> cacheManager);
+  EXPECT_EQ(testCacheMessage(), "");
 }
 
 TEST(CacheManager, access)
 {
+  constexpr auto kFirstCacheKey = 19;
+  constexpr auto kSecondCacheKey = 23;
   auto cacheManager = CacheManager<TestCache>{};
   {
-    auto& cacheRef = cacheManager.access(19);
+    auto& cacheRef = cacheManager.access(kFirstCacheKey);
 
-    EXPECT_EQ(gTestCacheMessage, "Created cache for: 19");
+    EXPECT_EQ(testCacheMessage(), "Created cache for: 19");
     EXPECT_EQ(361, cacheRef.squareArea());
-    EXPECT_EQ(gTestCacheMessage, "Computing for value: 19");
+    EXPECT_EQ(testCacheMessage(), "Computing for value: 19");
   }
 
   {
-    auto& cacheRef = cacheManager.access(19);
+    auto& cacheRef = cacheManager.access(kFirstCacheKey);
     EXPECT_EQ(361, cacheRef.squareArea());
-    EXPECT_EQ(gTestCacheMessage, "Reusing for value: 19");
+    EXPECT_EQ(testCacheMessage(), "Reusing for value: 19");
   }
 
   {
-    auto& cacheRef = cacheManager.access(23);
-    EXPECT_EQ(gTestCacheMessage, "Created cache for: 23");
+    auto& cacheRef = cacheManager.access(kSecondCacheKey);
+    EXPECT_EQ(testCacheMessage(), "Created cache for: 23");
     EXPECT_EQ(529, cacheRef.squareArea());
-    EXPECT_EQ(gTestCacheMessage, "Computing for value: 23");
+    EXPECT_EQ(testCacheMessage(), "Computing for value: 23");
   }
 }
 
 TEST(Caching, construction)
 {
-  gTestCacheMessage = "";
+  testCacheMessage() = "";
   EXPECT_NO_THROW(TestClass(29));
-  EXPECT_EQ(gTestCacheMessage, "");
+  EXPECT_EQ(testCacheMessage(), "");
 }
 
 TEST(Caching, squareArea)
 {
-  auto testClass = TestClass{31};
+  constexpr auto kInitialValue = 31;
+  constexpr auto kUpdatedValue = 37;
+  constexpr auto kFinalValue = 41;
+  auto testClass = TestClass{kInitialValue};
   auto& internalIntRef = testClass.acquireReference();
 
-  EXPECT_EQ(gTestCacheMessage, "");
+  EXPECT_EQ(testCacheMessage(), "");
 
   EXPECT_EQ(961, testClass.squareArea());
-  EXPECT_EQ(gTestCacheMessage, "Computing for value: 31");
+  EXPECT_EQ(testCacheMessage(), "Computing for value: 31");
 
   EXPECT_NE(800, testClass.squareArea());
-  EXPECT_EQ(gTestCacheMessage, "Reusing for value: 31");
+  EXPECT_EQ(testCacheMessage(), "Reusing for value: 31");
 
   EXPECT_EQ(961, testClass.squareArea());
-  EXPECT_EQ(gTestCacheMessage, "Reusing for value: 31");
+  EXPECT_EQ(testCacheMessage(), "Reusing for value: 31");
 
 
-  internalIntRef = 37;
+  internalIntRef = kUpdatedValue;
   EXPECT_EQ(1369, testClass.squareArea());
-  EXPECT_EQ(gTestCacheMessage, "Computing for value: 37");
+  EXPECT_EQ(testCacheMessage(), "Computing for value: 37");
 
   EXPECT_NE(1000, testClass.squareArea());
-  EXPECT_EQ(gTestCacheMessage, "Reusing for value: 37");
+  EXPECT_EQ(testCacheMessage(), "Reusing for value: 37");
 
   EXPECT_EQ(1369, testClass.squareArea());
-  EXPECT_EQ(gTestCacheMessage, "Reusing for value: 37");
+  EXPECT_EQ(testCacheMessage(), "Reusing for value: 37");
 
 
-  internalIntRef = 41;
+  internalIntRef = kFinalValue;
   EXPECT_EQ(1681, testClass.squareArea());
-  EXPECT_EQ(gTestCacheMessage, "Computing for value: 41");
+  EXPECT_EQ(testCacheMessage(), "Computing for value: 41");
 
   EXPECT_NE(1000, testClass.squareArea());
-  EXPECT_EQ(gTestCacheMessage, "Reusing for value: 41");
+  EXPECT_EQ(testCacheMessage(), "Reusing for value: 41");
 
   EXPECT_EQ(1681, testClass.squareArea());
-  EXPECT_EQ(gTestCacheMessage, "Reusing for value: 41");
+  EXPECT_EQ(testCacheMessage(), "Reusing for value: 41");
 }
 
 
