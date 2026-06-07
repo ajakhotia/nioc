@@ -45,10 +45,5 @@ Component::State Component::step()
   return State::Continue;
 }
 
-void Component::push(ChannelId channelId, Consignment consignment)
-{
-  logger::trace("[{}] inbox enqueue on channel {}", name(), channelId.mValue);
-  mInbox.push({channelId, std::move(consignment)});
-}
 
 } // namespace nioc::terminus

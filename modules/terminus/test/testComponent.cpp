@@ -17,13 +17,12 @@ EarthComponent::EarthComponent(
     const concurrent::BufferMode bufferMode):
   Component{port, inboxCapacity, bufferMode, "EarthComponent"}
 {
-  subscribe<TestSchema>(kTopic, [](const ConstMsgPtr<TestSchema>&) {});
-}
-
-EarthComponent::State EarthComponent::step()
-{
-  ++mStepCount;
-  return Component::step();
+  subscribe<TestSchema>(
+      kTopic,
+      [this](const ConstMsgPtr<TestSchema>&)
+      {
+        ++mStepCount;
+      });
 }
 
 std::size_t EarthComponent::stepCount() const
@@ -37,13 +36,12 @@ MarsComponent::MarsComponent(
     const concurrent::BufferMode bufferMode):
   Component{port, inboxCapacity, bufferMode, "MarsComponent"}
 {
-  subscribe<TestSchema>(kTopic, [](const ConstMsgPtr<TestSchema>&) {});
-}
-
-MarsComponent::State MarsComponent::step()
-{
-  ++mStepCount;
-  return Component::step();
+  subscribe<TestSchema>(
+      kTopic,
+      [this](const ConstMsgPtr<TestSchema>&)
+      {
+        ++mStepCount;
+      });
 }
 
 std::size_t MarsComponent::stepCount() const

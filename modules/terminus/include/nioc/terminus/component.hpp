@@ -49,7 +49,7 @@ public:
   ///
   /// @return @ref State::Continue after handling a message, or @ref State::Waiting when the inbox
   /// is empty.
-  [[nodiscard]] State step() override;
+  [[nodiscard]] State step() final;
 
 protected:
   using MsgBaseCallback = std::function<void(ConstMsgBasePtr)>;
@@ -120,7 +120,7 @@ protected:
     auto consignmentCallbackPtr = std::make_shared<ConsignmentCallback>(
         [this, channelId](Consignment consignment)
         {
-          push(channelId, std::move(consignment));
+          mInbox.push({channelId, std::move(consignment)});
         });
 
     mPort.subscribe(channelId, consignmentCallbackPtr);
@@ -152,13 +152,6 @@ private:
   concurrent::NotifyingInbox<concurrent::AnyMpsc<std::pair<ChannelId, Consignment>>> mInbox;
   std::unordered_map<ChannelId, MsgBaseCallback> mHandlers;
   std::unordered_map<ChannelId, std::shared_ptr<const ConsignmentCallback>> mPortSubscriptions;
-
-  /// @brief Enqueues a consignment for the channel.
-  ///
-  /// @param channelId Channel the message arrived on.
-  ///
-  /// @param consignment Consignment to enqueue.
-  void push(ChannelId channelId, Consignment consignment);
 };
 
 } // namespace nioc::terminus
