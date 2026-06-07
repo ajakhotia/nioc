@@ -82,7 +82,7 @@ public:
   void attachTrigger(std::function<void()> trigger);
 
 protected:
-  /// @brief Signals the driving @ref Runner that work is available, if a trigger is attached.
+  /// @brief Signals the driving @ref Runner that work is available if a trigger is attached.
   ///
   /// A subclass calls this when it transitions from idle to having work, to wake a Runner parked
   /// after a @ref State::Waiting return. No-op while no trigger is set (none passed at
