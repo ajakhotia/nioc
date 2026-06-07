@@ -11,7 +11,7 @@
 namespace nioc::concurrent
 {
 
-std::function<void()> Runner::makeNotifier()
+std::function<void()> Runner::makeTrigger()
 {
   return [self = weak_from_this()]
   {

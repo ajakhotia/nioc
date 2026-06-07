@@ -23,7 +23,7 @@ Component::Component(
   mInbox(
       [this]
       {
-        wakeRunner();
+        triggerRunner();
       },
       bufferMode,
       inboxCapacity)

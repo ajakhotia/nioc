@@ -21,7 +21,7 @@ namespace nioc::concurrent
 /// of spinning; @ref ThreadedRunner is the thread-backed implementation.
 ///
 /// A Runner is held through a `shared_ptr` (it derives from `enable_shared_from_this` so it can
-/// hand the routine a notifier that outlives the call). Each Runner drives a single routine.
+/// hand the routine a trigger that outlives the call). Each Runner drives a single routine.
 class Runner: public std::enable_shared_from_this<Runner>
 {
 public:
@@ -57,11 +57,11 @@ public:
   virtual void requestStop() noexcept = 0;
 
 protected:
-  /// @brief Builds the notifier handed to the routine so it can wake this Runner from @ref
+  /// @brief Builds the trigger handed to the routine so it can wake this Runner from @ref
   /// State::Waiting.
   ///
-  /// The notifier holds the Runner weakly, so it is safe to invoke after the Runner is gone.
-  [[nodiscard]] std::function<void()> makeNotifier();
+  /// The trigger holds the Runner weakly, so it is safe to invoke after the Runner is gone.
+  [[nodiscard]] std::function<void()> makeTrigger();
 
   /// @brief Wakes a Runner parked because its routine returned @ref State::Waiting.
   virtual void wake() = 0;

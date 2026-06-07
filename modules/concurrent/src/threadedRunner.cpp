@@ -19,7 +19,7 @@ void ThreadedRunner::launch(std::weak_ptr<Routine> routine)
 {
   if(const auto locked = routine.lock())
   {
-    locked->attachNotifier(makeNotifier());
+    locked->attachTrigger(makeTrigger());
     logger::debug("[{}] launching", locked->name());
   }
 

@@ -12,22 +12,22 @@
 namespace nioc::concurrent
 {
 
-Routine::Routine(std::string name, std::function<void()> notifier):
+Routine::Routine(std::string name, std::function<void()> trigger):
   mName(std::move(name)),
-  mNotifier(std::move(notifier))
+  mTrigger(std::move(trigger))
 {
 }
 
-void Routine::attachNotifier(std::function<void()> notifier)
+void Routine::attachTrigger(std::function<void()> trigger)
 {
-  mNotifier = std::move(notifier);
+  mTrigger = std::move(trigger);
 }
 
-void Routine::wakeRunner() const
+void Routine::triggerRunner() const
 {
-  if(mNotifier)
+  if(mTrigger)
   {
-    mNotifier();
+    mTrigger();
   }
 }
 

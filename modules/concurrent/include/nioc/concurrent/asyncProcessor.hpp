@@ -51,7 +51,7 @@ public:
     mInbox(
         [this]
         {
-          wakeRunner();
+          triggerRunner();
         },
         bufferMode,
         capacity)

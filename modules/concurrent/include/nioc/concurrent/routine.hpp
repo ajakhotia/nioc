@@ -39,14 +39,14 @@ public:
     Done
   };
 
-  /// @brief Names the routine and, optionally, installs its ready-notifier.
+  /// @brief Names the routine and, optionally, installs its ready-trigger.
   ///
   /// @param name Human-readable identity for this routine; see @ref name.
   ///
-  /// @param notifier A trigger the routine fires (through @ref wakeRunner) to wake its driving
+  /// @param trigger A callback the routine fires (through @ref triggerRunner) to wake its driving
   /// Runner when work arrives. Defaults to none; the Runner may instead install one later via @ref
-  /// attachNotifier.
-  explicit Routine(std::string name, std::function<void()> notifier = nullptr);
+  /// attachTrigger.
+  explicit Routine(std::string name, std::function<void()> trigger = nullptr);
 
   Routine(const Routine&) = delete;
 
@@ -75,23 +75,23 @@ public:
   /// @brief Installs the callback the routine uses to announce it has some work again.
   ///
   /// Called by the @ref Runner that drives this routine. A routine that returned @ref
-  /// State::Waiting invokes the notifier (through @ref wakeRunner) once new work arrives, so the
+  /// State::Waiting fires the trigger (through @ref triggerRunner) once new work arrives, so the
   /// Runner can resume it instead of polling.
   ///
-  /// @param notifier Callback that wakes the driving Runner.
-  void attachNotifier(std::function<void()> notifier);
+  /// @param trigger Callback that wakes the driving Runner.
+  void attachTrigger(std::function<void()> trigger);
 
 protected:
-  /// @brief Signals the driving @ref Runner that work is available, if a notifier is attached.
+  /// @brief Signals the driving @ref Runner that work is available, if a trigger is attached.
   ///
   /// A subclass calls this when it transitions from idle to having work, to wake a Runner parked
-  /// after a @ref State::Waiting return. No-op while no notifier is set (none passed at
-  /// construction and @ref attachNotifier not yet called).
-  void wakeRunner() const;
+  /// after a @ref State::Waiting return. No-op while no trigger is set (none passed at
+  /// construction and @ref attachTrigger not yet called).
+  void triggerRunner() const;
 
 private:
   const std::string mName;
-  std::function<void()> mNotifier;
+  std::function<void()> mTrigger;
 };
 
 } // namespace nioc::concurrent
