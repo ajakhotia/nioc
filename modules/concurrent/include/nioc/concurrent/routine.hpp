@@ -23,8 +23,9 @@ namespace nioc::concurrent
 /// - @ref State::Continue to be scheduled again immediately,
 /// - @ref State::Waiting when it has no work right now and should be rescheduled later,
 /// - @ref State::Done to finish naturally (end of input, deadline reached) or to fail;
-/// @ref step never throws — an implementation that can fail catches its own exceptions and reports
-/// @ref State::Done.
+///
+/// The @ref step method never throws — an implementation that can fail catches its own exceptions
+/// and reports @ref State::Done.
 class Routine
 {
 public:
@@ -40,15 +41,6 @@ public:
     /// @brief Finished naturally; stop scheduling it.
     Done
   };
-
-  /// @brief Names the routine and, optionally, installs its ready-trigger.
-  ///
-  /// @param name Human-readable identity for this routine; see @ref name.
-  ///
-  /// @param trigger A callback the routine fires (through @ref triggerRunner) to wake its driving
-  /// Runner when work arrives. Defaults to none; the Runner may instead install one later via @ref
-  /// attachTrigger.
-  explicit Routine(std::string name, std::function<void()> trigger = nullptr);
 
   Routine(const Routine&) = delete;
 
@@ -81,9 +73,6 @@ public:
   }
 
   /// @brief Returns the @ref State the most recent @ref tick recorded.
-  ///
-  /// Safe to call from a thread other than the one driving @ref tick: it reports the outcome of the
-  /// last completed iteration (@ref State::Continue before the first one).
   [[nodiscard]] State state() const noexcept
   {
     return mState.load(std::memory_order_relaxed);
@@ -99,6 +88,15 @@ public:
   void attachTrigger(std::function<void()> trigger);
 
 protected:
+  /// @brief Names the routine and, optionally, installs its ready-trigger.
+  ///
+  /// @param name Human-readable identity for this routine; see @ref name.
+  ///
+  /// @param trigger A callback the routine fires (through @ref triggerRunner) to wake its driving
+  /// Runner when work arrives. Defaults to none; the Runner may instead install one later via @ref
+  /// attachTrigger.
+  explicit Routine(std::string name, std::function<void()> trigger = nullptr);
+
   /// @brief Signals the driving @ref Runner that work is available if a trigger is attached.
   ///
   /// A subclass calls this when it transitions from idle to having work, to wake a Runner parked
@@ -114,7 +112,7 @@ private:
   /// @brief Performs one iteration of work; implemented by a subclass and run from @ref tick.
   ///
   /// Must not throw: an implementation that can fail catches its own exceptions and reports @ref
-  /// State::Done so the Runner winds the routine down cleanly.
+  /// State::Done, so the Runner winds the routine down cleanly.
   ///
   /// @return @ref State::Continue to run again immediately, @ref State::Waiting to be rescheduled
   /// later, or @ref State::Done when finished.
