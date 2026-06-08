@@ -45,18 +45,21 @@ public:
   Component& operator=(Component&&) noexcept = delete;
   ~Component() noexcept override = default;
 
-  /// @brief Pops one queued message and runs its subscribed callback.
+  /// @brief Pops one queued message and runs its subscribed callback, reporting the next State.
   ///
-  /// @return @ref State::Continue after handling a message, or @ref State::Waiting when the inbox
-  /// is empty.
-  [[nodiscard]] State step() final;
+  /// Catches every exception a callback may throw, logs it, and reports @ref State::Done so a
+  /// failing component winds down gracefully rather than escalating. Never throws.
+  ///
+  /// @return @ref State::Waiting when the inbox is empty; otherwise the @ref State returned by the
+  /// subscribed callback; or @ref State::Done if the callback throws.
+  [[nodiscard]] State step() noexcept final;
 
 protected:
-  using MsgBaseCallback = std::function<void(ConstMsgBasePtr)>;
+  using MsgBaseCallback = std::function<State(ConstMsgBasePtr)>;
   using ConsignmentCallback = std::function<void(Consignment)>;
 
   template<typename Schema>
-  using MsgCallback = std::function<void(ConstMsgPtr<Schema>)>;
+  using MsgCallback = std::function<State(ConstMsgPtr<Schema>)>;
 
   /// @brief Binds the component to its Port and sizes the inbox.
   ///
@@ -86,7 +89,8 @@ protected:
   ///
   /// @param topic Topic to subscribe to.
   ///
-  /// @param msgCallback Handler invoked with each received message.
+  /// @param msgCallback Handler invoked with each received message; the @ref State it returns
+  /// becomes the component's next state, so returning @ref State::Done finishes the component.
   ///
   /// @throws std::logic_error If this topic is already subscribed.
   template<typename Schema>
@@ -109,9 +113,9 @@ protected:
     // Set up dispatch pathway from component's queue to the user-provided callback
     mHandlers.emplace(
         channelId,
-        [msgCallback = std::move(msgCallback)](ConstMsgBasePtr msgBasePtr)
+        [msgCallback = std::move(msgCallback)](ConstMsgBasePtr msgBasePtr) -> State
         {
-          std::invoke(
+          return std::invoke(
               msgCallback,
               std::static_pointer_cast<const Msg<Schema>>(std::move(msgBasePtr)));
         });

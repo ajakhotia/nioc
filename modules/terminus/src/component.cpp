@@ -4,6 +4,7 @@
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#include <exception>
 #include <functional>
 #include <nioc/logger/logger.hpp>
 #include <nioc/terminus/component.hpp>
@@ -30,19 +31,31 @@ Component::Component(
 {
 }
 
-Component::State Component::step()
+Component::State Component::step() noexcept
 {
-  auto value = mInbox.tryPop();
-  if(not value)
+  try
   {
-    return State::Waiting;
+    auto value = mInbox.tryPop();
+    if(not value)
+    {
+      return State::Waiting;
+    }
+
+    // Dispatch hands the message to the subscribed callback, which returns the next State. When
+    // `value` leaves scope its Consignment is destroyed, decrementing the port's in-flight counter
+    // to report the delivery.
+    return std::invoke(mHandlers.at(value->first), std::move(value->second.mMsgBasePtr));
+  }
+  catch(const std::exception& exception)
+  {
+    logger::error("[{}] {}", name(), exception.what());
+  }
+  catch(...)
+  {
+    logger::error("[{}] unhandled exception", name());
   }
 
-  // Dispatch moves the message into the handler. When this consignment is later destroyed, its
-  // RaiiToken runs Release, decrementing the port's in-flight counter to report the delivery.
-  std::invoke(mHandlers.at(value->first), std::move(value->second.mMsgBasePtr));
-
-  return State::Continue;
+  return State::Done;
 }
 
 

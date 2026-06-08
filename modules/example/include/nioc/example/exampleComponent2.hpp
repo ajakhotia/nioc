@@ -14,7 +14,6 @@
 #include <nioc/terminus/msg.hpp>
 #include <nioc/terminus/port.hpp>
 #include <string>
-#include <string_view>
 
 namespace nioc::example
 {

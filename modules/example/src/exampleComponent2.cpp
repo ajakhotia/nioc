@@ -28,6 +28,7 @@ ExampleComponent2::ExampleComponent2(
       [this](const auto& msgPtr)
       {
         process(msgPtr);
+        return State::Continue;
       });
 
   subscribe<Sample2>(
@@ -35,6 +36,7 @@ ExampleComponent2::ExampleComponent2(
       [this](const auto& msgPtr)
       {
         process(msgPtr);
+        return State::Continue;
       });
 
   subscribe<Sample3>(
@@ -42,6 +44,7 @@ ExampleComponent2::ExampleComponent2(
       [this](const auto& msgPtr)
       {
         process(msgPtr);
+        return State::Continue;
       });
 }
 

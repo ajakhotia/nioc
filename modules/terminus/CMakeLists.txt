@@ -36,6 +36,7 @@ add_exported_library(
   SOURCES
     src/asyncChronicleWriter.cpp
     src/component.cpp
+    src/driver.cpp
     src/msgBase.cpp
     src/port.cpp
     src/programOption.cpp

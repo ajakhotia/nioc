@@ -26,7 +26,7 @@ ExampleDriver::ExampleDriver(
 {
 }
 
-ExampleDriver::State ExampleDriver::step()
+ExampleDriver::State ExampleDriver::run()
 {
   if(mRound == mRoundCount)
   {

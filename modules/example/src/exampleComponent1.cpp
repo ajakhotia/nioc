@@ -26,6 +26,7 @@ ExampleComponent1::ExampleComponent1(
       [this](const auto& msgPtr)
       {
         process(msgPtr);
+        return State::Continue;
       });
 }
 

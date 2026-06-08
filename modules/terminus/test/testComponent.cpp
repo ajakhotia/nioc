@@ -22,6 +22,7 @@ EarthComponent::EarthComponent(
       [this](const ConstMsgPtr<TestSchema>&)
       {
         ++mStepCount;
+        return State::Continue;
       });
 }
 
@@ -41,6 +42,7 @@ MarsComponent::MarsComponent(
       [this](const ConstMsgPtr<TestSchema>&)
       {
         ++mStepCount;
+        return State::Continue;
       });
 }
 
