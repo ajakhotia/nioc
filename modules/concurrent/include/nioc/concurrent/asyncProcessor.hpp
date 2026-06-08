@@ -9,7 +9,9 @@
 #include "notifyingInbox.hpp"
 #include "routine.hpp"
 #include <cstddef>
+#include <exception>
 #include <functional>
+#include <nioc/logger/logger.hpp>
 #include <string>
 #include <utility>
 
@@ -75,25 +77,41 @@ public:
     mInbox.push(std::move(value));
   }
 
-  /// @brief Pops one queued value and runs the callback on it.
-  ///
-  /// @return @ref State::Continue after handling a value, or @ref State::Waiting when the inbox is
-  /// empty.
-  [[nodiscard]] State step() final
-  {
-    auto value = mInbox.tryPop();
-    if(not value)
-    {
-      return State::Waiting;
-    }
-
-    mProcess(std::move(*value));
-    return State::Continue;
-  }
-
 private:
   Process mProcess;
   NotifyingInbox<AnyMpsc<ValueType>> mInbox;
+
+  /// @brief Pops one queued value and runs the callback on it.
+  ///
+  /// Catches every exception the callback may throw, logs it, and reports @ref State::Done so a
+  /// failing processor winds down gracefully rather than escalating. Never throws.
+  ///
+  /// @return @ref State::Continue after handling a value, @ref State::Waiting when the inbox is
+  /// empty, or @ref State::Done if the callback throws.
+  [[nodiscard]] State step() noexcept final
+  {
+    try
+    {
+      auto value = mInbox.tryPop();
+      if(not value)
+      {
+        return State::Waiting;
+      }
+
+      mProcess(std::move(*value));
+      return State::Continue;
+    }
+    catch(const std::exception& exception)
+    {
+      logger::error("[{}] {}", name(), exception.what());
+    }
+    catch(...)
+    {
+      logger::error("[{}] unhandled exception", name());
+    }
+
+    return State::Done;
+  }
 };
 
 } // namespace nioc::concurrent

@@ -27,7 +27,7 @@ add_exported_library(
         LINK_LIBRARIES
             PUBLIC Boost::headers
             PUBLIC nioc::common
-            PRIVATE nioc::logger
+            PUBLIC nioc::logger
         COMPILE_FEATURES
             PUBLIC cxx_std_23
         COMPILE_OPTIONS

@@ -4,7 +4,6 @@
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include <exception>
 #include <mutex>
 #include <nioc/concurrent/threadedRunner.hpp>
 #include <nioc/logger/logger.hpp>
@@ -64,16 +63,7 @@ void ThreadedRunner::run(const std::stop_token& stopToken)
       return;
     }
 
-    auto state = Routine::State::Done;
-    try
-    {
-      state = routine->step();
-    }
-    catch(const std::exception& exception)
-    {
-      logger::error("[{}] step failed and will stop: {}", routine->name(), exception.what());
-      return;
-    }
+    const auto state = routine->tick();
 
     if(state == Routine::State::Done)
     {

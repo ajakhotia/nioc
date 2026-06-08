@@ -46,7 +46,7 @@ TEST(ComponentTest, emptyInboxWaits)
 {
   auto port = Port{};
   auto component = EarthComponent{port, 4, concurrent::BufferMode::Overwriting};
-  EXPECT_EQ(component.step(), concurrent::Routine::State::Waiting);
+  EXPECT_EQ(component.tick(), concurrent::Routine::State::Waiting);
 }
 
 TEST(ComponentTest, drainsOneMessagePerRun)
@@ -56,9 +56,9 @@ TEST(ComponentTest, drainsOneMessagePerRun)
   port.publish(channelId(), makeMessage());
   port.publish(channelId(), makeMessage());
 
-  EXPECT_EQ(component.step(), concurrent::Routine::State::Continue);
-  EXPECT_EQ(component.step(), concurrent::Routine::State::Continue);
-  EXPECT_EQ(component.step(), concurrent::Routine::State::Waiting);
+  EXPECT_EQ(component.tick(), concurrent::Routine::State::Continue);
+  EXPECT_EQ(component.tick(), concurrent::Routine::State::Continue);
+  EXPECT_EQ(component.tick(), concurrent::Routine::State::Waiting);
 }
 
 TEST(ComponentTest, overwriteDropsOldestWhenFull)
@@ -72,9 +72,9 @@ TEST(ComponentTest, overwriteDropsOldestWhenFull)
   }
 
   // Two slots keep the newest two; the other three were overwritten.
-  EXPECT_EQ(component.step(), concurrent::Routine::State::Continue);
-  EXPECT_EQ(component.step(), concurrent::Routine::State::Continue);
-  EXPECT_EQ(component.step(), concurrent::Routine::State::Waiting);
+  EXPECT_EQ(component.tick(), concurrent::Routine::State::Continue);
+  EXPECT_EQ(component.tick(), concurrent::Routine::State::Continue);
+  EXPECT_EQ(component.tick(), concurrent::Routine::State::Waiting);
 }
 
 TEST(ComponentTest, unboundedRetainsEveryMessage)
@@ -90,9 +90,9 @@ TEST(ComponentTest, unboundedRetainsEveryMessage)
   // Unbounded keeps all five despite a nominal capacity of 1.
   for(auto count = 0; count < kPublishCount; ++count)
   {
-    EXPECT_EQ(component.step(), concurrent::Routine::State::Continue);
+    EXPECT_EQ(component.tick(), concurrent::Routine::State::Continue);
   }
-  EXPECT_EQ(component.step(), concurrent::Routine::State::Waiting);
+  EXPECT_EQ(component.tick(), concurrent::Routine::State::Waiting);
 }
 
 } // namespace nioc::terminus

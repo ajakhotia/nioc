@@ -32,14 +32,6 @@ public:
   Driver& operator=(Driver&&) noexcept = delete;
   ~Driver() noexcept override = default;
 
-  /// @brief Runs one iteration: invokes @ref run and converts any failure into a clean finish.
-  ///
-  /// Catches every exception @ref run may throw, logs it, and reports @ref State::Done so a failing
-  /// driver winds down gracefully rather than escalating. Never throws.
-  ///
-  /// @return Whatever @ref run returns, or @ref State::Done if @ref run throws.
-  [[nodiscard]] State step() noexcept final;
-
 protected:
   /// @brief Binds the driver to the Port it publishes onto.
   /// @param port Hub the driver publishes onto; must outlive this driver.
@@ -61,6 +53,14 @@ protected:
 
 private:
   Port& mPort;
+
+  /// @brief Runs one iteration: invokes @ref run and converts any failure into a clean finish.
+  ///
+  /// Catches every exception @ref run may throw, logs it, and reports @ref State::Done so a failing
+  /// driver winds down gracefully rather than escalating. Never throws.
+  ///
+  /// @return Whatever @ref run returns, or @ref State::Done if @ref run throws.
+  [[nodiscard]] State step() noexcept final;
 
   /// @brief Produces one iteration of work, emitting messages through the @ref publish method.
   ///

@@ -20,7 +20,7 @@ namespace
 TEST(AsyncProcessor, StepWaitsWhenInboxEmpty)
 {
   auto processor = AsyncProcessor<int>("test", BufferMode::Unbounded, 0, [](int) {});
-  EXPECT_EQ(processor.step(), Routine::State::Waiting);
+  EXPECT_EQ(processor.tick(), Routine::State::Waiting);
 }
 
 TEST(AsyncProcessor, ProcessesPushedValuesOnePerStepInOrder)
@@ -38,9 +38,9 @@ TEST(AsyncProcessor, ProcessesPushedValuesOnePerStepInOrder)
   processor.push(1);
   processor.push(2);
 
-  EXPECT_EQ(processor.step(), Routine::State::Continue);
-  EXPECT_EQ(processor.step(), Routine::State::Continue);
-  EXPECT_EQ(processor.step(), Routine::State::Waiting);
+  EXPECT_EQ(processor.tick(), Routine::State::Continue);
+  EXPECT_EQ(processor.tick(), Routine::State::Continue);
+  EXPECT_EQ(processor.tick(), Routine::State::Waiting);
 
   EXPECT_EQ(received, (std::vector<int>{1, 2}));
 }

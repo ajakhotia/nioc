@@ -48,13 +48,13 @@ protected:
   void wake() final;
 
 private:
-  void run(const std::stop_token& stopToken);
-
   std::weak_ptr<Routine> mRoutine;
   std::mutex mMutex;
   std::condition_variable_any mCondition;
   bool mReady{false};
   std::jthread mThread;
+
+  void run(const std::stop_token& stopToken);
 };
 
 } // namespace nioc::concurrent

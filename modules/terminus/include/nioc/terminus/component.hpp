@@ -45,15 +45,6 @@ public:
   Component& operator=(Component&&) noexcept = delete;
   ~Component() noexcept override = default;
 
-  /// @brief Pops one queued message and runs its subscribed callback, reporting the next State.
-  ///
-  /// Catches every exception a callback may throw, logs it, and reports @ref State::Done so a
-  /// failing component winds down gracefully rather than escalating. Never throws.
-  ///
-  /// @return @ref State::Waiting when the inbox is empty; otherwise the @ref State returned by the
-  /// subscribed callback; or @ref State::Done if the callback throws.
-  [[nodiscard]] State step() noexcept final;
-
 protected:
   using MsgBaseCallback = std::function<State(ConstMsgBasePtr)>;
   using ConsignmentCallback = std::function<void(Consignment)>;
@@ -156,6 +147,15 @@ private:
   concurrent::NotifyingInbox<concurrent::AnyMpsc<std::pair<ChannelId, Consignment>>> mInbox;
   std::unordered_map<ChannelId, MsgBaseCallback> mHandlers;
   std::unordered_map<ChannelId, std::shared_ptr<const ConsignmentCallback>> mPortSubscriptions;
+
+  /// @brief Pops one queued message and runs its subscribed callback, reporting the next State.
+  ///
+  /// Catches every exception a callback may throw, logs it, and reports @ref State::Done so a
+  /// failing component winds down gracefully rather than escalating. Never throws.
+  ///
+  /// @return @ref State::Waiting when the inbox is empty; otherwise the @ref State returned by the
+  /// subscribed callback; or @ref State::Done if the callback throws.
+  [[nodiscard]] State step() noexcept final;
 };
 
 } // namespace nioc::terminus

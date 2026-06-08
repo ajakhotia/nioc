@@ -5,6 +5,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
+#include <atomic>
 #include <cstdint>
 #include <functional>
 #include <string>
@@ -21,8 +22,9 @@ namespace nioc::concurrent
 /// A Routine signals its outcome through the returned @ref State:
 /// - @ref State::Continue to be scheduled again immediately,
 /// - @ref State::Waiting when it has no work right now and should be rescheduled later,
-/// - @ref State::Done to finish naturally (end of input, deadline reached);
-/// or it throws to fail, which the Runner catches, logs, and treats as a stop.
+/// - @ref State::Done to finish naturally (end of input, deadline reached) or to fail;
+/// @ref step never throws — an implementation that can fail catches its own exceptions and reports
+/// @ref State::Done.
 class Routine
 {
 public:
@@ -58,18 +60,33 @@ public:
 
   Routine& operator=(Routine&&) noexcept = delete;
 
-  /// @brief Performs one iteration of work.
+  /// @brief Advances the routine by one iteration and records its outcome.
   ///
-  /// @return @ref State::Continue to run again immediately, @ref State::Waiting to be rescheduled
-  /// later, or @ref State::Done when finished.
+  /// Called by the driving @ref Runner once per loop iteration. Runs @ref step, stores the returned
+  /// @ref State so it can be observed from another thread via @ref state, and returns it. Never
+  /// throws: a @ref step that fails reports @ref State::Done rather than escaping.
   ///
-  /// @throws std::exception  Actual throw depends on the implementation and may vary.
-  [[nodiscard]] virtual State step() = 0;
+  /// @return The @ref State @ref step reported for this iteration.
+  [[nodiscard]] State tick() noexcept
+  {
+    const auto state = step();
+    mState.store(state, std::memory_order_relaxed);
+    return state;
+  }
 
   /// @brief Returns this routine's name: its human-readable identity.
   [[nodiscard]] const std::string& name() const noexcept
   {
     return mName;
+  }
+
+  /// @brief Returns the @ref State the most recent @ref tick recorded.
+  ///
+  /// Safe to call from a thread other than the one driving @ref tick: it reports the outcome of the
+  /// last completed iteration (@ref State::Continue before the first one).
+  [[nodiscard]] State state() const noexcept
+  {
+    return mState.load(std::memory_order_relaxed);
   }
 
   /// @brief Installs the callback the routine uses to announce it has some work again.
@@ -91,7 +108,17 @@ protected:
 
 private:
   const std::string mName;
-  std::function<void()> mTrigger;
+  std::function<void()> mTrigger{nullptr};
+  std::atomic<State> mState{State::Continue};
+
+  /// @brief Performs one iteration of work; implemented by a subclass and run from @ref tick.
+  ///
+  /// Must not throw: an implementation that can fail catches its own exceptions and reports @ref
+  /// State::Done so the Runner winds the routine down cleanly.
+  ///
+  /// @return @ref State::Continue to run again immediately, @ref State::Waiting to be rescheduled
+  /// later, or @ref State::Done when finished.
+  [[nodiscard]] virtual State step() noexcept = 0;
 };
 
 } // namespace nioc::concurrent

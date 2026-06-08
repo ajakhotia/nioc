@@ -6,12 +6,14 @@
 
 #include <atomic>
 #include <chrono>
+#include <cstddef>
 #include <gtest/gtest.h>
 #include <memory>
 #include <nioc/concurrent/routine.hpp>
 #include <nioc/concurrent/threadedRunner.hpp>
-#include <stdexcept>
 #include <thread>
+#include <utility>
+#include <vector>
 
 namespace nioc::concurrent
 {
@@ -28,15 +30,6 @@ public:
   {
   }
 
-  State step() final
-  {
-    if(++mIterations >= mDoneAfter)
-    {
-      return State::Done;
-    }
-    return State::Continue;
-  }
-
   [[nodiscard]] int iterations() const
   {
     return mIterations.load();
@@ -45,6 +38,15 @@ public:
 private:
   std::atomic<int> mIterations{0};
   int mDoneAfter;
+
+  State step() noexcept final
+  {
+    if(++mIterations >= mDoneAfter)
+    {
+      return State::Done;
+    }
+    return State::Continue;
+  }
 };
 
 /// Sleeps briefly and returns Continue forever; the Runner ends it when stop is requested between
@@ -54,22 +56,31 @@ class ForeverRoutine final: public Routine
 public:
   ForeverRoutine(): Routine("ForeverRoutine") {}
 
-  State step() final
+private:
+  State step() noexcept final
   {
     std::this_thread::sleep_for(1ms);
     return State::Continue;
   }
 };
 
-/// Throws on the first iteration to exercise the Runner's failure path.
-class ThrowingRoutine final: public Routine
+/// Reports a scripted sequence of States, one per step, to exercise state() recording.
+class ScriptedRoutine final: public Routine
 {
 public:
-  ThrowingRoutine(): Routine("ThrowingRoutine") {}
-
-  State step() final
+  explicit ScriptedRoutine(std::vector<State> script):
+    Routine("ScriptedRoutine"),
+    mScript(std::move(script))
   {
-    throw std::runtime_error("boom");
+  }
+
+private:
+  std::vector<State> mScript;
+  std::size_t mIndex{0};
+
+  State step() noexcept final
+  {
+    return mIndex < mScript.size() ? mScript[mIndex++] : State::Done;
   }
 };
 
@@ -84,6 +95,9 @@ TEST(ThreadedRunnerTest, runsUntilDone)
   runner->waitUntilStopped();
 
   EXPECT_EQ(routine->iterations(), 3);
+
+  // Once the loop ends on Done, the routine reports that final State to any later observer.
+  EXPECT_EQ(routine->state(), Routine::State::Done);
 }
 
 TEST(ThreadedRunnerTest, requestStopEndsTheLoop)
@@ -99,16 +113,22 @@ TEST(ThreadedRunnerTest, requestStopEndsTheLoop)
   runner->waitUntilStopped();
 }
 
-TEST(ThreadedRunnerTest, exceptionEndsTheLoop)
+TEST(RoutineTest, tickRecordsLastReportedState)
 {
-  const auto runner = std::make_shared<ThreadedRunner>();
-  const auto routine = std::make_shared<ThrowingRoutine>();
+  auto routine = ScriptedRoutine(
+      {Routine::State::Waiting, Routine::State::Continue, Routine::State::Done});
 
-  runner->launch(routine);
+  // Before the first tick the routine reports Continue: runnable, not yet started.
+  EXPECT_EQ(routine.state(), Routine::State::Continue);
 
-  // A throwing step is caught by the runner, which ends the loop rather than propagating; the join
-  // below returns instead of hanging.
-  runner->waitUntilStopped();
+  EXPECT_EQ(routine.tick(), Routine::State::Waiting);
+  EXPECT_EQ(routine.state(), Routine::State::Waiting);
+
+  EXPECT_EQ(routine.tick(), Routine::State::Continue);
+  EXPECT_EQ(routine.state(), Routine::State::Continue);
+
+  EXPECT_EQ(routine.tick(), Routine::State::Done);
+  EXPECT_EQ(routine.state(), Routine::State::Done);
 }
 
 TEST(ThreadedRunnerTest, drivesSeveralRoutines)
