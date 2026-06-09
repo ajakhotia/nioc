@@ -4,8 +4,10 @@
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#include <csignal>
 #include <cstdlib>
 #include <memory>
+#include <nioc/common/signalCatcher.hpp>
 #include <nioc/concurrent/threadedRunner.hpp>
 #include <nioc/example/exampleComponent1.hpp>
 #include <nioc/example/exampleComponent2.hpp>
@@ -16,13 +18,51 @@
 int main()
 {
   constexpr auto kInboxCapacity = std::size_t{16};
-  constexpr auto kDriverRounds = std::size_t{1000};
+  constexpr auto kDriverRounds = std::size_t{1000000};
 
   // Install the default logger so the terminus diagnostic traces reach the console. Its level
   // defaults to the compile-time floor (SPDLOG_ACTIVE_LEVEL), so a trace-floor build prints traces.
   nioc::logger::setupDefaultLogger("exampleMain");
 
   auto port = nioc::terminus::Port{};
+
+  const auto signalCatcher = nioc::common::SignalCatcher{
+      std::pair(
+          SIGINT,
+          [&port](const std::uint32_t count)
+          {
+            if(count == 1)
+            {
+              port.shutdown();
+            }
+            if(count >= 2)
+            {
+              port.abort();
+            }
+          }),
+    std::pair(
+          SIGTERM,
+          [&port](const std::uint32_t count)
+          {
+            if(count == 1)
+            {
+              port.shutdown();
+            }
+            if(count >= 2)
+            {
+              port.abort();
+            }
+          }),
+      std::pair(
+          SIGABRT,
+          [&port](const std::uint32_t count)
+          {
+            if(count >= 1)
+            {
+              port.abort();
+            }
+          }),
+  };
 
   // ExampleDriver produces Sample1 and Sample3.
   const auto exampleDriver =

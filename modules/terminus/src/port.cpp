@@ -295,11 +295,14 @@ void Port::publish(const ChannelId channelId, const ConstMsgBasePtr& msgBasePtr)
 
 void Port::shutdown() const noexcept
 {
+  logger::info("Received request to shutdown.");
   static_cast<void>(mShutdownSource.request_stop());
 }
 
 void Port::abort() const noexcept
 {
+  logger::info("Received request to abort.");
+  static_cast<void>(mShutdownSource.request_stop());
   static_cast<void>(mAbortSource.request_stop());
 }
 
