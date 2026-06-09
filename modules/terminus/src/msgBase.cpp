@@ -81,10 +81,7 @@ void write(const MsgBase& msgBase, const chronicle::ChannelId channelId, chronic
     std::ranges::transform(
         segments,
         inserter,
-        [](const ConstWordArrayPtr& segment)
-        {
-          return segment.size();
-        });
+        [](const ConstWordArrayPtr& segment) { return segment.size(); });
 
     // If there are even number of segments, there will be an odd number of
     // entries in the table. Append a 0 to even them out.
@@ -104,10 +101,7 @@ void write(const MsgBase& msgBase, const chronicle::ChannelId channelId, chronic
   std::ranges::transform(
       segments,
       std::back_inserter(spanCollection),
-      [](const ConstWordArrayPtr& arrayPtr)
-      {
-        return convert(arrayPtr);
-      });
+      [](const ConstWordArrayPtr& arrayPtr) { return convert(arrayPtr); });
 
   writer.write(channelId, spanCollection);
 }

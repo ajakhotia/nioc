@@ -293,5 +293,25 @@ void Port::publish(const ChannelId channelId, const ConstMsgBasePtr& msgBasePtr)
   }
 }
 
+void Port::shutdown() const noexcept
+{
+  static_cast<void>(mShutdownSource.request_stop());
+}
+
+void Port::abort() const noexcept
+{
+  static_cast<void>(mAbortSource.request_stop());
+}
+
+std::stop_token Port::shutdownToken() const noexcept
+{
+  return mShutdownSource.get_token();
+}
+
+std::stop_token Port::abortToken() const noexcept
+{
+  return mAbortSource.get_token();
+}
+
 
 } // namespace nioc::terminus

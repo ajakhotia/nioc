@@ -46,9 +46,7 @@ std::uint64_t computeTotalSizeInBytes(
       dataCollection.end(),
       0ULL,
       [](const std::uint64_t accumulatedSize, const std::span<const std::byte>& data)
-      {
-        return accumulatedSize + data.size_bytes();
-      });
+      { return accumulatedSize + data.size_bytes(); });
 }
 
 template<>

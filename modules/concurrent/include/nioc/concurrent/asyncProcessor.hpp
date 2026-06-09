@@ -50,13 +50,7 @@ public:
       Process process):
     Routine(std::move(name)),
     mProcess(std::move(process)),
-    mInbox(
-        [this]
-        {
-          triggerRunner();
-        },
-        bufferMode,
-        capacity)
+    mInbox([this] { triggerRunner(); }, bufferMode, capacity)
   {
   }
 

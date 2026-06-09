@@ -36,9 +36,7 @@ void Writer::write(const ChannelId channelId, const std::span<const std::byte>& 
   // TODO(ajakhotia): This can be improved to use fewer locks and avoid race conditions.
   mLockedSequenceFile(
       [&](std::ofstream& sequenceFile)
-      {
-        ReadWriteUtil<SequenceEntry>::write(sequenceFile, SequenceEntry{channelId});
-      });
+      { ReadWriteUtil<SequenceEntry>::write(sequenceFile, SequenceEntry{channelId}); });
 
   mLockedChannelPtrMap(
       [&](ChannelPtrMap& channelPtrMap)
@@ -53,9 +51,7 @@ void Writer::write(const ChannelId channelId, std::span<const std::span<const st
   // TODO(ajakhotia): This can be improved to use fewer locks and avoid race conditions.
   mLockedSequenceFile(
       [&](std::ofstream& sequenceFile)
-      {
-        ReadWriteUtil<SequenceEntry>::write(sequenceFile, SequenceEntry{channelId});
-      });
+      { ReadWriteUtil<SequenceEntry>::write(sequenceFile, SequenceEntry{channelId}); });
 
   mLockedChannelPtrMap(
       [&](ChannelPtrMap& channelPtrMap)

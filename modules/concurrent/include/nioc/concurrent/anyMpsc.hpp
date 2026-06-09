@@ -61,12 +61,7 @@ public:
   /// @brief Enqueues @p value through the chosen storage; returns the sacrificed value, if any.
   std::optional<value_type> push(value_type value)
   {
-    return std::visit(
-        [&value](auto& queue)
-        {
-          return queue.push(std::move(value));
-        },
-        mStorage);
+    return std::visit([&value](auto& queue) { return queue.push(std::move(value)); }, mStorage);
   }
 
   /// @brief Constructs a value in place from @p args through the chosen storage; returns the
@@ -76,44 +71,26 @@ public:
   std::optional<value_type> emplace(Args&&... args)
   {
     return std::visit(
-        [&](auto& queue)
-        {
-          return queue.emplace(std::forward<Args>(args)...);
-        },
+        [&](auto& queue) { return queue.emplace(std::forward<Args>(args)...); },
         mStorage);
   }
 
   /// @brief Removes and returns the oldest value, or nullopt when empty. Single consumer only.
   [[nodiscard]] std::optional<value_type> tryPop()
   {
-    return std::visit(
-        [](auto& queue)
-        {
-          return queue.tryPop();
-        },
-        mStorage);
+    return std::visit([](auto& queue) { return queue.tryPop(); }, mStorage);
   }
 
   /// @brief Number of values currently queued. Racy; for metrics.
   [[nodiscard]] size_type size() const
   {
-    return std::visit(
-        [](const auto& queue)
-        {
-          return queue.size();
-        },
-        mStorage);
+    return std::visit([](const auto& queue) { return queue.size(); }, mStorage);
   }
 
   /// @brief Fraction of capacity in use, in [0, 1]; 0.0 when the chosen storage is unbounded.
   [[nodiscard]] double occupancy() const
   {
-    return std::visit(
-        [](const auto& queue)
-        {
-          return queue.occupancy();
-        },
-        mStorage);
+    return std::visit([](const auto& queue) { return queue.occupancy(); }, mStorage);
   }
 
 private:

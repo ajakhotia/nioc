@@ -12,10 +12,7 @@ namespace nioc::common
 namespace
 {
 // A lambda function to extract value from pointer types.
-const auto kValueExtractorHelper = [](const auto& value)
-{
-  return *value;
-};
+const auto kValueExtractorHelper = [](const auto& value) { return *value; };
 
 } // namespace
 
@@ -36,25 +33,13 @@ TEST(Locked, LockedConstruction)
   // Default construction of a non-trivial type.
   {
     const auto locked = Locked<std::vector<int>>{};
-    EXPECT_EQ(
-        0U,
-        locked(
-            [](const auto& value)
-            {
-              return value.size();
-            }));
+    EXPECT_EQ(0U, locked([](const auto& value) { return value.size(); }));
   }
 
   // Construction of a non-trivial type with an initial value.
   {
     const auto locked = Locked<std::vector<int>>{std::initializer_list<int>({1, 2, 3, 4, 5})};
-    EXPECT_EQ(
-        5U,
-        locked(
-            [](const auto& value)
-            {
-              return value.size();
-            }));
+    EXPECT_EQ(5U, locked([](const auto& value) { return value.size(); }));
   }
 
   // Default construction of movable-only entities.
@@ -76,55 +61,35 @@ TEST(Locked, LockedConstExecution)
   // With cExecute.
   {
     const auto locked = Locked<int>{7};
-    const auto valueCopy = locked.cExecute(
-        [](const auto& value)
-        {
-          return value;
-        });
+    const auto valueCopy = locked.cExecute([](const auto& value) { return value; });
     EXPECT_EQ(7, valueCopy);
   }
 
   // With execute. Should automatically resolve to the const-overload.
   {
     const auto locked = Locked<int>{7};
-    const auto valueCopy = locked.execute(
-        [](const auto& value)
-        {
-          return value;
-        });
+    const auto valueCopy = locked.execute([](const auto& value) { return value; });
     EXPECT_EQ(7, valueCopy);
   }
 
   // With the ()-operator. Should automatically resolve to the const-overload
   {
     const auto locked = Locked<int>{7};
-    const auto valueCopy = locked(
-        [](const auto& value)
-        {
-          return value;
-        });
+    const auto valueCopy = locked([](const auto& value) { return value; });
     EXPECT_EQ(7, valueCopy);
   }
 
   // With ()-operator and const-pass-by-value semantics.
   {
     const auto locked = Locked<int>{7};
-    const auto valueCopy = locked(
-        [](const auto value)
-        {
-          return value;
-        });
+    const auto valueCopy = locked([](const auto value) { return value; });
     EXPECT_EQ(7, valueCopy);
   }
 
   // With ()-operator and pass-by-value semantics.
   {
     const auto locked = Locked<int>{7};
-    const auto valueCopy = locked(
-        [](auto value)
-        {
-          return ++value;
-        });
+    const auto valueCopy = locked([](auto value) { return ++value; });
     EXPECT_EQ(8, valueCopy);
   }
 }

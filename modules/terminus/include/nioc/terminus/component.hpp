@@ -114,9 +114,7 @@ protected:
     // Set up dispatch pathway for the consignments from port to component's queue
     auto consignmentCallbackPtr = std::make_shared<ConsignmentCallback>(
         [this, channelId](Consignment consignment)
-        {
-          mInbox.push({channelId, std::move(consignment)});
-        });
+        { mInbox.push({channelId, std::move(consignment)}); });
 
     mPort.subscribe(channelId, consignmentCallbackPtr);
     mPortSubscriptions.emplace(channelId, std::move(consignmentCallbackPtr));

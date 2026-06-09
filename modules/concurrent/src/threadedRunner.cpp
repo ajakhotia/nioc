@@ -23,11 +23,7 @@ void ThreadedRunner::launch(std::weak_ptr<Routine> routine)
   }
 
   mRoutine = std::move(routine);
-  mThread = std::jthread(
-      [this](const std::stop_token& stopToken)
-      {
-        run(stopToken);
-      });
+  mThread = std::jthread([this](const std::stop_token& stopToken) { run(stopToken); });
 }
 
 void ThreadedRunner::waitUntilStopped()
@@ -77,13 +73,7 @@ void ThreadedRunner::run(const std::stop_token& stopToken)
       routine.reset();
 
       auto lock = std::unique_lock(mMutex);
-      mCondition.wait(
-          lock,
-          stopToken,
-          [this]
-          {
-            return mReady;
-          });
+      mCondition.wait(lock, stopToken, [this] { return mReady; });
       mReady = false;
     }
   }

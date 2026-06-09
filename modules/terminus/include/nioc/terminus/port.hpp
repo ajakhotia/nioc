@@ -14,6 +14,7 @@
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <spdlog/sinks/sink.h>
+#include <stop_token>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -158,6 +159,22 @@ public:
   /// @param msgBasePtr Message to publish; ownership passes to the Port.
   void publish(ChannelId channelId, const ConstMsgBasePtr& msgBasePtr);
 
+  /// @brief Requests a graceful shutdown: producers stop and in-flight work drains.
+  ///
+  /// Trips @ref shutdownToken. A @ref Driver winds down off it.
+  void shutdown() const noexcept;
+
+  /// @brief Requests an immediate halt: stop now and abandon in-flight work.
+  ///
+  /// Trips @ref haltToken. A @ref Component finishes off it.
+  void abort() const noexcept;
+
+  /// @brief Returns the token tripped by @ref shutdown.
+  [[nodiscard]] std::stop_token shutdownToken() const noexcept;
+
+  /// @brief Returns the token tripped by @ref halt.
+  [[nodiscard]] std::stop_token abortToken() const noexcept;
+
 private:
   using SubscriptionList = std::vector<std::weak_ptr<const ConsignmentCallback>>;
   using SubscriptionMap = std::unordered_map<ChannelId, SubscriptionList>;
@@ -169,6 +186,8 @@ private:
   std::unordered_map<std::string, std::string> mResourceMap;
   SubscriptionMap mSubscriptionMap;
   std::atomic_uint32_t mPendingConsignments{0};
+  std::stop_source mShutdownSource;
+  std::stop_source mAbortSource;
   std::unique_ptr<AsyncChronicleWriter> mChronicleWriter;
 };
 

@@ -96,10 +96,7 @@ void poseParamCheck(
         range.begin(),
         range.end(),
         range.begin(),
-        [norm](const auto param)
-        {
-          return param / norm;
-        });
+        [norm](const auto param) { return param / norm; });
   }
 
   const auto& poseParams = pose.cParameters();

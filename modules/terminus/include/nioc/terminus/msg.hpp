@@ -58,12 +58,7 @@ public:
   /// @brief Returns a reader over the message payload.
   Reader reader()
   {
-    return std::visit(
-        [](auto& var)
-        {
-          return Reader(var.template getRoot<Schema>());
-        },
-        variant());
+    return std::visit([](auto& var) { return Reader(var.template getRoot<Schema>()); }, variant());
   }
 
   /// @brief Returns a reader over the message payload of a const message.

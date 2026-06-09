@@ -30,10 +30,7 @@ TEST(AsyncProcessor, ProcessesPushedValuesOnePerStepInOrder)
       "test",
       BufferMode::Unbounded,
       0,
-      [&received](const int value)
-      {
-        received.push_back(value);
-      });
+      [&received](const int value) { received.push_back(value); });
 
   processor.push(1);
   processor.push(2);

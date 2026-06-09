@@ -37,10 +37,7 @@ auto makeBimap(std::initializer_list<PairType> list)
   std::for_each(
       list.begin(),
       list.end(),
-      [&](const auto& item)
-      {
-        result.insert({item.first, item.second});
-      });
+      [&](const auto& item) { result.insert({item.first, item.second}); });
   return result;
 }
 

@@ -129,11 +129,7 @@ public:
   template<typename OtherType>
   Locked& operator=(const OtherType& other)
   {
-    execute(
-        [&other](auto& value)
-        {
-          value = other;
-        });
+    execute([&other](auto& value) { value = other; });
     return *this;
   }
 
@@ -146,11 +142,8 @@ public:
   template<typename OtherType>
   Locked& operator=(OtherType&& other)
   {
-    execute(
-        [other = std::forward<OtherType>(other)](auto& value) mutable
-        {
-          value = std::move(other);
-        });
+    execute([other = std::forward<OtherType>(other)](auto& value) mutable
+            { value = std::move(other); });
 
     return *this;
   }
@@ -162,11 +155,7 @@ public:
   /// @return Copy of the value.
   ValueType copy() const
   {
-    return cExecute(
-        [](const auto value)
-        {
-          return value;
-        });
+    return cExecute([](const auto value) { return value; });
   }
 
   /// @brief Moves the value out, leaving it in the moved-from state.
@@ -176,11 +165,7 @@ public:
   /// @return Moved value.
   ValueType move()
   {
-    return execute(
-        [](auto& value)
-        {
-          return std::move(value);
-        });
+    return execute([](auto& value) { return std::move(value); });
   }
 
 private:
@@ -199,11 +184,7 @@ private:
 template<typename ValueType, typename Other>
 constexpr bool operator==(const Locked<ValueType>& lockedValue, const Other& otherValue)
 {
-  return lockedValue(
-      [&otherValue](const auto& value)
-      {
-        return value == otherValue;
-      });
+  return lockedValue([&otherValue](const auto& value) { return value == otherValue; });
 }
 
 /// @brief Compares value with locked value.
@@ -214,11 +195,7 @@ constexpr bool operator==(const Locked<ValueType>& lockedValue, const Other& oth
 template<typename Other, typename ValueType>
 constexpr bool operator==(const Other& otherValue, const Locked<ValueType>& lockedValue)
 {
-  return lockedValue(
-      [&otherValue](const auto& value)
-      {
-        return otherValue == value;
-      });
+  return lockedValue([&otherValue](const auto& value) { return otherValue == value; });
 }
 
 /// @brief Compares a locked value with another value.
@@ -229,11 +206,7 @@ constexpr bool operator==(const Other& otherValue, const Locked<ValueType>& lock
 template<typename ValueType, typename Other>
 constexpr bool operator!=(const Locked<ValueType>& lockedValue, const Other& otherValue)
 {
-  return lockedValue(
-      [&otherValue](const auto& value)
-      {
-        return value != otherValue;
-      });
+  return lockedValue([&otherValue](const auto& value) { return value != otherValue; });
 }
 
 /// @brief Compares value with locked value.
@@ -244,11 +217,7 @@ constexpr bool operator!=(const Locked<ValueType>& lockedValue, const Other& oth
 template<typename Other, typename ValueType>
 constexpr bool operator!=(const Other& otherValue, const Locked<ValueType>& lockedValue)
 {
-  return lockedValue(
-      [&otherValue](const auto& value)
-      {
-        return otherValue != value;
-      });
+  return lockedValue([&otherValue](const auto& value) { return otherValue != value; });
 }
 
 /// @brief Compares a locked value with another value.
@@ -259,11 +228,7 @@ constexpr bool operator!=(const Other& otherValue, const Locked<ValueType>& lock
 template<typename ValueType, typename Other>
 constexpr bool operator<(const Locked<ValueType>& lockedValue, const Other& otherValue)
 {
-  return lockedValue(
-      [&otherValue](const auto& value)
-      {
-        return value < otherValue;
-      });
+  return lockedValue([&otherValue](const auto& value) { return value < otherValue; });
 }
 
 /// @brief Compares value with locked value.
@@ -274,11 +239,7 @@ constexpr bool operator<(const Locked<ValueType>& lockedValue, const Other& othe
 template<typename Other, typename ValueType>
 constexpr bool operator<(const Other& otherValue, const Locked<ValueType>& lockedValue)
 {
-  return lockedValue(
-      [&otherValue](const auto& value)
-      {
-        return otherValue < value;
-      });
+  return lockedValue([&otherValue](const auto& value) { return otherValue < value; });
 }
 
 /// @brief Compares a locked value with another value.
@@ -289,11 +250,7 @@ constexpr bool operator<(const Other& otherValue, const Locked<ValueType>& locke
 template<typename ValueType, typename Other>
 constexpr bool operator<=(const Locked<ValueType>& lockedValue, const Other& otherValue)
 {
-  return lockedValue(
-      [&otherValue](const auto& value)
-      {
-        return value <= otherValue;
-      });
+  return lockedValue([&otherValue](const auto& value) { return value <= otherValue; });
 }
 
 /// @brief Compares value with locked value.
@@ -304,11 +261,7 @@ constexpr bool operator<=(const Locked<ValueType>& lockedValue, const Other& oth
 template<typename Other, typename ValueType>
 constexpr bool operator<=(const Other& otherValue, const Locked<ValueType>& lockedValue)
 {
-  return lockedValue(
-      [&otherValue](const auto& value)
-      {
-        return otherValue <= value;
-      });
+  return lockedValue([&otherValue](const auto& value) { return otherValue <= value; });
 }
 
 /// @brief Compares a locked value with another value.
@@ -319,11 +272,7 @@ constexpr bool operator<=(const Other& otherValue, const Locked<ValueType>& lock
 template<typename ValueType, typename Other>
 constexpr bool operator>(const Locked<ValueType>& lockedValue, const Other& otherValue)
 {
-  return lockedValue(
-      [&otherValue](const auto& value)
-      {
-        return value > otherValue;
-      });
+  return lockedValue([&otherValue](const auto& value) { return value > otherValue; });
 }
 
 /// @brief Compares value with locked value.
@@ -334,11 +283,7 @@ constexpr bool operator>(const Locked<ValueType>& lockedValue, const Other& othe
 template<typename Other, typename ValueType>
 constexpr bool operator>(const Other& otherValue, const Locked<ValueType>& lockedValue)
 {
-  return lockedValue(
-      [&otherValue](const auto& value)
-      {
-        return otherValue > value;
-      });
+  return lockedValue([&otherValue](const auto& value) { return otherValue > value; });
 }
 
 /// @brief Compares a locked value with another value.
@@ -349,11 +294,7 @@ constexpr bool operator>(const Other& otherValue, const Locked<ValueType>& locke
 template<typename ValueType, typename Other>
 constexpr bool operator>=(const Locked<ValueType>& lockedValue, const Other& otherValue)
 {
-  return lockedValue(
-      [&otherValue](const auto& value)
-      {
-        return value >= otherValue;
-      });
+  return lockedValue([&otherValue](const auto& value) { return value >= otherValue; });
 }
 
 /// @brief Compares value with locked value.
@@ -364,11 +305,7 @@ constexpr bool operator>=(const Locked<ValueType>& lockedValue, const Other& oth
 template<typename Other, typename ValueType>
 constexpr bool operator>=(const Other& otherValue, const Locked<ValueType>& lockedValue)
 {
-  return lockedValue(
-      [&otherValue](const auto& value)
-      {
-        return otherValue >= value;
-      });
+  return lockedValue([&otherValue](const auto& value) { return otherValue >= value; });
 }
 
 

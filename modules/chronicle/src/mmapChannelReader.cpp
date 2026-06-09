@@ -51,10 +51,7 @@ MmapChannelReader::MappedFilePtr MmapChannelReader::acquireLogRoll(const std::ui
 {
   const auto iter = std::ranges::find_if(
       mLogRollBuffer,
-      [rollId](const MappedLogRoll& mappedLogRoll)
-      {
-        return mappedLogRoll.mRollId == rollId;
-      });
+      [rollId](const MappedLogRoll& mappedLogRoll) { return mappedLogRoll.mRollId == rollId; });
 
   // If the roll doesn't exist, then map it in.
   if(iter == mLogRollBuffer.end())

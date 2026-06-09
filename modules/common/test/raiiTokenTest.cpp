@@ -23,14 +23,8 @@ TEST(RaiiToken, EntryRunsAtConstructionExitRunsAtDestruction)
   auto exitCount = 0;
   {
     const auto token = RaiiToken{
-        [&entryCount]
-        {
-          ++entryCount;
-        },
-        [&exitCount]() noexcept
-        {
-          ++exitCount;
-        }};
+        [&entryCount] { ++entryCount; },
+        [&exitCount]() noexcept { ++exitCount; }};
 
     EXPECT_EQ(1, entryCount);
     EXPECT_EQ(0, exitCount);
@@ -45,14 +39,8 @@ TEST(RaiiToken, EntryReceivesForwardedArguments)
   auto sum = 0;
   {
     const auto token = RaiiToken{
-        [&sum](const int lhs, const int rhs)
-        {
-          sum = lhs + rhs;
-        },
-        [&sum]() noexcept
-        {
-          --sum;
-        },
+        [&sum](const int lhs, const int rhs) { sum = lhs + rhs; },
+        [&sum]() noexcept { --sum; },
         3,
         4};
 
@@ -69,14 +57,8 @@ TEST(RaiiToken, ExitDoesNotRunWhenEntryThrows)
   const auto buildTokenWithThrowingEntry = [&exitCount]
   {
     const auto token = RaiiToken{
-        []
-        {
-          throw std::runtime_error{"entry failed"};
-        },
-        [&exitCount]() noexcept
-        {
-          ++exitCount;
-        }};
+        [] { throw std::runtime_error{"entry failed"}; },
+        [&exitCount]() noexcept { ++exitCount; }};
   };
 
   EXPECT_THROW(buildTokenWithThrowingEntry(), std::runtime_error);
@@ -87,15 +69,7 @@ TEST(RaiiToken, ExitDoesNotRunWhenEntryThrows)
 // A balanced count back to zero proves every exit ran exactly once across container relocation.
 auto makeCountingToken(int& liveCount)
 {
-  return RaiiToken{
-      [&liveCount]
-      {
-        ++liveCount;
-      },
-      [&liveCount]() noexcept
-      {
-        --liveCount;
-      }};
+  return RaiiToken{[&liveCount] { ++liveCount; }, [&liveCount]() noexcept { --liveCount; }};
 }
 
 using CountingToken = decltype(makeCountingToken(std::declval<int&>()));

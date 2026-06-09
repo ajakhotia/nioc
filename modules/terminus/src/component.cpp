@@ -21,13 +21,7 @@ Component::Component(
     std::string name):
   Routine(std::move(name)),
   mPort(port),
-  mInbox(
-      [this]
-      {
-        triggerRunner();
-      },
-      bufferMode,
-      inboxCapacity)
+  mInbox([this] { triggerRunner(); }, bufferMode, inboxCapacity)
 {
 }
 

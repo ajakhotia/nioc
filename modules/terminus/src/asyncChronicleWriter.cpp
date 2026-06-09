@@ -40,10 +40,7 @@ AsyncChronicleWriter::AsyncChronicleWriter(const fs::path& chronicleDir):
       "chronicleWriter",
       concurrent::BufferMode::Unbounded,
       kQueueCapacity,
-      [this](const auto& item)
-      {
-        write(*item.second.mMsgBasePtr, item.first, mWriter);
-      })},
+      [this](const auto& item) { write(*item.second.mMsgBasePtr, item.first, mWriter); })},
   mRunner{std::make_shared<concurrent::ThreadedRunner>()}
 {
   mRunner->launch(mProcessor);

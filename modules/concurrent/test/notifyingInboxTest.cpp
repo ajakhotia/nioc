@@ -25,10 +25,7 @@ static_assert(MpscQueue<NotifyingInbox<AnyMpsc<int>>>);
 TEST(NotifyingInbox, FiresNotifyOnEveryPush)
 {
   auto notifications = std::size_t{0};
-  auto inbox = NotifyingInbox<UnboundedMpsc<int>>{[&notifications]
-                                                  {
-                                                    ++notifications;
-                                                  }};
+  auto inbox = NotifyingInbox<UnboundedMpsc<int>>{[&notifications] { ++notifications; }};
 
   inbox.push(1);
   inbox.push(2);
