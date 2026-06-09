@@ -47,7 +47,7 @@ int main(const int argC, const char* const* const argV)
     const auto variableMap = nioc::terminus::parseCommandLine(argC, argV, options);
     auto port = nioc::terminus::Port{variableMap};
 
-    const auto signalCatcher = nioc::common::SignalCatcher{ // NOLINT(clang-analyzer-deadcode.DeadStores)
+    const auto signalCatcher = nioc::common::SignalCatcher{
         std::pair(
             SIGINT,
             [&port](const std::uint32_t count)
@@ -124,7 +124,6 @@ int main(const int argC, const char* const* const argV)
 
     component2Runner->requestStop();
     component2Runner->waitUntilStopped();
-    throw std::runtime_error("Aborting");
   }
   catch(const std::exception& error)
   {
