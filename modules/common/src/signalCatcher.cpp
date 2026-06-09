@@ -4,15 +4,9 @@
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// NOLINTBEGIN -- temporary: whole-file clang-tidy suppression while debugging the watch loop.
-
-#include <nioc/common/signalCatcher.hpp>
-
 #include <atomic>
 #include <csignal>
-#include <iostream>
-#include <ostream>
-#include <ranges>
+#include <nioc/common/signalCatcher.hpp>
 
 namespace nioc::common
 {
@@ -43,7 +37,6 @@ SignalCatcher::~SignalCatcher()
     static_cast<void>(std::signal(signal, SIG_DFL));
   }
 
-  static_cast<void>(mStop.request_stop());
   signalCache().store(kStopSignal, std::memory_order_relaxed);
   signalCache().notify_all();
   mWatchThead.join();
@@ -56,17 +49,17 @@ void SignalCatcher::watch()
     signalCache().wait(kDefaultSignal, std::memory_order_relaxed);
     const auto cachedSignal = signalCache().exchange(kDefaultSignal, std::memory_order_relaxed);
 
-    if (mStop.stop_requested())
+    if(cachedSignal == kStopSignal)
     {
       break;
     }
 
-    ++mSignalCounter[cachedSignal];
+    const auto count = ++mSignalCounter[cachedSignal];
 
-    auto signalWithAction = mSignalActions.find(cachedSignal);
-    if(signalWithAction != mSignalActions.cend())
+    if(const auto signalWithAction = mSignalActions.find(cachedSignal);
+       signalWithAction != mSignalActions.cend())
     {
-      signalWithAction->second(mSignalCounter.at(cachedSignal));
+      signalWithAction->second(count);
     }
   }
 }
@@ -77,5 +70,3 @@ void SignalCatcher::setupHandler(const int signal)
 }
 
 } // namespace nioc::common
-
-// NOLINTEND

@@ -40,7 +40,6 @@ public:
 
 private:
   const std::unordered_map<std::int32_t, SignalAction> mSignalActions;
-  std::stop_source mStop;
   std::jthread mWatchThead;
   std::unordered_map<std::int32_t, std::int32_t> mSignalCounter;
 
