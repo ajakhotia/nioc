@@ -28,18 +28,11 @@ public:
   /// @param sample1Topic Topic the `Sample1` messages are published on.
   ///
   /// @param sample3Topic Topic the `Sample3` messages are published on.
-  ///
-  /// @param roundCount Number of rounds to publish before finishing.
-  ExampleDriver(
-      terminus::Port& port,
-      std::string sample1Topic,
-      std::string sample3Topic,
-      std::size_t roundCount);
+  ExampleDriver(terminus::Port& port, std::string sample1Topic, std::string sample3Topic);
 
 private:
   std::string mSample1Topic;
   std::string mSample3Topic;
-  std::size_t mRoundCount;
   std::size_t mRound{0};
 
   /// @brief Publishes one round of messages or finishes once every round has been published.

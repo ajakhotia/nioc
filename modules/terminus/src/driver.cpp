@@ -12,7 +12,17 @@
 namespace nioc::terminus
 {
 
-Driver::Driver(Port& port, std::string name): Routine(std::move(name)), mPort(port) {}
+Driver::Driver(Port& port, std::string name):
+  Routine(std::move(name)),
+  mPort(port),
+  mShutdownToken(port.shutdownToken())
+{
+}
+
+const std::stop_token& Driver::shutdownToken() const noexcept
+{
+  return mShutdownToken;
+}
 
 Driver::State Driver::step() noexcept
 {
@@ -22,11 +32,11 @@ Driver::State Driver::step() noexcept
   }
   catch(const std::exception& exception)
   {
-    logger::error("[{}] {}", name(), exception.what());
+    logger::error("[{}] caught an exception: {}.", name(), exception.what());
   }
   catch(...)
   {
-    logger::error("[{}] unhandled exception", name());
+    logger::error("[{}] caught unknown exception.", name());
   }
 
   return State::Done;

@@ -17,18 +17,16 @@ namespace nioc::example
 ExampleDriver::ExampleDriver(
     terminus::Port& port,
     std::string sample1Topic,
-    std::string sample3Topic,
-    const std::size_t roundCount):
+    std::string sample3Topic):
   Driver{port, "ExampleDriver"},
   mSample1Topic{std::move(sample1Topic)},
-  mSample3Topic{std::move(sample3Topic)},
-  mRoundCount{roundCount}
+  mSample3Topic{std::move(sample3Topic)}
 {
 }
 
 auto ExampleDriver::run() -> State
 {
-  if(mRound == mRoundCount)
+  if(shutdownToken().stop_requested())
   {
     return State::Done;
   }

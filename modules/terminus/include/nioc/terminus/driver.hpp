@@ -8,6 +8,7 @@
 #include "msg.hpp"
 #include "port.hpp"
 #include <nioc/concurrent/routine.hpp>
+#include <stop_token>
 #include <string>
 #include <utility>
 
@@ -38,6 +39,12 @@ protected:
   /// @param name Human-readable identity for this driver (see @ref Routine::name).
   Driver(Port& port, std::string name);
 
+  /// @brief Returns the token tripped when the bound Port is asked to shut down.
+  ///
+  /// A subclass observes this in its @ref run method to wind down gracefully: stop producing,
+  /// finish in-flight work, and report @ref State::Done once a shutdown has been requested.
+  [[nodiscard]] const std::stop_token& shutdownToken() const noexcept;
+
   /// @brief Publishes a typed message onto the bound Port.
   ///
   /// @tparam Schema Cap'n Proto schema of the message.
@@ -53,6 +60,7 @@ protected:
 
 private:
   Port& mPort;
+  const std::stop_token mShutdownToken;
 
   /// @brief Runs one iteration: invokes @ref run and converts any failure into a clean finish.
   ///

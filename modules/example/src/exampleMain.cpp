@@ -21,7 +21,6 @@
 int main(const int argC, const char* const* const argV)
 {
   constexpr auto kDefaultInboxCapacity = std::size_t{16};
-  constexpr auto kDefaultDriverRounds = std::size_t{1000000};
 
   try
   {
@@ -32,11 +31,6 @@ int main(const int argC, const char* const* const argV)
 
     // clang-format off
     options.add_options()
-    (
-      "iterations,iters",
-      boost::program_options::value<std::size_t>()->default_value(kDefaultDriverRounds),
-      "Number of driver rounds"
-    )
     (
       "inbox-capacity,c",
       boost::program_options::value<std::size_t>()->default_value(kDefaultInboxCapacity),
@@ -86,11 +80,8 @@ int main(const int argC, const char* const* const argV)
     };
 
     // ExampleDriver produces Sample1 and Sample3.
-    const auto exampleDriver = std::make_shared<nioc::example::ExampleDriver>(
-        port,
-        "sample1",
-        "sample3",
-        variableMap.at("iterations").as<std::size_t>());
+    const auto exampleDriver =
+        std::make_shared<nioc::example::ExampleDriver>(port, "sample1", "sample3");
 
     // ExampleComponent1 consumes Sample3 and produces Sample2.
     const auto exampleComponent1 = std::make_shared<nioc::example::ExampleComponent1>(
