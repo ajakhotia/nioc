@@ -14,7 +14,7 @@ namespace nioc::common
 
 /// @brief Runs a user callback on a background thread when a registered process signal arrives.
 ///
-/// Maps each signal number to an action. On construction it installs a handler for every signal in
+/// Maps each signal number to an action. On construction, it installs a handler for every signal in
 /// the map and starts one watcher thread. When a registered signal arrives, the watcher invokes
 /// that signal's action and passes the number of times the signal has been received so far (1 on
 /// the first delivery, 2 on the second, and so on). An action can use that count to escalate — for
