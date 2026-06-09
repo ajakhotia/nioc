@@ -175,6 +175,8 @@ public:
   /// @brief Returns the token tripped by @ref halt.
   [[nodiscard]] std::stop_token abortToken() const noexcept;
 
+  void awaitQuiescence() const;
+
 private:
   using SubscriptionList = std::vector<std::weak_ptr<const ConsignmentCallback>>;
   using SubscriptionMap = std::unordered_map<ChannelId, SubscriptionList>;
@@ -185,7 +187,7 @@ private:
 
   std::unordered_map<std::string, std::string> mResourceMap;
   SubscriptionMap mSubscriptionMap;
-  std::atomic_uint32_t mPendingConsignments{0};
+  mutable std::atomic_uint32_t mPendingConsignments{0};
   std::stop_source mShutdownSource;
   std::stop_source mAbortSource;
   std::unique_ptr<AsyncChronicleWriter> mChronicleWriter;

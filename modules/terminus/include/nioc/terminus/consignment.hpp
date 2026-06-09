@@ -53,7 +53,10 @@ struct Consignment
     /// @brief Subtracts one from the counter.
     void operator()() noexcept
     {
-      counter().fetch_sub(1);
+      if(counter().fetch_sub(1, std::memory_order_acq_rel) == 1)
+      {
+        counter().notify_all();
+      }
     }
 
   private:

@@ -79,10 +79,6 @@ int main(const int argC, const char* const* const argV)
             }),
     };
 
-    // ExampleDriver produces Sample1 and Sample3.
-    const auto exampleDriver =
-        std::make_shared<nioc::example::ExampleDriver>(port, "sample1", "sample3");
-
     // ExampleComponent1 consumes Sample3 and produces Sample2.
     const auto exampleComponent1 = std::make_shared<nioc::example::ExampleComponent1>(
         port,
@@ -100,6 +96,10 @@ int main(const int argC, const char* const* const argV)
         variableMap.at("inbox-capacity").as<std::size_t>(),
         nioc::concurrent::BufferMode::Unbounded);
 
+    // ExampleDriver produces Sample1 and Sample3.
+    const auto exampleDriver =
+        std::make_shared<nioc::example::ExampleDriver>(port, "sample1", "sample3");
+
     const auto component1Runner = std::make_shared<nioc::concurrent::ThreadedRunner>();
     component1Runner->launch(exampleComponent1);
 
@@ -108,13 +108,20 @@ int main(const int argC, const char* const* const argV)
 
     const auto driverRunner = std::make_shared<nioc::concurrent::ThreadedRunner>();
     driverRunner->launch(exampleDriver);
-    driverRunner->waitUntilStopped();
 
-    component1Runner->requestStop();
-    component1Runner->waitUntilStopped();
+    constexpr auto kPollPeriod = std::chrono::milliseconds{10};
+    while(true)
+    {
+      if(exampleDriver->state() == nioc::example::ExampleDriver::State::Done)
+      {
+        break;
+      }
 
-    component2Runner->requestStop();
-    component2Runner->waitUntilStopped();
+      std::this_thread::sleep_for(kPollPeriod);
+    }
+
+    // Shutdown begins - wait for quiescence from port.
+    port.awaitQuiescence();
   }
   catch(const std::exception& error)
   {

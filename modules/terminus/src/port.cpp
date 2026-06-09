@@ -301,9 +301,12 @@ void Port::shutdown() const noexcept
 
 void Port::abort() const noexcept
 {
+  static constexpr std::uint32_t kAbortBit = 0x8000'0000U;
   logger::info("Received request to abort.");
   static_cast<void>(mShutdownSource.request_stop());
   static_cast<void>(mAbortSource.request_stop());
+  mPendingConsignments.fetch_or(kAbortBit, std::memory_order_release);
+  mPendingConsignments.notify_all();
 }
 
 std::stop_token Port::shutdownToken() const noexcept
@@ -316,5 +319,18 @@ std::stop_token Port::abortToken() const noexcept
   return mAbortSource.get_token();
 }
 
+void Port::awaitQuiescence() const
+{
+  logger::info("Waiting for quiescence.");
+  for(auto pendingConsignments = mPendingConsignments.load(std::memory_order_acquire);
+      pendingConsignments > 0 && not mAbortSource.stop_requested();
+      pendingConsignments = mPendingConsignments.load(std::memory_order_acquire))
+  {
+    logger::info("Waiting for {} consignments to be processed.", pendingConsignments);
+    mPendingConsignments.wait(pendingConsignments, std::memory_order_acquire);
+  }
+  logger::info("Quiescence achieved.");
+
+}
 
 } // namespace nioc::terminus
