@@ -7,6 +7,7 @@ add_executable(commonTest
     filesystemTest.cpp
     lockTest.cpp
     raiiTokenTest.cpp
+    signalCatcherTest.cpp
     timeTest.cpp
     typeTraitsTest.cpp
     utilsTest.cpp)
