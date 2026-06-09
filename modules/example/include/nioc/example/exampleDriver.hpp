@@ -46,7 +46,7 @@ private:
   ///
   /// @return @ref concurrent::Routine::State::Continue while rounds remain, or @ref
   /// concurrent::Routine::State::Done once the round count is reached.
-  [[nodiscard]] concurrent::Routine::State run() final;
+  [[nodiscard]] State run() final;
 };
 
 } // namespace nioc::example

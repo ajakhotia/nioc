@@ -39,7 +39,7 @@ SignalCatcher::~SignalCatcher()
 
   signalCache().store(kStopSignal, std::memory_order_relaxed);
   signalCache().notify_all();
-  mWatchThead.join();
+  mWatchThread.join();
 }
 
 void SignalCatcher::watch()
