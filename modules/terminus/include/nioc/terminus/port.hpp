@@ -11,6 +11,7 @@
 #include "msgBase.hpp"
 #include <atomic>
 #include <boost/program_options.hpp>
+#include <chrono>
 #include <filesystem>
 #include <functional>
 #include <memory>
@@ -26,8 +27,16 @@
 #include <utility>
 #include <vector>
 
+namespace nioc::concurrent
+{
+class Runner;
+} // namespace nioc::concurrent
+
 namespace nioc::terminus
 {
+
+class Component;
+class Driver;
 
 /// @brief Central data hub for a nioc binary.
 ///
@@ -35,13 +44,30 @@ namespace nioc::terminus
 /// recording directory, captures the launch command, loads and merges the JSON configuration,
 /// and adds a file sink to the nioc default logger so the run's log output is also written into the
 /// recording. It opens the chronicle writer that downstream code uses to record time-series data.
-/// On destruction, it detaches that file sink and finalizes the recording by writing
-/// `metadata.json` (the verbatim launch command plus the resource manifest).
+///
+/// The Port also owns the run's routine graph: the @ref Setup callback passed at construction
+/// builds the Drivers and Components bound to this Port, launches them on Runners, and hands all
+/// three sets over to the Port. On destruction, the Port requests shutdown, waits for in-flight
+/// consignments to drain, destroys the drivers, components, and runners in that order, and then
+/// finalizes the recording by writing `metadata.json` (the verbatim launch command plus the
+/// resource manifest) and detaching the log-file sink.
 class Port
 {
 public:
   using ChannelId = chronicle::ChannelId;
   using ConsignmentCallback = std::function<void(Consignment)>;
+
+  using Drivers = std::vector<std::shared_ptr<Driver>>;
+  using Components = std::vector<std::shared_ptr<Component>>;
+  using Runners = std::vector<std::shared_ptr<concurrent::Runner>>;
+
+  /// @brief Callback that builds the run's routine graph.
+  ///
+  /// Invoked exactly once at the end of construction, with the fully initialized Port and the
+  /// three routine sets the Port owns. The callback constructs Drivers and Components bound to the
+  /// Port, launches them on Runners, and parks all of them in the supplied vectors; the Port
+  /// destroys them at destruction in dependency order (drivers, components, runners).
+  using Setup = std::function<void(Port&, Drivers&, Components&, Runners&)>;
 
   /// @brief Constructs a Port from a parsed command line.
   ///
@@ -51,13 +77,16 @@ public:
   /// @param variableMap Parsed options; must come from @ref parseCommandLine, which adds the
   /// `"commandLine"` entry this constructor reads.
   ///
+  /// @param setup Builds the run's routine graph (see @ref Setup); invoked once the recording is
+  /// set up.
+  ///
   /// @throws std::invalid_argument If a listed resource is missing, not a regular file, or
   /// collides.
   ///
   /// @throws std::runtime_error If a config file cannot be opened.
   ///
   /// @throws nlohmann::json::parse_error If a config file contains malformed JSON.
-  explicit Port(const boost::program_options::variables_map& variableMap);
+  explicit Port(const boost::program_options::variables_map& variableMap, const Setup& setup);
 
   /// @brief Constructs a Port and creates a fresh recording directory.
   ///
@@ -79,17 +108,21 @@ public:
   ///
   /// @param commandLine The verbatim launch command, recorded in `metadata.json`.
   ///
+  /// @param setup Builds the run's routine graph (see @ref Setup); invoked once the recording is
+  /// set up.
+  ///
   /// @throws std::invalid_argument If a resource is missing, not a regular file, or collides.
   ///
   /// @throws std::runtime_error If a config file cannot be opened.
   ///
   /// @throws nlohmann::json::parse_error If a config file contains malformed JSON.
   explicit Port(
-      const std::filesystem::path& logRoot = std::filesystem::temp_directory_path() / "niocLogs",
-      const std::vector<std::filesystem::path>& configPaths = {},
-      const std::vector<std::filesystem::path>& resourcePaths = {},
-      bool writeChronicle = true,
-      const std::string& commandLine = "");
+      const std::filesystem::path& logRoot,
+      const std::vector<std::filesystem::path>& configPaths,
+      const std::vector<std::filesystem::path>& resourcePaths,
+      bool writeChronicle,
+      const std::string& commandLine,
+      const Setup& setup);
 
   Port(const Port&) = delete;
 
@@ -194,6 +227,22 @@ public:
 
   void awaitQuiescence() const;
 
+  /// @brief Paces one beat of the caller's main loop, reporting whether the run is still live.
+  ///
+  /// Records the invocation time, runs @p housekeeping, and then inspects the drivers: once every
+  /// driver reports it is done, the method returns false right away so the caller's loop can end.
+  /// Otherwise it sleeps out the remainder of @p duration — measured from invocation, so the
+  /// housekeeping cost does not stretch the beat — and returns true.
+  ///
+  /// @param duration Length of one beat of the loop.
+  ///
+  /// @param housekeeping Work to run on this beat, on the caller's thread.
+  ///
+  /// @return True while at least one driver is still working; false once all drivers are done.
+  [[nodiscard]] bool wait(
+      std::chrono::nanoseconds duration,
+      const std::function<void()>& housekeeping) const;
+
 private:
   using ResourceMap = std::unordered_map<std::string, std::string>;
   using SubscriptionList = std::vector<ConsignmentCallback>;
@@ -212,6 +261,12 @@ private:
   std::stop_source mShutdownSource;
   std::stop_source mAbortSource;
   std::unique_ptr<AsyncChronicleWriter> mChronicleWriter;
+
+  // The run's routine graph, built by the setup callback. Declared in this order so natural
+  // destruction mirrors the destructor's explicit drivers → components → runners teardown.
+  Runners mRunners;
+  Components mComponents;
+  Drivers mDrivers;
 
   /// @brief Fans a message out to subscribers for a given channel.
   ///

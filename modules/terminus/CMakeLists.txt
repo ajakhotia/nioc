@@ -36,6 +36,7 @@ add_exported_library(
   SOURCES
     src/asyncChronicleWriter.cpp
     src/component.cpp
+    src/defaultSignalCatcher.cpp
     src/driver.cpp
     src/msgBase.cpp
     src/port.cpp
@@ -44,6 +45,7 @@ add_exported_library(
     PUBLIC include/nioc/terminus/asyncChronicleWriter.hpp
     PUBLIC include/nioc/terminus/component.hpp
     PUBLIC include/nioc/terminus/consignment.hpp
+    PUBLIC include/nioc/terminus/defaultSignalCatcher.hpp
     PUBLIC include/nioc/terminus/driver.hpp
     PUBLIC include/nioc/terminus/msg.hpp
     PUBLIC include/nioc/terminus/msgBase.hpp

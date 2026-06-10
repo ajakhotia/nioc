@@ -5,6 +5,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "testComponent.hpp"
+#include <filesystem>
 #include <gtest/gtest.h>
 #include <memory>
 #include <nioc/concurrent/routine.hpp>
@@ -26,11 +27,24 @@ ConstMsgPtr<TestSchema> makeMessage()
   return std::make_shared<const Msg<TestSchema>>();
 }
 
+/// A Port recording under the default temp root. The setup builds no routines; these tests
+/// construct and tick their components by hand.
+Port makePort()
+{
+  return Port{
+      std::filesystem::temp_directory_path() / "niocLogs",
+      {},
+      {},
+      true,
+      "",
+      [](Port&, Port::Drivers&, Port::Components&, Port::Runners&) {}};
+}
+
 } // namespace
 
 TEST(ComponentTest, zeroCapacityThrows)
 {
-  auto port = Port{};
+  auto port = makePort();
   EXPECT_THROW(
       (EarthComponent{port, 0, concurrent::BufferMode::Overwriting}),
       std::invalid_argument);
@@ -38,14 +52,14 @@ TEST(ComponentTest, zeroCapacityThrows)
 
 TEST(ComponentTest, emptyInboxWaits)
 {
-  auto port = Port{};
+  auto port = makePort();
   auto component = EarthComponent{port, 4, concurrent::BufferMode::Overwriting};
   EXPECT_EQ(component.tick(), concurrent::Routine::State::Waiting);
 }
 
 TEST(ComponentTest, drainsOneMessagePerRun)
 {
-  auto port = Port{};
+  auto port = makePort();
   auto component = EarthComponent{port, 4, concurrent::BufferMode::Overwriting};
   port.publish<TestSchema>(EarthComponent::kTopic, makeMessage());
   port.publish<TestSchema>(EarthComponent::kTopic, makeMessage());
@@ -57,7 +71,7 @@ TEST(ComponentTest, drainsOneMessagePerRun)
 
 TEST(ComponentTest, overwriteDropsOldestWhenFull)
 {
-  auto port = Port{};
+  auto port = makePort();
   auto component = EarthComponent{port, 2, concurrent::BufferMode::Overwriting};
   constexpr auto kPublishCount = 5;
   for(auto count = 0; count < kPublishCount; ++count)
@@ -73,7 +87,7 @@ TEST(ComponentTest, overwriteDropsOldestWhenFull)
 
 TEST(ComponentTest, unboundedRetainsEveryMessage)
 {
-  auto port = Port{};
+  auto port = makePort();
   auto component = EarthComponent{port, 1, concurrent::BufferMode::Unbounded};
   constexpr auto kPublishCount = 5;
   for(auto count = 0; count < kPublishCount; ++count)

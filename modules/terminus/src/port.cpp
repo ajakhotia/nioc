@@ -4,6 +4,7 @@
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#include <algorithm>
 #include <boost/program_options.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
@@ -16,11 +17,13 @@
 #include <nioc/common/time.hpp>
 #include <nioc/logger/logger.hpp>
 #include <nioc/terminus/asyncChronicleWriter.hpp>
+#include <nioc/terminus/driver.hpp>
 #include <nioc/terminus/port.hpp>
 #include <optional>
 #include <ranges>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <stdexcept>
+#include <thread>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -161,13 +164,14 @@ std::unordered_map<std::string, std::string> copyResources(
 
 } // namespace
 
-Port::Port(const po::variables_map& variableMap):
+Port::Port(const po::variables_map& variableMap, const Setup& setup):
   Port(
       variableMap.at("log-root").as<std::string>(),
       pathsFromOption(variableMap, "append-config"),
       pathsFromOption(variableMap, "append-resource"),
       variableMap.at("record-chronicle").as<bool>(),
-      variableMap.at("commandLine").as<std::string>())
+      variableMap.at("commandLine").as<std::string>(),
+      setup)
 {
 }
 
@@ -176,7 +180,8 @@ Port::Port(
     const std::vector<fs::path>& configPaths,   // NOLINT(bugprone-easily-swappable-parameters)
     const std::vector<fs::path>& resourcePaths, // NOLINT(bugprone-easily-swappable-parameters)
     const bool writeChronicle,
-    const std::string& commandLine):
+    const std::string& commandLine,
+    const Setup& setup):
   mWorkingDir{createWorkingDir(logRoot)},
   mConsoleLogSink{attachLogFileSink(mWorkingDir / "console.log")},
   mConfig(loadAndWriteConfig(configPaths, mWorkingDir)),
@@ -191,11 +196,24 @@ Port::Port(
   writeJsonFile(mWorkingDir / "metadata.json", metadata);
 
   logger::debug("recording run to working directory {}", mWorkingDir);
+
+  // Build the routine graph last, so the routines bind to a fully initialized Port.
+  std::invoke(setup, *this, mDrivers, mComponents, mRunners);
 }
 
 Port::~Port()
 {
-  // Stop the chronicle writer first: it joins its thread, so no further chronicle write or trace
+  // Wind the run down before finalizing the recording: stop the producers, drain the in-flight
+  // consignments, then release the routine graph in dependency order — drivers stop producing,
+  // components have nothing left to consume, and runners join their threads once the routines
+  // they drive expire.
+  shutdown();
+  awaitQuiescence();
+  mDrivers.clear();
+  mComponents.clear();
+  mRunners.clear();
+
+  // Stop the chronicle writer next: it joins its thread, so no further chronicle write or trace
   // log races the metadata update and log-sink removal below. A no-op when this run does not
   // record.
   mChronicleWriter.reset();
@@ -324,6 +342,25 @@ void Port::awaitQuiescence() const
   {
     mPendingConsignments.wait(pendingConsignments, std::memory_order_acquire);
   }
+}
+
+bool Port::wait(
+    const std::chrono::nanoseconds duration,
+    const std::function<void()>& housekeeping) const
+{
+  const auto deadline = std::chrono::steady_clock::now() + duration;
+
+  std::invoke(housekeeping);
+
+  if(std::ranges::all_of(
+         mDrivers,
+         [](const auto& driver) { return driver->state() == concurrent::Routine::State::Done; }))
+  {
+    return false;
+  }
+
+  std::this_thread::sleep_until(deadline);
+  return true;
 }
 
 void Port::publish(const ChannelId channelId, const ConstMsgBasePtr& msgBasePtr)

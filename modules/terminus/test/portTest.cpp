@@ -64,13 +64,16 @@ std::string sampleCommandLine()
   return "myRobot --config /etc/foo.json";
 }
 
+/// Setup that builds no routines; these tests exercise the Port's recording duties directly.
+void emptySetup(Port&, Port::Drivers&, Port::Components&, Port::Runners&) {}
+
 } // namespace
 
 TEST(PortTest, constructionCreatesRecordingDirectory)
 {
   const auto workingDir = [&]
   {
-    auto port = Port{logRoot(), {config()}, {}, true, sampleCommandLine()};
+    auto port = Port{logRoot(), {config()}, {}, true, sampleCommandLine(), emptySetup};
     const auto& recordingDir = port.workingDir();
 
     EXPECT_TRUE(fs::is_directory(recordingDir));
@@ -90,7 +93,8 @@ TEST(PortTest, configMergesPathsLeftToRight)
       {config(), configOverride()},
       {},
       true,
-      ""
+      "",
+      emptySetup
   };
   const auto& cfg = port.config();
 
@@ -110,7 +114,7 @@ TEST(PortTest, metadataIncludesCmdlineAndResources)
 {
   const auto workingDir = [&]
   {
-    auto port = Port{logRoot(), {config()}, {}, true, sampleCommandLine()};
+    auto port = Port{logRoot(), {config()}, {}, true, sampleCommandLine(), emptySetup};
     const auto recordingDir = port.workingDir();
     port.addResource(resource());
 
@@ -125,7 +129,7 @@ TEST(PortTest, metadataIncludesCmdlineAndResources)
 
 TEST(PortTest, acquireResourceRemapsToWorkingDirCopy)
 {
-  auto port = Port{logRoot(), {config()}, {}, true, ""};
+  auto port = Port{logRoot(), {config()}, {}, true, "", emptySetup};
   port.addResource(resource());
 
   const auto acquired = port.acquireResource(resource());
@@ -135,20 +139,20 @@ TEST(PortTest, acquireResourceRemapsToWorkingDirCopy)
 
 TEST(PortTest, acquireResourceRejectsUnaddedResource)
 {
-  auto port = Port{logRoot(), {config()}, {}, true, ""};
+  auto port = Port{logRoot(), {config()}, {}, true, "", emptySetup};
   EXPECT_THROW((void)port.acquireResource(testDataDir() / "never.bin"), std::invalid_argument);
 }
 
 TEST(PortTest, addResourceRejectsBasenameCollision)
 {
-  auto port = Port{logRoot(), {config()}, {}, true, ""};
+  auto port = Port{logRoot(), {config()}, {}, true, "", emptySetup};
   port.addResource(resource());
   EXPECT_THROW(port.addResource(resourceDuplicate()), std::invalid_argument);
 }
 
 TEST(PortTest, addResourceRejectsMissingFile)
 {
-  auto port = Port{logRoot(), {config()}, {}, true, ""};
+  auto port = Port{logRoot(), {config()}, {}, true, "", emptySetup};
   EXPECT_THROW(port.addResource(testDataDir() / "doesNotExist"), std::invalid_argument);
 }
 
@@ -157,7 +161,7 @@ TEST(PortTest, constructionCreatesMissingLogRoot)
   const auto absentRoot = fs::temp_directory_path() / "niocPortTestAbsentRoot";
   fs::remove_all(absentRoot);
 
-  auto port = Port{absentRoot, {}, {}, true, ""};
+  auto port = Port{absentRoot, {}, {}, true, "", emptySetup};
 
   EXPECT_TRUE(fs::is_directory(absentRoot));
   EXPECT_EQ(port.workingDir().parent_path(), absentRoot);
@@ -167,7 +171,7 @@ TEST(PortTest, recordChronicleFalseOmitsChronicleDir)
 {
   const auto workingDir = [&]
   {
-    auto port = Port{logRoot(), {config()}, {}, false, ""};
+    auto port = Port{logRoot(), {config()}, {}, false, "", emptySetup};
     const auto& recordingDir = port.workingDir();
 
     EXPECT_FALSE(fs::exists(recordingDir / "chronicle"));
@@ -180,7 +184,7 @@ TEST(PortTest, recordChronicleFalseOmitsChronicleDir)
 
 TEST(PortTest, constructionAddsListedResources)
 {
-  auto port = Port{logRoot(), {config()}, {resource()}, true, ""};
+  auto port = Port{logRoot(), {config()}, {resource()}, true, "", emptySetup};
   EXPECT_TRUE(fs::is_regular_file(port.workingDir() / "testResource.bin"));
 }
 
@@ -211,7 +215,7 @@ TEST(PortTest, constructorFromVariablesMapReadsOptions)
   // parseCommandLine injects the verbatim command line for the constructor to record.
   EXPECT_TRUE(variableMap.contains("commandLine"));
 
-  auto port = Port{variableMap};
+  auto port = Port{variableMap, emptySetup};
 
   EXPECT_EQ(port.workingDir().parent_path(), logRoot());
   EXPECT_EQ(port.config().at("robot").get<std::string>(), "atlas");
@@ -224,13 +228,15 @@ TEST(PortTest, constructorFromVariablesMapReadsOptions)
 TEST(PortTest, constructionRejectsUnreadableConfig)
 {
   EXPECT_THROW(
-      (Port{logRoot(), {testDataDir() / "doesNotExist.json"}, {}, true, ""}),
+      (Port{logRoot(), {testDataDir() / "doesNotExist.json"}, {}, true, "", emptySetup}),
       std::runtime_error);
 }
 
 TEST(PortTest, constructionRejectsMalformedConfig)
 {
-  EXPECT_THROW((Port{logRoot(), {malformedConfig()}, {}, true, ""}), nlohmann::json::parse_error);
+  EXPECT_THROW(
+      (Port{logRoot(), {malformedConfig()}, {}, true, "", emptySetup}),
+      nlohmann::json::parse_error);
 }
 
 } // namespace nioc::terminus
