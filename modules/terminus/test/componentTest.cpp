@@ -21,15 +21,9 @@ namespace
 
 /// A finalized message to publish. step() drains by pointer and the test handler never inspects the
 /// payload, so any real message exercises the inbox identically.
-ConstMsgBasePtr makeMessage()
+ConstMsgPtr<TestSchema> makeMessage()
 {
   return std::make_shared<const Msg<TestSchema>>();
-}
-
-/// Channel EarthComponent subscribes to; publishing here feeds its inbox and lets step() dispatch.
-auto channelId()
-{
-  return makeChannelId(Msg<TestSchema>::kMsgId, EarthComponent::kTopic);
 }
 
 } // namespace
@@ -53,8 +47,8 @@ TEST(ComponentTest, drainsOneMessagePerRun)
 {
   auto port = Port{};
   auto component = EarthComponent{port, 4, concurrent::BufferMode::Overwriting};
-  port.publish(channelId(), makeMessage());
-  port.publish(channelId(), makeMessage());
+  port.publish<TestSchema>(EarthComponent::kTopic, makeMessage());
+  port.publish<TestSchema>(EarthComponent::kTopic, makeMessage());
 
   EXPECT_EQ(component.tick(), concurrent::Routine::State::Continue);
   EXPECT_EQ(component.tick(), concurrent::Routine::State::Continue);
@@ -68,7 +62,7 @@ TEST(ComponentTest, overwriteDropsOldestWhenFull)
   constexpr auto kPublishCount = 5;
   for(auto count = 0; count < kPublishCount; ++count)
   {
-    port.publish(channelId(), makeMessage());
+    port.publish<TestSchema>(EarthComponent::kTopic, makeMessage());
   }
 
   // Two slots keep the newest two; the other three were overwritten.
@@ -84,7 +78,7 @@ TEST(ComponentTest, unboundedRetainsEveryMessage)
   constexpr auto kPublishCount = 5;
   for(auto count = 0; count < kPublishCount; ++count)
   {
-    port.publish(channelId(), makeMessage());
+    port.publish<TestSchema>(EarthComponent::kTopic, makeMessage());
   }
 
   // Unbounded keeps all five despite a nominal capacity of 1.

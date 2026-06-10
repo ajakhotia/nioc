@@ -7,6 +7,7 @@
 
 #include "asyncChronicleWriter.hpp"
 #include "consignment.hpp"
+#include "msg.hpp"
 #include "msgBase.hpp"
 #include <atomic>
 #include <boost/program_options.hpp>
@@ -16,7 +17,9 @@
 #include <spdlog/sinks/sink.h>
 #include <stop_token>
 #include <string>
+#include <string_view>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace nioc::terminus
@@ -113,28 +116,28 @@ public:
 
   /// @brief Returns the working-directory copy of a resource, adding it first if needed.
   ///
-  /// Looks up the copy of @p source inside the working directory. If @p source was not added yet,
-  /// copies it in first (see @ref addResource). Callers then read from the self-contained recording
-  /// rather than the resource's original location.
+  /// Looks up the copy of a @p source inside the working directory. If the @p source was not added
+  /// yet, the method copies it first (see @ref addResource). Callers then read from the
+  /// self-contained recording rather than the resource's original location.
   ///
   /// @param source The resource's original path.
   ///
   /// @return The path to the resource's copy inside the working directory.
   ///
-  /// @throws std::invalid_argument If @p source must be added but is missing, is not a regular
+  /// @throws std::invalid_argument If a @p source must be added but is missing, is not a regular
   /// file, or its filename collides with an already-added resource.
   [[nodiscard]] std::filesystem::path acquireResource(const std::filesystem::path& source);
 
   /// @brief Returns the working-directory copy of a previously added resource.
   ///
-  /// Const overload. Unlike the non-const overload, it never adds a resource; @p source must
+  /// Const overload. Unlike the non-const overload, it never adds a resource; the @p source must
   /// already be added (see @ref addResource).
   ///
   /// @param source The original path of a previously added resource.
   ///
   /// @return The path to the resource's copy inside the working directory.
   ///
-  /// @throws std::out_of_range If @p source was not previously added.
+  /// @throws std::out_of_range If a @p source was not previously added.
   [[nodiscard]] std::filesystem::path acquireResource(const std::filesystem::path& source) const;
 
   /// @brief Registers a callback to receive every message published on a channel.
@@ -149,16 +152,23 @@ public:
   /// channel; all of them receive every message.
   void subscribe(ChannelId channelId, ConsignmentCallback callback);
 
-  /// @brief Publishes a message on a channel, fanning it out to subscribers and recording it.
+  /// @brief Publishes a typed message on a topic, fanning it out to subscribers and recording it.
   ///
-  /// Delivered synchronously on the caller's thread: every live subscriber on @p channelId is
-  /// handed the message into its own inbox, and a copy is recorded to the chronicle when this run
-  /// records. Thread-safe.
+  /// Resolves the channel from @p Schema and @p topic, then delivers synchronously on the caller's
+  /// thread: every subscriber on that channel is handed the message into its own inbox, and a copy
+  /// is recorded to the chronicle when this run records. Thread-safe.
   ///
-  /// @param channelId Channel to publish on (see @ref makeChannelId).
+  /// @tparam Schema Cap'n Proto schema of the message.
   ///
-  /// @param msgBasePtr Message to publish; ownership passes to the Port.
-  void publish(ChannelId channelId, const ConstMsgBasePtr& msgBasePtr);
+  /// @param topic Topic to publish on; combined with @p Schema into a channel (see @ref
+  /// makeChannelId).
+  ///
+  /// @param msgPtr Message to publish; ownership passes to the Port.
+  template<typename Schema>
+  void publish(const std::string_view& topic, ConstMsgPtr<Schema> msgPtr)
+  {
+    publish(makeChannelId(Msg<Schema>::kMsgId, topic), std::move(msgPtr));
+  }
 
   /// @brief Requests a graceful shutdown: producers stop and in-flight work drains.
   ///
@@ -181,6 +191,13 @@ public:
 private:
   using SubscriptionList = std::vector<ConsignmentCallback>;
   using SubscriptionMap = std::unordered_map<ChannelId, SubscriptionList>;
+
+  /// @brief Fans a message out to subscribers for a given channel.
+  ///
+  /// @param channelId Channel to publish on.
+  ///
+  /// @param msgBasePtr Message to publish; ownership passes to the Port.
+  void publish(ChannelId channelId, const ConstMsgBasePtr& msgBasePtr);
 
   const std::filesystem::path mWorkingDir;
   const std::shared_ptr<spdlog::sinks::sink> mConsoleLogSink;

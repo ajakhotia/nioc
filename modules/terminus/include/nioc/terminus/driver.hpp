@@ -55,7 +55,7 @@ protected:
   template<typename Schema>
   void publish(const std::string_view& topic, ConstMsgPtr<Schema> msgPtr)
   {
-    mPort.publish(makeChannelId(Msg<Schema>::kMsgId, topic), std::move(msgPtr));
+    mPort.publish<Schema>(topic, std::move(msgPtr));
   }
 
 private:
