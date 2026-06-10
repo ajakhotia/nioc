@@ -321,16 +321,12 @@ std::stop_token Port::abortToken() const noexcept
 
 void Port::awaitQuiescence() const
 {
-  logger::info("Waiting for quiescence.");
   for(auto pendingConsignments = mPendingConsignments.load(std::memory_order_acquire);
       pendingConsignments > 0 && not mAbortSource.stop_requested();
       pendingConsignments = mPendingConsignments.load(std::memory_order_acquire))
   {
-    logger::info("Waiting for {} consignments to be processed.", pendingConsignments);
     mPendingConsignments.wait(pendingConsignments, std::memory_order_acquire);
   }
-  logger::info("Quiescence achieved.");
-
 }
 
 } // namespace nioc::terminus

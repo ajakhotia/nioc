@@ -47,12 +47,6 @@ AsyncChronicleWriter::AsyncChronicleWriter(const fs::path& chronicleDir):
   logger::debug("chronicle writer started");
 }
 
-AsyncChronicleWriter::~AsyncChronicleWriter()
-{
-  mRunner->requestStop();
-  mRunner->waitUntilStopped();
-}
-
 void AsyncChronicleWriter::push(const ChannelId channelId, Consignment consignment)
 {
   processor().push({channelId, std::move(consignment)});

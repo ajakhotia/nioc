@@ -92,25 +92,26 @@ TEST(ThreadedRunnerTest, runsUntilDone)
   const auto routine = std::make_shared<CountingRoutine>(3);
 
   runner->launch(routine);
-  runner->waitUntilStopped();
+
+  // The loop ends on its own once the routine reports Done; poll its recorded State to observe it.
+  while(routine->state() != Routine::State::Done)
+  {
+    std::this_thread::sleep_for(1ms);
+  }
 
   EXPECT_EQ(routine->iterations(), 3);
-
-  // Once the loop ends on Done, the routine reports that final State to any later observer.
-  EXPECT_EQ(routine->state(), Routine::State::Done);
 }
 
-TEST(ThreadedRunnerTest, requestStopEndsTheLoop)
+TEST(ThreadedRunnerTest, destructionStopsTheLoop)
 {
-  const auto runner = std::make_shared<ThreadedRunner>();
+  auto runner = std::make_shared<ThreadedRunner>();
   const auto routine = std::make_shared<ForeverRoutine>();
 
   runner->launch(routine);
-  runner->requestStop();
 
-  // waitUntilStopped only returns once the loop has observed the stop and ended; a hang here would
-  // fail the test by timing out.
-  runner->waitUntilStopped();
+  // Destroying the Runner stops and joins its thread; a hang here would fail the test by timing
+  // out.
+  runner.reset();
 }
 
 TEST(RoutineTest, tickRecordsLastReportedState)
@@ -141,8 +142,10 @@ TEST(ThreadedRunnerTest, drivesSeveralRoutines)
   runnerA->launch(routineA);
   runnerB->launch(routineB);
 
-  runnerA->waitUntilStopped();
-  runnerB->waitUntilStopped();
+  while(routineA->state() != Routine::State::Done || routineB->state() != Routine::State::Done)
+  {
+    std::this_thread::sleep_for(1ms);
+  }
 
   EXPECT_EQ(routineA->iterations(), 2);
   EXPECT_EQ(routineB->iterations(), 5);

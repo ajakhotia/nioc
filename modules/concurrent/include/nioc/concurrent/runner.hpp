@@ -45,17 +45,6 @@ public:
   /// @param routine Routine to drive.
   virtual void launch(std::weak_ptr<Routine> routine) = 0;
 
-  /// @brief Blocks the caller until the driven routine's loop has ended.
-  ///
-  /// Returns once the routine reported @ref State::Done, threw, expired, or @ref requestStop took
-  /// effect.
-  virtual void waitUntilStopped() = 0;
-
-  /// @brief Asks the loop to stop after the current iteration; returns without waiting.
-  ///
-  /// Pair with @ref waitUntilStopped to block until the loop has actually ended.
-  virtual void requestStop() noexcept = 0;
-
 protected:
   /// @brief Builds the trigger handed to the routine so it can wake this Runner from @ref
   /// State::Waiting.

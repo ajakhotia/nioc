@@ -83,8 +83,7 @@ void ExampleComponent2::process(const terminus::ConstMsgPtr<Sample3>& /* msgPtr 
 
 void ExampleComponent2::logCounts() const
 {
-  constexpr auto kLogEvery = 1000;
-  if (mSample1Count.load() % kLogEvery == 0)
+  if(constexpr auto kLogEvery = 1000; mSample1Count.load() % kLogEvery == 0)
   {
     logger::info(
         "[{}] counts. Sample1: {}, Sample2: {}, Sample3: {}",

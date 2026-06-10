@@ -105,9 +105,10 @@ no per-message lifetime check on the publish path.
 `Runner` (`nioc::concurrent`) owns the loop a Routine deliberately lacks. Each Runner drives **one**
 routine, held weakly:
 
-- `launch(weak_ptr<Routine>)` — start driving; installs a wake trigger on the routine.
-- `waitUntilStopped()` — block until the loop ends.
-- `requestStop()` — ask the loop to stop after the current iteration.
+`launch(weak_ptr<Routine>)` is the whole interface: it starts driving the routine and installs a
+wake trigger on it. There is no explicit stop or wait call — a Runner runs until its routine ends
+(`Done`, throws, or expires) or the Runner is destroyed, whose `std::jthread` requests stop and
+joins.
 
 `ThreadedRunner` is the thread-backed implementation: one `std::jthread` per routine. It calls
 `tick()` in a loop; `Continue` runs again, `Done` (or an expired routine) ends the loop, and
@@ -115,7 +116,8 @@ routine, held weakly:
 `wait(lock, stopToken, pred)`. That park wakes on either of two events:
 
 - `triggerRunner()` → `wake()` sets the ready flag → the loop runs one more `step()`;
-- the jthread's own `stop_token` (via `requestStop()`) → the loop exits **without** another `step()`.
+- the jthread's own `stop_token` (tripped when the Runner is destroyed) → the loop exits **without**
+  another `step()`.
 
 This two-way wake is what clean shutdown builds on. `ThreadPoolRunner` (readiness-scheduled, shared
 pool) is deferred.
@@ -241,7 +243,7 @@ token fires (`Routine` on `mShutdownToken`, `Component` on `mHaltToken`). The ca
 Port's request thread; `triggerRunner()` sets the ready flag under the Runner's lock, so there is no
 lost-wakeup race whether the routine is parked or between iterations. The woken `step()` checks the
 token first and returns `Done`. This reuses the existing wake handshake — no new mechanism, and
-`requestStop()` stays the destruction backstop, not the primary path.
+destruction (the jthread's `stop_token`) stays the backstop, not the primary path.
 
 ### Signals and escalation
 

@@ -26,19 +26,6 @@ void ThreadedRunner::launch(std::weak_ptr<Routine> routine)
   mThread = std::jthread([this](const std::stop_token& stopToken) { run(stopToken); });
 }
 
-void ThreadedRunner::waitUntilStopped()
-{
-  if(mThread.joinable())
-  {
-    mThread.join();
-  }
-}
-
-void ThreadedRunner::requestStop() noexcept
-{
-  mThread.request_stop();
-}
-
 void ThreadedRunner::wake()
 {
   logger::trace("wake requested");
