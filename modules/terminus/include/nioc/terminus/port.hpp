@@ -130,7 +130,7 @@ public:
 
   /// @brief Returns the working-directory copy of a previously added resource.
   ///
-  /// Const overload. Unlike the non-const overload, it never adds a resource; the @p source must
+  /// Const overload. Unlike the non-const overload, it never adds a resource; the p @p source must
   /// already be added (see @ref addResource).
   ///
   /// @param source The original path of a previously added resource.
@@ -165,7 +165,7 @@ public:
   ///
   /// @param msgPtr Message to publish; ownership passes to the Port.
   template<typename Schema>
-  void publish(const std::string_view& topic, ConstMsgPtr<Schema> msgPtr)
+  void publish(const std::string_view& topic, ConstMsgPtr<Schema> msgPtr) const
   {
     publish(makeChannelId(Msg<Schema>::kMsgId, topic), std::move(msgPtr));
   }
@@ -197,7 +197,7 @@ private:
   /// @param channelId Channel to publish on.
   ///
   /// @param msgBasePtr Message to publish; ownership passes to the Port.
-  void publish(ChannelId channelId, const ConstMsgBasePtr& msgBasePtr);
+  void publish(ChannelId channelId, const ConstMsgBasePtr& msgBasePtr) const;
 
   const std::filesystem::path mWorkingDir;
   const std::shared_ptr<spdlog::sinks::sink> mConsoleLogSink;

@@ -262,7 +262,7 @@ void Port::subscribe(const ChannelId channelId, ConsignmentCallback callback)
   mSubscriptionMap[channelId].push_back(std::move(callback));
 }
 
-void Port::publish(const ChannelId channelId, const ConstMsgBasePtr& msgBasePtr)
+void Port::publish(const ChannelId channelId, const ConstMsgBasePtr& msgBasePtr) const
 {
   if(const auto subscriptions = mSubscriptionMap.find(channelId);
      subscriptions != mSubscriptionMap.end())
