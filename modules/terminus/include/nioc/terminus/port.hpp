@@ -13,6 +13,7 @@
 #include <boost/program_options.hpp>
 #include <filesystem>
 #include <memory>
+#include <nioc/common/locked.hpp>
 #include <nlohmann/json.hpp>
 #include <spdlog/sinks/sink.h>
 #include <stop_token>
@@ -204,7 +205,7 @@ private:
   const nlohmann::json mConfig;
 
   std::unordered_map<std::string, std::string> mResourceMap;
-  SubscriptionMap mSubscriptionMap;
+  common::Locked<SubscriptionMap> mLockedSubscriptionMap;
   mutable std::atomic_uint32_t mPendingConsignments{0};
   std::stop_source mShutdownSource;
   std::stop_source mAbortSource;

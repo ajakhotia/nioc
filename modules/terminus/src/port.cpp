@@ -259,32 +259,28 @@ fs::path Port::acquireResource(const fs::path& source) const
 
 void Port::subscribe(const ChannelId channelId, ConsignmentCallback callback)
 {
-  mSubscriptionMap[channelId].push_back(std::move(callback));
+  mLockedSubscriptionMap([channelId, &callback](auto& subscriptionMap)
+                         { subscriptionMap[channelId].push_back(std::move(callback)); });
 }
 
 void Port::publish(const ChannelId channelId, const ConstMsgBasePtr& msgBasePtr) const
 {
-  if(const auto subscriptions = mSubscriptionMap.find(channelId);
-     subscriptions != mSubscriptionMap.end())
-  {
-    for(const auto& callback: subscriptions->second)
-    {
-      std::invoke(
-          callback,
-          Consignment{
-              msgBasePtr,
-              Consignment::Acquire{&mPendingConsignments},
-              Consignment::Release{&mPendingConsignments}});
-    }
-  }
+  mLockedSubscriptionMap(
+      [this, channelId, &msgBasePtr](const auto& subscriptionMap)
+      {
+        if(const auto subscriptions = subscriptionMap.find(channelId);
+           subscriptions != subscriptionMap.end())
+        {
+          for(const auto& callback: subscriptions->second)
+          {
+            std::invoke(callback, Consignment{msgBasePtr, mPendingConsignments});
+          }
+        }
+      });
 
   if(mChronicleWriter)
   {
-    mChronicleWriter->push(
-        channelId,
-        {msgBasePtr,
-         Consignment::Acquire{&mPendingConsignments},
-         Consignment::Release{&mPendingConsignments}});
+    mChronicleWriter->push(channelId, Consignment{msgBasePtr, mPendingConsignments});
   }
 }
 

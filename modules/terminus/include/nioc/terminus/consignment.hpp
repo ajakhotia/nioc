@@ -12,84 +12,68 @@
 namespace nioc::terminus
 {
 
-/// @brief A message paired with a token that counts it as in flight while it lives.
+/// @brief A message bundled with a token that keeps it counted as in flight for as long as it
+/// lives.
 ///
-/// Construction increments a shared counter through @ref Acquire; destruction decrements it through
-/// @ref Release. The counter therefore reports how many consignments are still alive, letting a
-/// producer track delivery without waiting on the consumer.
-struct Consignment
+/// A consignment carries one message and, alongside it, an RAII guard over a shared
+/// `std::atomic_uint32_t`. The guard raises the counter by one when the consignment is constructed
+/// and lowers it by one when the consignment is destroyed, so the counter always equals the number
+/// of live consignments built against it.
+///
+/// The referenced counter must outlive every consignment built against it.
+class Consignment
 {
-  /// @brief Increments the in-flight counter. Used as the token's entry action.
-  struct Acquire
-  {
-    /// @brief Counter incremented on each invocation.
-    std::atomic_uint32_t* mConsignmentCounterPtr;
-
-    /// @brief Adds one to the counter.
-    void operator()() noexcept
-    {
-      counter().fetch_add(1);
-    }
-
-  private:
-    [[nodiscard]] const std::atomic_uint32_t& counter() const noexcept
-    {
-      return *mConsignmentCounterPtr;
-    }
-
-    // NOLINTNEXTLINE(readability-make-member-function-const)
-    [[nodiscard]] std::atomic_uint32_t& counter() noexcept
-    {
-      return *mConsignmentCounterPtr;
-    }
-  };
-
-  /// @brief Decrements the in-flight counter. Used as the token's exit action.
-  struct Release
-  {
-    /// @brief Counter decremented on each invocation.
-    std::atomic_uint32_t* mConsignmentCounterPtr;
-
-    /// @brief Subtracts one from the counter.
-    void operator()() noexcept
-    {
-      if(counter().fetch_sub(1, std::memory_order_acq_rel) == 1)
-      {
-        counter().notify_all();
-      }
-    }
-
-  private:
-    [[nodiscard]] const std::atomic_uint32_t& counter() const noexcept
-    {
-      return *mConsignmentCounterPtr;
-    }
-
-    // NOLINTNEXTLINE(readability-make-member-function-const)
-    [[nodiscard]] std::atomic_uint32_t& counter() noexcept
-    {
-      return *mConsignmentCounterPtr;
-    }
-  };
-
-  /// @brief The carried message.
-  ConstMsgBasePtr mMsgBasePtr;
-
-  /// @brief Holds the counter decrement that runs when this consignment is destroyed.
-  common::RaiiToken<Release> mToken;
-
-  /// @brief Bundles a message and counts it in flight.
+public:
+  /// @brief Builds a consignment over @p msgBasePtr and @p counter.
   ///
-  /// Runs @p acquire now and stores @p release to run at destruction.
+  /// @param msgBasePtr Message the consignment carries.
   ///
-  /// @param msgBasePtr Message to carry.
-  /// @param acquire    Action run now; increments the in-flight counter.
-  /// @param release    Action stored and run at destruction; decrements the in-flight counter.
-  Consignment(ConstMsgBasePtr msgBasePtr, Acquire acquire, const Release release):
-    mMsgBasePtr(std::move(msgBasePtr)),
-    mToken(acquire, release)
+  /// @param counter In-flight counter raised on construction and lowered on destruction; must
+  /// outlive the consignment.
+  Consignment(ConstMsgBasePtr msgBasePtr, std::atomic_uint32_t& counter):
+    mMsgBasePtr{std::move(msgBasePtr)},
+    mToken{Acquire{counter}, Release{counter}}
   {
   }
+
+  /// @brief Returns the message this consignment carries.
+  [[nodiscard]] const ConstMsgBasePtr& msg() const noexcept
+  {
+    return mMsgBasePtr;
+  }
+
+private:
+  /// @brief Function object that raises the in-flight counter; serves as the guard's entry action.
+  struct Acquire
+  {
+    /// @brief Counter raised on each invocation. Must outlive this action.
+    std::atomic_uint32_t& mConsignmentCounter;
+
+    /// @brief Adds one to the counter.
+    void operator()() const noexcept
+    {
+      mConsignmentCounter.fetch_add(1);
+    }
+  };
+
+  /// @brief Function object that lowers the in-flight counter; serves as the guard's exit action.
+  struct Release
+  {
+    /// @brief Counter lowered on each invocation. Must outlive this action.
+    std::atomic_uint32_t& mConsignmentCounter;
+
+    /// @brief Subtracts one from the counter and wakes threads waiting on it once it reaches zero.
+    void operator()() const noexcept
+    {
+      if(mConsignmentCounter.fetch_sub(1, std::memory_order_acq_rel) == 1)
+      {
+        mConsignmentCounter.notify_all();
+      }
+    }
+  };
+
+  ConstMsgBasePtr mMsgBasePtr;
+  common::RaiiToken<Release> mToken;
 };
 
 } // namespace nioc::terminus
