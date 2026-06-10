@@ -12,14 +12,17 @@
 #include <atomic>
 #include <boost/program_options.hpp>
 #include <filesystem>
+#include <functional>
 #include <memory>
 #include <nioc/common/locked.hpp>
+#include <nioc/common/typeTraits.hpp>
 #include <nlohmann/json.hpp>
 #include <spdlog/sinks/sink.h>
 #include <stop_token>
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -168,7 +171,9 @@ public:
   template<typename Schema>
   void publish(const std::string_view& topic, ConstMsgPtr<Schema> msgPtr)
   {
-    publish(makeChannelId(Msg<Schema>::kMsgId, topic), std::move(msgPtr));
+    const auto channelId = makeChannelId(Msg<Schema>::kMsgId, topic);
+    recordTopic(channelId, topic, common::prettyName<Schema>());
+    publish(channelId, std::move(msgPtr));
   }
 
   /// @brief Requests a graceful shutdown: producers stop and in-flight work drains.
@@ -193,6 +198,7 @@ private:
   using ResourceMap = std::unordered_map<std::string, std::string>;
   using SubscriptionList = std::vector<ConsignmentCallback>;
   using SubscriptionMap = std::unordered_map<ChannelId, SubscriptionList>;
+  using ChannelIdSet = std::unordered_set<ChannelId>;
 
   /// @brief Fans a message out to subscribers for a given channel.
   ///
@@ -201,12 +207,26 @@ private:
   /// @param msgBasePtr Message to publish; ownership passes to the Port.
   void publish(ChannelId channelId, const ConstMsgBasePtr& msgBasePtr);
 
+  /// @brief Makes note of a topic in human-readable form.
+  ///
+  /// @param channelId Channel id of the message.
+  ///
+  /// @param topic Human-readable name of the topic.
+  ///
+  /// @param schemaName Human-readable name of the message schema published on the topic.
+  void recordTopic(
+      ChannelId channelId,
+      const std::string_view& topic,
+      const std::string_view& schemaName);
+
   const std::filesystem::path mWorkingDir;
   const std::shared_ptr<spdlog::sinks::sink> mConsoleLogSink;
   const nlohmann::json mConfig;
 
   common::Locked<ResourceMap> mLockedResourceMap;
   common::Locked<SubscriptionMap> mLockedSubscriptionMap;
+  common::Locked<ChannelIdSet> mLockedChannelIdSet;
+
   mutable std::atomic_uint32_t mPendingConsignments{0};
   std::stop_source mShutdownSource;
   std::stop_source mAbortSource;

@@ -311,6 +311,42 @@ void Port::publish(const ChannelId channelId, const ConstMsgBasePtr& msgBasePtr)
   }
 }
 
+void Port::recordTopic(
+    const ChannelId channelId,
+    const std::string_view& topic,
+    const std::string_view& schemaName)
+{
+  // Shared fast check if a topic has already been recorded.
+  if(mLockedChannelIdSet.cExecute([channelId](const auto& channelIdSet)
+                                  { return channelIdSet.contains(channelId); }))
+  {
+    return;
+  }
+
+  // Record the topic if it hasn't been recorded yet.
+  mLockedChannelIdSet.execute(
+      [this, channelId, &topic, &schemaName](auto& channelIdSet)
+      {
+        // Recheck to avoid race condition since having relieved the block above.
+        if(channelIdSet.contains(channelId))
+        {
+          return;
+        }
+
+        // Best effort to record the topic to the file.
+        const auto topicsFilePath = mWorkingDir / "topics.txt";
+        auto topicsFile = std::ofstream(topicsFilePath, std::ios::app);
+        if(not topicsFile)
+        {
+          logger::error("Failed to record topic to {}", topicsFilePath.string());
+          return;
+        }
+        topicsFile << topic << '\t' << schemaName << '\n';
+
+        channelIdSet.emplace(channelId);
+      });
+}
+
 void Port::shutdown() const noexcept
 {
   logger::info("Received request to shutdown.");
