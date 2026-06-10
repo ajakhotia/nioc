@@ -20,9 +20,9 @@ MemoryCrate::MemoryCrate(MemoryCrate&& memoryCrate) noexcept = default;
 
 MemoryCrate::~MemoryCrate() = default;
 
-MemoryCrate& MemoryCrate::operator=(MemoryCrate&& memoryCrate) noexcept = default;
-
 MemoryCrate& MemoryCrate::operator=(const MemoryCrate& memoryCrate) = default;
+
+MemoryCrate& MemoryCrate::operator=(MemoryCrate&& memoryCrate) noexcept = default;
 
 std::span<const std::byte> MemoryCrate::span() const
 {

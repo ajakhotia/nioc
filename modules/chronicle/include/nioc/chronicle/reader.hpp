@@ -60,13 +60,13 @@ public:
 private:
   using ChannelReaderMap = std::unordered_map<ChannelId, std::unique_ptr<ChannelReader>>;
 
-  ChannelReader& acquireChannel(ChannelId channelId, ChannelReaderMap& channelReaderMap);
-
   const IoMechanism mIoMechanism;
   const std::filesystem::path mLogRoot;
   const boost::iostreams::mapped_file_source mSequenceFile;
   std::uint64_t mNextReadIndex{0ULL};
   common::Locked<ChannelReaderMap> mLockedChannelReaderMap;
+
+  ChannelReader& acquireChannel(ChannelId channelId, ChannelReaderMap& channelReaderMap);
 };
 
 } // namespace nioc::chronicle

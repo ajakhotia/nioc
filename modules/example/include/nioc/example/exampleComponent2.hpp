@@ -58,6 +58,13 @@ public:
   [[nodiscard]] std::uint64_t sample3Count() const noexcept;
 
 private:
+  std::string mSample1Topic;
+  std::string mSample2Topic;
+  std::string mSample3Topic;
+  std::atomic<std::uint64_t> mSample1Count{0};
+  std::atomic<std::uint64_t> mSample2Count{0};
+  std::atomic<std::uint64_t> mSample3Count{0};
+
   void process(const terminus::ConstMsgPtr<Sample1>& msgPtr);
 
   void process(const terminus::ConstMsgPtr<Sample2>& msgPtr);
@@ -65,13 +72,6 @@ private:
   void process(const terminus::ConstMsgPtr<Sample3>& msgPtr);
 
   void logCounts() const;
-
-  std::string mSample1Topic;
-  std::string mSample2Topic;
-  std::string mSample3Topic;
-  std::atomic<std::uint64_t> mSample1Count{0};
-  std::atomic<std::uint64_t> mSample2Count{0};
-  std::atomic<std::uint64_t> mSample3Count{0};
 };
 
 } // namespace nioc::example

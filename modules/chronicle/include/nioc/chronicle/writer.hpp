@@ -78,13 +78,13 @@ public:
 private:
   using ChannelPtrMap = std::unordered_map<ChannelId, std::unique_ptr<ChannelWriter>>;
 
-  ChannelWriter& acquireChannel(ChannelId channelId, ChannelPtrMap& channelPtrMap);
-
   const IoMechanism mIoMechanism;
   const std::filesystem::path mLogDirectory;
   const std::size_t mMaxFileSizeInBytes;
   common::Locked<std::ofstream> mLockedSequenceFile;
   common::Locked<ChannelPtrMap> mLockedChannelPtrMap;
+
+  ChannelWriter& acquireChannel(ChannelId channelId, ChannelPtrMap& channelPtrMap);
 };
 
 } // namespace nioc::chronicle

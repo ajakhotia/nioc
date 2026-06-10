@@ -21,10 +21,10 @@ namespace nioc::chronicle
 class StreamChannelWriter final: public ChannelWriter
 {
 public:
+  using ConstByteSpan = std::span<const std::byte>;
+
   /// @brief Default cap on the size of a single data roll (128 MiB).
   static constexpr auto kDefaultMaxFileSizeInBytes = 128ULL * 1024ULL * 1024ULL;
-
-  using ConstByteSpan = std::span<const std::byte>;
 
   /// @brief Creates the channel directory and its index file.
   ///

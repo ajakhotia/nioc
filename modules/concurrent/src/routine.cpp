@@ -12,15 +12,15 @@
 namespace nioc::concurrent
 {
 
+void Routine::attachTrigger(std::function<void()> trigger)
+{
+  mTrigger = std::move(trigger);
+}
+
 Routine::Routine(std::string name, std::function<void()> trigger):
   mName(std::move(name)),
   mTrigger(std::move(trigger))
 {
-}
-
-void Routine::attachTrigger(std::function<void()> trigger)
-{
-  mTrigger = std::move(trigger);
 }
 
 void Routine::triggerRunner() const

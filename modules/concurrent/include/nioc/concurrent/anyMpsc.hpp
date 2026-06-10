@@ -96,6 +96,8 @@ public:
 private:
   using Storage = std::variant<OverwritingMpsc<value_type>, UnboundedMpsc<value_type>>;
 
+  Storage mStorage;
+
   // Builds the variant alternative selected by mode in place and returns it by prvalue, so the
   // member's initialization elides any move — which the mutex-holding queues lack.
   static Storage makeStorage(const BufferMode mode, const size_type capacity)
@@ -111,8 +113,6 @@ private:
 
     std::unreachable();
   }
-
-  Storage mStorage;
 };
 
 } // namespace nioc::concurrent

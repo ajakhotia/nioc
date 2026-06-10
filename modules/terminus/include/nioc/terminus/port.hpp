@@ -200,6 +200,19 @@ private:
   using SubscriptionMap = std::unordered_map<ChannelId, SubscriptionList>;
   using ChannelIdSet = std::unordered_set<ChannelId>;
 
+  const std::filesystem::path mWorkingDir;
+  const std::shared_ptr<spdlog::sinks::sink> mConsoleLogSink;
+  const nlohmann::json mConfig;
+
+  common::Locked<ResourceMap> mLockedResourceMap;
+  common::Locked<SubscriptionMap> mLockedSubscriptionMap;
+  common::Locked<ChannelIdSet> mLockedChannelIdSet;
+
+  mutable std::atomic_uint32_t mPendingConsignments{0};
+  std::stop_source mShutdownSource;
+  std::stop_source mAbortSource;
+  std::unique_ptr<AsyncChronicleWriter> mChronicleWriter;
+
   /// @brief Fans a message out to subscribers for a given channel.
   ///
   /// @param channelId Channel to publish on.
@@ -218,19 +231,6 @@ private:
       ChannelId channelId,
       const std::string_view& topic,
       const std::string_view& schemaName);
-
-  const std::filesystem::path mWorkingDir;
-  const std::shared_ptr<spdlog::sinks::sink> mConsoleLogSink;
-  const nlohmann::json mConfig;
-
-  common::Locked<ResourceMap> mLockedResourceMap;
-  common::Locked<SubscriptionMap> mLockedSubscriptionMap;
-  common::Locked<ChannelIdSet> mLockedChannelIdSet;
-
-  mutable std::atomic_uint32_t mPendingConsignments{0};
-  std::stop_source mShutdownSource;
-  std::stop_source mAbortSource;
-  std::unique_ptr<AsyncChronicleWriter> mChronicleWriter;
 };
 
 } // namespace nioc::terminus

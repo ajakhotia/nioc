@@ -21,6 +21,12 @@ namespace nioc::common
 /// The consumer picks the formatter and matches the string to its arguments at run time.
 struct FormatWithLocation
 {
+  /// @brief The format string, with no formatter details fixed in advance.
+  std::string_view mFormat;
+
+  /// @brief The source location of the call that built this wrapper.
+  std::source_location mLocation;
+
   /// @brief Captures @p format and the call site.
   ///
   /// This constructor is consteval, so the @p format must be a compile-time constant — normally a
@@ -37,12 +43,6 @@ struct FormatWithLocation
     mLocation{location}
   {
   }
-
-  /// @brief The format string, with no formatter details fixed in advance.
-  std::string_view mFormat;
-
-  /// @brief The source location of the call that built this wrapper.
-  std::source_location mLocation;
 };
 
 } // namespace nioc::common

@@ -44,10 +44,10 @@ public:
       concurrent::BufferMode bufferMode);
 
 private:
-  void process(const terminus::ConstMsgPtr<Sample3>& msgPtr);
-
   std::string mSample3Topic;
   std::string mSample2Topic;
+
+  void process(const terminus::ConstMsgPtr<Sample3>& msgPtr);
 };
 
 } // namespace nioc::example

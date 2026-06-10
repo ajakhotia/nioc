@@ -61,6 +61,11 @@ void Writer::write(const ChannelId channelId, std::span<const std::span<const st
       });
 }
 
+const std::filesystem::path& Writer::path() const noexcept
+{
+  return mLogDirectory;
+}
+
 ChannelWriter& Writer::acquireChannel(const ChannelId channelId, ChannelPtrMap& channelPtrMap)
 {
   if(not channelPtrMap.contains(channelId))
@@ -91,11 +96,6 @@ ChannelWriter& Writer::acquireChannel(const ChannelId channelId, ChannelPtrMap& 
   }
 
   return *channelPtrMap.at(channelId);
-}
-
-const std::filesystem::path& Writer::path() const noexcept
-{
-  return mLogDirectory;
 }
 
 } // namespace nioc::chronicle
