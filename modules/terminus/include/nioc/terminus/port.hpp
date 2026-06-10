@@ -139,14 +139,15 @@ public:
 
   /// @brief Registers a callback to receive every message published on a channel.
   ///
-  /// The Port holds @p callbackPtr weakly: the subscription ends on its own once the callback
-  /// expires, so the subscriber controls its own lifetime by keeping the pointer alive. Usually
-  /// reached through @ref Component::subscribe rather than called directly.
+  /// The Port owns @p callback for the rest of the run: subscriptions are fixed once built, so the
+  /// callback is held directly and invoked on the publishing thread with no per-message lifetime
+  /// check. Usually reached through @ref Component::subscribe rather than called directly.
   ///
   /// @param channelId Channel to receive messages from (see @ref makeChannelId).
   ///
-  /// @param callbackPtr Callback invoked with each published message; held weakly.
-  void subscribe(ChannelId channelId, std::weak_ptr<const ConsignmentCallback> callbackPtr);
+  /// @param callback Callback invoked with each published message. Multiple callbacks may share a
+  /// channel; all of them receive every message.
+  void subscribe(ChannelId channelId, ConsignmentCallback callback);
 
   /// @brief Publishes a message on a channel, fanning it out to subscribers and recording it.
   ///
@@ -178,7 +179,7 @@ public:
   void awaitQuiescence() const;
 
 private:
-  using SubscriptionList = std::vector<std::weak_ptr<const ConsignmentCallback>>;
+  using SubscriptionList = std::vector<ConsignmentCallback>;
   using SubscriptionMap = std::unordered_map<ChannelId, SubscriptionList>;
 
   const std::filesystem::path mWorkingDir;

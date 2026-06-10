@@ -257,11 +257,9 @@ fs::path Port::acquireResource(const fs::path& source) const
   return mWorkingDir / mResourceMap.at(source.string());
 }
 
-void Port::subscribe(
-    const ChannelId channelId,
-    std::weak_ptr<const ConsignmentCallback> callbackPtr)
+void Port::subscribe(const ChannelId channelId, ConsignmentCallback callback)
 {
-  mSubscriptionMap[channelId].emplace_back(std::move(callbackPtr));
+  mSubscriptionMap[channelId].push_back(std::move(callback));
 }
 
 void Port::publish(const ChannelId channelId, const ConstMsgBasePtr& msgBasePtr)
@@ -269,17 +267,14 @@ void Port::publish(const ChannelId channelId, const ConstMsgBasePtr& msgBasePtr)
   if(const auto subscriptions = mSubscriptionMap.find(channelId);
      subscriptions != mSubscriptionMap.end())
   {
-    for(const auto& weakCallback: subscriptions->second)
+    for(const auto& callback: subscriptions->second)
     {
-      if(const auto callback = weakCallback.lock())
-      {
-        std::invoke(
-            *callback,
-            Consignment{
-                msgBasePtr,
-                Consignment::Acquire{&mPendingConsignments},
-                Consignment::Release{&mPendingConsignments}});
-      }
+      std::invoke(
+          callback,
+          Consignment{
+              msgBasePtr,
+              Consignment::Acquire{&mPendingConsignments},
+              Consignment::Release{&mPendingConsignments}});
     }
   }
 

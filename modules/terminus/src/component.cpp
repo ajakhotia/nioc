@@ -38,7 +38,7 @@ Component::State Component::step() noexcept
     // Dispatch hands the message to the subscribed callback, which returns the next State. When
     // `value` leaves scope its Consignment is destroyed, decrementing the port's in-flight counter
     // to report the delivery.
-    return std::invoke(mHandlers.at(value->first), std::move(value->second.mMsgBasePtr));
+    return std::invoke(*value->first, std::move(value->second.mMsgBasePtr));
   }
   catch(const std::exception& exception)
   {

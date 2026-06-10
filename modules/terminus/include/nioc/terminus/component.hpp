@@ -47,7 +47,6 @@ public:
 
 protected:
   using MsgBaseCallback = std::function<State(ConstMsgBasePtr)>;
-  using ConsignmentCallback = std::function<void(Consignment)>;
 
   template<typename Schema>
   using MsgCallback = std::function<State(ConstMsgPtr<Schema>)>;
@@ -91,7 +90,7 @@ protected:
 
     // Strictly disallow duplicate subscriptions. Any necessary fan-out must be handled by the
     // lambda passed in by the user.
-    if(mHandlers.contains(channelId) or mPortSubscriptions.contains(channelId))
+    if(mHandlers.contains(channelId))
     {
       common::throwException<std::logic_error>(
           "[{}] Subscription already exists. Topic: {}, Schema: {}, ChannelId: {}",
@@ -101,26 +100,30 @@ protected:
           channelId.mValue);
     }
 
-    // Set up dispatch pathway from component's queue to the user-provided callback
-    mHandlers.emplace(
+    // Dispatch pathway from the inbox to the user-provided callback. The handler is stored at a
+    // stable address (an unordered_map never relocates an element), and the inbox carries a pointer
+    // straight to it.
+    const auto& handler =
+        mHandlers
+            .emplace(
+                channelId,
+                [msgCallback = std::move(msgCallback)](ConstMsgBasePtr msgBasePtr) -> State
+                {
+                  return std::invoke(
+                      msgCallback,
+                      std::static_pointer_cast<const Msg<Schema>>(std::move(msgBasePtr)));
+                })
+            .first->second;
+
+    // Dispatch pathway from port to the component's inbox. This also contains a pointer to
+    // the handler that will take the msg from the inbox to the user-provided callback.
+    mPort.subscribe(
         channelId,
-        [msgCallback = std::move(msgCallback)](ConstMsgBasePtr msgBasePtr) -> State
-        {
-          return std::invoke(
-              msgCallback,
-              std::static_pointer_cast<const Msg<Schema>>(std::move(msgBasePtr)));
-        });
+        [this, handlerPtr = &handler](Consignment consignment)
+        { mInbox.push({handlerPtr, std::move(consignment)}); });
 
-    // Set up dispatch pathway for the consignments from port to component's queue
-    auto consignmentCallbackPtr = std::make_shared<ConsignmentCallback>(
-        [this, channelId](Consignment consignment)
-        { mInbox.push({channelId, std::move(consignment)}); });
-
-    mPort.subscribe(channelId, consignmentCallbackPtr);
-    mPortSubscriptions.emplace(channelId, std::move(consignmentCallbackPtr));
-
-    logger::debug(
-        "[{}] subscribed to topic '{}' (schema {}, channel {})",
+    logger::info(
+        "[{}] subscribed to topic '{}' (schema {}, channel id {}).",
         name(),
         topic,
         common::prettyName<Schema>(),
@@ -141,10 +144,11 @@ protected:
   }
 
 private:
+  using MpscQueue = concurrent::AnyMpsc<std::pair<const MsgBaseCallback*, Consignment>>;
+
   Port& mPort;
-  concurrent::NotifyingInbox<concurrent::AnyMpsc<std::pair<ChannelId, Consignment>>> mInbox;
+  concurrent::NotifyingInbox<MpscQueue> mInbox;
   std::unordered_map<ChannelId, MsgBaseCallback> mHandlers;
-  std::unordered_map<ChannelId, std::shared_ptr<const ConsignmentCallback>> mPortSubscriptions;
 
   /// @brief Pops one queued message and runs its subscribed callback, reporting the next State.
   ///
