@@ -166,7 +166,7 @@ public:
   ///
   /// @param msgPtr Message to publish; ownership passes to the Port.
   template<typename Schema>
-  void publish(const std::string_view& topic, ConstMsgPtr<Schema> msgPtr) const
+  void publish(const std::string_view& topic, ConstMsgPtr<Schema> msgPtr)
   {
     publish(makeChannelId(Msg<Schema>::kMsgId, topic), std::move(msgPtr));
   }
@@ -190,6 +190,7 @@ public:
   void awaitQuiescence() const;
 
 private:
+  using ResourceMap = std::unordered_map<std::string, std::string>;
   using SubscriptionList = std::vector<ConsignmentCallback>;
   using SubscriptionMap = std::unordered_map<ChannelId, SubscriptionList>;
 
@@ -198,13 +199,13 @@ private:
   /// @param channelId Channel to publish on.
   ///
   /// @param msgBasePtr Message to publish; ownership passes to the Port.
-  void publish(ChannelId channelId, const ConstMsgBasePtr& msgBasePtr) const;
+  void publish(ChannelId channelId, const ConstMsgBasePtr& msgBasePtr);
 
   const std::filesystem::path mWorkingDir;
   const std::shared_ptr<spdlog::sinks::sink> mConsoleLogSink;
   const nlohmann::json mConfig;
 
-  std::unordered_map<std::string, std::string> mResourceMap;
+  common::Locked<ResourceMap> mLockedResourceMap;
   common::Locked<SubscriptionMap> mLockedSubscriptionMap;
   mutable std::atomic_uint32_t mPendingConsignments{0};
   std::stop_source mShutdownSource;

@@ -38,7 +38,7 @@ Entry Reader::read()
   const auto sequenceEntry = ReadWriteUtil<SequenceEntry>::read(
       std::next(mSequenceFile.data(), static_cast<ssize_t>(indexPtrOffset)));
 
-  return mLockedChannelReaderMap(
+  return mLockedChannelReaderMap.execute(
       [&](ChannelReaderMap& channelReaderMap) -> Entry
       {
         auto& channelReader = acquireChannel(sequenceEntry.mChannelId, channelReaderMap);

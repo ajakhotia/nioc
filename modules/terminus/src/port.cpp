@@ -17,6 +17,7 @@
 #include <nioc/logger/logger.hpp>
 #include <nioc/terminus/asyncChronicleWriter.hpp>
 #include <nioc/terminus/port.hpp>
+#include <optional>
 #include <ranges>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <stdexcept>
@@ -179,13 +180,14 @@ Port::Port(
   mWorkingDir{createWorkingDir(logRoot)},
   mConsoleLogSink{attachLogFileSink(mWorkingDir / "console.log")},
   mConfig(loadAndWriteConfig(configPaths, mWorkingDir)),
-  mResourceMap{copyResources(resourcePaths, mWorkingDir)},
+  mLockedResourceMap{copyResources(resourcePaths, mWorkingDir)},
   mChronicleWriter{
       writeChronicle ? std::make_unique<AsyncChronicleWriter>(mWorkingDir / "chronicle") : nullptr}
 {
   auto metadata = nlohmann::json::object();
   metadata["cmdline"] = commandLine;
-  metadata["resources"] = mResourceMap;
+  mLockedResourceMap.cExecute([&metadata](const auto& resourceMap)
+                              { metadata["resources"] = resourceMap; });
   writeJsonFile(mWorkingDir / "metadata.json", metadata);
 
   logger::debug("recording run to working directory {}", mWorkingDir);
@@ -207,7 +209,8 @@ Port::~Port()
     if(auto file = std::fstream(metadataPath, std::ios::in | std::ios::out))
     {
       auto metadata = nlohmann::json::parse(file);
-      metadata["resources"] = mResourceMap;
+      mLockedResourceMap.cExecute([&metadata](const auto& resourceMap)
+                                  { metadata["resources"] = resourceMap; });
 
       file.clear();
       file.seekp(0);
@@ -239,33 +242,57 @@ const nlohmann::json& Port::config() const noexcept
 
 void Port::addResource(const fs::path& source)
 {
-  copyResource(source, mWorkingDir, mResourceMap);
+  mLockedResourceMap.execute([this, &source](auto& resourceMap)
+                             { copyResource(source, mWorkingDir, resourceMap); });
 }
 
 fs::path Port::acquireResource(const fs::path& source)
 {
-  if(not mResourceMap.contains(source.string()))
+  const auto sourceKey = source.string();
+
+  // Shared-lock fast check to acquire existing resources.
+  if(const auto resolved = mLockedResourceMap.cExecute(
+         [this, &sourceKey](const auto& resourceMap) -> std::optional<fs::path>
+         {
+           if(const auto entry = resourceMap.find(sourceKey); entry != resourceMap.end())
+           {
+             return mWorkingDir / entry->second;
+           }
+           return std::nullopt;
+         }))
   {
-    copyResource(source, mWorkingDir, mResourceMap);
+    return *resolved;
   }
 
-  return mWorkingDir / mResourceMap.at(source.string());
+  // Exclusive-lock path to copy the resource. The copy may happen at most once.
+  return mLockedResourceMap.execute(
+      [this, &source, &sourceKey](auto& resourceMap)
+      {
+        // Recheck for a potential race since the lock was released in the block above.
+        if(not resourceMap.contains(sourceKey))
+        {
+          copyResource(source, mWorkingDir, resourceMap);
+        }
+
+        return mWorkingDir / resourceMap.at(sourceKey);
+      });
 }
 
 fs::path Port::acquireResource(const fs::path& source) const
 {
-  return mWorkingDir / mResourceMap.at(source.string());
+  return mLockedResourceMap.cExecute([this, &source](const auto& resourceMap)
+                                     { return mWorkingDir / resourceMap.at(source.string()); });
 }
 
 void Port::subscribe(const ChannelId channelId, ConsignmentCallback callback)
 {
-  mLockedSubscriptionMap([channelId, &callback](auto& subscriptionMap)
-                         { subscriptionMap[channelId].push_back(std::move(callback)); });
+  mLockedSubscriptionMap.execute([channelId, &callback](auto& subscriptionMap)
+                                 { subscriptionMap[channelId].push_back(std::move(callback)); });
 }
 
-void Port::publish(const ChannelId channelId, const ConstMsgBasePtr& msgBasePtr) const
+void Port::publish(const ChannelId channelId, const ConstMsgBasePtr& msgBasePtr)
 {
-  mLockedSubscriptionMap(
+  mLockedSubscriptionMap.cExecute(
       [this, channelId, &msgBasePtr](const auto& subscriptionMap)
       {
         if(const auto subscriptions = subscriptionMap.find(channelId);
