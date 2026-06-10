@@ -2,7 +2,6 @@ find_package(GTest REQUIRED)
 include(GoogleTest)
 
 add_executable(commonTest
-    cacheManagerTest.cpp
     exceptionTest.cpp
     filesystemTest.cpp
     lockTest.cpp

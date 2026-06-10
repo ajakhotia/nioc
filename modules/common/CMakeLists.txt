@@ -34,7 +34,6 @@ add_exported_library(
     src/utils.cpp
   HEADERS
     PUBLIC include/nioc/common/annotators.hpp
-    PUBLIC include/nioc/common/cacheManager.hpp
     PUBLIC include/nioc/common/exception.hpp
     PUBLIC include/nioc/common/filesystem.hpp
     PUBLIC include/nioc/common/locked.hpp

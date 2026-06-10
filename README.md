@@ -8,7 +8,6 @@ Core C++ utilities for building high-performance robotics and AI applications on
 
 ### Core Utilities (`nioc::common`)
 - **Thread-Safe Wrappers**: `Locked<T>` template for protecting non-atomic types from access contention with automatic mutex management
-- **Cache Management**: `CacheManager<T>` for managing cache implementations with automatic validity checking and reset
 - **Type Traits**: Advanced C++20 type manipulation utilities and compile-time type checking
 
 ### Geometry Processing (`nioc::geometry`)
