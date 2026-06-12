@@ -14,7 +14,7 @@ capnproto_generate_library(
     nioc::commonIdl
     nioc::geometryIdl
   COMPILE_FEATURES
-    PUBLIC cxx_std_20
+    PUBLIC cxx_std_23
   COMPILE_OPTIONS
     PRIVATE $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
     PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>

@@ -30,6 +30,7 @@ public:
 
   /// @brief Reads the next frame from the channel.
   /// @return Memory crate containing the frame data.
+  /// @throws std::runtime_error When no more frames remain in the channel.
   [[nodiscard]] virtual MemoryCrate read() = 0;
 };
 

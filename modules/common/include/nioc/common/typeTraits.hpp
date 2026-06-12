@@ -34,9 +34,9 @@ struct IsSpecialization<TemplateType<Args...>, TemplateType>: public std::true_t
 template<typename InstanceType, template<typename...> typename TemplateType>
 inline constexpr bool isSpecialization = IsSpecialization<InstanceType, TemplateType>::value;
 
-/// @brief Gets a readable name for a type.
-/// @tparam Type Type to get name for.
-/// @return String view of the type name.
+/// @brief Returns a human-readable name for a type.
+/// @tparam Type Type to name.
+/// @return String view of the type's name.
 template<typename Type>
 consteval std::string_view prettyName() noexcept
 {

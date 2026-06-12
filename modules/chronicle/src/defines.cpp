@@ -5,6 +5,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include <nioc/chronicle/defines.hpp>
+#include <nioc/common/exception.hpp>
 #include <nioc/common/makeBimap.hpp>
 #include <stdexcept>
 
@@ -33,9 +34,9 @@ std::string stringFromIoMechanism(const IoMechanism mechanism)
 
   if(iter == bimap.left.end())
   {
-    throw std::logic_error(
-        "[Chronicle] Programming error: IoMechanism bimap missing entry for value " +
-        std::to_string(static_cast<int>(mechanism)) + ". Update ioMechanismBimap().");
+    common::throwException<std::logic_error>(
+        "Programming error: IoMechanism bimap missing entry for value {}.",
+        static_cast<int>(mechanism));
   }
 
   return iter->second;
@@ -48,7 +49,7 @@ IoMechanism ioMechanismFromString(const std::string& str)
 
   if(iter == bimap.right.end())
   {
-    throw std::out_of_range("[Chronicle] Unknown IoMechanism string: '" + str + "'");
+    common::throwException<std::out_of_range>("Unknown IoMechanism string: '{}'", str);
   }
 
   return iter->second;

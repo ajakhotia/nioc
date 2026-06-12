@@ -1,0 +1,1 @@
+Distinct file sharing the testResource.bin basename, used to exercise the addResource collision guard.

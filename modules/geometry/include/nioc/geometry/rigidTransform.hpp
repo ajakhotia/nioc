@@ -32,8 +32,8 @@ public:
   /// @param frameRefParams Frame identity parameters.
   template<typename... FrameRefParams>
   explicit RigidTransform(const PoseS& pose, FrameRefParams&&... frameRefParams):
-      CoordinateFrames(std::forward<FrameRefParams>(frameRefParams)...),
-      mPose(pose)
+    CoordinateFrames(std::forward<FrameRefParams>(frameRefParams)...),
+    mPose(pose)
   {
   }
 
@@ -41,22 +41,21 @@ public:
 
   RigidTransform(RigidTransform&&) noexcept = default;
 
-  ~RigidTransform() = default;
+  ~RigidTransform() override = default;
 
   RigidTransform& operator=(const RigidTransform&) = default;
 
   RigidTransform& operator=(RigidTransform&&) noexcept = default;
 
-  /// @brief Gets the transformation pose.
-  /// @return Reference to the pose.
-  const PoseS& pose() const noexcept
+  /// @brief Returns the transformation pose.
+  [[nodiscard]] const PoseS& pose() const noexcept
   {
     return mPose;
   }
 
-  /// @brief Computes the inverse transformation.
+  /// @brief Returns the inverse transformation.
   /// @return Transform from parent to child frame.
-  RigidTransform<ChildFrame, ParentFrame, Scalar> inverse() const
+  [[nodiscard]] RigidTransform<ChildFrame, ParentFrame, Scalar> inverse() const
   {
     return RigidTransform<ChildFrame, ParentFrame, Scalar>(
         pose().inverse(),
@@ -69,6 +68,7 @@ private:
 
 /// @brief Chains two transformations together.
 /// @return Composed transformation from child to parent frame.
+/// @throws FrameCompositionException if the intermediate frames carry mismatched runtime names.
 template<typename ParentFrame, typename IntermediateFrame, typename ChildFrame, typename Scalar>
 RigidTransform<ParentFrame, ChildFrame, Scalar> operator*(
     const RigidTransform<ParentFrame, IntermediateFrame, Scalar>& lhs,

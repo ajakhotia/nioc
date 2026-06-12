@@ -7,8 +7,8 @@
 #include "streamChannelWriter.hpp"
 #include "utils.hpp"
 #include <algorithm>
+#include <nioc/common/exception.hpp>
 #include <numeric>
-#include <spdlog/spdlog.h>
 
 namespace nioc::chronicle
 {
@@ -21,16 +21,16 @@ std::filesystem::path setupLogRoot(std::filesystem::path logRoot)
 
   if(fs::exists(logRoot))
   {
-    throw std::logic_error(
-        "[StreamChannelWriter::StreamChannelWriter] Directory or file" + logRoot.string() +
-        " exists already.");
+    common::throwException<std::logic_error>(
+        "Directory or file {} exists already.",
+        logRoot.string());
   }
 
   if(not fs::create_directories(logRoot))
   {
-    throw std::runtime_error(
-        "[StreamChannelWriter::StreamChannelWriter] Unable to create directory at " +
-        logRoot.string() + ".");
+    common::throwException<std::runtime_error>(
+        "Unable to create directory at {}.",
+        logRoot.string());
   }
 
   return logRoot;
@@ -41,11 +41,11 @@ std::filesystem::path setupLogRoot(std::filesystem::path logRoot)
 StreamChannelWriter::StreamChannelWriter(
     std::filesystem::path logRoot,
     const std::uint64_t maxFileSizeInBytes):
-    mLogRoot(setupLogRoot(std::move(logRoot))),
-    mMaxFileSizeInBytes(maxFileSizeInBytes),
-    mIndexFile(mLogRoot / kIndexFileName),
-    mRollCounter(std::numeric_limits<std::uint64_t>::max()),
-    mActiveLogRoll(nextRollFilePath())
+  mLogRoot(setupLogRoot(std::move(logRoot))),
+  mMaxFileSizeInBytes(maxFileSizeInBytes),
+  mIndexFile(mLogRoot / kIndexFileName),
+  mRollCounter(std::numeric_limits<std::uint64_t>::max()),
+  mActiveLogRoll(nextRollFilePath())
 {
 }
 
@@ -60,7 +60,7 @@ void StreamChannelWriter::writeFrame(const ConstByteSpan& data)
   // Check if the file is still good.
   if(not mActiveLogRoll.good())
   {
-    throw std::runtime_error("[Logger::utils] Unable to cleanly write to the file.");
+    common::throwException<std::runtime_error>("Unable to cleanly write to the file.");
   }
 }
 
@@ -73,14 +73,12 @@ void StreamChannelWriter::writeFrame(std::span<const ConstByteSpan> dataCollecti
   std::ranges::for_each(
       dataCollection,
       [this](const auto& data)
-      {
-        ReadWriteUtil<std::span<const std::byte>>::write(mActiveLogRoll, data);
-      });
+      { ReadWriteUtil<std::span<const std::byte>>::write(mActiveLogRoll, data); });
 
   // Check if the file is still good.
   if(not mActiveLogRoll.good())
   {
-    throw std::runtime_error("[Logger::utils] Unable to cleanly write to the file.");
+    common::throwException<std::runtime_error>("Unable to cleanly write to the file.");
   }
 }
 
@@ -104,13 +102,13 @@ void StreamChannelWriter::rollCheckAndIndex(const std::uint64_t requiredSizeInBy
     // Create and write an IndexEntry to the index file.
     ReadWriteUtil<IndexEntry>::write(
         mIndexFile,
-        { .mRollId = mRollCounter,
-          .mOffset = static_cast<std::uint64_t>(position),
-          .mSize = requiredSizeInBytes });
+        {.mRollId = mRollCounter,
+         .mOffset = static_cast<std::uint64_t>(position),
+         .mSize = requiredSizeInBytes});
   }
   else
   {
-    throw std::runtime_error("[StreamChannelWriter::index] Unable to retrieve the write position");
+    common::throwException<std::runtime_error>("Unable to retrieve the write position.");
   }
 }
 

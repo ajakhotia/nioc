@@ -5,21 +5,20 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include <gtest/gtest.h>
-#include <nioc/geometry/constants.hpp>
 #include <nioc/geometry/rotation.hpp>
 
 namespace nioc::geometry
 {
 namespace
 {
-void expect_eq(const Eigen::Vector3d& lhs, const Eigen::Vector3d& rhs)
+void expectEq(const Eigen::Vector3d& lhs, const Eigen::Vector3d& rhs)
 {
   EXPECT_DOUBLE_EQ(lhs.x(), rhs.x());
   EXPECT_DOUBLE_EQ(lhs.y(), rhs.y());
   EXPECT_DOUBLE_EQ(lhs.z(), rhs.z());
 }
 
-void expect_eq(const Eigen::Vector3f& lhs, const Eigen::Vector3f& rhs)
+void expectEq(const Eigen::Vector3f& lhs, const Eigen::Vector3f& rhs)
 {
   EXPECT_FLOAT_EQ(lhs.x(), rhs.x());
   EXPECT_FLOAT_EQ(lhs.y(), rhs.y());
@@ -29,15 +28,15 @@ void expect_eq(const Eigen::Vector3f& lhs, const Eigen::Vector3f& rhs)
 template<typename Scalar>
 void mrpEquivalenceTest(const Scalar angle, const Eigen::Matrix<Scalar, 3, 1>& axis)
 {
-  const Eigen::AngleAxis<Scalar> angleAxis(angle, axis);
-  const Eigen::Quaternion<Scalar> quaternion(angleAxis);
+  const auto angleAxis = Eigen::AngleAxis<Scalar>(angle, axis);
+  const auto quaternion = Eigen::Quaternion<Scalar>(angleAxis);
 
-  const Rotation3<Scalar> mrp3RotViaAngleAxis(angleAxis);
-  const Rotation3<Scalar> mrp3RotViaQuaternion(quaternion);
-  const Rotation3<Scalar> mrp3RotViaAngleAndAxis(angle, axis);
+  const auto mrp3RotViaAngleAxis = Rotation3<Scalar>(angleAxis);
+  const auto mrp3RotViaQuaternion = Rotation3<Scalar>(quaternion);
+  const auto mrp3RotViaAngleAndAxis = Rotation3<Scalar>(angle, axis);
 
-  expect_eq(mrp3RotViaAngleAxis.cParameters(), mrp3RotViaQuaternion.cParameters());
-  expect_eq(mrp3RotViaAngleAndAxis.cParameters(), mrp3RotViaQuaternion.cParameters());
+  expectEq(mrp3RotViaAngleAxis.cParameters(), mrp3RotViaQuaternion.cParameters());
+  expectEq(mrp3RotViaAngleAndAxis.cParameters(), mrp3RotViaQuaternion.cParameters());
 }
 
 void mrpEquivalenceOverFloatRepresentations(const double angle, const Eigen::Vector3d& axis)
@@ -58,17 +57,18 @@ void mrpEquivalenceOverRotationsAroundPrincipleAxes(const double angle)
 
 TEST(Rotation3, construction)
 {
-  const auto angleAxis = Eigen::AngleAxisd(kPi<double>, Eigen::Vector3d::UnitZ());
+  const auto angleAxis = Eigen::AngleAxisd(std::numbers::pi_v<double>, Eigen::Vector3d::UnitZ());
   const auto quaternion = Eigen::Quaterniond(angleAxis);
-  const auto vector3d = Eigen::Vector3d(0.0, 0.0, std::tan(kPi<double> / 4.0));
+  const auto vector3d = Eigen::Vector3d(0.0, 0.0, std::tan(std::numbers::pi_v<double> / 4.0));
 
   EXPECT_NO_THROW((Rotation3<>(vector3d)));
   EXPECT_NO_THROW((Rotation3<>(angleAxis.angle(), angleAxis.axis())));
   EXPECT_NO_THROW((Rotation3<>(quaternion)));
   EXPECT_NO_THROW((Rotation3<>(angleAxis)));
 
-  mrpEquivalenceOverRotationsAroundPrincipleAxes(-1.77 * kPi<double>);
-  mrpEquivalenceOverRotationsAroundPrincipleAxes(1.0 * kPi<double>);
+  constexpr auto arbitraryTurnAngle = -1.77 * std::numbers::pi_v<double>;
+  mrpEquivalenceOverRotationsAroundPrincipleAxes(arbitraryTurnAngle);
+  mrpEquivalenceOverRotationsAroundPrincipleAxes(1.0 * std::numbers::pi_v<double>);
 }
 
 TEST(Rotation3, parameters) {}
@@ -77,22 +77,30 @@ TEST(Rotation3, data) {}
 
 TEST(Rotation3, components)
 {
-  Rotation3<double> test({ 0.2, 0.3, 0.5 });
-  EXPECT_EQ(0.2, test.x());
-  EXPECT_EQ(0.3, test.y());
-  EXPECT_EQ(0.5, test.z());
+  constexpr auto paramX = 0.2;
+  constexpr auto paramY = 0.3;
+  constexpr auto paramZ = 0.5;
 
-  test.x() = 0.7;
-  EXPECT_EQ(0.7, test.x());
-  test.y() = 0.11;
-  EXPECT_EQ(0.11, test.y());
-  test.z() = 0.13;
-  EXPECT_EQ(0.13, test.z());
+  auto test = Rotation3<double>({paramX, paramY, paramZ});
+  EXPECT_EQ(paramX, test.x());
+  EXPECT_EQ(paramY, test.y());
+  EXPECT_EQ(paramZ, test.z());
 
-  const Rotation3<double> constTest({ 0.2, 0.3, 0.5 });
-  EXPECT_EQ(0.2, constTest.x());
-  EXPECT_EQ(0.3, constTest.y());
-  EXPECT_EQ(0.5, constTest.z());
+  constexpr auto reassignedX = 0.7;
+  constexpr auto reassignedY = 0.11;
+  constexpr auto reassignedZ = 0.13;
+
+  test.x() = reassignedX;
+  EXPECT_EQ(reassignedX, test.x());
+  test.y() = reassignedY;
+  EXPECT_EQ(reassignedY, test.y());
+  test.z() = reassignedZ;
+  EXPECT_EQ(reassignedZ, test.z());
+
+  const auto constTest = Rotation3<double>({paramX, paramY, paramZ});
+  EXPECT_EQ(paramX, constTest.x());
+  EXPECT_EQ(paramY, constTest.y());
+  EXPECT_EQ(paramZ, constTest.z());
 
   // Operations below are illegal as constTest is const qualified.
   // constTest.x() = 0.7;
@@ -113,28 +121,36 @@ TEST(Rotation3, composition) {}
 
 TEST(MapOfRotation3, construction)
 {
-  std::array<double, 3> data = { 0.1, 0.2, 0.3 };
-  Eigen::Map<Rotation3<double>> map(data.data());
+  constexpr auto paramX = 0.1;
+  constexpr auto paramY = 0.2;
+  constexpr auto paramZ = 0.3;
+  std::array<double, 3> data = {paramX, paramY, paramZ};
+  auto map = Eigen::Map<Rotation3<double>>(data.data());
 
-  EXPECT_EQ(0.1, map.x());
-  data[0] = 0.4;
-  EXPECT_EQ(0.4, map.x());
+  EXPECT_EQ(paramX, map.x());
+  constexpr auto reassignedX = 0.4;
+  data[0] = reassignedX;
+  EXPECT_EQ(reassignedX, map.x());
 }
 
 TEST(ConstMapOfRotation3, construction)
 {
-  const std::array<double, 3> data = { 0.1, 0.2, 0.3 };
-  Eigen::Map<const Rotation3<double>> map(data.data());
+  const std::array<double, 3> data = {0.1, 0.2, 0.3};
+  auto map = Eigen::Map<const Rotation3<double>>(data.data());
   EXPECT_EQ(0.1, map.x());
 }
 
 TEST(Assignment, RotationAndMap)
 {
-  std::array<double, 3> data = { 0.1, 0.2, 0.3 };
-  Eigen::Map<Rotation3<double>> map(data.data());
-  Eigen::Map<const Rotation3<double>> constMap(data.data());
-  Rotation3<double> rot3(kPi<double> / 2.0, Eigen::Vector3d::UnitZ());
-  Rotation3<double> rot4(kPi<double> / 2.0, Eigen::Vector3d::UnitZ());
+  constexpr auto paramX = 0.1;
+  constexpr auto paramY = 0.2;
+  constexpr auto paramZ = 0.3;
+  std::array<double, 3> data = {paramX, paramY, paramZ};
+  const auto map = Eigen::Map<Rotation3<double>>(data.data());
+  const auto constMap = Eigen::Map<const Rotation3<double>>(data.data());
+  constexpr auto quarterTurn = std::numbers::pi_v<double> / 2.0;
+  auto rot3 = Rotation3<double>(quarterTurn, Eigen::Vector3d::UnitZ());
+  auto rot4 = Rotation3<double>(quarterTurn, Eigen::Vector3d::UnitZ());
 
   rot3 = map;
   rot4 = constMap;

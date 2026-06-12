@@ -45,8 +45,8 @@ TEST(RigidTransform, Multiplication)
 
   auto alphaFromEcho = alphaFromGamma * gammaFromEcho;
 
-  std::cout << decltype(alphaFromEcho)::ParentFrame::name() << std::endl;
-  std::cout << decltype(alphaFromEcho)::ChildFrame::name() << std::endl;
+  std::cout << decltype(alphaFromEcho)::ParentFrame::name() << '\n';
+  std::cout << decltype(alphaFromEcho)::ChildFrame::name() << '\n';
 }
 
 } // namespace nioc::geometry

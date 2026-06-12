@@ -14,18 +14,19 @@ namespace nioc::chronicle
 /// @brief Unique identifier for a data channel.
 struct ChannelId
 {
+  /// @brief Raw 64-bit identifier value.
   std::uint64_t mValue;
 
   constexpr bool operator==(const ChannelId&) const = default;
 };
 
-/// @brief I/O mechanism for reading or writing chronicle data.
-///
-/// Specifies which implementation to use for IO access.
+/// @brief I/O mechanism used to read or write chronicle data.
 enum class IoMechanism : std::uint8_t
 {
+  /// @brief Stream the bytes through file streams. Supported for writing and reading.
   Stream,
 
+  /// @brief Memory-map the files. Supported for reading.
   Mmap
 };
 

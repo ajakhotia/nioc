@@ -6,11 +6,35 @@
 #pragma once
 
 #include "frameConcepts.hpp"
+#include <nioc/common/exception.hpp>
 #include <nioc/common/typeTraits.hpp>
+#include <string>
 #include <type_traits>
+#include <utility>
 
 namespace nioc::geometry
 {
+namespace detail
+{
+/// @brief Normalizes a frame identifier so it can be passed on without array-to-pointer decay.
+///
+/// A character buffer (such as a string literal) becomes an owned @ref std::string through an
+/// explicit cast; an identifier of any other type (@ref std::string, @ref DynamicFrame) is
+/// forwarded unchanged.
+template<typename FrameArg>
+auto normalizeFrameId(FrameArg&& frameId)
+{
+  if constexpr(std::is_array_v<std::remove_reference_t<FrameArg>>)
+  {
+    return std::string(static_cast<const char*>(std::forward<FrameArg>(frameId)));
+  }
+  else
+  {
+    return std::forward<FrameArg>(frameId);
+  }
+}
+} // namespace detail
+
 /// @brief Manages parent and child frame relationships.
 ///
 /// Stores frame identities for geometric transformations. Supports both compile-time (StaticFrame)
@@ -29,12 +53,11 @@ public:
   using SelfType = FrameReferences<ParentFrame_, ChildFrame_>;
 
   /// @brief Constructs with compile-time frame identities.
-  template<
-      typename ParentFrame = typename SelfType::ParentFrame,
-      typename ChildFrame = typename SelfType::ChildFrame,
-      typename = typename std::enable_if_t<common::isSpecialization<ParentFrame, StaticFrame>>,
-      typename = typename std::enable_if_t<common::isSpecialization<ChildFrame, StaticFrame>>>
-  FrameReferences() noexcept: ParentConcept(), ChildConcept()
+  template<typename ParentFrame = SelfType::ParentFrame, typename ChildFrame = SelfType::ChildFrame>
+  FrameReferences() noexcept
+    requires(common::isSpecialization<ParentFrame, StaticFrame> and
+             common::isSpecialization<ChildFrame, StaticFrame>)
+    : ParentConcept(), ChildConcept()
   {
   }
 
@@ -42,13 +65,14 @@ public:
   /// @param childId Child frame identifier (string or DynamicFrame).
   template<
       typename ChildConceptArgs,
-      typename ParentFrame = typename SelfType::ParentFrame,
-      typename ChildFrame = typename SelfType::ChildFrame,
-      typename = typename std::enable_if_t<common::isSpecialization<ParentFrame, StaticFrame>>,
-      typename = typename std::enable_if_t<std::is_same_v<ChildFrame, DynamicFrame>>>
-  [[maybe_unused]] explicit FrameReferences(ChildConceptArgs&& childId) noexcept:
-      ParentConcept(),
-      ChildConcept(std::forward<ChildConceptArgs>(childId))
+      typename ParentFrame = SelfType::ParentFrame,
+      typename ChildFrame = SelfType::ChildFrame>
+  [[maybe_unused]] explicit FrameReferences(ChildConceptArgs&& childId) noexcept
+    requires(common::isSpecialization<ParentFrame, StaticFrame> and
+             std::is_same_v<ChildFrame, DynamicFrame>)
+    :
+    ParentConcept(),
+    ChildConcept(detail::normalizeFrameId(std::forward<ChildConceptArgs>(childId)))
   {
   }
 
@@ -56,13 +80,16 @@ public:
   /// @param parentId Parent frame identifier (string or DynamicFrame).
   template<
       typename ParentConceptArgs,
-      typename ParentFrame = typename SelfType::ParentFrame,
-      typename ChildFrame = typename SelfType::ChildFrame,
-      typename = typename std::enable_if_t<std::is_same_v<ParentFrame, DynamicFrame>>,
-      typename = typename std::enable_if_t<common::isSpecialization<ChildFrame, StaticFrame>>>
-  [[maybe_unused]] explicit FrameReferences(ParentConceptArgs&& parentId, int = 0) noexcept:
-      ParentConcept(std::forward<ParentConceptArgs>(parentId)),
-      ChildConcept()
+      typename ParentFrame = SelfType::ParentFrame,
+      typename ChildFrame = SelfType::ChildFrame>
+  [[maybe_unused]] explicit FrameReferences(
+      ParentConceptArgs&& parentId,
+      int /*unused*/ = 0) noexcept
+    requires(std::is_same_v<ParentFrame, DynamicFrame> and
+             common::isSpecialization<ChildFrame, StaticFrame>)
+    :
+    ParentConcept(detail::normalizeFrameId(std::forward<ParentConceptArgs>(parentId))),
+    ChildConcept()
   {
   }
 
@@ -72,25 +99,33 @@ public:
   template<
       typename ParentConceptArgs,
       typename ChildConceptArgs,
-      typename ParentFrame = typename SelfType::ParentFrame,
-      typename ChildFrame = typename SelfType::ChildFrame,
-      typename = typename std::enable_if_t<std::is_same_v<ParentFrame, DynamicFrame>>,
-      typename = typename std::enable_if_t<std::is_same_v<ChildFrame, DynamicFrame>>>
+      typename ParentFrame = SelfType::ParentFrame,
+      typename ChildFrame = SelfType::ChildFrame>
   [[maybe_unused]] FrameReferences(
       ParentConceptArgs&& parentId,
-      ChildConceptArgs&& childId) noexcept:
-      ParentConcept(std::forward<ParentConceptArgs>(parentId)),
-      ChildConcept(std::forward<ChildConceptArgs>(childId))
+      ChildConceptArgs&& childId) noexcept
+    requires(std::is_same_v<ParentFrame, DynamicFrame> and std::is_same_v<ChildFrame, DynamicFrame>)
+    :
+    ParentConcept(detail::normalizeFrameId(std::forward<ParentConceptArgs>(parentId))),
+    ChildConcept(detail::normalizeFrameId(std::forward<ChildConceptArgs>(childId)))
   {
   }
 
-  virtual ~FrameReferences() = default;
+  FrameReferences(const FrameReferences&) = default;
+
+  FrameReferences(FrameReferences&&) noexcept = default;
+
+  FrameReferences& operator=(const FrameReferences&) = default;
+
+  FrameReferences& operator=(FrameReferences&&) noexcept = default;
+
+  ~FrameReferences() override = default;
 };
 
 /// @brief Exception for mismatched frame composition.
 ///
 /// Thrown when composing transformations with incompatible frames.
-class FrameCompositionException: public std::runtime_error
+class FrameCompositionException final: public std::runtime_error
 {
 public:
   using std::runtime_error::runtime_error;
@@ -98,79 +133,85 @@ public:
 
 namespace helpers
 {
-std::string
-frameCompositionErrorMessage(const std::string& lhsFrameName, const std::string& rhsFrameName);
+/// @brief Builds a @ref FrameCompositionException message from the two clashing frame names.
+///
+/// @param lhsFrameName Name of the frame on the left of the composition.
+///
+/// @param rhsFrameName Name of the frame on the right of the composition.
+///
+/// @return The formatted error message.
+std::string frameCompositionErrorMessage(
+    const std::string& lhsFrameName,
+    const std::string& rhsFrameName);
 
 /// @brief Asserts frame equality at compile-time.
-template<
-    typename LhsFrame,
-    typename RhsFrame,
-    typename = typename std::enable_if_t<
-        common::isSpecialization<LhsFrame, StaticFrame> and
-        common::isSpecialization<RhsFrame, StaticFrame> and LhsFrame::name() == RhsFrame::name()>>
-inline constexpr void assertFrameEqual() noexcept
+template<typename LhsFrame, typename RhsFrame>
+constexpr void assertFrameEqual() noexcept
+  requires(
+      common::isSpecialization<LhsFrame, StaticFrame> and
+      common::isSpecialization<RhsFrame, StaticFrame> and LhsFrame::name() == RhsFrame::name())
 {
 }
 
 /// @brief Asserts static frame matches dynamic frame at runtime.
 /// @param rhsFrame Dynamic frame to check.
-template<
-    typename LhsFrame,
-    typename RhsFrame,
-    typename = typename std::enable_if_t<
-        common::isSpecialization<LhsFrame, StaticFrame> and std::is_same_v<RhsFrame, DynamicFrame>>>
+/// @throws FrameCompositionException If the frame names differ.
+template<typename LhsFrame, typename RhsFrame>
 inline void assertFrameEqual(const RhsFrame& rhsFrame)
+  requires(
+      common::isSpecialization<LhsFrame, StaticFrame> and std::is_same_v<RhsFrame, DynamicFrame>)
 {
   if(LhsFrame::name() != rhsFrame.name())
   {
-    auto msg = frameCompositionErrorMessage(std::string(LhsFrame::name()), rhsFrame.name());
-    throw FrameCompositionException(std::move(msg));
+    common::throwException<FrameCompositionException>(
+        "{}",
+        frameCompositionErrorMessage(std::string(LhsFrame::name()), rhsFrame.name()));
   }
 }
 
 /// @brief Asserts dynamic frame matches static frame at runtime.
 /// @param lhsFrame Dynamic frame to check.
-template<
-    typename LhsFrame,
-    typename RhsFrame,
-    typename = typename std::enable_if_t<
-        std::is_same_v<LhsFrame, DynamicFrame> and common::isSpecialization<RhsFrame, StaticFrame>>>
+/// @throws FrameCompositionException If the frame names differ.
+template<typename LhsFrame, typename RhsFrame>
 inline void assertFrameEqual(const LhsFrame& lhsFrame)
+  requires(
+      std::is_same_v<LhsFrame, DynamicFrame> and common::isSpecialization<RhsFrame, StaticFrame>)
 {
   if(lhsFrame.name() != RhsFrame::name())
   {
-    auto msg = frameCompositionErrorMessage(lhsFrame.name(), std::string(RhsFrame::name()));
-    throw FrameCompositionException(std::move(msg));
+    common::throwException<FrameCompositionException>(
+        "{}",
+        frameCompositionErrorMessage(lhsFrame.name(), std::string(RhsFrame::name())));
   }
 }
 
 /// @brief Asserts two dynamic frames match at runtime.
 /// @param lhsFrame First dynamic frame.
 /// @param rhsFrame Second dynamic frame.
-template<
-    typename LhsFrame,
-    typename RhsFrame,
-    typename = typename std::enable_if_t<
-        std::is_same_v<LhsFrame, DynamicFrame> and std::is_same_v<RhsFrame, DynamicFrame>>>
+/// @throws FrameCompositionException If the frame names differ.
+template<typename LhsFrame, typename RhsFrame>
 inline void assertFrameEqual(const LhsFrame& lhsFrame, const RhsFrame& rhsFrame)
+  requires(std::is_same_v<LhsFrame, DynamicFrame> and std::is_same_v<RhsFrame, DynamicFrame>)
 {
   if(lhsFrame.name() != rhsFrame.name())
   {
-    auto msg = frameCompositionErrorMessage(lhsFrame.name(), rhsFrame.name());
-    throw FrameCompositionException(std::move(msg));
+    common::throwException<FrameCompositionException>(
+        "{}",
+        frameCompositionErrorMessage(lhsFrame.name(), rhsFrame.name()));
   }
 }
 
 
 } // namespace helpers
 
-/// @brief Composes two frame relationships.
+/// @brief Composes two frame relationships into one.
 ///
-/// Combines two transformations. Throws FrameCompositionException if frames don't match.
+/// Combines two transformations end to end.
 ///
 /// @param lhsFrameReferences First frame relationship.
 /// @param rhsFrameReferences Second frame relationship.
 /// @return Composed frame relationship.
+/// @throws FrameCompositionException If the inner frames do not match.
 template<typename LhsFrameReferences, typename RhsFrameReferences>
 constexpr FrameReferences<
     typename LhsFrameReferences::ParentFrame,
@@ -200,7 +241,7 @@ composeFrameReferences(
 /// @param input Frame relationship to invert.
 /// @return Inverted frame relationship.
 template<typename InputFrameReferences>
-FrameReferences<
+constexpr FrameReferences<
     typename InputFrameReferences::ChildFrame,
     typename InputFrameReferences::ParentFrame>
 invertFrameReferences(const InputFrameReferences& input)

@@ -6,17 +6,11 @@
 #include "utils.hpp"
 #include <bit>
 #include <boost/endian.hpp>
-#include <format>
 #include <fstream>
 #include <numeric>
 
 namespace nioc::chronicle
 {
-
-std::string iso8601UtcFormat(const std::chrono::system_clock::time_point timePoint)
-{
-  return std::format("{:%FT%TZ}", timePoint);
-}
 
 std::string padString(const std::string& input, const uint64_t paddedLength, const char paddingChar)
 {
@@ -36,25 +30,23 @@ bool fileHasSpace(
 {
   if(spaceRequired > maxFileSizeInBytes)
   {
-    throw std::invalid_argument("[chronicle::Channel] Space requested on a file is greater than "
-                                "the maximum allowed size of the file. This is an impossible "
-                                "constraint to satisfy.");
+    common::throwException<std::invalid_argument>(
+        "Space requested on a file is greater than the maximum allowed size of the file. This is "
+        "an impossible constraint to satisfy.");
   }
 
   return (maxFileSizeInBytes - file.tellp()) >= spaceRequired;
 }
 
-std::uint64_t
-computeTotalSizeInBytes(const std::span<const std::span<const std::byte>> dataCollection)
+std::uint64_t computeTotalSizeInBytes(
+    const std::span<const std::span<const std::byte>> dataCollection)
 {
   return std::accumulate(
       dataCollection.begin(),
       dataCollection.end(),
       0ULL,
       [](const std::uint64_t accumulatedSize, const std::span<const std::byte>& data)
-      {
-        return accumulatedSize + data.size_bytes();
-      });
+      { return accumulatedSize + data.size_bytes(); });
 }
 
 template<>
@@ -102,21 +94,11 @@ void ReadWriteUtil<std::span<const std::byte>>::write(
 }
 
 template<>
-std::span<const std::byte>
-ReadWriteUtil<std::span<const std::byte>>::read(const char* ptr, const std::uint64_t size)
+std::span<const std::byte> ReadWriteUtil<std::span<const std::byte>>::read(
+    const char* ptr,
+    const std::uint64_t size)
 {
   return std::as_bytes(std::span(ptr, size));
 }
-
-std::filesystem::path validatePath(std::filesystem::path path)
-{
-  if(not std::filesystem::exists(path))
-  {
-    throw std::invalid_argument("[Logger::utils] Directory " + path.string() + " does not exist.");
-  }
-
-  return path;
-}
-
 
 } // namespace nioc::chronicle

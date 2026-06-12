@@ -6,52 +6,25 @@
 
 #include "streamChannelWriter.hpp"
 #include "utils.hpp"
-#include <boost/uuid/uuid_generators.hpp>
-#include <boost/uuid/uuid_io.hpp>
 #include <nioc/chronicle/writer.hpp>
-#include <spdlog/spdlog.h>
+#include <nioc/common/exception.hpp>
+#include <nioc/common/filesystem.hpp>
+#include <nioc/logger/logger.hpp>
 
 namespace nioc::chronicle
 {
-namespace
-{
-namespace fs = std::filesystem;
-
-fs::path checkAndSetupLogDirectory(fs::path logRoot)
-{
-  logRoot /= (iso8601UtcFormat(std::chrono::system_clock::now())) + "_" +
-             boost::uuids::to_string(boost::uuids::random_generator_pure()());
-
-  if(fs::exists(logRoot))
-  {
-    spdlog::warn(
-        "[Chronicle::Writer] Directory or file {} exists already. Contents will be cleared.",
-        logRoot.string());
-    fs::remove_all(logRoot);
-  }
-
-  if(not fs::create_directories(logRoot))
-  {
-    throw std::runtime_error(
-        "[Chronicle::Writer] Unable to create root directory for chronicle at " + logRoot.string());
-  }
-
-  return logRoot;
-}
-
-} // namespace
 
 Writer::Writer(
-    std::filesystem::path logRoot,
+    std::filesystem::path rootDir,
     const IoMechanism ioMechanism,
     const std::size_t maxFileSizeInBytes):
-    mIoMechanism(ioMechanism),
-    mLogDirectory(checkAndSetupLogDirectory(std::move(logRoot))),
-    mMaxFileSizeInBytes(maxFileSizeInBytes),
-    mLockedSequenceFile(mLogDirectory / kSequenceFileName)
+  mIoMechanism(ioMechanism),
+  mLogDirectory(common::requireEmptyDirectory(std::move(rootDir))),
+  mMaxFileSizeInBytes(maxFileSizeInBytes),
+  mLockedSequenceFile(mLogDirectory / kSequenceFileName)
 {
-  spdlog::info(
-      "[Chronicle::Writer] Writing chronicle to {} with unit file size {}.",
+  logger::info(
+      "Writing chronicle to {} with unit file size {}.",
       mLogDirectory.string(),
       mMaxFileSizeInBytes);
 }
@@ -61,13 +34,11 @@ Writer::~Writer() = default;
 void Writer::write(const ChannelId channelId, const std::span<const std::byte>& data)
 {
   // TODO(ajakhotia): This can be improved to use fewer locks and avoid race conditions.
-  mLockedSequenceFile(
+  mLockedSequenceFile.execute(
       [&](std::ofstream& sequenceFile)
-      {
-        ReadWriteUtil<SequenceEntry>::write(sequenceFile, SequenceEntry{ channelId });
-      });
+      { ReadWriteUtil<SequenceEntry>::write(sequenceFile, SequenceEntry{channelId}); });
 
-  mLockedChannelPtrMap(
+  mLockedChannelPtrMap.execute(
       [&](ChannelPtrMap& channelPtrMap)
       {
         auto& channel = acquireChannel(channelId, channelPtrMap);
@@ -78,18 +49,21 @@ void Writer::write(const ChannelId channelId, const std::span<const std::byte>& 
 void Writer::write(const ChannelId channelId, std::span<const std::span<const std::byte>> data)
 {
   // TODO(ajakhotia): This can be improved to use fewer locks and avoid race conditions.
-  mLockedSequenceFile(
+  mLockedSequenceFile.execute(
       [&](std::ofstream& sequenceFile)
-      {
-        ReadWriteUtil<SequenceEntry>::write(sequenceFile, SequenceEntry{ channelId });
-      });
+      { ReadWriteUtil<SequenceEntry>::write(sequenceFile, SequenceEntry{channelId}); });
 
-  mLockedChannelPtrMap(
+  mLockedChannelPtrMap.execute(
       [&](ChannelPtrMap& channelPtrMap)
       {
         auto& channel = acquireChannel(channelId, channelPtrMap);
         channel.writeFrame(data);
       });
+}
+
+const std::filesystem::path& Writer::path() const noexcept
+{
+  return mLogDirectory;
 }
 
 ChannelWriter& Writer::acquireChannel(const ChannelId channelId, ChannelPtrMap& channelPtrMap)
@@ -102,31 +76,26 @@ ChannelWriter& Writer::acquireChannel(const ChannelId channelId, ChannelPtrMap& 
     {
       case IoMechanism::Stream:
         channelWriter = std::make_unique<StreamChannelWriter>(
-            mLogDirectory / toHexString(channelId.mValue),
+            mLogDirectory / hexString(channelId.mValue),
             mMaxFileSizeInBytes);
         break;
 
       case IoMechanism::Mmap:
-        throw std::invalid_argument(
-            "[Chronicle::Writer] IoMechanism '" + stringFromIoMechanism(IoMechanism::Mmap) +
-            "' is not supported for writing. Use '" + stringFromIoMechanism(IoMechanism::Stream) +
-            "' instead.");
+        common::throwException<std::invalid_argument>(
+            "IoMechanism '{}' is not supported for writing. Use '{}' instead.",
+            stringFromIoMechanism(IoMechanism::Mmap),
+            stringFromIoMechanism(IoMechanism::Stream));
 
       default:
-        throw std::invalid_argument(
-            "[Chronicle::Writer] Unknown IoMechanism with value: " +
-            std::to_string(static_cast<int>(mIoMechanism)));
+        common::throwException<std::invalid_argument>(
+            "Unknown IoMechanism with value: {}",
+            static_cast<int>(mIoMechanism));
     }
 
     channelPtrMap.try_emplace(channelId, std::move(channelWriter));
   }
 
   return *channelPtrMap.at(channelId);
-}
-
-const std::filesystem::path& Writer::path() const noexcept
-{
-  return mLogDirectory;
 }
 
 } // namespace nioc::chronicle

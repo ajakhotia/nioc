@@ -1,7 +1,16 @@
 find_package(GTest REQUIRED)
 include(GoogleTest)
 
-add_executable(commonTest lockTest.cpp typeTraitsTest.cpp cacheManagerTest.cpp)
+add_executable(commonTest
+    exceptionTest.cpp
+    filesystemTest.cpp
+    lockTest.cpp
+    raiiTokenTest.cpp
+    signalCatcherTest.cpp
+    timeTest.cpp
+    typeTraitsTest.cpp
+    utilsTest.cpp)
+
 target_link_libraries(commonTest nioc::common GTest::GTest GTest::Main)
 
 target_compile_options(commonTest PRIVATE

@@ -32,10 +32,13 @@ struct Entry
 class Reader
 {
 public:
-  /// @brief Constructs a Reader.
+  /// @brief Constructs a Reader over the chronicle in @p logRoot.
+  ///
   /// @param logRoot Path to the chronicle directory.
-  /// @param ioMechanism I/O mechanism to use for reading data.
-  /// @throws std::invalid_argument If ioMechanism is not supported for reading.
+  ///
+  /// @param ioMechanism I/O mechanism used to read data.
+  ///
+  /// @throws std::invalid_argument If @p logRoot does not exist or is not a directory.
   explicit Reader(std::filesystem::path logRoot, IoMechanism ioMechanism = IoMechanism::Mmap);
 
   Reader(const Reader&) = delete;
@@ -51,18 +54,19 @@ public:
   /// @brief Reads the next entry.
   /// @return Entry with channel ID and data.
   /// @throws std::runtime_error When end of chronicle is reached.
+  /// @throws std::invalid_argument If the I/O mechanism is not supported for reading.
   Entry read();
 
 private:
   using ChannelReaderMap = std::unordered_map<ChannelId, std::unique_ptr<ChannelReader>>;
 
-  ChannelReader& acquireChannel(ChannelId channelId, ChannelReaderMap& channelReaderMap);
-
   const IoMechanism mIoMechanism;
   const std::filesystem::path mLogRoot;
   const boost::iostreams::mapped_file_source mSequenceFile;
-  std::uint64_t mNextReadIndex{ 0ULL };
+  std::uint64_t mNextReadIndex{0ULL};
   common::Locked<ChannelReaderMap> mLockedChannelReaderMap;
+
+  ChannelReader& acquireChannel(ChannelId channelId, ChannelReaderMap& channelReaderMap);
 };
 
 } // namespace nioc::chronicle

@@ -5,9 +5,10 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include <chrono>
 #include <filesystem>
+#include <format>
 #include <nioc/chronicle/defines.hpp>
+#include <nioc/common/exception.hpp>
 #include <span>
 
 namespace nioc::chronicle
@@ -44,12 +45,6 @@ struct IndexEntry
   std::uint64_t mSize;
 };
 
-/// @brief  Converts a system_clock time_point to date-time string formatted per ISO 8601
-/// @param  timePoint   Time point to be converted.
-/// @return Date-time string.
-std::string iso8601UtcFormat(std::chrono::system_clock::time_point timePoint);
-
-
 /// @brief  Pads the input string such that the output string is paddedLength long. If the size of
 ///         the input is already greater than or equal to the paddedLength, then no padding is
 ///         performed.
@@ -65,14 +60,20 @@ std::string padString(const std::string& input, uint64_t paddedLength, char padd
 /// @return std::string containing the name for the roll.
 std::string buildRollName(std::uint64_t rollId);
 
-/// @brief  Converts an integer to a sting in hexadecimal form (0x...)
+/// Prefix marking a hexadecimal string representation.
+static constexpr auto kHexPrefix = "0x";
+
+/// Numeric base used to parse a hexadecimal string.
+static constexpr auto kHexBase = 16U;
+
+/// @brief  Converts an integer to a string in hexadecimal form (0x...)
 /// @tparam Integer The integer type.
 /// @param  integer Input.
 /// @return A string containing the integer represented in hexadecimal form.
 template<typename Integer>
-std::string toHexString(const Integer integer)
+std::string hexString(const Integer integer)
 {
-  return std::format("0x{:x}", integer);
+  return std::format("{}{:x}", kHexPrefix, integer);
 }
 
 /// @brief  Converts a valid hex string to an integer. The string must start with 0x.
@@ -80,15 +81,13 @@ std::string toHexString(const Integer integer)
 /// @param  hexString   Input hex string
 /// @return Equivalent integer.
 template<typename Integer>
-Integer hexStringToInteger(const std::string& hexString)
+Integer integerFromHex(const std::string& hexString)
 {
-  static constexpr auto kHexPrefix = "0x";
-  static constexpr auto kHexBase = 16U;
   if(not hexString.starts_with(kHexPrefix))
   {
-    throw std::invalid_argument(
-        "[Logger::hexStringToInteger] Provided input does not start " + std::string(kHexPrefix) +
-        " prefix.");
+    common::throwException<std::invalid_argument>(
+        "Provided input does not start with the {} prefix.",
+        kHexPrefix);
   }
 
   return std::stoull(hexString, nullptr, kHexBase);
@@ -99,8 +98,10 @@ Integer hexStringToInteger(const std::string& hexString)
 /// @param  spaceRequired       Space required by the client.
 /// @param  maxFileSizeInBytes  Maximum allowable size of the file.
 /// @return True if the required space is available. False otherwise.
-bool
-fileHasSpace(std::ofstream& file, std::uint64_t spaceRequired, std::uint64_t maxFileSizeInBytes);
+bool fileHasSpace(
+    std::ofstream& file,
+    std::uint64_t spaceRequired,
+    std::uint64_t maxFileSizeInBytes);
 
 
 /// @brief  Compute the sum of the length of each byte span in the collection.
@@ -108,18 +109,19 @@ fileHasSpace(std::ofstream& file, std::uint64_t spaceRequired, std::uint64_t max
 /// @return Total size in bytes.
 std::uint64_t computeTotalSizeInBytes(std::span<const std::span<const std::byte>> dataCollection);
 
-/// @brief  Struct used to provide read/write functionality for a give type.
-/// @tparam ValueType
+/// @brief  Provides read/write helpers for a given type.
+/// @tparam ValueType Type to read or write.
 template<typename ValueType>
 struct ReadWriteUtil
 {
+  /// @brief Writes the raw bytes of @p value to @p stream.
   static void write(std::ostream& stream, ValueType value);
 
+  /// @brief Reads a @p ValueType from the raw bytes at @p ptr.
+  /// @param ptr Start of the bytes to read.
+  /// @param size Number of bytes to read; defaults to `sizeof(ValueType)`.
+  /// @return The reconstructed value.
   static ValueType read(const char* ptr, std::uint64_t size = sizeof(ValueType));
 };
-
-/// @brief  Ensure that the input path exists and returns the same.
-std::filesystem::path validatePath(std::filesystem::path path);
-
 
 } // namespace nioc::chronicle

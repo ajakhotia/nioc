@@ -8,7 +8,10 @@
 #include "traits.hpp"
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+#include <iterator>
+#include <nioc/common/exception.hpp>
 #include <span>
+#include <stdexcept>
 
 namespace nioc::geometry
 {
@@ -46,60 +49,70 @@ public:
 
   using Vector3ConstMap = Eigen::Map<const Vector3>;
 
-  constexpr const Scalar* cData() const noexcept
+  /// @brief Returns a const pointer to the 7 contiguous parameters [qx, qy, qz, qw, px, py, pz].
+  [[nodiscard]] constexpr const Scalar* cData() const noexcept
   {
     return cDerived().cParameters().data();
   }
 
-  constexpr const Scalar* data() const noexcept
+  /// @brief Returns a const pointer to the parameters; const overload, same as @ref cData.
+  [[nodiscard]] constexpr const Scalar* data() const noexcept
   {
     return cData();
   }
 
+  /// @brief Returns a mutable pointer to the parameters.
   constexpr Scalar* data() noexcept
   {
     return derived().parameters().data();
   }
 
-  QuaternionConstMap cOrientation() const noexcept
+  /// @brief Returns a read-only quaternion view of the orientation.
+  [[nodiscard]] QuaternionConstMap cOrientation() const noexcept
   {
     return QuaternionConstMap(cData());
   }
 
-  QuaternionConstMap orientation() const noexcept
+  /// @brief Returns a read-only quaternion view of the orientation; same as @ref cOrientation.
+  [[nodiscard]] QuaternionConstMap orientation() const noexcept
   {
     return cOrientation();
   }
 
+  /// @brief Returns a writable quaternion view of the orientation.
   QuaternionMap orientation() noexcept
   {
     return QuaternionMap(data());
   }
 
-  Vector3ConstMap cPosition() const noexcept
+  /// @brief Returns a read-only vector view of the position.
+  [[nodiscard]] Vector3ConstMap cPosition() const noexcept
   {
-    return Vector3ConstMap(cData() + kNumOrientationParams);
+    return Vector3ConstMap(std::next(cData(), kNumOrientationParams));
   }
 
-  Vector3ConstMap position() const noexcept
+  /// @brief Returns a read-only vector view of the position; same as @ref cPosition.
+  [[nodiscard]] Vector3ConstMap position() const noexcept
   {
     return cPosition();
   }
 
+  /// @brief Returns a writable vector view of the position.
   Vector3Map position() noexcept
   {
-    return Vector3Map(data() + kNumOrientationParams);
+    return Vector3Map(std::next(data(), kNumOrientationParams));
   }
 
+  /// @brief Returns a copy of this pose with its parameters converted to another scalar type.
+  /// @tparam ResultScalar Floating-point type of the returned pose.
   template<typename ResultScalar>
-  Pose<ResultScalar> cast() const noexcept
+  [[nodiscard]] Pose<ResultScalar> cast() const
   {
     return Pose<ResultScalar>(std::span<const Scalar>(cData(), kNumParams));
   }
 
-  /// @brief Computes inverse pose.
-  /// @return Inverted pose.
-  Pose<Scalar> inverse() const
+  /// @brief Returns the inverse pose.
+  [[nodiscard]] Pose<Scalar> inverse() const
   {
     return Pose<Scalar>(derived()).invert();
   }
@@ -108,26 +121,32 @@ public:
   /// @return Reference to this.
   Derived& invert()
   {
-    const auto inverseOrientation = orientation().inverse();
-    const auto negativeInversePosition = inverseOrientation * position();
-    *this = Pose<Scalar>(inverseOrientation, Scalar(-1) * negativeInversePosition);
+    const Quaternion inverseOrientation = orientation().inverse();
+    const Vector3 invertedPosition = Scalar(-1) * (inverseOrientation * position());
+    orientation() = inverseOrientation;
+    position() = invertedPosition;
     return derived();
   }
 
-  /// @brief Creates identity pose.
-  /// @return Identity transformation.
+  /// @brief Returns the identity pose.
   static constexpr Pose<Scalar> identity()
   {
-    return Pose<Scalar>({ 0, 0, 0, 1, 0, 0, 0 });
+    return Pose<Scalar>({0, 0, 0, 1, 0, 0, 0});
   }
 
 protected:
+private:
   Se3() noexcept = default;
 
+protected:
+private:
   Se3(const Se3&) noexcept = default;
 
+protected:
+private:
   Se3(Se3&&) noexcept = default;
 
+protected:
   ~Se3() noexcept = default;
 
   Se3& operator=(const Se3&) noexcept = default;
@@ -135,20 +154,24 @@ protected:
   Se3& operator=(Se3&&) noexcept = default;
 
 private:
-  inline constexpr const Derived& cDerived() const noexcept
+  [[nodiscard]] constexpr const Derived& cDerived() const noexcept
   {
     return static_cast<const Derived&>(*this);
   }
 
-  inline constexpr const Derived& derived() const noexcept
+  [[nodiscard]] constexpr const Derived& derived() const noexcept
   {
     return cDerived();
   }
 
-  inline constexpr Derived& derived() noexcept
+  constexpr Derived& derived() noexcept
   {
     return static_cast<Derived&>(*this);
   }
+
+  friend Derived;
+  friend Derived;
+  friend Derived;
 };
 
 /// @brief 3D pose with owned storage.
@@ -212,10 +235,11 @@ public:
   {
     if(span.size() != kNumParams)
     {
-      throw std::invalid_argument(
-          "[geometry::Pose] Provided span is of insufficient size to initialize (" +
-          std::to_string(span.size()) + ") the underlying parameters. Required size is " +
-          std::to_string(kNumParams) + ".");
+      common::throwException<std::invalid_argument>(
+          "Provided span is of insufficient size to initialize ({}) the underlying parameters. "
+          "Required size is {}.",
+          span.size(),
+          kNumParams);
     }
 
     std::copy(span.begin(), span.end(), mParameters.begin());
@@ -232,16 +256,19 @@ public:
 
   Pose& operator=(Pose&&) noexcept = default;
 
-  constexpr const Parameters& cParameters() const noexcept
+  /// @brief Returns the underlying 7-element parameter array [qx, qy, qz, qw, px, py, pz].
+  [[nodiscard]] constexpr const Parameters& cParameters() const noexcept
   {
     return mParameters;
   }
 
-  constexpr const Parameters& parameters() const noexcept
+  /// @brief Returns the parameter array; const overload, same as @ref cParameters.
+  [[nodiscard]] constexpr const Parameters& parameters() const noexcept
   {
     return cParameters();
   }
 
+  /// @brief Returns the mutable parameter array.
   constexpr Parameters& parameters() noexcept
   {
     return mParameters;
@@ -258,12 +285,12 @@ private:
 template<typename Derived>
 std::ostream& operator<<(std::ostream& stream, const Se3<Derived>& se3)
 {
-  static const auto ioFormat =
+  static const auto kIoFormat =
       Eigen::IOFormat(Eigen::StreamPrecision, 0, ", ", "\n", "", "", "[", "]");
 
 
-  stream << "{ Orientation:" << se3.cOrientation().coeffs().transpose().format(ioFormat)
-         << ", Position:" << se3.cPosition().transpose().format(ioFormat) << " }";
+  stream << "{ Orientation:" << se3.cOrientation().coeffs().transpose().format(kIoFormat)
+         << ", Position:" << se3.cPosition().transpose().format(kIoFormat) << " }";
 
   return stream;
 }
@@ -279,8 +306,9 @@ Pose<typename LhsDerived::Scalar> operator*(const Se3<LhsDerived>& lhs, const Se
       std::is_same_v<typename LhsDerived::Scalar, typename RhsDerived::Scalar>,
       "Requested composition of Pose<> objects that differ in the scalar representation.");
 
-  return { lhs.cOrientation() * rhs.cOrientation(),
-           lhs.cPosition() + lhs.cOrientation() * rhs.cPosition() };
+  return {
+      lhs.cOrientation() * rhs.cOrientation(),
+      lhs.cPosition() + lhs.cOrientation() * rhs.cPosition()};
 }
 
 } // namespace nioc::geometry
@@ -292,7 +320,7 @@ Pose<typename LhsDerived::Scalar> operator*(const Se3<LhsDerived>& lhs, const Se
 /// @tparam Scalar_ Floating-point type.
 template<typename Scalar_>
 class Eigen::Map<nioc::geometry::Pose<Scalar_>>:
-    public nioc::geometry::Se3<Eigen::Map<nioc::geometry::Pose<Scalar_>>>
+  public nioc::geometry::Se3<Eigen::Map<nioc::geometry::Pose<Scalar_>>>
 {
 public:
   using Base = nioc::geometry::Se3<Eigen::Map<nioc::geometry::Pose<Scalar_>>>;
@@ -301,17 +329,17 @@ public:
 
   using Scalar = typename Base::Scalar;
 
+  /// @brief Maps an existing writable 7-element parameter buffer.
+  /// @param parameters View over 7 values [qx, qy, qz, qw, px, py, pz].
+  /// @throws std::invalid_argument if the view size is not 7.
   explicit Map(const std::span<Scalar> parameters): mParameters(parameters)
   {
     if(parameters.size() != kNumParams)
     {
-      throw std::invalid_argument(
-          "[Eigen::Map<geometry::Pose>] Provided span is "
-          "of incorrect size(" +
-          std::to_string(parameters.size()) +
-          "). Required "
-          "size is " +
-          std::to_string(kNumParams) + ".");
+      nioc::common::throwException<std::invalid_argument>(
+          "Provided span is of incorrect size ({}). Required size is {}.",
+          parameters.size(),
+          kNumParams);
     }
     Base::orientation().normalize();
   }
@@ -326,21 +354,25 @@ public:
 
   Map& operator=(Map&&) noexcept = default;
 
+  /// @brief Returns a read-only view of the mapped 7 parameters.
   constexpr std::span<const Scalar> cParameters() const noexcept
   {
     return mParameters;
   }
 
+  /// @brief Returns a read-only view of the mapped parameters; same as @ref cParameters.
   constexpr std::span<const Scalar> parameters() const noexcept
   {
     return cParameters();
   }
 
+  /// @brief Returns a writable view of the mapped parameters.
   constexpr std::span<Scalar> parameters() noexcept
   {
     return mParameters;
   }
 
+  /// @brief Copies the mapped parameters into an owned @ref Pose.
   explicit operator nioc::geometry::Pose<Scalar>() const
   {
     return nioc::geometry::Pose<Scalar>(cParameters());
@@ -357,7 +389,7 @@ private:
 /// @tparam Scalar_ Floating-point type.
 template<typename Scalar_>
 class Eigen::Map<const nioc::geometry::Pose<Scalar_>>:
-    public nioc::geometry::Se3<Eigen::Map<const nioc::geometry::Pose<Scalar_>>>
+  public nioc::geometry::Se3<Eigen::Map<const nioc::geometry::Pose<Scalar_>>>
 {
 public:
   using Base = nioc::geometry::Se3<Eigen::Map<const nioc::geometry::Pose<Scalar_>>>;
@@ -366,24 +398,24 @@ public:
 
   using Scalar = typename Base::Scalar;
 
+  /// @brief Maps an existing read-only 7-element parameter buffer.
+  /// @param parameters View over 7 values [qx, qy, qz, qw, px, py, pz].
+  /// @throws std::invalid_argument if the view size is not 7, or the quaternion part is not unit
+  /// norm.
   explicit Map(const std::span<const Scalar> parameters): mParameters(parameters)
   {
     if(parameters.size() != kNumParams)
     {
-      throw std::invalid_argument(
-          "[Eigen::Map<const geometry::Pose>] Provided span is "
-          "of incorrect size(" +
-          std::to_string(parameters.size()) +
-          "). Required "
-          "size is " +
-          std::to_string(kNumParams) + ".");
+      nioc::common::throwException<std::invalid_argument>(
+          "Provided span is of incorrect size ({}). Required size is {}.",
+          parameters.size(),
+          kNumParams);
     }
 
     if(std::abs(Base::cOrientation().norm() - Scalar(1)) > std::numeric_limits<Scalar>::epsilon())
     {
-      throw std::invalid_argument(
-          "[Eigen::Map<const geometry::Pose>] The quaternion "
-          "portion of the passed parameters is not unit norm. Cannot proceed.");
+      nioc::common::throwException<std::invalid_argument>(
+          "The quaternion portion of the passed parameters is not unit norm. Cannot proceed.");
     }
   }
 
@@ -397,16 +429,19 @@ public:
 
   Map& operator=(Map&&) noexcept = default;
 
+  /// @brief Returns a read-only view of the mapped 7 parameters.
   constexpr std::span<const Scalar> cParameters() const noexcept
   {
     return mParameters;
   }
 
+  /// @brief Returns a read-only view of the mapped parameters; same as @ref cParameters.
   constexpr std::span<const Scalar> parameters() const noexcept
   {
     return cParameters();
   }
 
+  /// @brief Copies the mapped parameters into an owned @ref Pose.
   explicit operator nioc::geometry::Pose<Scalar>() const
   {
     return nioc::geometry::Pose<Scalar>(cParameters());

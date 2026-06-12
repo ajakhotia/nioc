@@ -18,15 +18,19 @@ namespace nioc::chronicle
 namespace
 {
 
-const auto kTestChannelDirectoryPath = fs::path("/tmp/testChannel0x558347");
+fs::path testChannelDirectoryPath()
+{
+  return fs::path{"/tmp/testChannel0x558347"};
+}
+
 const auto kTestChannelMaxFileSize = 50ULL;
 const auto kGeneratedDataSize = 11ULL;
 constexpr auto kNumFramesToWrite = 256UL;
 
 std::vector<char> generateTestDataFrame()
 {
-  std::vector<char> data(kGeneratedDataSize);
-  std::iota(data.begin(), data.end(), 0);
+  auto data = std::vector<char>(kGeneratedDataSize);
+  std::ranges::iota(data, 0);
   return data;
 }
 
@@ -39,14 +43,15 @@ TEST(MmapChannelReader, construction)
 
 TEST(MmapChannelReader, read)
 {
-  fs::remove_all(kTestChannelDirectoryPath);
+  const auto channelDirectoryPath = testChannelDirectoryPath();
+  fs::remove_all(channelDirectoryPath);
 
   const auto data = generateTestDataFrame();
   const auto dataAsBytes = std::as_bytes(std::span(data));
 
   // Build a channel on disk.
   {
-    auto channel = StreamChannelWriter(kTestChannelDirectoryPath, kTestChannelMaxFileSize);
+    auto channel = StreamChannelWriter(channelDirectoryPath, kTestChannelMaxFileSize);
     for(auto ii = 0ULL; ii < kNumFramesToWrite; ++ii)
     {
       channel.writeFrame(dataAsBytes);
@@ -55,7 +60,7 @@ TEST(MmapChannelReader, read)
 
   // Read the built channel
   {
-    auto channelReader = MmapChannelReader(kTestChannelDirectoryPath);
+    auto channelReader = MmapChannelReader(channelDirectoryPath);
     auto numFramesRead = 0ULL;
     try
     {
@@ -75,19 +80,19 @@ TEST(MmapChannelReader, read)
     }
     catch(const std::runtime_error& error)
     {
-      if(error.what() == std::string("Reached end of index file at ") +
-                             (kTestChannelDirectoryPath / "index").string())
+      if(std::string{error.what()}.ends_with(
+             "Reached end of index file at " + (channelDirectoryPath / "index").string()))
       {
         EXPECT_EQ(numFramesRead, kNumFramesToWrite);
       }
       else
       {
-        throw error;
+        throw;
       }
     }
   }
 
-  fs::remove_all(kTestChannelDirectoryPath);
+  fs::remove_all(channelDirectoryPath);
 }
 
 } // namespace nioc::chronicle

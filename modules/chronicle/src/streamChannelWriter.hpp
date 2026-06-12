@@ -13,13 +13,27 @@
 namespace nioc::chronicle
 {
 
+/// @brief Stream-based @ref ChannelWriter: appends frames to a channel, rolling data files by size.
+///
+/// Writes one channel directory. Each frame is appended to the active data roll and indexed; when a
+/// frame would push the active roll past its size cap, the writer starts a new roll. This is the
+/// write counterpart to @ref MmapChannelReader.
 class StreamChannelWriter final: public ChannelWriter
 {
 public:
-  static constexpr auto kDefaultMaxFileSizeInBytes = 128ULL * 1024ULL * 1024ULL;
-
   using ConstByteSpan = std::span<const std::byte>;
 
+  /// @brief Default cap on the size of a single data roll (128 MiB).
+  static constexpr auto kDefaultMaxFileSizeInBytes = 128ULL * 1024ULL * 1024ULL;
+
+  /// @brief Creates the channel directory and its index file.
+  ///
+  /// @param logRoot Path to the channel directory to create. Must not exist yet.
+  ///
+  /// @param maxFileSizeInBytes Size cap that triggers a roll to a new data file.
+  ///
+  /// @throws std::logic_error if @p logRoot already exists.
+  /// @throws std::runtime_error if the directory cannot be created.
   explicit StreamChannelWriter(
       std::filesystem::path logRoot,
       std::uint64_t maxFileSizeInBytes = kDefaultMaxFileSizeInBytes);

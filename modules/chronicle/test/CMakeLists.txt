@@ -7,8 +7,8 @@ add_executable(chronicleTest
     boostMMapExampleTest.cpp
     streamChannelWriterTest.cpp
     mmapChannelReaderTest.cpp
-    loggerTest.cpp
-    logReaderTest.cpp
+    writerTest.cpp
+    readerTest.cpp
     utilsTest.cpp)
 
 target_include_directories(chronicleTest PRIVATE ../src)

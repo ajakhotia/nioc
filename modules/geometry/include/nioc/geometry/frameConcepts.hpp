@@ -25,9 +25,20 @@ public:
       common::isSpecialization<ParentFrame, StaticFrame>,
       "Parent frame is not a template specialization of StaticFrame<> class.");
 
+  ParentConceptTmpl() = default;
+
+  ParentConceptTmpl(const ParentConceptTmpl&) = default;
+
+  ParentConceptTmpl(ParentConceptTmpl&&) noexcept = default;
+
+  ParentConceptTmpl& operator=(const ParentConceptTmpl&) = default;
+
+  ParentConceptTmpl& operator=(ParentConceptTmpl&&) noexcept = default;
+
   virtual ~ParentConceptTmpl() = default;
 
-  [[nodiscard]] decltype(auto) parentFrameAsTuple() const noexcept
+  /// @brief Returns the parent frame as a tuple — empty, since a static frame carries no value.
+  [[nodiscard]] constexpr decltype(auto) parentFrameAsTuple() const noexcept
   {
     return std::make_tuple();
   }
@@ -48,9 +59,20 @@ public:
       common::isSpecialization<ChildFrame, StaticFrame>,
       "Child frame is not a template specialization of StaticFrame<> class.");
 
+  ChildConceptTmpl() = default;
+
+  ChildConceptTmpl(const ChildConceptTmpl&) = default;
+
+  ChildConceptTmpl(ChildConceptTmpl&&) noexcept = default;
+
+  ChildConceptTmpl& operator=(const ChildConceptTmpl&) = default;
+
+  ChildConceptTmpl& operator=(ChildConceptTmpl&&) noexcept = default;
+
   virtual ~ChildConceptTmpl() = default;
 
-  [[nodiscard]] decltype(auto) childFrameAsTuple() const noexcept
+  /// @brief Returns the child frame as a tuple — empty, since a static frame carries no value.
+  [[nodiscard]] constexpr decltype(auto) childFrameAsTuple() const noexcept
   {
     return std::make_tuple();
   }
@@ -63,20 +85,32 @@ class ParentConceptTmpl<DynamicFrame>
 public:
   using ParentFrame = DynamicFrame;
 
+  /// @brief Stores the runtime parent frame.
+  /// @param parentFrameArgs Identifier the parent @ref DynamicFrame is built from.
   template<typename ParentFrameArgs>
   explicit ParentConceptTmpl(ParentFrameArgs parentFrameArgs) noexcept:
-      mParentFrame(std::move(parentFrameArgs))
+    mParentFrame(std::move(parentFrameArgs))
   {
   }
 
+  ParentConceptTmpl(const ParentConceptTmpl&) = default;
+
+  ParentConceptTmpl(ParentConceptTmpl&&) noexcept = default;
+
+  ParentConceptTmpl& operator=(const ParentConceptTmpl&) = default;
+
+  ParentConceptTmpl& operator=(ParentConceptTmpl&&) noexcept = default;
+
   virtual ~ParentConceptTmpl() = default;
 
-  [[nodiscard]] const ParentFrame& parentFrame() const noexcept
+  /// @brief Returns the stored parent frame.
+  [[nodiscard]] constexpr const ParentFrame& parentFrame() const noexcept
   {
     return mParentFrame;
   }
 
-  [[nodiscard]] decltype(auto) parentFrameAsTuple() const noexcept
+  /// @brief Returns the parent frame as a single-element tuple holding a reference to it.
+  [[nodiscard]] constexpr decltype(auto) parentFrameAsTuple() const noexcept
   {
     return std::make_tuple(std::cref(mParentFrame));
   }
@@ -92,20 +126,32 @@ class ChildConceptTmpl<DynamicFrame>
 public:
   using ChildFrame = DynamicFrame;
 
+  /// @brief Stores the runtime child frame.
+  /// @param childFrameArgs Identifier the child @ref DynamicFrame is built from.
   template<typename ChildFrameArgs>
   explicit ChildConceptTmpl(ChildFrameArgs childFrameArgs) noexcept:
-      mChildFrame(std::move(childFrameArgs))
+    mChildFrame(std::move(childFrameArgs))
   {
   }
 
+  ChildConceptTmpl(const ChildConceptTmpl&) = default;
+
+  ChildConceptTmpl(ChildConceptTmpl&&) noexcept = default;
+
+  ChildConceptTmpl& operator=(const ChildConceptTmpl&) = default;
+
+  ChildConceptTmpl& operator=(ChildConceptTmpl&&) noexcept = default;
+
   virtual ~ChildConceptTmpl() = default;
 
-  [[nodiscard]] const ChildFrame& childFrame() const noexcept
+  /// @brief Returns the stored child frame.
+  [[nodiscard]] constexpr const ChildFrame& childFrame() const noexcept
   {
     return mChildFrame;
   }
 
-  [[nodiscard]] decltype(auto) childFrameAsTuple() const noexcept
+  /// @brief Returns the child frame as a single-element tuple holding a reference to it.
+  [[nodiscard]] constexpr decltype(auto) childFrameAsTuple() const noexcept
   {
     return std::make_tuple(std::cref(mChildFrame));
   }

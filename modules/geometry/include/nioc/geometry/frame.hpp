@@ -12,11 +12,12 @@ namespace nioc::geometry
 {
 /// @brief A reference frame with compile-time identity.
 ///
-/// Use a type to identify the frame. Example:
-/// ```
+/// A type names the frame.
+///
+/// @code
 /// class World;
-/// using WorldFrame = StaticFrame<World>;
-/// ```
+/// using WorldFrame = nioc::geometry::StaticFrame<World>;
+/// @endcode
 ///
 /// @tparam FrameId_ Type that identifies this frame.
 template<typename FrameId_>
@@ -29,10 +30,19 @@ public:
       not(common::isSpecialization<FrameId, StaticFrame>),
       "FrameId cannot be a StaticFrame specialization.");
 
+  StaticFrame() = delete;
+
+  StaticFrame(const StaticFrame&) = delete;
+
+  StaticFrame(StaticFrame&&) = delete;
+
+  StaticFrame& operator=(const StaticFrame&) = delete;
+
+  StaticFrame& operator=(StaticFrame&&) = delete;
+
   ~StaticFrame() = delete;
 
-  /// @brief Gets the frame name.
-  /// @return Name of the frame.
+  /// @brief Returns the frame's name.
   static constexpr const std::string_view& name() noexcept
   {
     return kFrameName;
@@ -60,8 +70,7 @@ public:
 
   DynamicFrame& operator=(DynamicFrame&&) noexcept = default;
 
-  /// @brief Gets the frame name.
-  /// @return Name of the frame.
+  /// @brief Returns the frame's name.
   [[nodiscard]] const std::string& name() const noexcept;
 
 private:

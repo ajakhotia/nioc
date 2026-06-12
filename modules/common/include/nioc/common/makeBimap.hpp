@@ -14,14 +14,13 @@ namespace nioc::common
 
 /// @brief Creates a bidirectional map from an initializer list of pairs.
 ///
-/// Utility function that creates boost::bimap instances with automatic type deduction.
-/// Useful for enum-to-string conversions and other bidirectional mappings.
+/// Deduces the key and value types from the pairs. Handy for enum-to-string tables and other
+/// two-way lookups.
 ///
-/// @tparam PairType Type of pair (deduced from initializer list).
-/// @param list Initializer list of pairs to insert into the bimap.
-/// @return Populated boost::bimap instance.
+/// @tparam PairType Pair type, deduced from the initializer list.
+/// @param list Pairs to insert into the bimap.
+/// @return Populated boost::bimap.
 ///
-/// Example:
 /// @code
 /// using namespace std::string_literals;
 /// enum class Color { Red, Green, Blue };
@@ -38,10 +37,7 @@ auto makeBimap(std::initializer_list<PairType> list)
   std::for_each(
       list.begin(),
       list.end(),
-      [&](const auto& item)
-      {
-        result.insert({ item.first, item.second });
-      });
+      [&](const auto& item) { result.insert({item.first, item.second}); });
   return result;
 }
 
