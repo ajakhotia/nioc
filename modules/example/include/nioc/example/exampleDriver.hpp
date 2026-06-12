@@ -6,6 +6,7 @@
 #pragma once
 
 #include <cstddef>
+#include <nioc/example/config/exampleDriverConfig.capnp.h>
 #include <nioc/terminus/driver.hpp>
 #include <nioc/terminus/port.hpp>
 #include <string>
@@ -21,14 +22,13 @@ namespace nioc::example
 class ExampleDriver final: public terminus::Driver
 {
 public:
-  /// @brief Constructs the driver with its output topics and round count.
+  /// @brief Configures the driver from its config block.
   ///
   /// @param port Hub the messages are published onto; must outlive this driver.
   ///
-  /// @param sample1Topic Topic the `Sample1` messages are published on.
-  ///
-  /// @param sample3Topic Topic the `Sample3` messages are published on.
-  ExampleDriver(terminus::Port& port, std::string sample1Topic, std::string sample3Topic);
+  /// @param config View of this driver's config block (see exampleDriverConfig.capnp): the output
+  /// topics, plus a `driver` subsection forwarded to the @ref terminus::Driver base.
+  ExampleDriver(terminus::Port& port, ExampleDriverConfig::Reader config);
 
 private:
   std::string mSample1Topic;

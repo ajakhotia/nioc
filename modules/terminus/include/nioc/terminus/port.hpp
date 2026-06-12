@@ -6,9 +6,12 @@
 #pragma once
 
 #include "asyncChronicleWriter.hpp"
+#include "configStore.hpp"
 #include "consignment.hpp"
+#include "manifest.hpp"
 #include "msg.hpp"
 #include "msgBase.hpp"
+#include "runContext.hpp"
 #include <atomic>
 #include <boost/program_options.hpp>
 #include <chrono>
@@ -17,7 +20,7 @@
 #include <memory>
 #include <nioc/common/locked.hpp>
 #include <nioc/common/typeTraits.hpp>
-#include <nlohmann/json.hpp>
+#include <nioc/concurrent/runner.hpp>
 #include <spdlog/sinks/sink.h>
 #include <stop_token>
 #include <string>
@@ -27,11 +30,6 @@
 #include <utility>
 #include <vector>
 
-namespace nioc::concurrent
-{
-class Runner;
-} // namespace nioc::concurrent
-
 namespace nioc::terminus
 {
 
@@ -40,10 +38,12 @@ class Driver;
 
 /// @brief Central data hub for a nioc binary.
 ///
-/// One Port instance owns the on-disk recording for one run of a nioc binary. It creates the
-/// recording directory, captures the launch command, loads and merges the JSON configuration,
-/// and adds a file sink to the nioc default logger so the run's log output is also written into the
-/// recording. It opens the chronicle writer that downstream code uses to record time-series data.
+/// One Port instance owns the on-disk recording for one run of a nioc binary. It holds the run's
+/// @ref Manifest, which records itself into the recording (`manifest.json` and `config.json`) and
+/// is exposed via @ref runContext and @ref config. The Port creates the recording directory,
+/// tracks the recording's resource copies (`resources.json`, rewritten at teardown), adds a file
+/// sink to the nioc default logger so the run's log output is also written into the recording,
+/// and opens the chronicle writer that downstream code uses to record time-series data.
 ///
 /// The Port also owns the run's routine graph: the @ref Setup callback passed at construction
 /// builds the Drivers and Components bound to this Port, launches them on Runners, and hands all
@@ -69,13 +69,16 @@ public:
   /// destroys them at destruction in dependency order (drivers, components, runners).
   using Setup = std::function<void(Port&, Drivers&, Components&, Runners&)>;
 
-  /// @brief Constructs a Port from a parsed command line.
+  /// @brief Constructs a Port from a run's manifest and creates a fresh recording directory.
   ///
-  /// Reads Port's own options and the `"commandLine"` entry (see @ref programOptions and
-  /// @ref parseCommandLine) out of @p variableMap.
+  /// The recording directory is named `<iso8601>_<uuid>` and lives directly under the context's
+  /// log root, which is created if it does not exist. The run's log output is also written to
+  /// `console.log` inside it; the manifest records itself (`manifest.json`, `config.json`); each
+  /// listed resource is copied in and mapped in `resources.json`; and, when the context asks for
+  /// it, chronicle data lands in `chronicle/`.
   ///
-  /// @param variableMap Parsed options; must come from @ref parseCommandLine, which adds the
-  /// `"commandLine"` entry this constructor reads.
+  /// @param manifest The run's context and configuration (see @ref Manifest); the Port takes
+  /// ownership.
   ///
   /// @param setup Builds the run's routine graph (see @ref Setup); invoked once the recording is
   /// set up.
@@ -83,46 +86,8 @@ public:
   /// @throws std::invalid_argument If a listed resource is missing, not a regular file, or
   /// collides.
   ///
-  /// @throws std::runtime_error If a config file cannot be opened.
-  ///
-  /// @throws nlohmann::json::parse_error If a config file contains malformed JSON.
-  explicit Port(const boost::program_options::variables_map& variableMap, const Setup& setup);
-
-  /// @brief Constructs a Port and creates a fresh recording directory.
-  ///
-  /// The recording directory is named `<iso8601>_<uuid>` and lives directly under @p logRoot,
-  /// which is created if it does not exist. The run's log output is also written to `console.log`
-  /// inside it; the merged configuration is written to `config.json`; each resource is copied in;
-  /// and, when @p writeChronicle is true, chronicle data lands in `chronicle/`.
-  ///
-  /// @param logRoot Directory under which the fresh recording is created. Created if missing.
-  ///
-  /// @param configPaths JSON config files merged left-to-right; later entries override earlier
-  /// ones.
-  ///
-  /// @param resourcePaths Files copied into the recording as logged resources (see @ref
-  /// addResource).
-  ///
-  /// @param writeChronicle When true, record the chronicle time-series data stream under
-  /// `chronicle/`.
-  ///
-  /// @param commandLine The verbatim launch command, recorded in `metadata.json`.
-  ///
-  /// @param setup Builds the run's routine graph (see @ref Setup); invoked once the recording is
-  /// set up.
-  ///
-  /// @throws std::invalid_argument If a resource is missing, not a regular file, or collides.
-  ///
-  /// @throws std::runtime_error If a config file cannot be opened.
-  ///
-  /// @throws nlohmann::json::parse_error If a config file contains malformed JSON.
-  explicit Port(
-      const std::filesystem::path& logRoot,
-      const std::vector<std::filesystem::path>& configPaths,
-      const std::vector<std::filesystem::path>& resourcePaths,
-      bool writeChronicle,
-      const std::string& commandLine,
-      const Setup& setup);
+  /// @throws std::runtime_error If the recording directory cannot be populated.
+  explicit Port(Manifest manifest, const Setup& setup);
 
   Port(const Port&) = delete;
 
@@ -137,8 +102,25 @@ public:
   /// @brief Returns the working directory that holds this run's recording.
   [[nodiscard]] const std::filesystem::path& workingDir() const noexcept;
 
-  /// @brief Returns the merged JSON configuration.
-  [[nodiscard]] const nlohmann::json& config() const noexcept;
+  /// @brief Returns this run's context: its mode, input log, and recording settings.
+  ///
+  /// Routines receive a Port at construction, so cross-cutting context — say, buffering decisions
+  /// that depend on @ref RunContext::playback — flows through here rather than through their
+  /// config blocks.
+  [[nodiscard]] const RunContext& runContext() const noexcept;
+
+  /// @brief Returns a typed read-only view of the run's configuration.
+  ///
+  /// The returned reader and its sub-readers stay valid for the Port's lifetime.
+  ///
+  /// @tparam Schema Compiled type of the root schema the Port's manifest was built against.
+  ///
+  /// @throws kj::Exception If @p Schema is not that root schema.
+  template<typename Schema>
+  [[nodiscard]] typename Schema::Reader config() const
+  {
+    return mManifest.mConfigStore.get<Schema>();
+  }
 
   /// @brief Adds a supporting file to the recording.
   ///
@@ -249,9 +231,9 @@ private:
   using SubscriptionMap = std::unordered_map<ChannelId, SubscriptionList>;
   using ChannelIdSet = std::unordered_set<ChannelId>;
 
+  const Manifest mManifest;
   const std::filesystem::path mWorkingDir;
   const std::shared_ptr<spdlog::sinks::sink> mConsoleLogSink;
-  const nlohmann::json mConfig;
 
   common::Locked<ResourceMap> mLockedResourceMap;
   common::Locked<SubscriptionMap> mLockedSubscriptionMap;

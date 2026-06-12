@@ -4,6 +4,8 @@ include(GoogleTest)
 add_executable(terminusTest
   testComponent.cpp
   componentTest.cpp
+  configStoreTest.cpp
+  manifestTest.cpp
   portTest.cpp)
 
 target_link_libraries(terminusTest
@@ -12,7 +14,8 @@ target_link_libraries(terminusTest
   nioc::chronicle
   nioc::logger
   nioc::terminus
-  nioc::terminusIdl)
+  nioc::terminusIdl
+  nlohmann_json::nlohmann_json)
 
 # Stage the committed test fixtures (config and resource files) next to the binary so portTest
 # finds them via its ctest working directory, independent of the source tree.

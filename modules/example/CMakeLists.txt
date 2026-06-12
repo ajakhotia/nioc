@@ -21,6 +21,30 @@ capnproto_generate_library(
     "")
 
 
+capnproto_generate_library(
+  TARGET
+    exampleConfig
+  NAMESPACE
+    nioc::
+  EXPORT
+    niocTargets
+  SCHEMA_FILES
+    include/nioc/example/config/exampleComponent1Config.capnp
+    include/nioc/example/config/exampleComponent2Config.capnp
+    include/nioc/example/config/exampleDriverConfig.capnp
+    include/nioc/example/config/exampleMainConfig.capnp
+  LINK_LIBRARIES
+    nioc::terminusConfig
+  COMPILE_FEATURES
+    PUBLIC cxx_std_23
+  COMPILE_OPTIONS
+    PRIVATE $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
+    PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
+    PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
+  COMPILE_DEFINITIONS
+    "")
+
+
 add_exported_library(
   TARGET
     example
@@ -40,6 +64,7 @@ add_exported_library(
     ${CMAKE_CURRENT_SOURCE_DIR}/include
   LINK_LIBRARIES
     PUBLIC nioc::terminus
+    PUBLIC nioc::exampleConfig
     PUBLIC nioc::exampleIdl
     PRIVATE nioc::logger
   COMPILE_FEATURES
@@ -79,3 +104,6 @@ if(CLANG_TIDY)
   set_target_properties(example PROPERTIES CXX_CLANG_TIDY ${CLANG_TIDY})
   set_target_properties(exampleMain PROPERTIES CXX_CLANG_TIDY ${CLANG_TIDY})
 endif()
+
+
+install(DIRECTORY config DESTINATION .)

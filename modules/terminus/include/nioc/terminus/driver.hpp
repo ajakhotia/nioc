@@ -8,6 +8,7 @@
 #include "msg.hpp"
 #include "port.hpp"
 #include <nioc/concurrent/routine.hpp>
+#include <nioc/terminus/config/driverConfig.capnp.h>
 #include <stop_token>
 #include <string>
 #include <utility>
@@ -38,6 +39,21 @@ protected:
   /// @param port Hub the driver publishes onto; must outlive this driver.
   /// @param name Human-readable identity for this driver (see @ref Routine::name).
   Driver(Port& port, std::string name);
+
+  /// @brief Configures the driver base from its config block.
+  ///
+  /// Reads the routine's name (see @ref Routine::name; conventionally matching the tag of the
+  /// subclass's config block) out of @p config. By convention a subclass forwards the `driver`
+  /// subsection of its own config block here, keeping the base's settings out of the subclass's
+  /// namespace.
+  ///
+  /// @param port Hub the driver publishes onto; must outlive this driver.
+  ///
+  /// @param config View of the driver's config block (see driverConfig.capnp).
+  ///
+  /// @throws std::invalid_argument If the name is empty: it is instance-specific, so the config
+  /// data must provide it.
+  Driver(Port& port, DriverConfig::Reader config);
 
   /// @brief Returns the token tripped when the bound Port is asked to shut down.
   ///

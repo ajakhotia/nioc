@@ -6,7 +6,7 @@
 #pragma once
 
 #include <atomic>
-#include <cstddef>
+#include <nioc/example/config/exampleComponent2Config.capnp.h>
 #include <nioc/example/idl/sample1.capnp.h>
 #include <nioc/example/idl/sample2.capnp.h>
 #include <nioc/example/idl/sample3.capnp.h>
@@ -26,27 +26,14 @@ namespace nioc::example
 class ExampleComponent2 final: public terminus::Component
 {
 public:
-  /// @brief Subscribes to all three input topics.
+  /// @brief Configures the component from its config block.
   ///
   /// @param port Hub the component subscribes to; must outlive this component.
   ///
-  /// @param sample1Topic Topic the `Sample1` messages are read from.
-  ///
-  /// @param sample2Topic Topic the `Sample2` messages are read from.
-  ///
-  /// @param sample3Topic Topic the `Sample3` messages are read from.
-  ///
-  /// @param inboxCapacity Maximum number of undelivered messages held at once for a bounded
-  /// @p bufferMode; ignored when unbounded.
-  ///
-  /// @param bufferMode Storage discipline of the inbox (see @ref concurrent::BufferMode).
-  ExampleComponent2(
-      terminus::Port& port,
-      std::string sample1Topic,
-      std::string sample2Topic,
-      std::string sample3Topic,
-      std::size_t inboxCapacity,
-      concurrent::BufferMode bufferMode);
+  /// @param config View of this component's config block (see exampleComponent2Config.capnp): the
+  /// three input topics, plus a `component` subsection forwarded to the @ref terminus::Component
+  /// base.
+  ExampleComponent2(terminus::Port& port, ExampleComponent2Config::Reader config);
 
   /// @brief Returns the number of `Sample1` messages received so far.
   [[nodiscard]] std::uint64_t sample1Count() const noexcept;

@@ -4,18 +4,41 @@
 //  Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#include <capnp/blob.h>
 #include <exception>
+#include <nioc/common/exception.hpp>
 #include <nioc/logger/logger.hpp>
 #include <nioc/terminus/driver.hpp>
+#include <stdexcept>
+#include <string>
 #include <utility>
 
 namespace nioc::terminus
 {
+namespace
+{
+
+/// Returns the instance name a config block provides; an empty one is a config authoring error.
+std::string requiredName(const capnp::Text::Reader name)
+{
+  if(name.size() == 0)
+  {
+    common::throwException<std::invalid_argument>("Driver config must provide a non-empty name");
+  }
+  return {name.begin(), name.end()};
+}
+
+} // namespace
 
 Driver::Driver(Port& port, std::string name):
   Routine(std::move(name)),
   mPort(port),
   mShutdownToken(port.shutdownToken())
+{
+}
+
+Driver::Driver(Port& port, const DriverConfig::Reader config):
+  Driver{port, requiredName(config.getName())}
 {
 }
 

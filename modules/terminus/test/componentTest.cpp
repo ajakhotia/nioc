@@ -10,10 +10,14 @@
 #include <memory>
 #include <nioc/concurrent/routine.hpp>
 #include <nioc/terminus/component.hpp>
+#include <nioc/terminus/configStore.hpp>
 #include <nioc/terminus/idl/testSchema.capnp.h>
+#include <nioc/terminus/manifest.hpp>
 #include <nioc/terminus/msg.hpp>
 #include <nioc/terminus/port.hpp>
+#include <nioc/terminus/runContext.hpp>
 #include <stdexcept>
+#include <utility>
 
 namespace nioc::terminus
 {
@@ -32,12 +36,11 @@ ConstMsgPtr<TestSchema> makeMessage()
 Port makePort()
 {
   return Port{
-      std::filesystem::temp_directory_path() / "niocLogs",
-      {},
-      {},
-      true,
-      "",
-      [](Port&, Port::Drivers&, Port::Components&, Port::Runners&) {}};
+      Manifest{
+               RunContext{std::filesystem::temp_directory_path() / "niocLogs", {}, true, ""},
+               ConfigStore{{}, {}}},
+      [](Port&, Port::Drivers&, Port::Components&, Port::Runners&) {}
+  };
 }
 
 } // namespace

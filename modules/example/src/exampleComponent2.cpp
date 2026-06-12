@@ -6,22 +6,17 @@
 
 #include <nioc/example/exampleComponent2.hpp>
 #include <nioc/logger/logger.hpp>
-#include <utility>
 
 namespace nioc::example
 {
 
 ExampleComponent2::ExampleComponent2(
     terminus::Port& port,
-    std::string sample1Topic,
-    std::string sample2Topic,
-    std::string sample3Topic,
-    const std::size_t inboxCapacity,
-    const concurrent::BufferMode bufferMode):
-  Component{port, inboxCapacity, bufferMode, "ExampleComponent2"},
-  mSample1Topic{std::move(sample1Topic)},
-  mSample2Topic{std::move(sample2Topic)},
-  mSample3Topic{std::move(sample3Topic)}
+    const ExampleComponent2Config::Reader config):
+  Component{port, config.getComponent()},
+  mSample1Topic{config.getSample1Topic().cStr()},
+  mSample2Topic{config.getSample2Topic().cStr()},
+  mSample3Topic{config.getSample3Topic().cStr()}
 {
   subscribe<Sample1>(
       mSample1Topic,

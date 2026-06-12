@@ -11,14 +11,17 @@
 namespace nioc::terminus
 {
 
-/// @brief Returns the top-level options group for a program, with Port's own section inside it.
+/// @brief Returns the top-level options group for a program, declaring `--help`.
 ///
-/// The returned group is captioned with @p programName. It declares `--help` and contains a
-/// separate "Port options" section. Add your application's own options to it, then pass it to
+/// The returned group is captioned with @p programName. Each subsystem the program uses
+/// contributes its own section via `add()` — see @ref Port::cliOptions and @ref
+/// ConfigStore::cliOptions — and the application appends its own flags, then passes the group to
 /// @ref parseCommandLine:
 ///
 /// @code
 /// auto options = nioc::terminus::programOptions("myProgramName");
+/// options.add(nioc::terminus::Port::cliOptions());
+/// options.add(nioc::terminus::ConfigStore::cliOptions());
 ///
 /// // clang-format off
 /// options.add_options()
@@ -26,23 +29,12 @@ namespace nioc::terminus
 ///   "input,i",
 ///   boost::program_options::value<std::string>()->required(),
 ///   "Path to the input file"
-/// )
-/// (
-///   "output,o",
-///   boost::program_options::value<std::string>()->default_value("out.bin"),
-///   "Path to the output file"
 /// );
 /// // clang-format on
 ///
 /// const auto variableMap = nioc::terminus::parseCommandLine(argC, argV, options);
-/// auto port = nioc::terminus::Port{ variableMap };
 /// const auto& input = variableMap.at("input").as<std::string>();
-/// const auto& output = variableMap.at("output").as<std::string>();
-///
 /// @endcode
-///
-/// Port's section declares: `--log-root`, `--append-config`, `--append-resource`,
-/// `--record-chronicle`.
 ///
 /// @param programName Name of the program.
 [[nodiscard]] boost::program_options::options_description programOptions(

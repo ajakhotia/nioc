@@ -13,13 +13,10 @@ namespace nioc::example
 
 ExampleComponent1::ExampleComponent1(
     terminus::Port& port,
-    std::string sample3Topic,
-    std::string sample2Topic,
-    const std::size_t inboxCapacity,
-    const concurrent::BufferMode bufferMode):
-  Component{port, inboxCapacity, bufferMode, "ExampleComponent1"},
-  mSample3Topic{std::move(sample3Topic)},
-  mSample2Topic{std::move(sample2Topic)}
+    const ExampleComponent1Config::Reader config):
+  Component{port, config.getComponent()},
+  mSample3Topic{config.getSample3Topic().cStr()},
+  mSample2Topic{config.getSample2Topic().cStr()}
 {
   subscribe<Sample3>(
       mSample3Topic,

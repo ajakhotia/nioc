@@ -14,13 +14,10 @@
 namespace nioc::example
 {
 
-ExampleDriver::ExampleDriver(
-    terminus::Port& port,
-    std::string sample1Topic,
-    std::string sample3Topic):
-  Driver{port, "ExampleDriver"},
-  mSample1Topic{std::move(sample1Topic)},
-  mSample3Topic{std::move(sample3Topic)}
+ExampleDriver::ExampleDriver(terminus::Port& port, const ExampleDriverConfig::Reader config):
+  Driver{port, config.getDriver()},
+  mSample1Topic{config.getSample1Topic().cStr()},
+  mSample3Topic{config.getSample3Topic().cStr()}
 {
 }
 

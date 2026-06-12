@@ -17,6 +17,7 @@
 #include <nioc/concurrent/notifyingInbox.hpp>
 #include <nioc/concurrent/routine.hpp>
 #include <nioc/logger/logger.hpp>
+#include <nioc/terminus/config/componentConfig.capnp.h>
 #include <unordered_map>
 #include <utility>
 
@@ -67,6 +68,21 @@ protected:
       std::size_t inboxCapacity,
       concurrent::BufferMode bufferMode,
       std::string name);
+
+  /// @brief Configures the component base from its config block.
+  ///
+  /// Reads the routine's name (see @ref Routine::name; conventionally matching the tag of the
+  /// subclass's config block) and the inbox settings out of @p config. By convention a subclass
+  /// forwards the `component` subsection of its own config block here, keeping the base's settings
+  /// out of the subclass's namespace.
+  ///
+  /// @param port Hub the component subscribes to and publishes onto; must outlive this component.
+  ///
+  /// @param config View of the component's config block (see componentConfig.capnp).
+  ///
+  /// @throws std::invalid_argument If the name is empty: it is instance-specific, so the config
+  /// data must provide it.
+  Component(Port& port, ComponentConfig::Reader config);
 
   /// @brief Subscribes a typed callback to a topic.
   ///

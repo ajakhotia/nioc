@@ -5,7 +5,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include <algorithm>
-#include <boost/program_options.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <chrono>
@@ -19,6 +18,7 @@
 #include <nioc/terminus/asyncChronicleWriter.hpp>
 #include <nioc/terminus/driver.hpp>
 #include <nioc/terminus/port.hpp>
+#include <nlohmann/json.hpp>
 #include <optional>
 #include <ranges>
 #include <spdlog/sinks/basic_file_sink.h>
@@ -31,7 +31,6 @@
 namespace nioc::terminus
 {
 namespace fs = std::filesystem;
-namespace po = boost::program_options;
 
 namespace
 {
@@ -47,49 +46,6 @@ fs::path createWorkingDir(const fs::path& logRoot)
   fs::create_directories(dir);
 
   return dir;
-}
-
-/// Extracts a repeatable path option (absent → empty), preserving command-line order.
-std::vector<fs::path> pathsFromOption(const po::variables_map& variableMap, const std::string& key)
-{
-  if(not variableMap.contains(key))
-  {
-    return {};
-  }
-  const auto& values = variableMap.at(key).as<std::vector<std::string>>();
-  return {values.begin(), values.end()};
-}
-
-void writeJsonFile(const fs::path& path, const nlohmann::json& json)
-{
-  auto file = std::ofstream(path);
-  if(not file)
-  {
-    common::throwException<std::runtime_error>("Cannot write {}", path.string());
-  }
-  file << json.dump(2) << '\n';
-}
-
-/// Merges @p configPaths left-to-right (later files override earlier ones), writes the result to
-/// config.json in @p workingDir, and returns it.
-nlohmann::json loadAndWriteConfig(
-    const std::vector<fs::path>& configPaths,
-    const fs::path& workingDir)
-{
-  auto config = nlohmann::json::object();
-  for(const auto& path: configPaths)
-  {
-    auto file = std::ifstream(path);
-    if(not file)
-    {
-      common::throwException<std::runtime_error>("Cannot open config file: {}", path.string());
-    }
-
-    config.merge_patch(nlohmann::json::parse(file));
-  }
-
-  writeJsonFile(workingDir / "config.json", config);
-  return config;
 }
 
 /// Attaches a file-backed sink to the logger to capture the console log to the working directory.
@@ -162,38 +118,35 @@ std::unordered_map<std::string, std::string> copyResources(
   return fileMap;
 }
 
-} // namespace
-
-Port::Port(const po::variables_map& variableMap, const Setup& setup):
-  Port(
-      variableMap.at("log-root").as<std::string>(),
-      pathsFromOption(variableMap, "append-config"),
-      pathsFromOption(variableMap, "append-resource"),
-      variableMap.at("record-chronicle").as<bool>(),
-      variableMap.at("commandLine").as<std::string>(),
-      setup)
+/// Writes the originalPath → basename map of the recording's resource copies to resources.json.
+void writeResources(
+    const std::unordered_map<std::string, std::string>& resourceMap,
+    const fs::path& workingDir)
 {
+  const auto path = workingDir / "resources.json";
+  auto file = std::ofstream(path);
+  if(not file)
+  {
+    common::throwException<std::runtime_error>("Cannot write {}", path.string());
+  }
+  file << nlohmann::json(resourceMap).dump(2) << '\n';
 }
 
-Port::Port(
-    const fs::path& logRoot,
-    const std::vector<fs::path>& configPaths,   // NOLINT(bugprone-easily-swappable-parameters)
-    const std::vector<fs::path>& resourcePaths, // NOLINT(bugprone-easily-swappable-parameters)
-    const bool writeChronicle,
-    const std::string& commandLine,
-    const Setup& setup):
-  mWorkingDir{createWorkingDir(logRoot)},
+} // namespace
+
+Port::Port(Manifest manifest, const Setup& setup):
+  mManifest{std::move(manifest)},
+  mWorkingDir{createWorkingDir(mManifest.mContext.logRoot())},
   mConsoleLogSink{attachLogFileSink(mWorkingDir / "console.log")},
-  mConfig(loadAndWriteConfig(configPaths, mWorkingDir)),
-  mLockedResourceMap{copyResources(resourcePaths, mWorkingDir)},
+  mLockedResourceMap{copyResources(mManifest.mContext.resourcePaths(), mWorkingDir)},
   mChronicleWriter{
-      writeChronicle ? std::make_unique<AsyncChronicleWriter>(mWorkingDir / "chronicle") : nullptr}
+      mManifest.mContext.recordChronicle()
+          ? std::make_unique<AsyncChronicleWriter>(mWorkingDir / "chronicle")
+          : nullptr}
 {
-  auto metadata = nlohmann::json::object();
-  metadata["cmdline"] = commandLine;
-  mLockedResourceMap.cExecute([&metadata](const auto& resourceMap)
-                              { metadata["resources"] = resourceMap; });
-  writeJsonFile(mWorkingDir / "metadata.json", metadata);
+  mManifest.writeTo(mWorkingDir);
+  mLockedResourceMap.cExecute([this](const auto& resourceMap)
+                              { writeResources(resourceMap, mWorkingDir); });
 
   logger::debug("recording run to working directory {}", mWorkingDir);
 
@@ -214,30 +167,16 @@ Port::~Port()
   mRunners.clear();
 
   // Stop the chronicle writer next: it joins its thread, so no further chronicle write or trace
-  // log races the metadata update and log-sink removal below. A no-op when this run does not
+  // log races the resources update and log-sink removal below. A no-op when this run does not
   // record.
   mChronicleWriter.reset();
 
-  // Resources may have grown via addResource() since construction, so refresh the resources
-  // section of the metadata written in the constructor. A destructor must not throw, so the
-  // metadata update is guarded.
+  // The resource map may have grown via addResource() since construction, so rewrite
+  // resources.json with its final state. A destructor must not throw, so the write is guarded.
   try
   {
-    const auto metadataPath = mWorkingDir / "metadata.json";
-    if(auto file = std::fstream(metadataPath, std::ios::in | std::ios::out))
-    {
-      auto metadata = nlohmann::json::parse(file);
-      mLockedResourceMap.cExecute([&metadata](const auto& resourceMap)
-                                  { metadata["resources"] = resourceMap; });
-
-      file.clear();
-      file.seekp(0);
-      file << metadata.dump(2) << '\n';
-    }
-    else
-    {
-      logger::error("Failed to update metadata.json: cannot open {}", metadataPath.string());
-    }
+    mLockedResourceMap.cExecute([this](const auto& resourceMap)
+                                { writeResources(resourceMap, mWorkingDir); });
   }
   catch(const std::exception& error)
   {
@@ -253,9 +192,9 @@ const fs::path& Port::workingDir() const noexcept
   return mWorkingDir;
 }
 
-const nlohmann::json& Port::config() const noexcept
+const RunContext& Port::runContext() const noexcept
 {
-  return mConfig;
+  return mManifest.mContext;
 }
 
 void Port::addResource(const fs::path& source)

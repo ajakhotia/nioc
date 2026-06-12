@@ -5,14 +5,13 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include <cstddef>
+#include <nioc/example/config/exampleComponent1Config.capnp.h>
 #include <nioc/example/idl/sample2.capnp.h>
 #include <nioc/example/idl/sample3.capnp.h>
 #include <nioc/terminus/component.hpp>
 #include <nioc/terminus/msg.hpp>
 #include <nioc/terminus/port.hpp>
 #include <string>
-#include <string_view>
 
 namespace nioc::example
 {
@@ -24,24 +23,14 @@ namespace nioc::example
 class ExampleComponent1 final: public terminus::Component
 {
 public:
-  /// @brief Subscribes to the input topic and records the output topic.
+  /// @brief Configures the component from its config block.
   ///
   /// @param port Hub the component subscribes to and publishes onto; must outlive this component.
   ///
-  /// @param sample3Topic Topic the incoming `Sample3` messages are read from.
-  ///
-  /// @param sample2Topic Topic the outgoing `Sample2` messages are published on.
-  ///
-  /// @param inboxCapacity Maximum number of undelivered messages held at once for a bounded
-  /// @p bufferMode; ignored when unbounded.
-  ///
-  /// @param bufferMode Storage discipline of the inbox (see @ref concurrent::BufferMode).
-  ExampleComponent1(
-      terminus::Port& port,
-      std::string sample3Topic,
-      std::string sample2Topic,
-      std::size_t inboxCapacity,
-      concurrent::BufferMode bufferMode);
+  /// @param config View of this component's config block (see exampleComponent1Config.capnp): the
+  /// input and output topics, plus a `component` subsection forwarded to the @ref
+  /// terminus::Component base.
+  ExampleComponent1(terminus::Port& port, ExampleComponent1Config::Reader config);
 
 private:
   std::string mSample3Topic;
