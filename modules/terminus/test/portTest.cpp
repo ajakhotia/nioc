@@ -70,7 +70,13 @@ std::string sampleCommandLine()
 }
 
 /// Setup that builds no routines; these tests exercise the Port's recording duties directly.
-void emptySetup(Port&, Port::Drivers&, Port::Components&, Port::Runners&) {}
+void emptySetup(
+    Port& /*unused*/,
+    Port::Drivers& /*unused*/,
+    Port::Components& /*unused*/,
+    Port::Runners& /*unused*/)
+{
+}
 
 /// A manifest recording under logRoot() with the standard test config and no extras.
 Manifest testManifest(std::string commandLine = "")

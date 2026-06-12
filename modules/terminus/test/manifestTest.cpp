@@ -31,7 +31,7 @@ boost::program_options::variables_map parse(std::vector<const char*> arguments)
 }
 
 /// Creates a minimal recording — a directory holding the given config.json — and returns its path.
-fs::path makeRecording(const std::string& name, const std::string& configText)
+fs::path makeRecording(const fs::path& name, const std::string& configText)
 {
   const auto dir = fs::temp_directory_path() / "niocManifestTest" / name;
   fs::create_directories(dir);

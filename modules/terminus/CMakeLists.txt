@@ -81,11 +81,11 @@ add_exported_library(
     ${CMAKE_CURRENT_SOURCE_DIR}/include
   LINK_LIBRARIES
     PRIVATE Boost::headers
+    PRIVATE CapnProto::capnp-json
     PRIVATE CapnProto::kj
     PRIVATE nlohmann_json::nlohmann_json
     PUBLIC Boost::program_options
     PUBLIC CapnProto::capnp
-    PUBLIC CapnProto::capnp-json
     PUBLIC nioc::chronicle
     PUBLIC nioc::common
     PUBLIC nioc::concurrent
