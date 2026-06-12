@@ -6,9 +6,9 @@
 #pragma once
 
 #include <boost/program_options.hpp>
-#include <capnp/compat/json.h>
 #include <capnp/dynamic.h>
 #include <capnp/message.h>
+#include <capnp/schema.h>
 #include <filesystem>
 #include <memory>
 #include <stdexcept>

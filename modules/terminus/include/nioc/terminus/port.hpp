@@ -5,7 +5,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include "asyncChronicleWriter.hpp"
 #include "configStore.hpp"
 #include "consignment.hpp"
 #include "manifest.hpp"
@@ -13,7 +12,6 @@
 #include "msgBase.hpp"
 #include "runContext.hpp"
 #include <atomic>
-#include <boost/program_options.hpp>
 #include <chrono>
 #include <filesystem>
 #include <functional>
@@ -21,7 +19,7 @@
 #include <nioc/common/locked.hpp>
 #include <nioc/common/typeTraits.hpp>
 #include <nioc/concurrent/runner.hpp>
-#include <spdlog/sinks/sink.h>
+#include <spdlog/fwd.h>
 #include <stop_token>
 #include <string>
 #include <string_view>
@@ -33,6 +31,7 @@
 namespace nioc::terminus
 {
 
+class AsyncChronicleWriter;
 class Component;
 class Driver;
 

@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <boost/program_options.hpp>
+#include <capnp/compat/json.h>
 #include <fstream>
 #include <nioc/common/exception.hpp>
 #include <nioc/terminus/configStore.hpp>
