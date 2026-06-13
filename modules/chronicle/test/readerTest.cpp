@@ -120,7 +120,7 @@ TEST(Reader, constructionRejectsMissingDirectory)
 // default Stream mechanism can only be replayed through Mmap. Conceptually each mechanism that
 // writes should also read back; this test states that expectation and fails until a stream
 // channel reader exists.
-//TEST(Reader, streamMechanismReadsBackWrittenData)
+// TEST(Reader, streamMechanismReadsBackWrittenData)
 //{
 //  const auto logPath = createLog();
 //  auto reader = Reader{logPath, IoMechanism::Stream};

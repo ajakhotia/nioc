@@ -154,8 +154,9 @@ public:
     const auto lhsNorm2 = lhsMrp.squaredNorm();
     const auto rhsNorm2 = rhsMrp.squaredNorm();
 
-    const auto vec = ((Scalar(1) - rhsNorm2) * lhsMrp) + ((Scalar(1) - lhsNorm2) * rhsMrp) +
-                     (Scalar(2) * lhsMrp.cross(rhsMrp));
+    const auto vec = (((Scalar(1) - rhsNorm2) * lhsMrp) + ((Scalar(1) - lhsNorm2) * rhsMrp) +
+                      (Scalar(2) * lhsMrp.cross(rhsMrp)))
+                         .eval();
 
     const auto scale = Scalar(1) + (lhsNorm2 * rhsNorm2) - (Scalar(2) * lhsMrp.dot(rhsMrp));
 
