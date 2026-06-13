@@ -34,6 +34,21 @@ TEST(NotifyingInbox, FiresNotifyOnEveryPush)
   EXPECT_EQ(notifications, 3U);
 }
 
+TEST(NotifyingInbox, NotifyFiresAfterTheValueIsEnqueued)
+{
+  // A consumer woken by the callback may drain immediately, so the pushed value must already be
+  // visible when the callback runs.
+  NotifyingInbox<UnboundedMpsc<int>>* inboxPtr = nullptr;
+  auto sizeSeenByNotify = std::size_t{0};
+
+  auto inbox = NotifyingInbox<UnboundedMpsc<int>>{[&] { sizeSeenByNotify = inboxPtr->size(); }};
+  inboxPtr = &inbox;
+
+  constexpr auto kValue = 7;
+  inbox.push(kValue);
+  EXPECT_EQ(1U, sizeSeenByNotify);
+}
+
 TEST(NotifyingInbox, ForwardsPushAndPop)
 {
   auto inbox = NotifyingInbox<UnboundedMpsc<int>>{nullptr};

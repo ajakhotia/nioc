@@ -12,14 +12,14 @@ namespace nioc::terminus
 
 class Port;
 
-/// @brief Returns a SignalCatcher wired to a Port's two-stage shutdown protocol.
+/// @brief Returns a SignalCatcher that drives a Port's two-stage shutdown.
 ///
-/// The first SIGINT or SIGTERM requests a graceful shutdown (see @ref Port::shutdown) and a repeat
-/// requests an immediate halt (see @ref Port::abort); SIGABRT halts immediately. Keep the returned
-/// catcher alive for as long as the signals should drive the @p port — signal handlers are
-/// process-global, so construct at most one catcher at a time.
+/// The first SIGINT or SIGTERM shuts the port down gracefully (@ref Port::shutdown). A second one
+/// halts it now (@ref Port::abort). SIGABRT halts it now. Keep the returned catcher alive while the
+/// signals should drive @p port. Signal handlers are process-global, so keep at most one catcher at
+/// a time.
 ///
-/// @param port Hub the signal actions drive; must outlive the returned catcher.
+/// @param port Port the signals drive. Must outlive the returned catcher.
 [[nodiscard]] common::SignalCatcher defaultSignalCatcher(Port& port);
 
 } // namespace nioc::terminus

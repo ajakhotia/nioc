@@ -11,35 +11,32 @@
 namespace nioc::chronicle
 {
 
-/// @brief Unique identifier for a data channel.
+/// @brief Identifies one data channel.
 struct ChannelId
 {
-  /// @brief Raw 64-bit identifier value.
+  /// @brief The 64-bit id.
   std::uint64_t mValue;
 
   constexpr bool operator==(const ChannelId&) const = default;
 };
 
-/// @brief I/O mechanism used to read or write chronicle data.
+/// @brief How chronicle data is read or written.
 enum class IoMechanism : std::uint8_t
 {
-  /// @brief Stream the bytes through file streams. Supported for writing and reading.
+  /// @brief File streams. Use for writing.
   Stream,
 
-  /// @brief Memory-map the files. Supported for reading.
+  /// @brief Memory-mapped files. Use for reading.
   Mmap
 };
 
-/// @brief Converts IoMechanism to string.
-/// @param mechanism I/O mechanism to convert.
-/// @return String representation of the mechanism.
+/// @brief Returns the name of @p mechanism.
 /// @throws std::logic_error If the mechanism is unknown.
 std::string stringFromIoMechanism(IoMechanism mechanism);
 
-/// @brief Converts string to IoMechanism.
-/// @param str String representation of the I/O mechanism.
-/// @return IoMechanism enum value.
-/// @throws std::out_of_range If the string is not a valid mechanism name.
+/// @brief Returns the IoMechanism with the given name.
+/// @param str A mechanism name (e.g. "Stream" or "Mmap").
+/// @throws std::out_of_range If @p str is not a valid name.
 IoMechanism ioMechanismFromString(const std::string& str);
 
 } // namespace nioc::chronicle

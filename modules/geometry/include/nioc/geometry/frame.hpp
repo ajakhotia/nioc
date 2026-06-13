@@ -10,16 +10,14 @@
 
 namespace nioc::geometry
 {
-/// @brief A reference frame with compile-time identity.
-///
-/// A type names the frame.
+/// @brief A reference frame identified by a type at compile time.
 ///
 /// @code
 /// class World;
 /// using WorldFrame = nioc::geometry::StaticFrame<World>;
 /// @endcode
 ///
-/// @tparam FrameId_ Type that identifies this frame.
+/// @tparam FrameId_ Type that names this frame. Cannot itself be a StaticFrame.
 template<typename FrameId_>
 class StaticFrame
 {
@@ -52,12 +50,11 @@ private:
   static constexpr const auto kFrameName = common::prettyName<FrameId>();
 };
 
-/// @brief A reference frame with runtime identity.
+/// @brief A reference frame identified by a name string at run time.
 class DynamicFrame
 {
 public:
-  /// @brief Constructs a dynamic frame.
-  /// @param frameId Name identifying this frame.
+  /// @param frameId Name of this frame.
   explicit DynamicFrame(std::string frameId) noexcept;
 
   DynamicFrame(const DynamicFrame&) = default;
@@ -77,12 +74,10 @@ private:
   std::string mFrameId;
 };
 
-/// @brief Checks if two frames are the same.
-/// @return True if frames have the same identity.
+/// @return True if both frames have the same name.
 bool operator==(const DynamicFrame& lhs, const DynamicFrame& rhs);
 
-/// @brief Checks if two frames are different.
-/// @return True if frames have different identities.
+/// @return True if the frames have different names.
 bool operator!=(const DynamicFrame& lhs, const DynamicFrame& rhs);
 
 

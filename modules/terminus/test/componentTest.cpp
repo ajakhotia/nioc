@@ -88,6 +88,52 @@ TEST(ComponentTest, overwriteDropsOldestWhenFull)
   EXPECT_EQ(component.tick(), concurrent::Routine::State::Waiting);
 }
 
+TEST(ComponentTest, duplicateSubscriptionThrows)
+{
+  auto port = makePort();
+
+  /// Subscribing the same topic twice is a programming error the component refuses.
+  class DoubleSubscriber final: public Component
+  {
+  public:
+    explicit DoubleSubscriber(Port& port):
+      Component{port, 1, concurrent::BufferMode::Unbounded, "DoubleSubscriber"}
+    {
+      const auto handler = [](const ConstMsgPtr<TestSchema>&) { return State::Continue; };
+      subscribe<TestSchema>("topic", handler);
+      subscribe<TestSchema>("topic", handler);
+    }
+  };
+
+  EXPECT_THROW(DoubleSubscriber{port}, std::logic_error);
+}
+
+TEST(ComponentTest, callbackFailureEndsTheComponentWithoutEscaping)
+{
+  auto port = makePort();
+  constexpr auto kThrowingTopic = std::string_view{"throwing"};
+
+  /// Reports a callback that always fails; step must catch it and finish the component.
+  class ThrowingComponent final: public Component
+  {
+  public:
+    ThrowingComponent(Port& port, const std::string_view& topic):
+      Component{port, 1, concurrent::BufferMode::Unbounded, "ThrowingComponent"}
+    {
+      subscribe<TestSchema>(
+          topic,
+          [](const ConstMsgPtr<TestSchema>&) -> State
+          { throw std::runtime_error{"callback failure"}; });
+    }
+  };
+
+  auto component = ThrowingComponent{port, kThrowingTopic};
+  port.publish<TestSchema>(kThrowingTopic, makeMessage());
+
+  // The exception is caught and logged; the component reports Done so its Runner winds it down.
+  EXPECT_EQ(component.tick(), concurrent::Routine::State::Done);
+}
+
 TEST(ComponentTest, unboundedRetainsEveryMessage)
 {
   auto port = makePort();

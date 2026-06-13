@@ -18,31 +18,31 @@
 namespace nioc::concurrent
 {
 
-/// @brief A @ref Routine that drains an inbox, handing each value to a processing callback.
+/// @brief A @ref Routine that runs a callback on each value pushed to its inbox.
 ///
-/// Producers call @ref push from any thread; the Routine's @ref step pops one value at a time and
-/// runs the callback on the Runner's thread, so the callback never runs concurrently with itself.
-/// When the inbox empties, a step reports @ref State::Waiting and the inbox reschedules the Routine
-/// once the next value arrives. The @ref BufferMode chosen at construction decides whether a full
-/// bounded inbox sacrifices a value or the inbox grows unbounded.
+/// Producers call @ref push from any thread. The callback runs one value at a time on the Runner's
+/// thread, so it never runs concurrently with itself. When the inbox is empty a step reports @ref
+/// State::Waiting, and the next @ref push wakes the Runner to drain it. The @ref BufferMode picked
+/// at construction decides whether a full bounded inbox drops a value or the inbox grows without
+/// limit.
 ///
 /// @tparam ValueType Type of the queued values.
 template<typename ValueType>
 class AsyncProcessor final: public Routine
 {
 public:
-  /// @brief Callback that handles one dequeued value, run on the Runner's thread.
+  /// @brief Callback that handles one value, run on the Runner's thread.
   using Process = std::function<void(ValueType)>;
 
-  /// @brief Constructs the processor with its inbox and the callback that handles each value.
+  /// @brief Builds the processor.
   ///
-  /// @param name Human-readable identity for this processor (see @ref Routine::name).
+  /// @param name Name for this processor (see @ref Routine::name).
   ///
-  /// @param bufferMode Storage discipline of the inbox (see @ref BufferMode).
+  /// @param bufferMode How the inbox stores values (see @ref BufferMode).
   ///
   /// @param capacity Inbox capacity for a bounded @p bufferMode; ignored when unbounded.
   ///
-  /// @param process Callback run on the Runner's thread for each dequeued value.
+  /// @param process Callback run on the Runner's thread for each value.
   AsyncProcessor(
       std::string name,
       const BufferMode bufferMode,
@@ -60,12 +60,12 @@ public:
   AsyncProcessor& operator=(const AsyncProcessor&) = delete;
   AsyncProcessor& operator=(AsyncProcessor&&) noexcept = delete;
 
-  /// @brief Enqueues a value for the processor to handle.
+  /// @brief Queues a value for the processor to handle, and wakes the Runner.
   ///
-  /// Thread-safe; callable from any producer thread. Never blocks; a full bounded inbox sacrifices
-  /// a value per its @ref BufferMode. Wakes the Runner when work arrives.
+  /// Thread-safe; call from any thread. Never blocks. A full bounded inbox drops a value per its
+  /// @ref BufferMode.
   ///
-  /// @param value Value to enqueue.
+  /// @param value Value to queue.
   void push(ValueType value)
   {
     mInbox.push(std::move(value));
@@ -75,13 +75,12 @@ private:
   Process mProcess;
   NotifyingInbox<AnyMpsc<ValueType>> mInbox;
 
-  /// @brief Pops one queued value and runs the callback on it.
+  /// @brief Pops one value and runs the callback on it.
   ///
-  /// Catches every exception the callback may throw, logs it, and reports @ref State::Done so a
-  /// failing processor winds down gracefully rather than escalating. Never throws.
+  /// Catches and logs any exception the callback throws. Never throws.
   ///
   /// @return @ref State::Continue after handling a value, @ref State::Waiting when the inbox is
-  /// empty, or @ref State::Done if the callback throws.
+  /// empty, or @ref State::Done if the callback threw.
   [[nodiscard]] State step() noexcept final
   {
     try

@@ -12,20 +12,19 @@
 namespace nioc::common
 {
 
-/// @brief Throws @p Exception, its message built with std::format and tagged with the call site.
+/// @brief Throws @p Exception with a std::format message tagged by call site.
 ///
-/// The thrown message is `[<file>:<line>] <formatted message>`, with the location captured
-/// automatically.
+/// The message is `[<file>:<line>] <formatted message>`. The location is captured for you.
 ///
-/// @tparam Exception Exception to throw; must be constructible from a std::string
-/// (std::runtime_error, std::invalid_argument, std::logic_error, ...).
+/// @tparam Exception Type to throw. Must be constructible from std::string (e.g.
+/// std::runtime_error, std::invalid_argument, std::logic_error).
 ///
-/// @param format Format string with `{}` placeholders. A string literal converts to it and
-/// captures the call site. std::format has no formatter for std::filesystem::path, so pass
-/// `path.string()` rather than a path. The string is matched to @p args at run time; a mismatch
-/// raises std::format_error.
+/// @param format Format string with `{}` placeholders. Pass a string literal; it captures the
+/// call site. std::format has no formatter for std::filesystem::path, so pass `path.string()`,
+/// not a path. The string is checked against @p args at compile time; a mismatch is a
+/// compile error.
 ///
-/// @param args Values substituted into the placeholders, left to right.
+/// @param args Values for the placeholders, left to right.
 ///
 /// @throws Exception Always.
 ///
@@ -34,13 +33,17 @@ namespace nioc::common
 /// // what(): "[port.cpp:259] resource does not exist: /tmp/missing"
 /// @endcode
 template<typename Exception, typename... Args>
-[[noreturn]] void throwException(const FormatWithLocation& format, const Args&... args)
+[[noreturn]] void throwException(
+    const FormatWithLocation<std::format_string<Args...>>& format,
+    const Args&... args)
 {
+  // `format` already validated the string against Args at the call site, so use the lighter
+  // type-erased vformat here.
   throw Exception{std::format(
       "[{}:{}] {}",
       std::filesystem::path{format.mLocation.file_name()}.filename().string(),
       format.mLocation.line(),
-      std::vformat(format.mFormat, std::make_format_args(args...)))};
+      std::vformat(format.mFormat.get(), std::make_format_args(args...)))};
 }
 
 } // namespace nioc::common

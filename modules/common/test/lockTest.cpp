@@ -4,8 +4,13 @@
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#include <atomic>
+#include <chrono>
 #include <gtest/gtest.h>
+#include <memory>
 #include <nioc/common/locked.hpp>
+#include <thread>
+#include <vector>
 
 namespace nioc::common
 {
@@ -16,9 +21,9 @@ const auto kValueExtractorHelper = [](const auto& value) { return *value; };
 
 } // namespace
 
-TEST(Locked, LockedConstruction)
+TEST(Locked, constructsValueInPlace)
 {
-  // Default construction of trivial type.
+  // Default construction of a trivial type.
   {
     const auto locked = Locked<int>{};
     EXPECT_EQ(0, locked);
@@ -30,25 +35,13 @@ TEST(Locked, LockedConstruction)
     EXPECT_EQ(7, locked);
   }
 
-  // Default construction of a non-trivial type.
-  {
-    const auto locked = Locked<std::vector<int>>{};
-    EXPECT_EQ(0U, locked([](const auto& value) { return value.size(); }));
-  }
-
   // Construction of a non-trivial type with an initial value.
   {
     const auto locked = Locked<std::vector<int>>{std::initializer_list<int>({1, 2, 3, 4, 5})};
     EXPECT_EQ(5U, locked([](const auto& value) { return value.size(); }));
   }
 
-  // Default construction of movable-only entities.
-  {
-    const auto locked = Locked<std::unique_ptr<int>>{};
-    EXPECT_EQ(nullptr, locked);
-  }
-
-  // Construction of movable-only entities with an initial value.
+  // Construction of move-only types.
   {
     constexpr auto kStoredValue = 7;
     auto locked = Locked<std::unique_ptr<int>>{std::make_unique<int>(kStoredValue)};
@@ -56,221 +49,161 @@ TEST(Locked, LockedConstruction)
   }
 }
 
-TEST(Locked, LockedConstExecution)
+TEST(Locked, constAccessReceivesConstReferenceAndReturnsOperationResult)
 {
-  // With cExecute.
-  {
-    const auto locked = Locked<int>{7};
-    const auto valueCopy = locked.cExecute([](const auto& value) { return value; });
-    EXPECT_EQ(7, valueCopy);
-  }
+  const auto locked = Locked<int>{7};
 
-  // With execute. Should automatically resolve to the const-overload.
-  {
-    const auto locked = Locked<int>{7};
-    const auto valueCopy = locked.execute([](const auto& value) { return value; });
-    EXPECT_EQ(7, valueCopy);
-  }
+  EXPECT_EQ(7, locked.cExecute([](const auto& value) { return value; }));
 
-  // With the ()-operator. Should automatically resolve to the const-overload
-  {
-    const auto locked = Locked<int>{7};
-    const auto valueCopy = locked([](const auto& value) { return value; });
-    EXPECT_EQ(7, valueCopy);
-  }
+  // execute and operator() on a const wrapper resolve to the shared-lock overloads.
+  EXPECT_EQ(7, locked.execute([](const auto& value) { return value; }));
+  EXPECT_EQ(7, locked([](const auto& value) { return value; }));
 
-  // With ()-operator and const-pass-by-value semantics.
-  {
-    const auto locked = Locked<int>{7};
-    const auto valueCopy = locked([](const auto value) { return value; });
-    EXPECT_EQ(7, valueCopy);
-  }
-
-  // With ()-operator and pass-by-value semantics.
-  {
-    const auto locked = Locked<int>{7};
-    const auto valueCopy = locked([](auto value) { return ++value; });
-    EXPECT_EQ(8, valueCopy);
-  }
+  // An operation taking its parameter by value reads the protected value without touching it.
+  EXPECT_EQ(8, locked([](auto value) { return ++value; }));
+  EXPECT_EQ(7, locked);
 }
 
-TEST(Locked, LockedNonConstExecution)
+TEST(Locked, mutableAccessReceivesMutableReferenceAndReturnsOperationResult)
 {
   constexpr auto kInitialValue = 7;
   constexpr auto kIncrement = 9;
 
-  // Pass by l-value reference.
-  {
-    auto locked = Locked<int>{kInitialValue};
-    const auto valueCopy = locked.execute(
-        [](auto& value)
-        {
-          value += kIncrement;
-          return value;
-        });
-    EXPECT_EQ(16, valueCopy);
-  }
+  auto locked = Locked<int>{kInitialValue};
 
-  // Pass by forwarding reference.
-  {
-    auto locked = Locked<int>{kInitialValue};
-    const auto valueCopy = locked.execute(
-        [](auto&& value)
-        {
-          value += kIncrement;
-          return value;
-        });
-    EXPECT_EQ(16, valueCopy);
-  }
+  const auto viaExecute = locked.execute(
+      [](auto& value)
+      {
+        value += kIncrement;
+        return value;
+      });
+  EXPECT_EQ(16, viaExecute);
 
-  // Pass by l-value reference. Using the non-const operator().
-  {
-    auto locked = Locked<int>{kInitialValue};
-    const auto valueCopy = locked(
-        [](auto& value)
-        {
-          value += kIncrement;
-          return value;
-        });
-    EXPECT_EQ(16, valueCopy);
-  }
-
-  // Pass by forwarding reference. Using the non-const operator() overload
-  {
-    auto locked = Locked<int>{kInitialValue};
-    const auto valueCopy = locked(
-        [](auto&& value)
-        {
-          value += kIncrement;
-          return value;
-        });
-    EXPECT_EQ(16, valueCopy);
-  }
+  const auto viaCallOperator = locked(
+      [](auto& value)
+      {
+        value += kIncrement;
+        return value;
+      });
+  EXPECT_EQ(25, viaCallOperator);
 }
 
-TEST(Locked, LockedCopyAssignment)
+TEST(Locked, assignmentReplacesValue)
 {
   constexpr auto kInitialValue = 12;
-  constexpr auto kReassignedValue = 13;
-  auto locked = Locked<int>{kInitialValue};
-  EXPECT_EQ(12, locked);
-
-  locked = kReassignedValue;
-  EXPECT_EQ(13, locked);
-}
-
-TEST(Locked, LockedMoveAssignment)
-{
   constexpr auto kStoredValue = 7;
   constexpr auto kReassignedValue = 13;
-  auto locked = Locked<std::unique_ptr<int>>{};
-  EXPECT_EQ(nullptr, locked);
 
-  locked = std::make_unique<int>(kStoredValue);
-  EXPECT_EQ(7, locked(kValueExtractorHelper));
+  // Copy assignment.
+  {
+    auto locked = Locked<int>{kInitialValue};
+    locked = kReassignedValue;
+    EXPECT_EQ(kReassignedValue, locked);
+  }
 
-  auto anotherPtr = std::make_unique<int>(kReassignedValue);
+  // Move assignment of a move-only value.
+  {
+    auto locked = Locked<std::unique_ptr<int>>{};
+    EXPECT_EQ(nullptr, locked);
 
-  // Line below is illegal because unique_ptr<> is not copyable and anotherPtr is an
-  // l-value and hence cannot be implicitly moved.
-  // locked = anotherPtr;
+    locked = std::make_unique<int>(kStoredValue);
+    EXPECT_EQ(kStoredValue, locked(kValueExtractorHelper));
 
-  locked = std::move(anotherPtr);
-  EXPECT_EQ(13, locked(kValueExtractorHelper));
+    auto anotherPtr = std::make_unique<int>(kReassignedValue);
+    locked = std::move(anotherPtr);
+    EXPECT_EQ(kReassignedValue, locked(kValueExtractorHelper));
+  }
 }
 
-TEST(Locked, LockedCopyExtraction)
+TEST(Locked, copyLeavesValueMoveTakesValue)
 {
-  const auto locked = Locked<int>{12};
-  const auto extractedValue = locked.copy();
+  constexpr auto kCopiedValue = 12;
+  constexpr auto kMovedValue = 13;
 
-  EXPECT_EQ(12, extractedValue);
-  EXPECT_EQ(12, locked);
+  const auto locked = Locked<int>{kCopiedValue};
+  EXPECT_EQ(kCopiedValue, locked.copy());
+  EXPECT_EQ(kCopiedValue, locked);
+
+  auto movable = Locked<std::unique_ptr<int>>{std::make_unique<int>(kMovedValue)};
+  const auto extracted = movable.move();
+  EXPECT_EQ(kMovedValue, *extracted);
+  EXPECT_EQ(nullptr, movable);
 }
 
-TEST(Locked, LockedMoveExtraction)
-{
-  constexpr auto kStoredValue = 13;
-  auto locked = Locked<std::unique_ptr<int>>{std::make_unique<int>(kStoredValue)};
-
-  const auto extracted = locked.move();
-
-  EXPECT_EQ(13, *extracted);
-  EXPECT_EQ(nullptr, locked);
-}
-
-TEST(Locked, LockedEqualityCheck)
-{
-  const auto locked = Locked<int>{13};
-
-  EXPECT_TRUE(locked == 13);
-  EXPECT_TRUE(13 == locked);
-
-  EXPECT_FALSE(locked == 23);
-  EXPECT_FALSE(23 == locked);
-}
-
-TEST(Locked, LockedInEqualityCheck)
+TEST(Locked, comparisonsReflectProtectedValue)
 {
   const auto locked = Locked<int>{13};
 
-  EXPECT_FALSE(locked != 13);
-  EXPECT_FALSE(13 != locked);
+  EXPECT_TRUE(locked == 13 and 13 == locked);
+  EXPECT_TRUE(locked != 23 and 23 != locked);
 
-  EXPECT_TRUE(locked != 23);
-  EXPECT_TRUE(23 != locked);
+  EXPECT_TRUE(locked < 14 and 12 < locked);
+  EXPECT_TRUE(locked <= 13 and 13 <= locked);
+  EXPECT_TRUE(locked > 12 and 14 > locked);
+  EXPECT_TRUE(locked >= 13 and 13 >= locked);
+
+  EXPECT_FALSE(locked < 13 or 13 < locked);
+  EXPECT_FALSE(locked > 13 or 13 > locked);
 }
 
-TEST(Locked, LockedLesserThanCheck)
+TEST(Locked, readersRunConcurrently)
 {
-  const auto locked = Locked<int>{13};
+  const auto locked = Locked<int>{7};
+  auto readersInside = std::atomic_int{0};
 
-  EXPECT_TRUE(locked < 14);
-  EXPECT_FALSE(locked < 13);
-  EXPECT_FALSE(locked < 12);
+  // Both readers wait inside their operation until the other one has entered. They can only meet
+  // if the shared lock admits two readers at once; an exclusive implementation makes one of them
+  // give up at the deadline and fail the expectation.
+  const auto read = [&]
+  {
+    locked(
+        [&readersInside](const auto& /*value*/)
+        {
+          readersInside.fetch_add(1);
+          const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds{2};
+          while(readersInside.load() < 2 and std::chrono::steady_clock::now() < deadline)
+          {
+            std::this_thread::yield();
+          }
+          EXPECT_EQ(2, readersInside.load());
+        });
+  };
 
-  EXPECT_TRUE(12 < locked);
-  EXPECT_FALSE(13 < locked);
-  EXPECT_FALSE(14 < locked);
+  auto readerA = std::thread{read};
+  auto readerB = std::thread{read};
+  readerA.join();
+  readerB.join();
 }
 
-TEST(Locked, LockedLesserThanOrEqualCheck)
+TEST(Locked, writersNeverInterleave)
 {
-  const auto locked = Locked<int>{13};
+  constexpr auto kThreads = 4;
+  constexpr auto kIncrementsPerThread = 100'000;
 
-  EXPECT_TRUE(locked <= 14);
-  EXPECT_TRUE(locked <= 13);
-  EXPECT_FALSE(locked < 12);
+  auto locked = Locked<int>{0};
 
-  EXPECT_TRUE(12 <= locked);
-  EXPECT_TRUE(13 <= locked);
-  EXPECT_FALSE(14 <= locked);
-}
+  // Plain int increments lose updates when two writers overlap, so an exact total proves every
+  // write ran under the exclusive lock.
+  const auto write = [&locked]
+  {
+    for(auto i = 0; i < kIncrementsPerThread; ++i)
+    {
+      locked([](auto& value) { ++value; });
+    }
+  };
 
-TEST(Locked, LockedGreaterThanCheck)
-{
-  const auto locked = Locked<int>{13};
+  auto writers = std::vector<std::thread>{};
+  writers.reserve(kThreads);
+  for(auto i = 0; i < kThreads; ++i)
+  {
+    writers.emplace_back(write);
+  }
+  for(auto& writer: writers)
+  {
+    writer.join();
+  }
 
-  EXPECT_FALSE(locked > 14);
-  EXPECT_FALSE(locked > 13);
-  EXPECT_TRUE(locked > 12);
-
-  EXPECT_FALSE(12 > locked);
-  EXPECT_FALSE(13 > locked);
-  EXPECT_TRUE(14 > locked);
-}
-
-TEST(Locked, LockedGreaterThanOrEqualCheck)
-{
-  const auto locked = Locked<int>{13};
-
-  EXPECT_FALSE(locked >= 14);
-  EXPECT_TRUE(locked >= 13);
-  EXPECT_TRUE(locked >= 12);
-
-  EXPECT_FALSE(12 >= locked);
-  EXPECT_TRUE(13 >= locked);
-  EXPECT_TRUE(14 >= locked);
+  EXPECT_EQ(kThreads * kIncrementsPerThread, locked.copy());
 }
 
 } // namespace nioc::common

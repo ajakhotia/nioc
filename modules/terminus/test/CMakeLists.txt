@@ -5,7 +5,10 @@ add_executable(terminusTest
   testComponent.cpp
   componentTest.cpp
   configStoreTest.cpp
+  consignmentTest.cpp
+  driverTest.cpp
   manifestTest.cpp
+  msgTest.cpp
   portTest.cpp)
 
 target_link_libraries(terminusTest

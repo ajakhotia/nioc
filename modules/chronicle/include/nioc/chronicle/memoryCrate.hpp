@@ -13,8 +13,7 @@ namespace nioc::chronicle
 
 /// @brief A read-only view over a block of bytes.
 ///
-/// Exposes the bytes through @ref span. Copies and moves are cheap and share the same underlying
-/// storage.
+/// Copies and moves are cheap. All copies share the same bytes.
 class MemoryCrate
 {
 public:

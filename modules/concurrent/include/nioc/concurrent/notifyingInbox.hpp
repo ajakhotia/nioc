@@ -14,22 +14,20 @@
 namespace nioc::concurrent
 {
 
-/// @brief Wraps an @ref MpscQueue and wakes a single consumer whenever a value is pushed.
+/// @brief Wraps an @ref MpscQueue and wakes a single consumer on every push.
 ///
-/// Adds exactly one concern to its queue: the producer-to-consumer wakeup. Every @ref push forwards
-/// to the wrapped queue and then fires the notification callback, so a consumer parked after an
-/// empty @ref tryPop is roused to drain again.
+/// Each @ref push and @ref emplace adds the value, then fires the notification callback. This wakes
+/// a consumer that parked after an empty @ref tryPop.
 ///
-/// Notification is per-push, not coalesced to an empty-to-non-empty edge. Coalescing assumes a
-/// single consumer that parks and only needs waking once — an assumption owned by the consumer's
-/// scheduler, not by a buffer. So the callback must be idempotent and inexpensive (it may fire
-/// while the consumer is already draining), and the consumer must wake on a latched predicate
-/// rather than a bare signal, since the callback can run before the consumer parks.
+/// The callback fires once per push, not once per empty-to-non-empty edge. So:
+/// - Make the callback idempotent and cheap. It may fire while the consumer is already draining.
+/// - Have the consumer wake on a latched predicate, not a bare signal. The callback can run before
+///   the consumer parks.
 ///
-/// Itself models @ref MpscQueue, so the notification composes transparently over a concrete queue
-/// or over a runtime-selected @ref AnyMpsc.
+/// This type also models @ref MpscQueue, so it can wrap a concrete queue or a runtime-selected
+/// @ref AnyMpsc.
 ///
-/// @tparam Queue The wrapped queue; must model @ref MpscQueue.
+/// @tparam Queue The wrapped queue. Must model @ref MpscQueue.
 template<MpscQueue Queue>
 class NotifyingInbox
 {
@@ -37,12 +35,10 @@ public:
   using value_type = Queue::value_type;
   using size_type = Queue::size_type;
 
-  /// @brief Constructs the inbox, building the wrapped queue in place.
+  /// @brief Builds the wrapped queue in place.
   ///
-  /// @param notify Callback fired after every push to wake the consumer. May be empty, in which
-  /// case push performs no notification.
-  ///
-  /// @param queueArgs Arguments forwarded to the wrapped queue's constructor.
+  /// @param notify Called after every push to wake the consumer. If empty, push does not notify.
+  /// @param queueArgs Forwarded to the wrapped queue's constructor.
   template<typename... QueueArgs>
   explicit NotifyingInbox(std::function<void()> notify, QueueArgs&&... queueArgs):
     mNotify(std::move(notify)),
@@ -56,9 +52,9 @@ public:
   NotifyingInbox& operator=(const NotifyingInbox&) = delete;
   NotifyingInbox& operator=(NotifyingInbox&&) noexcept = delete;
 
-  /// @brief Enqueues @p value, then fires the notification.
+  /// @brief Adds @p value, then notifies.
   /// @param value Value to enqueue.
-  /// @return The value the wrapped queue sacrificed to stay within capacity, or nullopt.
+  /// @return The value the queue dropped to stay within capacity, or nullopt.
   std::optional<value_type> push(value_type value)
   {
     auto sacrificed = mQueue.push(std::move(value));
@@ -69,9 +65,9 @@ public:
     return sacrificed;
   }
 
-  /// @brief Constructs a value in place from @p args, then fires the notification.
+  /// @brief Builds a value_type in place from @p args, then notifies.
   /// @param args Constructor arguments for a value_type.
-  /// @return The value the wrapped queue sacrificed to stay within capacity, or nullopt.
+  /// @return The value the queue dropped to stay within capacity, or nullopt.
   template<typename... Args>
     requires std::constructible_from<value_type, Args...>
   std::optional<value_type> emplace(Args&&... args)

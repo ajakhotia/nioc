@@ -10,9 +10,7 @@
 namespace nioc::chronicle
 {
 
-/// @brief Interface for writing data to a channel.
-///
-/// Channel writers handle the storage details of chronicle data.
+/// @brief Interface for writing chronicle data to a channel.
 class ChannelWriter
 {
 public:
@@ -30,12 +28,12 @@ public:
 
   ChannelWriter& operator=(ChannelWriter&&) noexcept = delete;
 
-  /// @brief Writes a single data frame.
-  /// @param data Data to write.
+  /// @brief Writes one frame.
+  /// @param data Bytes to write.
   virtual void writeFrame(const ConstByteSpan& data) = 0;
 
-  /// @brief Writes multiple data spans as a single frame.
-  /// @param dataCollection Data spans to write as one frame.
+  /// @brief Writes several byte spans joined into one frame.
+  /// @param dataCollection Byte spans to write as one frame.
   virtual void writeFrame(std::span<const ConstByteSpan> dataCollection) = 0;
 };
 

@@ -12,13 +12,12 @@
 namespace nioc::concurrent
 {
 
-/// @brief A bounded MPSC queue that, when full, rejects the incoming value and keeps the queued
-/// ones.
+/// @brief A bounded MPSC queue that drops the new value when full and keeps the queued ones.
 ///
-/// Oldest-wins, the mirror of @ref OverwritingMpsc: a producer never waits, but once the queue is
-/// full a push leaves the contents untouched and @ref push hands the rejected incoming value back
-/// so the caller can account for the loss. Suits a consumer that must not lose history it has
-/// already accepted and would rather shed new arrivals under overload.
+/// Producers never wait. When the queue is full, a push leaves the contents unchanged and returns
+/// the rejected value so the caller can count the loss. Use it when the consumer must keep the
+/// values it already accepted and can afford to drop new ones. Compare @ref OverwritingMpsc, which
+/// drops the oldest value instead.
 ///
 /// Models @ref MpscQueue. See it for the producer/consumer contract.
 ///

@@ -24,7 +24,7 @@ std::vector<char> generateData()
 
 } // namespace
 
-TEST(LoggerUtils, padString)
+TEST(ChronicleUtils, padString)
 {
   const auto input = std::string{"682"};
 
@@ -42,26 +42,26 @@ TEST(LoggerUtils, padString)
   }
 }
 
-TEST(LoggerUtils, buildRollName)
+TEST(ChronicleUtils, buildRollName)
 {
   EXPECT_EQ("roll00000000000000000000.nioc", buildRollName(0U));
   EXPECT_EQ("roll00000000000000000001.nioc", buildRollName(1U));
   EXPECT_EQ("roll00000003519894239162.nioc", buildRollName(3519894239162U));
 }
 
-TEST(LoggerUtils, toHexString)
+TEST(ChronicleUtils, toHexString)
 {
   constexpr auto integer = 255U;
   EXPECT_EQ("0xff", hexString(integer));
 }
 
-TEST(LoggerUtils, hexStringToInteger)
+TEST(ChronicleUtils, hexStringToInteger)
 {
   constexpr auto hexString = "0xff";
   EXPECT_EQ(255, integerFromHex<uint64_t>(hexString));
 }
 
-TEST(LoggerUtils, computeTotalSizeInBytes)
+TEST(ChronicleUtils, computeTotalSizeInBytes)
 {
   const auto data = generateData();
   const auto value = std::as_bytes(std::span(data));
@@ -72,7 +72,7 @@ TEST(LoggerUtils, computeTotalSizeInBytes)
   EXPECT_EQ(numRepetitions * data.size(), computeTotalSizeInBytes(spanCollection));
 }
 
-TEST(LoggerUtils, ReadWriteUtilSequenceEntry)
+TEST(ChronicleUtils, ReadWriteUtilSequenceEntry)
 {
   auto stream = std::stringstream{};
   const auto value = SequenceEntry{ChannelId{53519839189237}};
@@ -83,7 +83,7 @@ TEST(LoggerUtils, ReadWriteUtilSequenceEntry)
   EXPECT_EQ(value.mChannelId, readValue.mChannelId);
 }
 
-TEST(LoggerUtils, ReadWriteUtilIndexEntry)
+TEST(ChronicleUtils, ReadWriteUtilIndexEntry)
 {
   auto stream = std::stringstream{};
   const auto value =
@@ -97,7 +97,42 @@ TEST(LoggerUtils, ReadWriteUtilIndexEntry)
   EXPECT_EQ(value.mSize, readValue.mSize);
 }
 
-TEST(LoggerUtils, ReadWriteByteSpan)
+TEST(ChronicleUtils, onDiskEntryLayoutIsPackedLittleEndian)
+{
+  // Pins the on-disk format: a recording written today must stay replayable, so the entry layout
+  // is part of the contract — 8-byte sequence entries and 24-byte index entries, little-endian,
+  // no padding.
+  {
+    constexpr auto kChannelValue = 0x0102030405060708ULL;
+    auto stream = std::stringstream{};
+    ReadWriteUtil<SequenceEntry>::write(stream, SequenceEntry{ChannelId{kChannelValue}});
+
+    const auto bytes = stream.str();
+    ASSERT_EQ(8U, bytes.size());
+    EXPECT_EQ(std::string("\x08\x07\x06\x05\x04\x03\x02\x01", 8), bytes);
+  }
+
+  {
+    constexpr auto kRollId = 0x11ULL;
+    constexpr auto kOffset = 0x2233ULL;
+    constexpr auto kSize = 0x44556677ULL;
+    auto stream = std::stringstream{};
+    ReadWriteUtil<IndexEntry>::write(
+        stream,
+        IndexEntry{.mRollId = kRollId, .mOffset = kOffset, .mSize = kSize});
+
+    const auto bytes = stream.str();
+    ASSERT_EQ(24U, bytes.size());
+    const auto expected = std::string{
+        "\x11\x00\x00\x00\x00\x00\x00\x00"
+        "\x33\x22\x00\x00\x00\x00\x00\x00"
+        "\x77\x66\x55\x44\x00\x00\x00\x00",
+        24};
+    EXPECT_EQ(expected, bytes);
+  }
+}
+
+TEST(ChronicleUtils, ReadWriteByteSpan)
 {
   auto stream = std::stringstream{};
   const auto data = generateData();

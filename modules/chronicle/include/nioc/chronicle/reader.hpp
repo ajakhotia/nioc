@@ -17,26 +17,24 @@
 namespace nioc::chronicle
 {
 
-/// @brief A single entry from a chronicle.
-///
-/// Contains the channel ID and data for one frame.
+/// @brief One frame read from a chronicle: its channel ID and its data.
 struct Entry
 {
   ChannelId mChannelId;
   MemoryCrate mMemoryCrate;
 };
 
-/// @brief Reads data from a chronicle for playback.
+/// @brief Reads a chronicle's entries back for playback.
 ///
-/// Reads entries in the same order they were written.
+/// Returns entries in the order they were written. Not thread-safe: use from one thread only.
 class Reader
 {
 public:
-  /// @brief Constructs a Reader over the chronicle in @p logRoot.
+  /// @brief Opens the chronicle in @p logRoot for reading.
   ///
   /// @param logRoot Path to the chronicle directory.
   ///
-  /// @param ioMechanism I/O mechanism used to read data.
+  /// @param ioMechanism How to read the data.
   ///
   /// @throws std::invalid_argument If @p logRoot does not exist or is not a directory.
   explicit Reader(std::filesystem::path logRoot, IoMechanism ioMechanism = IoMechanism::Mmap);
@@ -52,9 +50,9 @@ public:
   Reader& operator=(Reader&&) noexcept = delete;
 
   /// @brief Reads the next entry.
-  /// @return Entry with channel ID and data.
-  /// @throws std::runtime_error When end of chronicle is reached.
-  /// @throws std::invalid_argument If the I/O mechanism is not supported for reading.
+  /// @return The next entry.
+  /// @throws std::runtime_error At end of the chronicle.
+  /// @throws std::invalid_argument If the I/O mechanism does not support reading.
   Entry read();
 
 private:

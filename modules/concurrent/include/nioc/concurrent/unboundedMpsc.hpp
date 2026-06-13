@@ -15,12 +15,11 @@
 namespace nioc::concurrent
 {
 
-/// @brief An unbounded MPSC queue that grows to hold every value pushed.
+/// @brief An unbounded MPSC queue. Keeps every pushed value; never drops any.
 ///
-/// Lossless: a producer never waits and the queue never discards, so @ref push always returns
-/// nullopt. The cost is memory — a consumer that falls behind a faster producer makes the backlog
-/// (and the queue's footprint) grow without limit. Suits offline/replay work where completeness
-/// matters more than bounded memory.
+/// Producers never wait and the queue never discards, so @ref push always returns nullopt. The cost
+/// is memory: if the consumer is slower than the producers, the queue grows without limit. Use it
+/// for offline or replay work where keeping every value matters more than bounding memory.
 ///
 /// Models @ref MpscQueue. See it for the producer/consumer contract.
 ///
@@ -39,8 +38,8 @@ public:
   UnboundedMpsc& operator=(const UnboundedMpsc&) = delete;
   UnboundedMpsc& operator=(UnboundedMpsc&&) noexcept = delete;
 
-  /// @brief Enqueues @p value. Never discards, so always returns nullopt.
-  /// @param value Value to enqueue.
+  /// @brief Adds @p value to the queue. Always returns nullopt; nothing is ever dropped.
+  /// @param value Value to add.
   std::optional<value_type> push(value_type value)
   {
     return [&]() -> std::optional<value_type>
@@ -51,7 +50,7 @@ public:
     }();
   }
 
-  /// @brief Constructs a value in place from @p args. Never discards, so always returns nullopt.
+  /// @brief Builds a value in place from @p args. Always returns nullopt; nothing is ever dropped.
   /// @param args Constructor arguments for a value_type.
   template<typename... Args>
     requires std::constructible_from<value_type, Args...>
@@ -65,7 +64,7 @@ public:
     }();
   }
 
-  /// @brief Removes and returns the oldest value, or nullopt when empty. Single consumer only.
+  /// @brief Removes and returns the oldest value, or nullopt if empty. Call from one consumer only.
   [[nodiscard]] std::optional<value_type> tryPop()
   {
     return [&]() -> std::optional<value_type>
@@ -82,7 +81,7 @@ public:
     }();
   }
 
-  /// @brief Number of values currently queued. Racy; the backlog signal for an unbounded queue.
+  /// @brief Number of values in the queue right now. Racy; use it as a backlog signal only.
   [[nodiscard]] size_type size() const
   {
     return [&]() -> size_type
@@ -92,7 +91,7 @@ public:
     }();
   }
 
-  /// @brief Always 0.0: an unbounded queue has no capacity to fill and cannot overflow.
+  /// @brief Always 0.0: an unbounded queue has no capacity, so it can never fill up.
   [[nodiscard]] double occupancy() const
   {
     return 0.0;

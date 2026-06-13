@@ -12,16 +12,14 @@
 namespace nioc::concurrent
 {
 
-/// @brief Drives one @ref Routine's iteration loop: repeatedly call @ref Routine::step until done.
+/// @brief Calls one @ref Routine's @ref Routine::step in a loop until it is done.
 ///
-/// A Runner owns the loop a @ref Routine deliberately lacks. After @ref launch, it calls the
-/// routine's @ref Routine::step over and over: @ref State::Continue runs again immediately, @ref
-/// State::Waiting parks until the routine signals it has some work, and @ref State::Done (or a
-/// thrown exception) ends the loop. The waiting/wake handshake lets an idle routine sleep instead
-/// of spinning; @ref ThreadedRunner is the thread-backed implementation.
+/// After @ref launch, the Runner calls @ref Routine::step again and again. The return value picks
+/// what happens next: @ref State::Continue steps again right away, @ref State::Waiting parks until
+/// the routine triggers a wake, and @ref State::Done ends the loop. @ref Routine::step never
+/// throws; a failing routine returns Done. @ref ThreadedRunner runs the loop on a thread.
 ///
-/// A Runner is held through a `shared_ptr` (it derives from `enable_shared_from_this` so it can
-/// hand the routine a trigger that outlives the call). Each Runner drives a single routine.
+/// Hold a Runner through a `shared_ptr`. Each Runner drives one routine.
 class Runner: public std::enable_shared_from_this<Runner>
 {
 public:
@@ -37,22 +35,21 @@ public:
 
   Runner& operator=(Runner&&) noexcept = delete;
 
-  /// @brief Starts driving @p routine's step loop.
+  /// @brief Starts the step loop for @p routine.
   ///
-  /// The Runner holds the routine weakly and stops on its own once the routine expires. Call once
-  /// per Runner.
+  /// The Runner holds the routine weakly. Once the routine expires, the loop stops at the next step
+  /// or wake (not the instant it expires). Call once per Runner.
   ///
   /// @param routine Routine to drive.
   virtual void launch(std::weak_ptr<Routine> routine) = 0;
 
 protected:
-  /// @brief Builds the trigger handed to the routine so it can wake this Runner from @ref
-  /// State::Waiting.
+  /// @brief Builds the trigger the routine calls to wake this Runner from @ref State::Waiting.
   ///
-  /// The trigger holds the Runner weakly, so it is safe to invoke after the Runner is gone.
+  /// The trigger holds the Runner weakly. Safe to call after the Runner is gone.
   [[nodiscard]] std::function<void()> makeTrigger();
 
-  /// @brief Wakes a Runner parked because its routine returned @ref State::Waiting.
+  /// @brief Wakes a Runner parked on @ref State::Waiting.
   virtual void wake() = 0;
 };
 

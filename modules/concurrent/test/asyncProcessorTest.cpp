@@ -9,6 +9,7 @@
 #include <nioc/concurrent/routine.hpp>
 
 #include <gtest/gtest.h>
+#include <stdexcept>
 #include <string_view>
 #include <vector>
 
@@ -40,6 +41,20 @@ TEST(AsyncProcessor, ProcessesPushedValuesOnePerStepInOrder)
   EXPECT_EQ(processor.tick(), Routine::State::Waiting);
 
   EXPECT_EQ(received, (std::vector<int>{1, 2}));
+}
+
+TEST(AsyncProcessor, CallbackFailureEndsTheProcessorWithoutEscaping)
+{
+  auto processor = AsyncProcessor<int>(
+      "thrower",
+      BufferMode::Unbounded,
+      0,
+      [](int) { throw std::runtime_error{"callback failure"}; });
+
+  processor.push(1);
+
+  // The exception is caught and logged; the processor reports Done so its Runner winds it down.
+  EXPECT_EQ(processor.tick(), Routine::State::Done);
 }
 
 TEST(AsyncProcessor, NameReturnsTheLabel)

@@ -10,9 +10,7 @@
 namespace nioc::chronicle
 {
 
-/// @brief Interface for reading data from a channel.
-///
-/// Channel readers handle the retrieval details of chronicle data.
+/// @brief Reads frames from a channel.
 class ChannelReader
 {
 public:

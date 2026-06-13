@@ -4,7 +4,6 @@ include(GoogleTest)
 find_package(Boost CONFIG REQUIRED COMPONENTS iostreams)
 
 add_executable(chronicleTest
-    boostMMapExampleTest.cpp
     streamChannelWriterTest.cpp
     mmapChannelReaderTest.cpp
     writerTest.cpp

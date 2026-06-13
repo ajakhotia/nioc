@@ -10,12 +10,10 @@
 
 namespace nioc::geometry
 {
-/// @brief Transformation between two coordinate frames.
+/// @brief A pose that transforms points from the child frame to the parent frame.
 ///
-/// Combines pose with frame relationship. Represents how to transform from child to parent frame.
-///
-/// @tparam ParentFrame Parent coordinate frame type.
-/// @tparam ChildFrame Child coordinate frame type.
+/// @tparam ParentFrame Parent frame type.
+/// @tparam ChildFrame Child frame type.
 /// @tparam Scalar_ Floating-point type (default: double).
 template<typename ParentFrame, typename ChildFrame, typename Scalar_ = double>
 class RigidTransform: public FrameReferences<ParentFrame, ChildFrame>
@@ -27,9 +25,9 @@ public:
 
   using PoseS = Pose<Scalar>;
 
-  /// @brief Constructs a transform with pose and frame identities.
-  /// @param pose Transformation pose.
-  /// @param frameRefParams Frame identity parameters.
+  /// @brief Builds the transform from a pose and the frame identities.
+  /// @param pose The child-to-parent pose.
+  /// @param frameRefParams Arguments that name the parent and child frames.
   template<typename... FrameRefParams>
   explicit RigidTransform(const PoseS& pose, FrameRefParams&&... frameRefParams):
     CoordinateFrames(std::forward<FrameRefParams>(frameRefParams)...),
@@ -47,14 +45,14 @@ public:
 
   RigidTransform& operator=(RigidTransform&&) noexcept = default;
 
-  /// @brief Returns the transformation pose.
+  /// @brief Returns the child-to-parent pose.
   [[nodiscard]] const PoseS& pose() const noexcept
   {
     return mPose;
   }
 
-  /// @brief Returns the inverse transformation.
-  /// @return Transform from parent to child frame.
+  /// @brief Returns the inverse transform.
+  /// @return The transform from parent to child frame.
   [[nodiscard]] RigidTransform<ChildFrame, ParentFrame, Scalar> inverse() const
   {
     return RigidTransform<ChildFrame, ParentFrame, Scalar>(
@@ -66,9 +64,9 @@ private:
   PoseS mPose;
 };
 
-/// @brief Chains two transformations together.
-/// @return Composed transformation from child to parent frame.
-/// @throws FrameCompositionException if the intermediate frames carry mismatched runtime names.
+/// @brief Chains two transforms.
+/// @return The combined transform from child to parent frame.
+/// @throws FrameCompositionException if the intermediate frames have mismatched runtime names.
 template<typename ParentFrame, typename IntermediateFrame, typename ChildFrame, typename Scalar>
 RigidTransform<ParentFrame, ChildFrame, Scalar> operator*(
     const RigidTransform<ParentFrame, IntermediateFrame, Scalar>& lhs,

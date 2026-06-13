@@ -65,5 +65,18 @@ TEST(SignalCatcher, ActionReceivesRunningCount)
   EXPECT_EQ((std::vector<std::int32_t>{1, 2}), observedCounts);
 }
 
+TEST(SignalCatcher, DestructionRestoresDefaultHandlers)
+{
+  {
+    const auto catcher = SignalCatcher{
+        std::pair{SIGINT, SignalCatcher::SignalAction{[](std::int32_t) {}}}
+    };
+  }
+
+  // The destructor restored SIG_DFL; std::signal hands back the handler in effect.
+  const auto previousHandler = std::signal(SIGINT, SIG_DFL);
+  EXPECT_EQ(SIG_DFL, previousHandler);
+}
+
 } // namespace
 } // namespace nioc::common

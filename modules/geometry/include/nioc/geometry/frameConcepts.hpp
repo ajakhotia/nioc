@@ -10,9 +10,7 @@
 
 namespace nioc::geometry
 {
-/// @brief Parent frame type wrapper.
-///
-/// Wraps a frame type to represent parent in a transformation.
+/// @brief Holds the parent frame of a transformation.
 ///
 /// @tparam ParentFrame_ Frame type (StaticFrame or DynamicFrame).
 template<typename ParentFrame_>
@@ -37,16 +35,14 @@ public:
 
   virtual ~ParentConceptTmpl() = default;
 
-  /// @brief Returns the parent frame as a tuple — empty, since a static frame carries no value.
+  /// @brief Returns an empty tuple. A static frame carries no value.
   [[nodiscard]] constexpr decltype(auto) parentFrameAsTuple() const noexcept
   {
     return std::make_tuple();
   }
 };
 
-/// @brief Child frame type wrapper.
-///
-/// Wraps a frame type to represent child in a transformation.
+/// @brief Holds the child frame of a transformation.
 ///
 /// @tparam ChildFrame_ Frame type (StaticFrame or DynamicFrame).
 template<typename ChildFrame_>
@@ -71,21 +67,21 @@ public:
 
   virtual ~ChildConceptTmpl() = default;
 
-  /// @brief Returns the child frame as a tuple — empty, since a static frame carries no value.
+  /// @brief Returns an empty tuple. A static frame carries no value.
   [[nodiscard]] constexpr decltype(auto) childFrameAsTuple() const noexcept
   {
     return std::make_tuple();
   }
 };
 
-/// @brief Parent frame wrapper for runtime-identified frames.
+/// @brief Holds a runtime-identified parent frame.
 template<>
 class ParentConceptTmpl<DynamicFrame>
 {
 public:
   using ParentFrame = DynamicFrame;
 
-  /// @brief Stores the runtime parent frame.
+  /// @brief Builds and stores the parent frame from a runtime identifier.
   /// @param parentFrameArgs Identifier the parent @ref DynamicFrame is built from.
   template<typename ParentFrameArgs>
   explicit ParentConceptTmpl(ParentFrameArgs parentFrameArgs) noexcept:
@@ -109,7 +105,7 @@ public:
     return mParentFrame;
   }
 
-  /// @brief Returns the parent frame as a single-element tuple holding a reference to it.
+  /// @brief Returns a single-element tuple holding a reference to the parent frame.
   [[nodiscard]] constexpr decltype(auto) parentFrameAsTuple() const noexcept
   {
     return std::make_tuple(std::cref(mParentFrame));
@@ -119,14 +115,14 @@ private:
   ParentFrame mParentFrame;
 };
 
-/// @brief Child frame wrapper for runtime-identified frames.
+/// @brief Holds a runtime-identified child frame.
 template<>
 class ChildConceptTmpl<DynamicFrame>
 {
 public:
   using ChildFrame = DynamicFrame;
 
-  /// @brief Stores the runtime child frame.
+  /// @brief Builds and stores the child frame from a runtime identifier.
   /// @param childFrameArgs Identifier the child @ref DynamicFrame is built from.
   template<typename ChildFrameArgs>
   explicit ChildConceptTmpl(ChildFrameArgs childFrameArgs) noexcept:
@@ -150,7 +146,7 @@ public:
     return mChildFrame;
   }
 
-  /// @brief Returns the child frame as a single-element tuple holding a reference to it.
+  /// @brief Returns a single-element tuple holding a reference to the child frame.
   [[nodiscard]] constexpr decltype(auto) childFrameAsTuple() const noexcept
   {
     return std::make_tuple(std::cref(mChildFrame));
