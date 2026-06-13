@@ -13,32 +13,28 @@
 namespace nioc::concurrent
 {
 
-/// @brief A unit of work executed one iteration at a time by a @ref Runner.
+/// @brief A unit of work run one iteration at a time by a @ref Runner.
 ///
-/// The iteration loop lives in the Runner, not here: the @ref step performs a single iteration and
-/// reports what should happen next. This keeps every Routine free of stop-token plumbing and
-/// exception bookkeeping, which the Runner owns in one place.
+/// A @ref Runner drives the loop. Each turn it calls @ref step, which does one iteration and
+/// returns a @ref State telling the Runner what to do next:
+/// - @ref State::Continue: run again right away,
+/// - @ref State::Waiting: no work now, run again later,
+/// - @ref State::Done: finished or failed, stop scheduling.
 ///
-/// A Routine signals its outcome through the returned @ref State:
-/// - @ref State::Continue to be scheduled again immediately,
-/// - @ref State::Waiting when it has no work right now and should be rescheduled later,
-/// - @ref State::Done to finish naturally (end of input, deadline reached) or to fail;
-///
-/// The @ref step method never throws — an implementation that can fail catches its own exceptions
-/// and reports @ref State::Done.
+/// @ref step never throws: if it can fail, it catches the exception and returns @ref State::Done.
 class Routine
 {
 public:
-  /// @brief Outcome of a single @ref step iteration.
+  /// @brief Result of one @ref step iteration.
   enum class State : std::uint8_t
   {
-    /// @brief Has more work now; schedule another iteration immediately.
+    /// @brief More work now; run again immediately.
     Continue,
 
-    /// @brief Has no work right now; reschedule later rather than spinning.
+    /// @brief No work now; run again later instead of spinning.
     Waiting,
 
-    /// @brief Finished naturally; stop scheduling it.
+    /// @brief Finished or failed; stop scheduling it.
     Done
   };
 
@@ -52,13 +48,12 @@ public:
 
   Routine& operator=(Routine&&) noexcept = delete;
 
-  /// @brief Advances the routine by one iteration and records its outcome.
+  /// @brief Runs one iteration and records its result.
   ///
-  /// Called by the driving @ref Runner once per loop iteration. Runs @ref step, stores the returned
-  /// @ref State so it can be observed from another thread via @ref state, and returns it. Never
-  /// throws: a @ref step that fails reports @ref State::Done rather than escaping.
+  /// Runs @ref step and stores the returned @ref State so @ref state can read it from another
+  /// thread. Never throws. Called by the driving @ref Runner once per loop turn.
   ///
-  /// @return The @ref State @ref step reported for this iteration.
+  /// @return The @ref State that @ref step returned.
   [[nodiscard]] State tick() noexcept
   {
     const auto state = step();
@@ -66,42 +61,40 @@ public:
     return state;
   }
 
-  /// @brief Returns this routine's name: its human-readable identity.
+  /// @brief Returns this routine's human-readable name.
   [[nodiscard]] const std::string& name() const noexcept
   {
     return mName;
   }
 
-  /// @brief Returns the @ref State the most recent @ref tick recorded.
+  /// @brief Returns the @ref State from the last @ref tick.
   [[nodiscard]] State state() const noexcept
   {
     return mState.load(std::memory_order_relaxed);
   }
 
-  /// @brief Installs the callback the routine uses to announce it has some work again.
+  /// @brief Sets the callback that wakes the Runner when work arrives.
   ///
-  /// Called by the @ref Runner that drives this routine. A routine that returned @ref
-  /// State::Waiting fires the trigger (through @ref triggerRunner) once new work arrives, so the
-  /// Runner can resume it instead of polling.
+  /// After returning @ref State::Waiting, the routine fires this callback (via @ref triggerRunner)
+  /// when new work arrives, so the Runner resumes it instead of polling.
   ///
-  /// @param trigger Callback that wakes the driving Runner.
+  /// @param trigger Callback that wakes the driving @ref Runner.
   void attachTrigger(std::function<void()> trigger);
 
 protected:
-  /// @brief Names the routine and, optionally, installs its ready-trigger.
+  /// @brief Sets the name and, optionally, the wake-up callback.
   ///
-  /// @param name Human-readable identity for this routine; see @ref name.
+  /// @param name Human-readable name; see @ref name.
   ///
-  /// @param trigger A callback the routine fires (through @ref triggerRunner) to wake its driving
-  /// Runner when work arrives. Defaults to none; the Runner may instead install one later via @ref
-  /// attachTrigger.
+  /// @param trigger Callback the routine fires (via @ref triggerRunner) to wake its @ref Runner
+  /// when work arrives. Defaults to none; the Runner can set one later via @ref attachTrigger.
   explicit Routine(std::string name, std::function<void()> trigger = nullptr);
 
-  /// @brief Signals the driving @ref Runner that work is available if a trigger is attached.
+  /// @brief Wakes the driving @ref Runner if a trigger is set.
   ///
-  /// A subclass calls this when it transitions from idle to having work, to wake a Runner parked
-  /// after a @ref State::Waiting return. No-op while no trigger is set (none passed at
-  /// construction and @ref attachTrigger not yet called).
+  /// A subclass calls this when it goes from idle to having work, to wake a Runner parked after a
+  /// @ref State::Waiting return. Does nothing while no trigger is set (none passed at construction
+  /// and @ref attachTrigger not yet called).
   void triggerRunner() const;
 
 private:
@@ -109,13 +102,13 @@ private:
   std::function<void()> mTrigger{nullptr};
   std::atomic<State> mState{State::Continue};
 
-  /// @brief Performs one iteration of work; implemented by a subclass and run from @ref tick.
+  /// @brief Does one iteration of work; a subclass implements it, @ref tick runs it.
   ///
-  /// Must not throw: an implementation that can fail catches its own exceptions and reports @ref
-  /// State::Done, so the Runner winds the routine down cleanly.
+  /// Must not throw: if it can fail, catch the exception and return @ref State::Done so the Runner
+  /// shuts the routine down cleanly.
   ///
-  /// @return @ref State::Continue to run again immediately, @ref State::Waiting to be rescheduled
-  /// later, or @ref State::Done when finished.
+  /// @return @ref State::Continue to run again now, @ref State::Waiting to run again later, or
+  /// @ref State::Done when finished or failed.
   [[nodiscard]] virtual State step() noexcept = 0;
 };
 

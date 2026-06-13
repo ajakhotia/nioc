@@ -16,24 +16,21 @@
 namespace nioc::concurrent
 {
 
-/// @brief The storage discipline an @ref AnyMpsc uses, chosen at runtime.
+/// @brief Storage mode an @ref AnyMpsc uses, chosen at runtime.
 enum class BufferMode : std::uint8_t
 {
-  /// @brief Bounded; evict the oldest value when full (latest-wins). See @ref OverwritingMpsc.
+  /// @brief Bounded. When full, drops the oldest value (latest wins). See @ref OverwritingMpsc.
   Overwriting,
 
-  /// @brief Grow without bound; never discard (lossless). See @ref UnboundedMpsc.
+  /// @brief Unbounded. Grows as needed and never drops a value. See @ref UnboundedMpsc.
   Unbounded
 };
 
-/// @brief An MPSC queue whose storage discipline is selected at runtime by a @ref BufferMode.
+/// @brief An MPSC queue whose storage mode is picked at runtime by a @ref BufferMode.
 ///
-/// Lets a caller defer the bounded-versus-unbounded choice to configuration without templating its
-/// own type on the storage. Dispatches each operation to the chosen concrete queue; the indirection
-/// is a single visit over a two-alternative variant.
-///
-/// Models @ref MpscQueue, so it is interchangeable with a concrete queue anywhere one is accepted —
-/// including as the storage behind a @ref NotifyingInbox.
+/// Use this to pick bounded or unbounded from config instead of templating your own type on the
+/// queue. Models @ref MpscQueue, so it works anywhere a concrete queue does, including as the
+/// storage behind a @ref NotifyingInbox.
 ///
 /// @tparam ValueType Type of the queued values.
 template<typename ValueType>
@@ -43,9 +40,9 @@ public:
   using value_type = ValueType;
   using size_type = std::size_t;
 
-  /// @brief Constructs the queue with the chosen storage discipline.
-  /// @param mode Storage discipline to use.
-  /// @param capacity Capacity of a bounded mode; ignored when the @p mode is @ref
+  /// @brief Builds the queue in the chosen storage mode.
+  /// @param mode Storage mode to use.
+  /// @param capacity Capacity for a bounded mode; ignored when @p mode is @ref
   /// BufferMode::Unbounded.
   explicit AnyMpsc(const BufferMode mode, const size_type capacity = 0):
     mStorage{makeStorage(mode, capacity)}
@@ -58,14 +55,14 @@ public:
   AnyMpsc& operator=(const AnyMpsc&) = delete;
   AnyMpsc& operator=(AnyMpsc&&) noexcept = delete;
 
-  /// @brief Enqueues @p value through the chosen storage; returns the sacrificed value, if any.
+  /// @brief Adds @p value to the queue. Returns the value dropped to make room, or nullopt.
   std::optional<value_type> push(value_type value)
   {
     return std::visit([&value](auto& queue) { return queue.push(std::move(value)); }, mStorage);
   }
 
-  /// @brief Constructs a value in place from @p args through the chosen storage; returns the
-  /// sacrificed value, if any.
+  /// @brief Builds a value in place from @p args. Returns the value dropped to make room, or
+  /// nullopt.
   template<typename... Args>
     requires std::constructible_from<value_type, Args...>
   std::optional<value_type> emplace(Args&&... args)

@@ -16,11 +16,10 @@ namespace nioc::geometry
 {
 namespace detail
 {
-/// @brief Normalizes a frame identifier so it can be passed on without array-to-pointer decay.
+/// @brief Normalizes a frame identifier for safe passing.
 ///
-/// A character buffer (such as a string literal) becomes an owned @ref std::string through an
-/// explicit cast; an identifier of any other type (@ref std::string, @ref DynamicFrame) is
-/// forwarded unchanged.
+/// Copies a string literal into an owned @ref std::string. Returns any other type
+/// (@ref std::string, @ref DynamicFrame) unchanged.
 template<typename FrameArg>
 auto normalizeFrameId(FrameArg&& frameId)
 {
@@ -35,13 +34,12 @@ auto normalizeFrameId(FrameArg&& frameId)
 }
 } // namespace detail
 
-/// @brief Manages parent and child frame relationships.
+/// @brief Holds the parent and child frame identities of a transformation.
 ///
-/// Stores frame identities for geometric transformations. Supports both compile-time (StaticFrame)
-/// and runtime (DynamicFrame) frame types.
+/// Each frame may be compile-time (StaticFrame) or runtime (DynamicFrame).
 ///
-/// @tparam ParentFrame_ Parent frame type.
-/// @tparam ChildFrame_ Child frame type.
+/// @tparam ParentFrame_ Parent frame type (StaticFrame or DynamicFrame).
+/// @tparam ChildFrame_ Child frame type (StaticFrame or DynamicFrame).
 template<
     typename ParentFrame_,
     typename ChildFrame_,
@@ -52,7 +50,7 @@ class FrameReferences: public ParentConcept, public ChildConcept
 public:
   using SelfType = FrameReferences<ParentFrame_, ChildFrame_>;
 
-  /// @brief Constructs with compile-time frame identities.
+  /// @brief Constructs when both frames are static. Takes no arguments.
   template<typename ParentFrame = SelfType::ParentFrame, typename ChildFrame = SelfType::ChildFrame>
   FrameReferences() noexcept
     requires(common::isSpecialization<ParentFrame, StaticFrame> and
@@ -61,8 +59,8 @@ public:
   {
   }
 
-  /// @brief Constructs with static parent and runtime child frame.
-  /// @param childId Child frame identifier (string or DynamicFrame).
+  /// @brief Constructs with a static parent and a runtime child.
+  /// @param childId Child frame identifier. Pass a string or a DynamicFrame.
   template<
       typename ChildConceptArgs,
       typename ParentFrame = SelfType::ParentFrame,
@@ -76,8 +74,8 @@ public:
   {
   }
 
-  /// @brief Constructs with runtime parent and static child frame.
-  /// @param parentId Parent frame identifier (string or DynamicFrame).
+  /// @brief Constructs with a runtime parent and a static child.
+  /// @param parentId Parent frame identifier. Pass a string or a DynamicFrame.
   template<
       typename ParentConceptArgs,
       typename ParentFrame = SelfType::ParentFrame,
@@ -93,9 +91,9 @@ public:
   {
   }
 
-  /// @brief Constructs with runtime frame identities.
-  /// @param parentId Parent frame identifier (string or DynamicFrame).
-  /// @param childId Child frame identifier (string or DynamicFrame).
+  /// @brief Constructs when both frames are runtime.
+  /// @param parentId Parent frame identifier. Pass a string or a DynamicFrame.
+  /// @param childId Child frame identifier. Pass a string or a DynamicFrame.
   template<
       typename ParentConceptArgs,
       typename ChildConceptArgs,
@@ -122,9 +120,7 @@ public:
   ~FrameReferences() override = default;
 };
 
-/// @brief Exception for mismatched frame composition.
-///
-/// Thrown when composing transformations with incompatible frames.
+/// @brief Thrown when composing transformations whose inner frames do not match.
 class FrameCompositionException final: public std::runtime_error
 {
 public:
@@ -133,18 +129,16 @@ public:
 
 namespace helpers
 {
-/// @brief Builds a @ref FrameCompositionException message from the two clashing frame names.
+/// @brief Builds the error message for a @ref FrameCompositionException.
 ///
-/// @param lhsFrameName Name of the frame on the left of the composition.
-///
-/// @param rhsFrameName Name of the frame on the right of the composition.
-///
+/// @param lhsFrameName Name of the left frame in the composition.
+/// @param rhsFrameName Name of the right frame in the composition.
 /// @return The formatted error message.
 std::string frameCompositionErrorMessage(
     const std::string& lhsFrameName,
     const std::string& rhsFrameName);
 
-/// @brief Asserts frame equality at compile-time.
+/// @brief Checks two static frames match. Fails to compile if they differ.
 template<typename LhsFrame, typename RhsFrame>
 constexpr void assertFrameEqual() noexcept
   requires(
@@ -153,8 +147,8 @@ constexpr void assertFrameEqual() noexcept
 {
 }
 
-/// @brief Asserts static frame matches dynamic frame at runtime.
-/// @param rhsFrame Dynamic frame to check.
+/// @brief Checks a static frame matches a dynamic frame.
+/// @param rhsFrame Dynamic frame to check against the static LhsFrame.
 /// @throws FrameCompositionException If the frame names differ.
 template<typename LhsFrame, typename RhsFrame>
 inline void assertFrameEqual(const RhsFrame& rhsFrame)
@@ -169,8 +163,8 @@ inline void assertFrameEqual(const RhsFrame& rhsFrame)
   }
 }
 
-/// @brief Asserts dynamic frame matches static frame at runtime.
-/// @param lhsFrame Dynamic frame to check.
+/// @brief Checks a dynamic frame matches a static frame.
+/// @param lhsFrame Dynamic frame to check against the static RhsFrame.
 /// @throws FrameCompositionException If the frame names differ.
 template<typename LhsFrame, typename RhsFrame>
 inline void assertFrameEqual(const LhsFrame& lhsFrame)
@@ -185,7 +179,7 @@ inline void assertFrameEqual(const LhsFrame& lhsFrame)
   }
 }
 
-/// @brief Asserts two dynamic frames match at runtime.
+/// @brief Checks two dynamic frames match.
 /// @param lhsFrame First dynamic frame.
 /// @param rhsFrame Second dynamic frame.
 /// @throws FrameCompositionException If the frame names differ.
@@ -204,13 +198,14 @@ inline void assertFrameEqual(const LhsFrame& lhsFrame, const RhsFrame& rhsFrame)
 
 } // namespace helpers
 
-/// @brief Composes two frame relationships into one.
+/// @brief Chains two frame relationships end to end into one.
 ///
-/// Combines two transformations end to end.
+/// The child of the left must match the parent of the right. The result runs from the left
+/// parent to the right child.
 ///
-/// @param lhsFrameReferences First frame relationship.
-/// @param rhsFrameReferences Second frame relationship.
-/// @return Composed frame relationship.
+/// @param lhsFrameReferences Left frame relationship.
+/// @param rhsFrameReferences Right frame relationship.
+/// @return The chained frame relationship.
 /// @throws FrameCompositionException If the inner frames do not match.
 template<typename LhsFrameReferences, typename RhsFrameReferences>
 constexpr FrameReferences<
@@ -237,9 +232,9 @@ composeFrameReferences(
       rhsFrameReferences.childFrameAsTuple()));
 }
 
-/// @brief Inverts a frame relationship.
+/// @brief Swaps the parent and child of a frame relationship.
 /// @param input Frame relationship to invert.
-/// @return Inverted frame relationship.
+/// @return The inverted frame relationship.
 template<typename InputFrameReferences>
 constexpr FrameReferences<
     typename InputFrameReferences::ChildFrame,

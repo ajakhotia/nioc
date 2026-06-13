@@ -5,6 +5,7 @@ add_executable(commonTest
     exceptionTest.cpp
     filesystemTest.cpp
     lockTest.cpp
+    makeBimapTest.cpp
     raiiTokenTest.cpp
     signalCatcherTest.cpp
     timeTest.cpp

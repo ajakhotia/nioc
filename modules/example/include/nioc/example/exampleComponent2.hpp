@@ -18,30 +18,28 @@
 namespace nioc::example
 {
 
-/// @brief Example @ref terminus::Component that counts the messages it receives on three topics.
+/// @brief Example @ref terminus::Component that counts messages on three topics.
 ///
-/// A minimal sink showing how to subscribe to several topics at once. It subscribes to `Sample1`,
-/// `Sample2`, and `Sample3` on their own topics; each received message increments the matching
-/// counter and logs the running totals. The per-type counts are exposed for inspection.
+/// Subscribes to `Sample1`, `Sample2`, and `Sample3`, each on its own topic. Each message bumps
+/// the matching counter and logs the totals. Counts are readable per type.
 class ExampleComponent2 final: public terminus::Component
 {
 public:
-  /// @brief Configures the component from its config block.
+  /// @brief Builds the component from its config block.
   ///
-  /// @param port Hub the component subscribes to; must outlive this component.
+  /// @param port Hub to subscribe to. Must outlive this component.
   ///
-  /// @param config View of this component's config block (see exampleComponent2Config.capnp): the
-  /// three input topics, plus a `component` subsection forwarded to the @ref terminus::Component
-  /// base.
+  /// @param config This component's config block (see exampleComponent2Config.capnp): the three
+  /// input topics and a `component` subsection for the @ref terminus::Component base.
   ExampleComponent2(terminus::Port& port, ExampleComponent2Config::Reader config);
 
-  /// @brief Returns the number of `Sample1` messages received so far.
+  /// @brief Returns how many `Sample1` messages were received.
   [[nodiscard]] std::uint64_t sample1Count() const noexcept;
 
-  /// @brief Returns the number of `Sample2` messages received so far.
+  /// @brief Returns how many `Sample2` messages were received.
   [[nodiscard]] std::uint64_t sample2Count() const noexcept;
 
-  /// @brief Returns the number of `Sample3` messages received so far.
+  /// @brief Returns how many `Sample3` messages were received.
   [[nodiscard]] std::uint64_t sample3Count() const noexcept;
 
 private:

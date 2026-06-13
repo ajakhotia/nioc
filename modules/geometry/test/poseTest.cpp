@@ -4,11 +4,13 @@
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#include <array>
 #include <gtest/gtest.h>
 #include <nioc/common/typeTraits.hpp>
 #include <nioc/geometry/pose.hpp>
 #include <numbers>
 #include <span>
+#include <utility>
 
 namespace nioc::geometry
 {
@@ -166,7 +168,7 @@ TEST(Pose, ConstructionFromParamterSpan)
     const auto& paramArray = kPoseParamsD;
     auto paramSpan = std::span(paramArray.data(), paramArray.size());
 
-    // EXPECT_NO_THROW((Pose<double>(paramSpan)));
+    EXPECT_NO_THROW((Pose<double>(paramSpan)));
 
     const auto test = Pose<double>{paramSpan};
     poseParamCheck(test, paramArray, test_info_->name());
@@ -176,7 +178,7 @@ TEST(Pose, ConstructionFromParamterSpan)
     auto paramArray = kPoseParamsF;
     auto paramSpan = std::span<float>(paramArray.data(), paramArray.size());
 
-    // EXPECT_NO_THROW((Pose<float>(paramSpan)));
+    EXPECT_NO_THROW((Pose<float>(paramSpan)));
 
     const auto test = Pose<float>{paramSpan};
     poseParamCheck(test, paramArray, test_info_->name());
@@ -220,6 +222,83 @@ TEST(Pose, StreamOperator)
       stringStream.str(),
       "{ Orientation:[       0,        0, 0.707107, "
       "0.707107], Position:[0.1, 0.2, 0.3] }\n");
+}
+
+TEST(PoseMap, mutableMapNormalizesTheBufferInPlace)
+{
+  // Construction normalizes the quaternion portion of the caller's own memory: (0,0,0,2) becomes
+  // the identity quaternion in the buffer itself. The position is untouched.
+  constexpr auto kScaledW = 2.0;
+  constexpr auto kPosY = 2.0;
+  constexpr auto kPosZ = 3.0;
+  auto buffer = std::array{0.0, 0.0, 0.0, kScaledW, 1.0, kPosY, kPosZ};
+  const auto map = Eigen::Map<Pose<double>>{std::span(buffer)};
+
+  EXPECT_DOUBLE_EQ(1.0, buffer[3]);
+  EXPECT_DOUBLE_EQ(1.0, map.cOrientation().norm());
+  EXPECT_DOUBLE_EQ(1.0, buffer[4]);
+  EXPECT_DOUBLE_EQ(2.0, buffer[5]);
+  EXPECT_DOUBLE_EQ(3.0, buffer[6]);
+}
+
+TEST(PoseMap, constMapReadsTheBufferVerbatim)
+{
+  const auto buffer = std::array{0.0, 0.0, 0.0, 1.0, 1.0, 2.0, 3.0};
+  const auto map = Eigen::Map<const Pose<double>>{std::span(buffer)};
+
+  EXPECT_DOUBLE_EQ(1.0, map.cOrientation().w());
+  EXPECT_DOUBLE_EQ(1.0, map.cPosition().x());
+  EXPECT_DOUBLE_EQ(2.0, map.cPosition().y());
+  EXPECT_DOUBLE_EQ(3.0, map.cPosition().z());
+}
+
+TEST(PoseMap, constMapRejectsNonUnitQuaternion)
+{
+  // The read-only map cannot normalize the caller's memory, so it refuses a non-unit quaternion
+  // instead.
+  const auto buffer = std::array{0.0, 0.0, 0.0, 2.0, 1.0, 2.0, 3.0};
+  EXPECT_THROW((Eigen::Map<const Pose<double>>{std::span(buffer)}), std::invalid_argument);
+}
+
+TEST(PoseMap, bothMapsRejectWrongSizeBuffers)
+{
+  constexpr auto kPosY = 2.0;
+  auto shortBuffer = std::array{0.0, 0.0, 0.0, 1.0, 1.0, kPosY};
+  EXPECT_THROW((Eigen::Map<Pose<double>>{std::span(shortBuffer)}), std::invalid_argument);
+  EXPECT_THROW(
+      (Eigen::Map<const Pose<double>>{std::span(std::as_const(shortBuffer))}),
+      std::invalid_argument);
+}
+
+TEST(Pose, InverseComposesToIdentity)
+{
+  const auto pose = Pose<double>{
+      Eigen::Quaterniond(Eigen::AngleAxisd(0.8, Eigen::Vector3d(0.3, -0.4, 0.5).normalized())),
+      Eigen::Vector3d(1.0, -2.0, 0.5)};
+
+  const auto identity = pose * pose.inverse();
+
+  EXPECT_NEAR(0.0, identity.orientation().angularDistance(Eigen::Quaterniond::Identity()), 1e-12);
+  EXPECT_NEAR(0.0, identity.position().norm(), 1e-12);
+}
+
+TEST(Pose, CompositionFollowsTheSe3GroupProduct)
+{
+  const auto lhs = Pose<double>{
+      Eigen::Quaterniond(Eigen::AngleAxisd(0.6, Eigen::Vector3d(1.0, 0.5, -0.3).normalized())),
+      Eigen::Vector3d(1.0, 2.0, 3.0)};
+  const auto rhs = Pose<double>{
+      Eigen::Quaterniond(Eigen::AngleAxisd(-0.9, Eigen::Vector3d(0.2, -1.0, 0.4).normalized())),
+      Eigen::Vector3d(-0.5, 0.25, 4.0)};
+
+  const auto composed = lhs * rhs;
+
+  // q = qL * qR, p = qL * pR + pL.
+  const auto expectedOrientation = (lhs.orientation() * rhs.orientation()).normalized();
+  const auto expectedPosition = ((lhs.orientation() * rhs.position()) + lhs.position()).eval();
+
+  EXPECT_NEAR(0.0, composed.orientation().angularDistance(expectedOrientation), 1e-12);
+  EXPECT_NEAR(0.0, (composed.position() - expectedPosition).norm(), 1e-12);
 }
 
 } // namespace nioc::geometry

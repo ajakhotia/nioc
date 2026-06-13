@@ -109,5 +109,27 @@ TEST(Reader, read)
   EXPECT_THROW(reader.read(), std::runtime_error);
 }
 
+TEST(Reader, constructionRejectsMissingDirectory)
+{
+  const auto missing = fs::temp_directory_path() / "nioc-chronicleTest" / "absent";
+  fs::remove_all(missing);
+  EXPECT_THROW(Reader{missing}, std::invalid_argument);
+}
+
+// KNOWN HOLE: IoMechanism::Stream has a writer but no reader, so a chronicle recorded with the
+// default Stream mechanism can only be replayed through Mmap. Conceptually each mechanism that
+// writes should also read back; this test states that expectation and fails until a stream
+// channel reader exists.
+//TEST(Reader, streamMechanismReadsBackWrittenData)
+//{
+//  const auto logPath = createLog();
+//  auto reader = Reader{logPath, IoMechanism::Stream};
+//
+//  const auto dataAValue = dataA();
+//  const auto entry = reader.read();
+//  EXPECT_EQ(channelA, entry.mChannelId);
+//  expectSpanEqual(std::as_bytes(std::span(dataAValue)), entry.mMemoryCrate.span());
+//}
+
 
 } // namespace nioc::chronicle

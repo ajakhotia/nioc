@@ -5,12 +5,16 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "utils.hpp"
+#include <array>
+#include <cstring>
 #include <fstream>
 #include <gtest/gtest.h>
 #include <nioc/chronicle/reader.hpp>
 #include <nioc/chronicle/writer.hpp>
 #include <nioc/common/exception.hpp>
 #include <numeric>
+#include <thread>
+#include <vector>
 
 namespace nioc::chronicle
 {
@@ -160,6 +164,78 @@ TEST(Writer, path)
   const auto dir = makeFreshEmptyDir("writerPath");
   const auto writer = Writer{dir};
   EXPECT_EQ(writer.path(), dir);
+}
+
+TEST(Writer, concurrentWritersConserveEveryFrame)
+{
+  constexpr auto kThreads = 4UL;
+  constexpr auto kFramesPerThread = 64UL;
+  static constexpr auto kChannel = ChannelId{77UL};
+
+  // Each frame's payload encodes (thread, index), so the read-back can prove conservation and
+  // per-producer FIFO order even though the cross-thread interleaving is unspecified.
+  const auto logPath = [&]
+  {
+    auto writer = Writer{makeFreshEmptyDir("concurrentWriters")};
+
+    auto producers = std::vector<std::thread>{};
+    producers.reserve(kThreads);
+    for(auto threadId = 0UL; threadId < kThreads; ++threadId)
+    {
+      producers.emplace_back(
+          [&writer, threadId]
+          {
+            for(auto index = 0UL; index < kFramesPerThread; ++index)
+            {
+              const auto payload = std::array{threadId, index};
+              writer.write(kChannel, std::as_bytes(std::span(payload)));
+            }
+          });
+    }
+    for(auto& producer: producers)
+    {
+      producer.join();
+    }
+
+    return writer.path();
+  }();
+
+  auto reader = Reader{logPath};
+  auto nextIndexPerThread = std::array<std::uint64_t, kThreads>{};
+  for(auto count = 0UL; count < kThreads * kFramesPerThread; ++count)
+  {
+    const auto entry = reader.read();
+    ASSERT_EQ(kChannel, entry.mChannelId);
+
+    const auto span = entry.mMemoryCrate.span();
+    ASSERT_EQ(2 * sizeof(std::uint64_t), span.size());
+    auto payload = std::array<std::uint64_t, 2>{};
+    std::memcpy(payload.data(), span.data(), span.size());
+
+    const auto threadId = payload[0];
+    ASSERT_LT(threadId, kThreads);
+    // Per-producer FIFO: thread T's frames come back in the order T wrote them.
+    EXPECT_EQ(nextIndexPerThread.at(threadId), payload[1]);
+    ++nextIndexPerThread.at(threadId);
+  }
+
+  // Every frame is accounted for and nothing extra remains.
+  for(const auto& produced: nextIndexPerThread)
+  {
+    EXPECT_EQ(kFramesPerThread, produced);
+  }
+  EXPECT_THROW(static_cast<void>(reader.read()), std::runtime_error);
+}
+
+TEST(Writer, mmapMechanismRejectedOnFirstWrite)
+{
+  constexpr auto channel = ChannelId{1UL};
+  const auto data = makeData();
+
+  // Construction accepts any mechanism; the unsupported one surfaces on the first frame, when the
+  // channel writer would be built.
+  auto writer = Writer{makeFreshEmptyDir("mmapRejected"), IoMechanism::Mmap};
+  EXPECT_THROW(writer.write(channel, std::as_bytes(std::span(data))), std::invalid_argument);
 }
 
 } // namespace nioc::chronicle

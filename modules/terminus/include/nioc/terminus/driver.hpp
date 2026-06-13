@@ -16,15 +16,14 @@
 namespace nioc::terminus
 {
 
-/// @brief A source @ref Routine that publishes messages onto a @ref Port but receives none.
+/// @brief A @ref Routine that publishes messages onto a @ref Port and receives none.
 ///
-/// A Driver is the entry point for data that originates outside the process — a sensor reader, a
-/// file reader, a synthetic generator. It owns no inbox: a subclass implements @ref run to
-/// produce work and calls the method @ref publish to emit typed messages onto the Port. Contrast
-/// @ref Component, which also receives messages through subscriptions.
+/// Use a Driver to bring outside data into the process: a sensor reader, a file reader, a
+/// generator. A subclass implements @ref run to produce work and calls @ref publish to send typed
+/// messages to the Port. A Driver has no inbox; use @ref Component instead if you also need to
+/// receive messages.
 ///
-/// Construct through a subclass. The Driver holds the Port by reference, so the Port must outlive
-/// every Driver bound to it.
+/// Construct through a subclass. The Port is held by reference and must outlive the Driver.
 class Driver: public concurrent::Routine
 {
 public:
@@ -36,38 +35,35 @@ public:
 
 protected:
   /// @brief Binds the driver to the Port it publishes onto.
-  /// @param port Hub the driver publishes onto; must outlive this driver.
-  /// @param name Human-readable identity for this driver (see @ref Routine::name).
+  /// @param port Port to publish onto; must outlive this driver.
+  /// @param name Name for this driver (see @ref Routine::name).
   Driver(Port& port, std::string name);
 
-  /// @brief Configures the driver base from its config block.
+  /// @brief Configures the driver base from a config block.
   ///
-  /// Reads the routine's name (see @ref Routine::name; conventionally matching the tag of the
-  /// subclass's config block) out of @p config. By convention a subclass forwards the `driver`
-  /// subsection of its own config block here, keeping the base's settings out of the subclass's
-  /// namespace.
+  /// Reads the routine's name (see @ref Routine::name) from @p config. A subclass passes the
+  /// `driver` subsection of its own config block here.
   ///
-  /// @param port Hub the driver publishes onto; must outlive this driver.
+  /// @param port Port to publish onto; must outlive this driver.
   ///
-  /// @param config View of the driver's config block (see driverConfig.capnp).
+  /// @param config The driver's config block (see driverConfig.capnp).
   ///
-  /// @throws std::invalid_argument If the name is empty: it is instance-specific, so the config
-  /// data must provide it.
+  /// @throws std::invalid_argument If the name is empty. The config must supply it.
   Driver(Port& port, DriverConfig::Reader config);
 
-  /// @brief Returns the token tripped when the bound Port is asked to shut down.
+  /// @brief Returns the token set when the bound Port is asked to shut down.
   ///
-  /// A subclass observes this in its @ref run method to wind down gracefully: stop producing,
-  /// finish in-flight work, and report @ref State::Done once a shutdown has been requested.
+  /// Check this token in @ref run. Once shutdown is requested, stop producing, finish in-flight
+  /// work, and return @ref State::Done.
   [[nodiscard]] const std::stop_token& shutdownToken() const noexcept;
 
   /// @brief Publishes a typed message onto the bound Port.
   ///
   /// @tparam Schema Cap'n Proto schema of the message.
   ///
-  /// @param topic Topic the message is published on.
+  /// @param topic Topic to publish on.
   ///
-  /// @param msgPtr Message to publish; ownership passes to the Port.
+  /// @param msgPtr Message to publish. Ownership passes to the Port.
   template<typename Schema>
   void publish(const std::string_view& topic, ConstMsgPtr<Schema> msgPtr)
   {
@@ -78,24 +74,22 @@ private:
   Port& mPort;
   const std::stop_token mShutdownToken;
 
-  /// @brief Runs one iteration: invokes @ref run and converts any failure into a clean finish.
+  /// @brief Runs one iteration by calling @ref run, turning any failure into a clean finish.
   ///
-  /// Catches every exception @ref run may throw, logs it, and reports @ref State::Done so a failing
-  /// driver winds down gracefully rather than escalating. Never throws.
+  /// Catches and logs any exception from @ref run, then returns @ref State::Done so a failing
+  /// driver stops cleanly. Never throws.
   ///
   /// @return Whatever @ref run returns, or @ref State::Done if @ref run throws.
   [[nodiscard]] State step() noexcept final;
 
-  /// @brief Produces one iteration of work, emitting messages through the @ref publish method.
+  /// @brief Produces one iteration of work, sending messages via @ref publish.
   ///
-  /// A subclass implements this to generate and publish the next message(s). It is invoked once per
-  /// iteration by the @ref step method.
+  /// Implement this to generate and publish the next message(s). Called once per iteration.
   ///
-  /// @return @ref State::Continue to be scheduled again immediately, @ref State::Waiting when no
-  /// work is ready yet, or @ref State::Done when the source is exhausted.
+  /// @return @ref State::Continue to run again right away, @ref State::Waiting when no work is
+  /// ready yet, or @ref State::Done when the source is exhausted.
   ///
-  /// @throws std::exception A subclass may let any exception escape; the @ref step method catches
-  /// it.
+  /// @throws std::exception Any exception may escape; @ref step catches it.
   [[nodiscard]] virtual State run() = 0;
 };
 

@@ -24,17 +24,15 @@
 namespace nioc::terminus
 {
 
-/// @brief A @ref Routine that receives subscribed messages through a bounded inbox and may publish.
+/// @brief A @ref Routine that receives messages through an inbox and may publish.
 ///
-/// A Component is the worker that reacts to data flowing through a @ref Port: a subclass calls @ref
-/// subscription to register a typed callback per topic, and the Port delivers matching messages
-/// into the Component's inbox. Each @ref step pops one queued message and runs its callback on the
-/// Runner's thread, so callbacks never run concurrently with one another. A subclass may also @ref
-/// publish to emit messages. Contrast @ref Driver, which only publishes.
+/// A Component reacts to data on a @ref Port. A subclass calls @ref subscribe to register a typed
+/// callback per topic; the Port queues matching messages in the inbox. Each @ref step runs one
+/// queued callback on the Runner's thread, so callbacks never run at the same time. A subclass may
+/// also @ref publish. Compare @ref Driver, which only publishes.
 ///
-/// The inbox's storage discipline (concurrent::BufferMode) and capacity are fixed at
-/// construction. Construct through a subclass. The Component holds the Port by reference, so the
-/// Port must outlive every Component bound to it.
+/// Inbox buffer mode and capacity are fixed at construction. Construct through a subclass. The Port
+/// is held by reference and must outlive every Component bound to it.
 class Component: public concurrent::Routine
 {
 public:
@@ -54,15 +52,15 @@ protected:
 
   /// @brief Binds the component to its Port and sizes the inbox.
   ///
-  /// @param port Hub the component subscribes to and publishes onto; must outlive this component.
+  /// @param port Port to subscribe to and publish on; must outlive this component.
   ///
-  /// @param inboxCapacity Maximum number of undelivered messages held at once for a bounded
-  /// @p bufferMode; ignored when unbounded.
+  /// @param inboxCapacity Max messages held at once when @p bufferMode is bounded; ignored when
+  /// unbounded.
   ///
-  /// @param bufferMode Storage discipline of the inbox (see @ref concurrent::BufferMode).
+  /// @param bufferMode Inbox buffer mode (see @ref concurrent::BufferMode).
   ///
-  /// @param name Human-readable identity for this component (see @ref Routine::name); a subclass
-  /// passes its own type name.
+  /// @param name Name of this component (see @ref Routine::name); a subclass passes its own type
+  /// name.
   Component(
       Port& port,
       std::size_t inboxCapacity,
@@ -71,32 +69,28 @@ protected:
 
   /// @brief Configures the component base from its config block.
   ///
-  /// Reads the routine's name (see @ref Routine::name; conventionally matching the tag of the
-  /// subclass's config block) and the inbox settings out of @p config. By convention a subclass
-  /// forwards the `component` subsection of its own config block here, keeping the base's settings
-  /// out of the subclass's namespace.
+  /// Reads the name (see @ref Routine::name) and inbox settings from @p config. A subclass passes
+  /// the `component` subsection of its own config block here.
   ///
-  /// @param port Hub the component subscribes to and publishes onto; must outlive this component.
+  /// @param port Port to subscribe to and publish on; must outlive this component.
   ///
-  /// @param config View of the component's config block (see componentConfig.capnp).
+  /// @param config The component's config block (see componentConfig.capnp).
   ///
-  /// @throws std::invalid_argument If the name is empty: it is instance-specific, so the config
-  /// data must provide it.
+  /// @throws std::invalid_argument If the name is empty; the config must provide it.
   Component(Port& port, ComponentConfig::Reader config);
 
   /// @brief Subscribes a typed callback to a topic.
   ///
-  /// Registers @p msgCallback to receive every message of @p Schema published on the @p topic.
-  /// Messages are queued in the inbox, and the callback runs from the @ref step, never
-  /// concurrently. A topic may be subscribed at most once; any fan-out is the callback's
-  /// responsibility.
+  /// @p msgCallback receives every @p Schema message published on @p topic. Messages are queued in
+  /// the inbox and the callback runs from @ref step, never concurrently. Subscribe a topic at most
+  /// once; any fan-out is the callback's job.
   ///
-  /// @tparam Schema Cap'n Proto schema of the subscribed message.
+  /// @tparam Schema Cap'n Proto schema of the message.
   ///
   /// @param topic Topic to subscribe to.
   ///
-  /// @param msgCallback Handler invoked with each received message; the @ref State it returns
-  /// becomes the component's next state, so returning @ref State::Done finishes the component.
+  /// @param msgCallback Called with each message. The @ref State it returns becomes the component's
+  /// next state, so returning @ref State::Done finishes the component.
   ///
   /// @throws std::logic_error If this topic is already subscribed.
   template<typename Schema>
@@ -104,8 +98,7 @@ protected:
   {
     const auto channelId = makeChannelId(Msg<Schema>::kMsgId, topic);
 
-    // Strictly disallow duplicate subscriptions. Any necessary fan-out must be handled by the
-    // lambda passed in by the user.
+    // No duplicate subscriptions. Fan-out is the user's lambda's job.
     if(mHandlers.contains(channelId))
     {
       common::throwException<std::logic_error>(
@@ -116,9 +109,8 @@ protected:
           channelId.mValue);
     }
 
-    // Dispatch pathway from the inbox to the user-provided callback. The handler is stored at a
-    // stable address (an unordered_map never relocates an element), and the inbox carries a pointer
-    // straight to it.
+    // Inbox-to-callback step. The handler lives at a stable address (an unordered_map never moves
+    // an element), so the inbox can carry a pointer straight to it.
     const auto& handler =
         mHandlers
             .emplace(
@@ -131,8 +123,7 @@ protected:
                 })
             .first->second;
 
-    // Dispatch pathway from port to the component's inbox. This also contains a pointer to
-    // the handler that will take the msg from the inbox to the user-provided callback.
+    // Port-to-inbox step. Pushes the message with a pointer to its handler.
     mPort.subscribe(
         channelId,
         [this, handlerPtr = &handler](Consignment consignment)
@@ -146,11 +137,11 @@ protected:
         channelId.mValue);
   }
 
-  /// @brief Publishes a typed message onto the bound Port.
+  /// @brief Publishes a typed message on the bound Port.
   ///
   /// @tparam Schema Cap'n Proto schema of the message.
   ///
-  /// @param topic Topic the message is published on.
+  /// @param topic Topic to publish on.
   ///
   /// @param msgPtr Message to publish; ownership passes to the Port.
   template<typename Schema>
@@ -166,13 +157,13 @@ private:
   concurrent::NotifyingInbox<MpscQueue> mInbox;
   std::unordered_map<ChannelId, MsgBaseCallback> mHandlers;
 
-  /// @brief Pops one queued message and runs its subscribed callback, reporting the next State.
+  /// @brief Pops one queued message and runs its callback, returning the next State.
   ///
-  /// Catches every exception a callback may throw, logs it, and reports @ref State::Done so a
-  /// failing component winds down gracefully rather than escalating. Never throws.
+  /// Catches any exception the callback throws, logs it, and returns @ref State::Done so a failing
+  /// component shuts down cleanly. Never throws.
   ///
-  /// @return @ref State::Waiting when the inbox is empty; otherwise the @ref State returned by the
-  /// subscribed callback; or @ref State::Done if the callback throws.
+  /// @return @ref State::Waiting if the inbox is empty; the @ref State from the callback otherwise;
+  /// or @ref State::Done if the callback throws.
   [[nodiscard]] State step() noexcept final;
 };
 

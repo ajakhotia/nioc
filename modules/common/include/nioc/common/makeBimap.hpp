@@ -12,14 +12,14 @@
 namespace nioc::common
 {
 
-/// @brief Creates a bidirectional map from an initializer list of pairs.
+/// @brief Builds a two-way map from a list of pairs.
 ///
-/// Deduces the key and value types from the pairs. Handy for enum-to-string tables and other
-/// two-way lookups.
+/// Key and value types come from the pairs. Useful for enum-to-string tables. If a key already
+/// exists on either side, the new pair is dropped: the first pair wins.
 ///
-/// @tparam PairType Pair type, deduced from the initializer list.
-/// @param list Pairs to insert into the bimap.
-/// @return Populated boost::bimap.
+/// @tparam PairType Pair type, deduced from the list.
+/// @param list Pairs to insert.
+/// @return The filled boost::bimap.
 ///
 /// @code
 /// using namespace std::string_literals;

@@ -12,22 +12,23 @@
 namespace nioc::common
 {
 
-/// @brief Runs a user callback on a background thread when a registered process signal arrives.
+/// @brief Runs a callback on a background thread when a registered signal arrives.
 ///
-/// Maps each signal number to an action. On construction, it installs a handler for every signal in
-/// the map and starts one watcher thread. When a registered signal arrives, the watcher invokes
-/// that signal's action and passes the number of times the signal has been received so far (1 on
-/// the first delivery, 2 on the second, and so on). An action can use that count to escalate — for
-/// example, ask for a clean shutdown on the first interrupt and exit immediately on the second.
+/// Give it a map of signal number to action. It installs a handler for each signal and starts one
+/// watcher thread. When a registered signal arrives, the watcher calls that signal's action and
+/// passes how many times the signal has been received so far (1 on the first, 2 on the second,
+/// ...). An action can use the count to escalate, e.g. ask for a clean shutdown on the first
+/// interrupt and exit on the second.
 ///
-/// Actions run on the watcher thread, not inside the OS signal handler, so an action may safely do
-/// work that is not async-signal-safe, such as logging, locking, or allocating. The watcher runs
-/// actions one at a time, in the order their signals arrive.
+/// Actions run on the watcher thread, not in the OS signal handler, so they may do work that is not
+/// async-signal-safe (logging, locking, allocating). The watcher runs actions one at a time.
 ///
-/// The handlers stay installed for the lifetime of the catcher: the destructor restores the default
-/// behavior of each registered signal and joins the watcher thread. Construct one instance and keep
-/// it alive for as long as the signals should be handled. Signal handlers are process-global, so do
-/// not register the same signal with more than one catcher at a time.
+/// Signals coalesce: only one delivery can be pending. If another signal arrives before the watcher
+/// handles the pending one, it replaces it and the earlier delivery is lost.
+///
+/// Keep the instance alive for as long as you want signals handled. The destructor restores each
+/// signal's default behavior and joins the watcher thread. The pending slot and stop signal are
+/// process-global, so create at most one SignalCatcher per process.
 ///
 /// @code
 /// auto stopSource = std::stop_source{};
@@ -50,14 +51,12 @@ class SignalCatcher
 {
 public:
   /// @brief Callback run when a registered signal arrives.
-  /// @param count Number of times this signal has been received so far (1 on the first delivery).
+  /// @param count Times this signal has been received so far (1 on the first delivery).
   using SignalAction = std::function<void(std::int32_t)>;
 
   /// @brief Installs a handler for each signal and starts the watcher thread.
   ///
-  /// @tparam Args Types of the `{signal number, SignalAction}` pairs; forwarded to build the
-  /// signal-to-action map.
-  ///
+  /// @tparam Args Types of the `{signal number, SignalAction}` pairs.
   /// @param args One `{signal, action}` pair per signal to handle.
   template<typename... Args>
   explicit SignalCatcher(Args&&... args):

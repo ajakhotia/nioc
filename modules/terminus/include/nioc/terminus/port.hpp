@@ -35,21 +35,16 @@ class AsyncChronicleWriter;
 class Component;
 class Driver;
 
-/// @brief Central data hub for a nioc binary.
+/// @brief Central data hub for one run of a nioc binary.
 ///
-/// One Port instance owns the on-disk recording for one run of a nioc binary. It holds the run's
-/// @ref Manifest, which records itself into the recording (`manifest.json` and `config.json`) and
-/// is exposed via @ref runContext and @ref config. The Port creates the recording directory,
-/// tracks the recording's resource copies (`resources.json`, rewritten at teardown), adds a file
-/// sink to the nioc default logger so the run's log output is also written into the recording,
-/// and opens the chronicle writer that downstream code uses to record time-series data.
+/// A Port owns the on-disk recording for one run. It creates the recording directory, holds the
+/// run's @ref Manifest (exposed via @ref runContext and @ref config), copies in supporting files,
+/// writes the run's log output into the recording, and opens the chronicle writer for time-series
+/// data.
 ///
-/// The Port also owns the run's routine graph: the @ref Setup callback passed at construction
-/// builds the Drivers and Components bound to this Port, launches them on Runners, and hands all
-/// three sets over to the Port. On destruction, the Port requests shutdown, waits for in-flight
-/// consignments to drain, destroys the drivers, components, and runners in that order, and then
-/// finalizes the recording by writing `metadata.json` (the verbatim launch command plus the
-/// resource manifest) and detaching the log-file sink.
+/// A Port also owns the run's routine graph. The @ref Setup callback, passed at construction,
+/// builds the Drivers and Components and launches them on Runners. On destruction the Port shuts
+/// down, drains in-flight messages, and destroys drivers, components, and runners in that order.
 class Port
 {
 public:
@@ -62,28 +57,27 @@ public:
 
   /// @brief Callback that builds the run's routine graph.
   ///
-  /// Invoked exactly once at the end of construction, with the fully initialized Port and the
-  /// three routine sets the Port owns. The callback constructs Drivers and Components bound to the
-  /// Port, launches them on Runners, and parks all of them in the supplied vectors; the Port
-  /// destroys them at destruction in dependency order (drivers, components, runners).
+  /// Called once at the end of construction with the ready Port and its three routine sets. Build
+  /// Drivers and Components bound to the Port, launch them on Runners, and put all of them in the
+  /// supplied vectors. The Port destroys them at destruction in this order: drivers, components,
+  /// runners.
   using Setup = std::function<void(Port&, Drivers&, Components&, Runners&)>;
 
-  /// @brief Constructs a Port from a run's manifest and creates a fresh recording directory.
+  /// @brief Creates a fresh recording directory and builds the run.
   ///
-  /// The recording directory is named `<iso8601>_<uuid>` and lives directly under the context's
-  /// log root, which is created if it does not exist. The run's log output is also written to
-  /// `console.log` inside it; the manifest records itself (`manifest.json`, `config.json`); each
-  /// listed resource is copied in and mapped in `resources.json`; and, when the context asks for
-  /// it, chronicle data lands in `chronicle/`.
+  /// The recording directory is named `<iso8601>_<uuid>`, under the context's log root (created if
+  /// missing). Inside it: log output goes to `console.log`; the manifest writes `manifest.json` and
+  /// `config.json`; each listed resource is copied in and mapped in `resources.json`; chronicle
+  /// data goes to `chronicle/` when the context asks for it.
   ///
   /// @param manifest The run's context and configuration (see @ref Manifest); the Port takes
   /// ownership.
   ///
-  /// @param setup Builds the run's routine graph (see @ref Setup); invoked once the recording is
-  /// set up.
+  /// @param setup Builds the run's routine graph (see @ref Setup); called once the recording is
+  /// ready.
   ///
-  /// @throws std::invalid_argument If a listed resource is missing, not a regular file, or
-  /// collides.
+  /// @throws std::invalid_argument If a listed resource is missing, is not a regular file, or its
+  /// filename collides.
   ///
   /// @throws std::runtime_error If the recording directory cannot be populated.
   explicit Port(Manifest manifest, const Setup& setup);
@@ -102,17 +96,13 @@ public:
   [[nodiscard]] const std::filesystem::path& workingDir() const noexcept;
 
   /// @brief Returns this run's context: its mode, input log, and recording settings.
-  ///
-  /// Routines receive a Port at construction, so cross-cutting context — say, buffering decisions
-  /// that depend on @ref RunContext::playback — flows through here rather than through their
-  /// config blocks.
   [[nodiscard]] const RunContext& runContext() const noexcept;
 
   /// @brief Returns a typed read-only view of the run's configuration.
   ///
   /// The returned reader and its sub-readers stay valid for the Port's lifetime.
   ///
-  /// @tparam Schema Compiled type of the root schema the Port's manifest was built against.
+  /// @tparam Schema The root schema the manifest was built against.
   ///
   /// @throws kj::Exception If @p Schema is not that root schema.
   template<typename Schema>
@@ -123,58 +113,55 @@ public:
 
   /// @brief Adds a supporting file to the recording.
   ///
-  /// Copies the file at the @p source location into the recording directory under its filename. The
-  /// mapping `originalPath → filename` is recorded in `metadata.json` at shutdown.
+  /// Copies @p source into the recording directory under its filename. The mapping
+  /// `originalPath → filename` is recorded in `resources.json` at shutdown.
   ///
-  /// @param source Path to the file being added.
+  /// @param source Path to the file to add.
   ///
-  /// @throws std::invalid_argument If the @p source does not exist, is not a regular file, or its
-  /// filename collides with a previously added resource.
+  /// @throws std::invalid_argument If @p source does not exist, is not a regular file, or its
+  /// filename collides with an already-added resource.
   void addResource(const std::filesystem::path& source);
 
   /// @brief Returns the working-directory copy of a resource, adding it first if needed.
   ///
-  /// Looks up the copy of a @p source inside the working directory. If the @p source was not added
-  /// yet, the method copies it first (see @ref addResource). Callers then read from the
-  /// self-contained recording rather than the resource's original location.
+  /// If @p source was not added yet, copies it first (see @ref addResource). Read from the returned
+  /// copy so the recording is self-contained.
   ///
   /// @param source The resource's original path.
   ///
-  /// @return The path to the resource's copy inside the working directory.
+  /// @return Path to the resource's copy inside the working directory.
   ///
-  /// @throws std::invalid_argument If a @p source must be added but is missing, is not a regular
+  /// @throws std::invalid_argument If @p source must be added but is missing, is not a regular
   /// file, or its filename collides with an already-added resource.
   [[nodiscard]] std::filesystem::path acquireResource(const std::filesystem::path& source);
 
-  /// @brief Returns the working-directory copy of a previously added resource.
+  /// @brief Returns the working-directory copy of an already-added resource.
   ///
-  /// Const overload. Unlike the non-const overload, it never adds a resource; the p @p source must
-  /// already be added (see @ref addResource).
+  /// Const overload. Never adds a resource; @p source must already be added (see @ref addResource).
   ///
-  /// @param source The original path of a previously added resource.
+  /// @param source The original path of an already-added resource.
   ///
-  /// @return The path to the resource's copy inside the working directory.
+  /// @return Path to the resource's copy inside the working directory.
   ///
-  /// @throws std::out_of_range If a @p source was not previously added.
+  /// @throws std::out_of_range If @p source was not added.
   [[nodiscard]] std::filesystem::path acquireResource(const std::filesystem::path& source) const;
 
   /// @brief Registers a callback to receive every message published on a channel.
   ///
-  /// The Port owns @p callback for the rest of the run: subscriptions are fixed once built, so the
-  /// callback is held directly and invoked on the publishing thread with no per-message lifetime
-  /// check. Usually reached through @ref Component::subscribe rather than called directly.
+  /// The Port owns @p callback for the rest of the run and runs it on the publishing thread.
+  /// Usually reached through @ref Component::subscribe rather than called directly.
   ///
   /// @param channelId Channel to receive messages from (see @ref makeChannelId).
   ///
-  /// @param callback Callback invoked with each published message. Multiple callbacks may share a
+  /// @param callback Callback run with each published message. Multiple callbacks may share a
   /// channel; all of them receive every message.
   void subscribe(ChannelId channelId, ConsignmentCallback callback);
 
-  /// @brief Publishes a typed message on a topic, fanning it out to subscribers and recording it.
+  /// @brief Publishes a typed message on a topic, sending it to subscribers and recording it.
   ///
-  /// Resolves the channel from @p Schema and @p topic, then delivers synchronously on the caller's
-  /// thread: every subscriber on that channel is handed the message into its own inbox, and a copy
-  /// is recorded to the chronicle when this run records. Thread-safe.
+  /// Delivers synchronously on the caller's thread: every subscriber on the channel gets the
+  /// message in its own inbox, and a copy is recorded to the chronicle when this run records.
+  /// Thread-safe.
   ///
   /// @tparam Schema Cap'n Proto schema of the message.
   ///
@@ -192,28 +179,33 @@ public:
 
   /// @brief Requests a graceful shutdown: producers stop and in-flight work drains.
   ///
-  /// Trips @ref shutdownToken. A @ref Driver winds down off it.
+  /// Trips @ref shutdownToken, which a @ref Driver watches.
   void shutdown() const noexcept;
 
   /// @brief Requests an immediate halt: stop now and abandon in-flight work.
   ///
-  /// Trips @ref haltToken. A @ref Component finishes off it.
+  /// Trips @ref abortToken, which a @ref Component watches.
   void abort() const noexcept;
 
   /// @brief Returns the token tripped by @ref shutdown.
   [[nodiscard]] std::stop_token shutdownToken() const noexcept;
 
-  /// @brief Returns the token tripped by @ref halt.
+  /// @brief Returns the token tripped by @ref abort.
   [[nodiscard]] std::stop_token abortToken() const noexcept;
 
+  /// @brief Blocks until no published message is in flight: every message handed to a subscriber
+  /// has been destroyed.
+  ///
+  /// Call after producers have stopped — usually once @ref shutdown has tripped and the drivers are
+  /// done — to let in-flight work drain before tearing down the routine graph. A subscriber that
+  /// holds onto its messages forever prevents this call from ever returning.
   void awaitQuiescence() const;
 
-  /// @brief Paces one beat of the caller's main loop, reporting whether the run is still live.
+  /// @brief Paces one beat of the caller's main loop and reports whether the run is still live.
   ///
-  /// Records the invocation time, runs @p housekeeping, and then inspects the drivers: once every
-  /// driver reports it is done, the method returns false right away so the caller's loop can end.
-  /// Otherwise it sleeps out the remainder of @p duration — measured from invocation, so the
-  /// housekeeping cost does not stretch the beat — and returns true.
+  /// Runs @p housekeeping, then checks the drivers. If all drivers are done, returns false at once
+  /// so the caller's loop can end. Otherwise sleeps the rest of @p duration — timed from the start
+  /// of the call, so housekeeping does not stretch the beat — and returns true.
   ///
   /// @param duration Length of one beat of the loop.
   ///
@@ -243,26 +235,26 @@ private:
   std::stop_source mAbortSource;
   std::unique_ptr<AsyncChronicleWriter> mChronicleWriter;
 
-  // The run's routine graph, built by the setup callback. Declared in this order so natural
-  // destruction mirrors the destructor's explicit drivers → components → runners teardown.
+  // The run's routine graph. Declared in this order so natural member destruction runs drivers →
+  // components → runners, matching the destructor's teardown order.
   Runners mRunners;
   Components mComponents;
   Drivers mDrivers;
 
-  /// @brief Fans a message out to subscribers for a given channel.
+  /// @brief Sends a message to the subscribers of a channel.
   ///
   /// @param channelId Channel to publish on.
   ///
   /// @param msgBasePtr Message to publish; ownership passes to the Port.
   void publish(ChannelId channelId, const ConstMsgBasePtr& msgBasePtr);
 
-  /// @brief Makes note of a topic in human-readable form.
+  /// @brief Records a topic in human-readable form.
   ///
   /// @param channelId Channel id of the message.
   ///
   /// @param topic Human-readable name of the topic.
   ///
-  /// @param schemaName Human-readable name of the message schema published on the topic.
+  /// @param schemaName Human-readable name of the message schema on the topic.
   void recordTopic(
       ChannelId channelId,
       const std::string_view& topic,

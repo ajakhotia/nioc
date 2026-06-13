@@ -16,39 +16,36 @@
 namespace nioc::terminus
 {
 
-/// @brief Writes published messages to a chronicle on a dedicated thread.
+/// @brief Writes messages to a chronicle on a dedicated thread.
 ///
-/// Owns the chronicle writer, the queue that buffers messages handed to @ref push, and the thread
-/// that drains it. Construction opens the chronicle under the given directory and launches the
-/// writer thread; destruction stops that thread. @ref push returns immediately — the on-disk
-/// writing happens on the writer's own thread, off the publishing thread.
+/// Construction opens the chronicle and starts the writer thread; destruction stops it. @ref push
+/// returns at once; the disk write runs later on the writer thread, not the calling thread.
 class AsyncChronicleWriter
 {
 public:
   using ChannelId = chronicle::ChannelId;
 
-  /// @brief Opens the chronicle under @p chronicleDir and launches the writer thread.
+  /// @brief Opens the chronicle and starts the writer thread.
   ///
-  /// @param chronicleDir Directory the chronicle is written into; created if it does not exist.
+  /// @param chronicleDir Directory to write the chronicle into. Created if it does not exist.
   explicit AsyncChronicleWriter(const std::filesystem::path& chronicleDir);
 
   AsyncChronicleWriter(const AsyncChronicleWriter&) = delete;
 
   AsyncChronicleWriter(AsyncChronicleWriter&&) noexcept = delete;
 
-  /// @brief Stops the writer thread, joining it before returning.
+  /// @brief Stops the writer thread and joins it.
   ///
-  /// Messages still queued at this point are dropped; they are not flushed to disk.
+  /// Any messages still queued are dropped, not written to disk.
   ~AsyncChronicleWriter() = default;
 
   AsyncChronicleWriter& operator=(const AsyncChronicleWriter&) = delete;
 
   AsyncChronicleWriter& operator=(AsyncChronicleWriter&&) noexcept = delete;
 
-  /// @brief Queues a message to be written to the chronicle on @p channelId.
+  /// @brief Queues a message to write to the chronicle on @p channelId.
   ///
-  /// Thread-safe and non-blocking: the value is enqueued and the on-disk writing happens later on
-  /// the writer's own thread.
+  /// Thread-safe and non-blocking. The disk write happens later on the writer thread.
   ///
   /// @param channelId Channel the message was published on.
   ///

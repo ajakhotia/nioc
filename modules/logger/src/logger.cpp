@@ -21,10 +21,11 @@ namespace nioc::logger
 namespace
 {
 
-// Returns the dist_sink that fans out the default logger's output, or nullptr when the default
-// logger was not installed by setupDefaultLogger. Never throws: reading the registry locks a mutex
-// whose failure is unrecoverable, so it is logged and surfaced as an absent fan-out. critical is
-// itself noexcept, so the report cannot trigger a second failure.
+// Returns the dist_sink fronting the default logger, or nullptr when there is no default logger,
+// it has no sinks, or its front sink is not a dist_sink (i.e. setupDefaultLogger did not install
+// it). Never throws: reading the registry locks a mutex whose failure is unrecoverable, so it is
+// logged and surfaced as an absent fan-out. critical is itself noexcept, so the report cannot
+// trigger a second failure.
 std::shared_ptr<spdlog::sinks::dist_sink_mt> defaultFanOut() noexcept
 {
   try

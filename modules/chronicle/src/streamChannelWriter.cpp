@@ -54,7 +54,7 @@ void StreamChannelWriter::writeFrame(const ConstByteSpan& data)
   const auto sizeInBytes = data.size_bytes();
   rollCheckAndIndex(sizeInBytes);
 
-  // Write the size and the blob to the current roll.
+  // Write the blob to the current roll; its size and offset land in the index entry.
   ReadWriteUtil<std::span<const std::byte>>::write(mActiveLogRoll, data);
 
   // Check if the file is still good.
@@ -69,7 +69,7 @@ void StreamChannelWriter::writeFrame(std::span<const ConstByteSpan> dataCollecti
   const auto sizeInBytes = computeTotalSizeInBytes(dataCollection);
   rollCheckAndIndex(sizeInBytes);
 
-  // Write the size and the blob to the current roll.
+  // Write the blob to the current roll; its size and offset land in the index entry.
   std::ranges::for_each(
       dataCollection,
       [this](const auto& data)

@@ -7,9 +7,9 @@
 
 namespace nioc::geometry
 {
-/// @brief Trait lookup for geometry types.
+/// @brief Traits for a geometry type.
 ///
-/// Specialize this template to define traits for custom geometry types.
+/// Specialize this for your own geometry type to give it traits.
 template<typename>
 struct Traits;
 

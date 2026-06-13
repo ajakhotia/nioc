@@ -13,7 +13,7 @@
 namespace nioc::common
 {
 
-/// @brief std::format specification for an ISO 8601 UTC date-time.
+/// @brief The std::format pattern for an ISO 8601 UTC date-time.
 constexpr std::string_view kIso8601UtcFormat{"{:%FT%TZ}"};
 
 /// @brief Formats a system_clock time point as an ISO 8601 UTC date-time string.

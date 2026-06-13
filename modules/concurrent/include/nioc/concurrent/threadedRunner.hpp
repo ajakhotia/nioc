@@ -16,13 +16,12 @@
 namespace nioc::concurrent
 {
 
-/// @brief A @ref Runner that drives its routine's step loop on a dedicated thread.
+/// @brief A @ref Runner that drives its routine's step loop on one dedicated thread.
 ///
-/// @ref launch spawns one `std::jthread` that calls @ref Routine::step in a loop. A @ref
-/// State::Waiting return parks the thread on a condition variable; the routine's trigger wakes it.
-/// The loop ends, and the thread finishes, when the routine reports @ref State::Done, throws (the
-/// error is logged), expires, or the Runner is destroyed — its `std::jthread` requests stop and
-/// joins. A thrown exception stops only this routine, not the process.
+/// @ref launch starts a thread that calls @ref Routine::step in a loop. On @ref State::Waiting the
+/// thread sleeps until the routine's trigger wakes it. The loop ends, and the thread stops, when
+/// the routine reports @ref State::Done, expires, or the Runner is destroyed. Destruction joins the
+/// thread. @ref Routine::step never throws; a failing routine reports Done itself.
 class ThreadedRunner final: public Runner
 {
 public:

@@ -71,9 +71,32 @@ TEST(Rotation3, construction)
   mrpEquivalenceOverRotationsAroundPrincipleAxes(1.0 * std::numbers::pi_v<double>);
 }
 
-TEST(Rotation3, parameters) {}
+TEST(Rotation3, parameters)
+{
+  const auto params = Eigen::Vector3d(0.2, 0.3, 0.5);
+  auto rotation = Rotation3<double>(params);
+  expectEq(params, rotation.cParameters());
 
-TEST(Rotation3, data) {}
+  // The mutable view writes through to the stored parameters.
+  const auto reassigned = Eigen::Vector3d(0.7, 0.11, 0.13);
+  rotation.parameters() = reassigned;
+  expectEq(reassigned, rotation.cParameters());
+}
+
+TEST(Rotation3, data)
+{
+  constexpr auto paramX = 0.2;
+  constexpr auto paramY = 0.3;
+  constexpr auto paramZ = 0.5;
+  auto rotation = Rotation3<double>({paramX, paramY, paramZ});
+
+  // data() exposes the same storage the parameters view reads.
+  EXPECT_EQ(rotation.data(), rotation.cParameters().data());
+
+  constexpr auto reassignedX = 0.7;
+  *rotation.data() = reassignedX;
+  EXPECT_EQ(reassignedX, rotation.x());
+}
 
 TEST(Rotation3, components)
 {
@@ -111,13 +134,60 @@ TEST(Rotation3, components)
   // EXPECT_EQ(0.13, test.z());
 }
 
-TEST(Rotation3, angle) {}
+TEST(Rotation3, angle)
+{
+  constexpr auto thirdTurn = 2.0 * std::numbers::pi_v<double> / 3.0;
+  const auto rotation = Rotation3<double>(thirdTurn, Eigen::Vector3d::UnitY());
+  EXPECT_NEAR(thirdTurn, rotation.angle(), 1e-12);
 
-TEST(Rotation3, axis) {}
+  // The zero rotation has zero angle.
+  EXPECT_DOUBLE_EQ(0.0, Rotation3<double>(Eigen::Vector3d::Zero()).angle());
+}
 
-TEST(Rotation3, inverse) {}
+TEST(Rotation3, axis)
+{
+  const auto axis = Eigen::Vector3d(1.0, 2.0, -2.0).normalized();
+  const auto rotation = Rotation3<double>(0.8, axis);
 
-TEST(Rotation3, composition) {}
+  const auto recovered = rotation.axis();
+  EXPECT_NEAR(0.0, (axis - recovered).norm(), 1e-12);
+}
+
+TEST(Rotation3, inverse)
+{
+  const auto rotation = Rotation3<double>(0.9, Eigen::Vector3d(0.3, -0.4, 0.5).normalized());
+
+  // A rotation composed with its inverse is the identity: zero parameters, zero angle.
+  const auto identity = rotation * rotation.inverse();
+  EXPECT_NEAR(0.0, identity.cParameters().norm(), 1e-12);
+  EXPECT_NEAR(0.0, identity.angle(), 1e-12);
+}
+
+TEST(Rotation3, compositionAddsAnglesOnASharedAxis)
+{
+  const auto axis = Eigen::Vector3d::UnitZ().eval();
+  const auto first = Rotation3<double>(0.4, axis);
+  const auto second = Rotation3<double>(0.7, axis);
+
+  const auto composed = second * first;
+  EXPECT_NEAR(1.1, composed.angle(), 1e-12);
+  EXPECT_NEAR(0.0, (axis - composed.axis()).norm(), 1e-12);
+}
+
+// The rotation algebra must compose the same way the underlying quaternions do: lhs * rhs applies
+// rhs first, then lhs. RigidTransform chaining relies on exactly this order.
+TEST(Rotation3, compositionMatchesQuaternionProduct)
+{
+  const auto quaternionA = Eigen::Quaterniond(
+      Eigen::AngleAxisd(0.6, Eigen::Vector3d(1.0, 0.5, -0.3).normalized()));
+  const auto quaternionB = Eigen::Quaterniond(
+      Eigen::AngleAxisd(-0.9, Eigen::Vector3d(0.2, -1.0, 0.4).normalized()));
+
+  const auto composed = Rotation3<double>(quaternionA) * Rotation3<double>(quaternionB);
+  const auto expected = Rotation3<double>(Eigen::Quaterniond(quaternionA * quaternionB));
+
+  EXPECT_NEAR(0.0, (expected.cParameters() - composed.cParameters()).norm(), 1e-12);
+}
 
 TEST(MapOfRotation3, construction)
 {

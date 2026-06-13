@@ -6,16 +6,24 @@
 
 #include <gtest/gtest.h>
 #include <nioc/geometry/frame.hpp>
+#include <type_traits>
 
 namespace nioc::geometry
 {
 class Mercury;
 class Venus;
 
-TEST(StaticFrame, construction)
+TEST(StaticFrame, isAPureTypeLevelToken)
 {
-  // A static frame cannot be constructed as one should never need to.
-  // EXPECT_NO_THROW(StaticFrame<Mercury>());
+  // A static frame is never instantiated: its identity is its type, so every special member is
+  // deleted and a StaticFrame cannot wrap another StaticFrame.
+  using Frame = StaticFrame<Mercury>;
+  static_assert(not std::is_default_constructible_v<Frame>);
+  static_assert(not std::is_copy_constructible_v<Frame>);
+  static_assert(not std::is_move_constructible_v<Frame>);
+  static_assert(not std::is_copy_assignable_v<Frame>);
+  static_assert(not std::is_move_assignable_v<Frame>);
+  static_assert(not std::is_destructible_v<Frame>);
 }
 
 TEST(StaticFrame, name)

@@ -16,20 +16,19 @@
 namespace nioc::example
 {
 
-/// @brief Example @ref terminus::Component that turns each received `Sample3` into a `Sample2`.
+/// @brief Example @ref terminus::Component that turns each `Sample3` into a `Sample2`.
 ///
-/// A minimal request/response component showing how to subscribe and publish. It subscribes to
-/// `Sample3` on one topic; for every message received it publishes one `Sample2` on another topic.
+/// Shows how to subscribe and publish. Subscribes to `Sample3` on one topic. For each message,
+/// publishes one `Sample2` on another topic.
 class ExampleComponent1 final: public terminus::Component
 {
 public:
-  /// @brief Configures the component from its config block.
+  /// @brief Builds the component from its config block.
   ///
-  /// @param port Hub the component subscribes to and publishes onto; must outlive this component.
+  /// @param port Hub it subscribes to and publishes on. Must outlive this component.
   ///
-  /// @param config View of this component's config block (see exampleComponent1Config.capnp): the
-  /// input and output topics, plus a `component` subsection forwarded to the @ref
-  /// terminus::Component base.
+  /// @param config This component's config block (see exampleComponent1Config.capnp): the input and
+  /// output topics, plus a `component` subsection passed to the @ref terminus::Component base.
   ExampleComponent1(terminus::Port& port, ExampleComponent1Config::Reader config);
 
 private:

@@ -13,38 +13,37 @@
 namespace nioc::terminus
 {
 
-/// @brief The per-invocation context of a run: where it records, what it replays, what it attaches.
+/// @brief One run's settings: where it records, what it replays, what files it attaches.
 ///
-/// A run's context is read fresh from each command line and — unlike the configuration — is never
-/// inherited from a replayed recording: no run wants another run's log root or input. The Port
-/// records the context into the recording's `metadata.json`.
+/// Read fresh from each command line. Never copied from a replayed recording. The Port records the
+/// context into the recording's `manifest.json`.
 ///
-/// The mode is implied rather than stated: passing `--playback <recording>` selects playback and
-/// names the input in one stroke; its absence means an online run.
+/// Passing `--playback <recording>` selects playback and names the input. Without it, the run is
+/// online (live).
 class RunContext
 {
 public:
-  /// @brief Returns the command-line options the context reads: `--log-root`,
-  /// `--record-chronicle`, `--append-resource`, and `--playback`.
+  /// @brief Returns the options this reads: `--log-root`, `--record-chronicle`,
+  /// `--append-resource`, and `--playback`.
   [[nodiscard]] static boost::program_options::options_description cliOptions();
 
-  /// @brief Reads the context from a parsed command line (see @ref cliOptions).
+  /// @brief Builds the context from a parsed command line (see @ref cliOptions).
   ///
-  /// @param variableMap Parsed options; must come from @ref parseCommandLine, which adds the
-  /// `"commandLine"` entry this constructor reads.
+  /// @param variableMap Parsed options. Pass the map from @ref parseCommandLine; it adds the
+  /// `"commandLine"` entry this reads.
   explicit RunContext(const boost::program_options::variables_map& variableMap);
 
-  /// @brief Builds a context from explicit values; tests and embedding code use this directly.
+  /// @brief Builds the context from explicit values. For tests and embedding code.
   ///
-  /// @param logRoot Directory under which the run's fresh recording is created.
+  /// @param logRoot Directory to create the run's fresh recording under.
   ///
-  /// @param resourcePaths Files copied into the recording as logged resources.
+  /// @param resourcePaths Files to copy into the recording as logged resources.
   ///
-  /// @param recordChronicle When true, record the chronicle time-series data stream.
+  /// @param recordChronicle True to record the chronicle time-series stream.
   ///
-  /// @param commandLine The verbatim launch command, recorded in `metadata.json`.
+  /// @param commandLine The launch command, stored verbatim in `manifest.json`.
   ///
-  /// @param inputLog Recording to replay; empty selects an online run (see @ref playback).
+  /// @param inputLog Recording to replay. Empty means an online run (see @ref playback).
   RunContext(
       std::filesystem::path logRoot,
       std::vector<std::filesystem::path> resourcePaths,
@@ -52,22 +51,22 @@ public:
       std::string commandLine,
       std::filesystem::path inputLog = {});
 
-  /// @brief Returns the directory under which the run's fresh recording is created.
+  /// @brief Returns the directory to create the run's fresh recording under.
   [[nodiscard]] const std::filesystem::path& logRoot() const noexcept;
 
-  /// @brief Returns the files to copy into the recording as logged resources.
+  /// @brief Returns the files to copy into the recording.
   [[nodiscard]] const std::vector<std::filesystem::path>& resourcePaths() const noexcept;
 
-  /// @brief Returns whether the run records the chronicle time-series data stream.
+  /// @brief Returns true if the run records the chronicle time-series stream.
   [[nodiscard]] bool recordChronicle() const noexcept;
 
-  /// @brief Returns the verbatim launch command.
+  /// @brief Returns the launch command, verbatim.
   [[nodiscard]] const std::string& commandLine() const noexcept;
 
-  /// @brief Returns true when the run replays a recording instead of running live.
+  /// @brief Returns true if the run replays a recording instead of running live.
   [[nodiscard]] bool playback() const noexcept;
 
-  /// @brief Returns the recording being replayed; meaningful only when @ref playback is true.
+  /// @brief Returns the recording to replay. Only meaningful when @ref playback is true.
   [[nodiscard]] const std::filesystem::path& inputLog() const noexcept;
 
 private:

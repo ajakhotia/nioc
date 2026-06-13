@@ -11,32 +11,32 @@
 
 namespace nioc::common
 {
-/// @brief Checks if a type is a template specialization.
+/// @brief True if @p InstanceType is a specialization of @p TemplateType.
 ///
 /// Example: `IsSpecialization<std::vector<int>, std::vector>::value` is true.
 ///
-/// @tparam InstanceType Type to check (e.g., std::vector<int>).
-/// @tparam TemplateType Template to match (e.g., std::vector).
+/// @tparam InstanceType The type to check (e.g. std::vector<int>).
+/// @tparam TemplateType The template to match against (e.g. std::vector).
 template<typename InstanceType, template<typename...> typename TemplateType>
 struct IsSpecialization: public std::false_type
 {
 };
 
-/// @brief Specialization for matching templates.
+/// @brief Match: @p InstanceType is a specialization of @p TemplateType.
 template<template<typename...> typename TemplateType, typename... Args>
 struct IsSpecialization<TemplateType<Args...>, TemplateType>: public std::true_type
 {
 };
 
-/// @brief Helper variable for IsSpecialization.
+/// @brief Variable form of @ref IsSpecialization.
 ///
 /// Example: `isSpecialization<std::vector<int>, std::vector>` is true.
 template<typename InstanceType, template<typename...> typename TemplateType>
 inline constexpr bool isSpecialization = IsSpecialization<InstanceType, TemplateType>::value;
 
-/// @brief Returns a human-readable name for a type.
-/// @tparam Type Type to name.
-/// @return String view of the type's name.
+/// @brief Returns the fully qualified, readable name of @p Type at compile time.
+///
+/// Example: `prettyName<nioc::common::SignalCatcher>()` is `"nioc::common::SignalCatcher"`.
 template<typename Type>
 consteval std::string_view prettyName() noexcept
 {

@@ -15,16 +15,14 @@
 
 namespace nioc::geometry
 {
-/// @brief Forward declaration of the pose class.
 template<typename>
 class Pose;
 
-/// @brief 3D pose representation (SE3 group).
+/// @brief 3D pose (SE3): position plus orientation.
 ///
-/// Combines position and orientation in 3D space. Orientation uses unit quaternions, position uses
-/// 3D vectors.
+/// Orientation is a unit quaternion; position is a 3D vector.
 ///
-/// @tparam Derived CRTP derived type.
+/// @tparam Derived The class deriving from this one (CRTP).
 template<typename Derived>
 class Se3
 {
@@ -49,61 +47,61 @@ public:
 
   using Vector3ConstMap = Eigen::Map<const Vector3>;
 
-  /// @brief Returns a const pointer to the 7 contiguous parameters [qx, qy, qz, qw, px, py, pz].
+  /// @brief Const pointer to the 7 contiguous parameters [qx, qy, qz, qw, px, py, pz].
   [[nodiscard]] constexpr const Scalar* cData() const noexcept
   {
     return cDerived().cParameters().data();
   }
 
-  /// @brief Returns a const pointer to the parameters; const overload, same as @ref cData.
+  /// @brief Same as @ref cData.
   [[nodiscard]] constexpr const Scalar* data() const noexcept
   {
     return cData();
   }
 
-  /// @brief Returns a mutable pointer to the parameters.
+  /// @brief Mutable pointer to the 7 parameters.
   constexpr Scalar* data() noexcept
   {
     return derived().parameters().data();
   }
 
-  /// @brief Returns a read-only quaternion view of the orientation.
+  /// @brief Read-only quaternion view of the orientation.
   [[nodiscard]] QuaternionConstMap cOrientation() const noexcept
   {
     return QuaternionConstMap(cData());
   }
 
-  /// @brief Returns a read-only quaternion view of the orientation; same as @ref cOrientation.
+  /// @brief Same as @ref cOrientation.
   [[nodiscard]] QuaternionConstMap orientation() const noexcept
   {
     return cOrientation();
   }
 
-  /// @brief Returns a writable quaternion view of the orientation.
+  /// @brief Writable quaternion view of the orientation.
   QuaternionMap orientation() noexcept
   {
     return QuaternionMap(data());
   }
 
-  /// @brief Returns a read-only vector view of the position.
+  /// @brief Read-only vector view of the position.
   [[nodiscard]] Vector3ConstMap cPosition() const noexcept
   {
     return Vector3ConstMap(std::next(cData(), kNumOrientationParams));
   }
 
-  /// @brief Returns a read-only vector view of the position; same as @ref cPosition.
+  /// @brief Same as @ref cPosition.
   [[nodiscard]] Vector3ConstMap position() const noexcept
   {
     return cPosition();
   }
 
-  /// @brief Returns a writable vector view of the position.
+  /// @brief Writable vector view of the position.
   Vector3Map position() noexcept
   {
     return Vector3Map(std::next(data(), kNumOrientationParams));
   }
 
-  /// @brief Returns a copy of this pose with its parameters converted to another scalar type.
+  /// @brief Copy of this pose with its scalar type changed.
   /// @tparam ResultScalar Floating-point type of the returned pose.
   template<typename ResultScalar>
   [[nodiscard]] Pose<ResultScalar> cast() const
@@ -111,14 +109,14 @@ public:
     return Pose<ResultScalar>(std::span<const Scalar>(cData(), kNumParams));
   }
 
-  /// @brief Returns the inverse pose.
+  /// @brief Inverse pose (a new copy).
   [[nodiscard]] Pose<Scalar> inverse() const
   {
     return Pose<Scalar>(derived()).invert();
   }
 
-  /// @brief Inverts pose in-place.
-  /// @return Reference to this.
+  /// @brief Inverts this pose in place.
+  /// @return Reference to this pose.
   Derived& invert()
   {
     const Quaternion inverseOrientation = orientation().inverse();
@@ -128,7 +126,7 @@ public:
     return derived();
   }
 
-  /// @brief Returns the identity pose.
+  /// @brief The identity pose (no rotation, zero position).
   static constexpr Pose<Scalar> identity()
   {
     return Pose<Scalar>({0, 0, 0, 1, 0, 0, 0});
@@ -174,9 +172,7 @@ private:
   friend Derived;
 };
 
-/// @brief 3D pose with owned storage.
-///
-/// Stores 7 parameters: [qx, qy, qz, qw, px, py, pz] (quaternion + position).
+/// @brief 3D pose that owns its 7 parameters [qx, qy, qz, qw, px, py, pz].
 ///
 /// @tparam Scalar_ Floating-point type (float, double).
 template<typename Scalar_>
@@ -195,8 +191,8 @@ public:
 
   using Parameters = std::array<Scalar, kNumParams>;
 
-  /// @brief Constructs from orientation and position.
-  /// @param orientation Rotation quaternion (normalized automatically).
+  /// @brief Builds a pose from an orientation and a position.
+  /// @param orientation Rotation quaternion. Normalized for you.
   /// @param position Position vector.
   Pose(const Quaternion& orientation, const Vector3& position)
   {
@@ -213,23 +209,23 @@ public:
     Base::orientation().normalize();
   }
 
-  /// @brief Constructs from parameter array (copy).
-  /// @param parameters Array of 7 values [qx, qy, qz, qw, px, py, pz].
+  /// @brief Builds a pose by copying a parameter array. Quaternion part is normalized.
+  /// @param parameters 7 values [qx, qy, qz, qw, px, py, pz].
   explicit Pose(const Parameters& parameters) noexcept: mParameters(parameters)
   {
     Base::orientation().normalize();
   }
 
-  /// @brief Constructs from parameter array (move).
-  /// @param parameters Array of 7 values [qx, qy, qz, qw, px, py, pz].
+  /// @brief Builds a pose by moving a parameter array. Quaternion part is normalized.
+  /// @param parameters 7 values [qx, qy, qz, qw, px, py, pz].
   explicit Pose(Parameters&& parameters) noexcept: mParameters(std::move(parameters))
   {
     Base::orientation().normalize();
   }
 
-  /// @brief Constructs from span of parameters.
-  /// @param span Span containing 7 values.
-  /// @throws std::invalid_argument if span size is not 7.
+  /// @brief Builds a pose from a span of parameters. Quaternion part is normalized.
+  /// @param span 7 values [qx, qy, qz, qw, px, py, pz].
+  /// @throws std::invalid_argument if the span does not hold exactly 7 values.
   template<typename InputScalar>
   explicit Pose(const std::span<InputScalar>& span)
   {
@@ -256,19 +252,19 @@ public:
 
   Pose& operator=(Pose&&) noexcept = default;
 
-  /// @brief Returns the underlying 7-element parameter array [qx, qy, qz, qw, px, py, pz].
+  /// @brief Read-only 7-element parameter array [qx, qy, qz, qw, px, py, pz].
   [[nodiscard]] constexpr const Parameters& cParameters() const noexcept
   {
     return mParameters;
   }
 
-  /// @brief Returns the parameter array; const overload, same as @ref cParameters.
+  /// @brief Same as @ref cParameters.
   [[nodiscard]] constexpr const Parameters& parameters() const noexcept
   {
     return cParameters();
   }
 
-  /// @brief Returns the mutable parameter array.
+  /// @brief Mutable parameter array.
   constexpr Parameters& parameters() noexcept
   {
     return mParameters;
@@ -278,10 +274,10 @@ private:
   Parameters mParameters;
 };
 
-/// @brief Outputs pose to stream.
+/// @brief Writes a pose to a stream.
 /// @param stream Output stream.
-/// @param se3 Pose to output.
-/// @return Modified stream.
+/// @param se3 Pose to write.
+/// @return The same stream.
 template<typename Derived>
 std::ostream& operator<<(std::ostream& stream, const Se3<Derived>& se3)
 {
@@ -295,10 +291,10 @@ std::ostream& operator<<(std::ostream& stream, const Se3<Derived>& se3)
   return stream;
 }
 
-/// @brief Composes two poses.
-/// @param lhs First pose.
-/// @param rhs Second pose.
-/// @return Composed pose.
+/// @brief Composes two poses (lhs applied after rhs).
+/// @param lhs Left pose.
+/// @param rhs Right pose.
+/// @return The composed pose.
 template<typename LhsDerived, typename RhsDerived>
 Pose<typename LhsDerived::Scalar> operator*(const Se3<LhsDerived>& lhs, const Se3<RhsDerived>& rhs)
 {
@@ -313,9 +309,9 @@ Pose<typename LhsDerived::Scalar> operator*(const Se3<LhsDerived>& lhs, const Se
 
 } // namespace nioc::geometry
 
-/// @brief Pose without owned storage (mutable).
+/// @brief Writable pose view over external memory (no storage of its own).
 ///
-/// Maps existing memory as pose parameters.
+/// Treats the buffer you pass as the pose parameters.
 ///
 /// @tparam Scalar_ Floating-point type.
 template<typename Scalar_>
@@ -329,9 +325,9 @@ public:
 
   using Scalar = typename Base::Scalar;
 
-  /// @brief Maps an existing writable 7-element parameter buffer.
+  /// @brief Maps a writable 7-element parameter buffer. Quaternion part is normalized.
   /// @param parameters View over 7 values [qx, qy, qz, qw, px, py, pz].
-  /// @throws std::invalid_argument if the view size is not 7.
+  /// @throws std::invalid_argument if the span does not hold exactly 7 values.
   explicit Map(const std::span<Scalar> parameters): mParameters(parameters)
   {
     if(parameters.size() != kNumParams)
@@ -354,19 +350,19 @@ public:
 
   Map& operator=(Map&&) noexcept = default;
 
-  /// @brief Returns a read-only view of the mapped 7 parameters.
-  constexpr std::span<const Scalar> cParameters() const noexcept
+  /// @brief Read-only view of the mapped 7 parameters.
+  [[nodiscard]] constexpr std::span<const Scalar> cParameters() const noexcept
   {
     return mParameters;
   }
 
-  /// @brief Returns a read-only view of the mapped parameters; same as @ref cParameters.
-  constexpr std::span<const Scalar> parameters() const noexcept
+  /// @brief Same as @ref cParameters.
+  [[nodiscard]] constexpr std::span<const Scalar> parameters() const noexcept
   {
     return cParameters();
   }
 
-  /// @brief Returns a writable view of the mapped parameters.
+  /// @brief Writable view of the mapped parameters.
   constexpr std::span<Scalar> parameters() noexcept
   {
     return mParameters;
@@ -382,9 +378,9 @@ private:
   std::span<Scalar> mParameters;
 };
 
-/// @brief Pose without owned storage (const).
+/// @brief Read-only pose view over external memory (no storage of its own).
 ///
-/// Maps const memory as pose parameters.
+/// Treats the const buffer you pass as the pose parameters.
 ///
 /// @tparam Scalar_ Floating-point type.
 template<typename Scalar_>
@@ -398,10 +394,11 @@ public:
 
   using Scalar = typename Base::Scalar;
 
-  /// @brief Maps an existing read-only 7-element parameter buffer.
+  /// @brief Maps a read-only 7-element parameter buffer. The quaternion part must already be unit
+  /// norm; it is not normalized for you.
   /// @param parameters View over 7 values [qx, qy, qz, qw, px, py, pz].
-  /// @throws std::invalid_argument if the view size is not 7, or the quaternion part is not unit
-  /// norm.
+  /// @throws std::invalid_argument if the span does not hold exactly 7 values, or the quaternion
+  /// part is not unit norm.
   explicit Map(const std::span<const Scalar> parameters): mParameters(parameters)
   {
     if(parameters.size() != kNumParams)
@@ -429,14 +426,14 @@ public:
 
   Map& operator=(Map&&) noexcept = default;
 
-  /// @brief Returns a read-only view of the mapped 7 parameters.
-  constexpr std::span<const Scalar> cParameters() const noexcept
+  /// @brief Read-only view of the mapped 7 parameters.
+  [[nodiscard]] constexpr std::span<const Scalar> cParameters() const noexcept
   {
     return mParameters;
   }
 
-  /// @brief Returns a read-only view of the mapped parameters; same as @ref cParameters.
-  constexpr std::span<const Scalar> parameters() const noexcept
+  /// @brief Same as @ref cParameters.
+  [[nodiscard]] constexpr std::span<const Scalar> parameters() const noexcept
   {
     return cParameters();
   }

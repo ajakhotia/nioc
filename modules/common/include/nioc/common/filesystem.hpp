@@ -12,9 +12,9 @@
 namespace nioc::common
 {
 
-/// @brief Asserts that @p path exists and is a directory.
+/// @brief Checks that @p path exists and is a directory.
 ///
-/// @return The validated path, so it can be used inline.
+/// @return @p path unchanged, so you can chain the call.
 /// @throws std::invalid_argument If @p path does not exist or is not a directory.
 inline std::filesystem::path requireExistingDirectory(std::filesystem::path path)
 {
@@ -29,9 +29,9 @@ inline std::filesystem::path requireExistingDirectory(std::filesystem::path path
   return path;
 }
 
-/// @brief Asserts that @p path exists, is a directory, and contains no entries.
+/// @brief Checks that @p path exists, is a directory, and is empty.
 ///
-/// @return The validated path, so it can be used inline.
+/// @return @p path unchanged, so you can chain the call.
 /// @throws std::invalid_argument If @p path does not exist, is not a directory, or is not empty.
 inline std::filesystem::path requireEmptyDirectory(std::filesystem::path path)
 {
