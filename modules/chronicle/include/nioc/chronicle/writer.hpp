@@ -25,12 +25,12 @@ namespace nioc::chronicle
 class Writer
 {
 public:
-  /// @brief Default maximum size of one data file (128 MiB).
-  static constexpr auto kDefaultMaxFileSizeInBytes = 128ULL * 1024ULL * 1024ULL;
+  /// @brief Default maximum size of one data file (1GB MB).
+  static constexpr auto kDefaultMaxFileSizeInBytes = 1024ULL * 1024ULL * 1024ULL;
 
   /// @brief Records into @p rootDir.
   ///
-  /// @param rootDir Existing empty directory to write into.
+  /// @param rootDir An existing empty directory to write into.
   ///
   /// @param ioMechanism How to write the data.
   ///
