@@ -1,5 +1,27 @@
 @PACKAGE_INIT@
 
+#[[ The exported targets publicly link imported targets from these packages, so
+    they must be located before the targets are referenced. ]]
+include(CMakeFindDependencyMacro)
+find_dependency(Boost CONFIG COMPONENTS headers iostreams program_options)
+find_dependency(CapnProto)
+find_dependency(Eigen3)
+find_dependency(spdlog)
+
 include(${CMAKE_CURRENT_LIST_DIR}/niocTargets.cmake)
+
+#[[ A static archive does not link its private dependencies; it leaves those
+    symbols unresolved and defers them to the final consumer, so CMake
+    propagates them through the exported link interface as $<LINK_ONLY:...>.
+    These packages must therefore be located when the installed libraries are
+    static. For a shared build they are linked into the .so and resolved at load
+    time, so consumers must not be required to provide them. The library type is
+    uniform across the build, so a single representative target decides it. ]]
+get_target_property(_nioc_library_type nioc::common TYPE)
+if(_nioc_library_type STREQUAL "STATIC_LIBRARY")
+  find_dependency(Threads)
+  find_dependency(nlohmann_json)
+endif()
+unset(_nioc_library_type)
 
 check_required_components(nioc)
