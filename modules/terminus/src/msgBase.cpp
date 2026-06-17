@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <capnp/message.h>
 #include <cassert>
+#include <chrono>
 #include <nioc/terminus/msgBase.hpp>
 #include <string_view>
 #include <vector>
@@ -43,11 +44,52 @@ MMappedMessageReader::MMappedMessageReader(MemoryCrate memoryCrate):
 {
 }
 
-MsgBase::MsgBase(): mVariant(std::in_place_type<MallocMessageBuilder>) {}
+MsgBase::MsgBase(
+    const std::chrono::steady_clock::time_point arrivalTimestamp,
+    const std::uint64_t sequenceNumber):
+  mVariant(std::in_place_type<MallocMessageBuilder>)
+{
+  auto builder = std::get<MallocMessageBuilder>(mVariant).initRoot<Envelope<>>();
+
+  using std::chrono::duration_cast;
+  using std::chrono::nanoseconds;
+
+  builder.setArrivalTimestamp(
+      duration_cast<nanoseconds>(arrivalTimestamp.time_since_epoch()).count());
+
+  builder.setSequenceNumber(sequenceNumber);
+}
 
 MsgBase::MsgBase(chronicle::MemoryCrate memoryCrate):
   mVariant(std::in_place_type<MMappedMessageReader>, std::move(memoryCrate))
 {
+}
+
+std::chrono::steady_clock::time_point MsgBase::arrivalTimestamp() const
+{
+  const auto nanos = std::visit(
+      [](auto& var) { return var.template getRoot<Envelope<>>().getArrivalTimestamp(); },
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+      const_cast<Variant&>(variant()));
+  return std::chrono::steady_clock::time_point{
+      std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+          std::chrono::nanoseconds{nanos})};
+}
+
+std::uint64_t MsgBase::sequenceNumber() const
+{
+  return std::visit(
+      [](auto& var) { return var.template getRoot<Envelope<>>().getSequenceNumber(); },
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+      const_cast<Variant&>(variant()));
+}
+
+bool MsgBase::isGap() const
+{
+  return std::visit(
+      [](auto& var) { return not var.template getRoot<Envelope<>>().hasMessage(); },
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+      const_cast<Variant&>(variant()));
 }
 
 MsgBase::Variant& MsgBase::variant() noexcept

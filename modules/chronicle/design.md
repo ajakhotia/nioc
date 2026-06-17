@@ -153,7 +153,6 @@ Published as the `nioc::chronicleIdl` build target. Modules that define domain-s
 | nioc::common          | public     | `Locked<T>` wrapper, `makeBimap`   |
 | Boost.Endian          | private    | Little-endian binary serialization |
 | Boost.CircularBuffer  | private    | LRU cache of mapped roll files     |
-| nioc::commonIdl       | private    | Timestamp schema for Frame         |
 | spdlog                | private    | Logging                            |
 
 ## Future Direction: Zero-Copy Write Path

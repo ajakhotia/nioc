@@ -6,11 +6,13 @@
 #pragma once
 
 #include <capnp/serialize.h>
+#include <chrono>
 #include <cstdint>
 #include <functional>
 #include <nioc/chronicle/defines.hpp>
 #include <nioc/chronicle/memoryCrate.hpp>
 #include <nioc/chronicle/writer.hpp>
+#include <nioc/terminus/idl/envelope.capnp.h>
 #include <variant>
 
 namespace nioc::terminus
@@ -58,8 +60,14 @@ public:
   using Variant = std::variant<capnp::MallocMessageBuilder, MMappedMessageReader>;
 
 protected:
-  /// @brief Creates an empty message ready to be built.
-  MsgBase();
+  /// @brief Sets up an empty enveloped message and records its framing.
+  ///
+  /// The payload is left null - a gap - until @ref Msg::builder allocates it.
+  ///
+  /// @param arrivalTimestamp Steady-clock time the message was built.
+  ///
+  /// @param sequenceNumber Producer-assigned counter; 0 means unassigned.
+  MsgBase(std::chrono::steady_clock::time_point arrivalTimestamp, std::uint64_t sequenceNumber);
 
   /// @brief Loads a message for reading from a MemoryCrate.
   /// @param memoryCrate Crate holding one serialized message.
@@ -81,6 +89,20 @@ public:
 
   /// @brief Returns this message type's identifier.
   [[nodiscard]] constexpr virtual MsgId msgId() const = 0;
+
+  /// @brief Returns the steady-clock arrival time stamped when the message was built.
+  ///
+  /// Only inter-message deltas are meaningful on replay; the absolute value is process-local.
+  [[nodiscard]] std::chrono::steady_clock::time_point arrivalTimestamp() const;
+
+  /// @brief Returns the producer-assigned sequence number; 0 when unassigned.
+  [[nodiscard]] std::uint64_t sequenceNumber() const;
+
+  /// @brief Whether this envelope stands in for an expected-but-absent message.
+  ///
+  /// True when the payload was never built. A gap reads as a default payload through
+  /// @ref Msg::reader, so check this first.
+  [[nodiscard]] bool isGap() const;
 
 protected:
   friend void write(

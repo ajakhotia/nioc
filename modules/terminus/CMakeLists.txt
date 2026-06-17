@@ -11,10 +11,8 @@ capnproto_generate_library(
   EXPORT
     niocTargets
   SCHEMA_FILES
-    include/nioc/terminus/idl/frame.capnp
+    include/nioc/terminus/idl/envelope.capnp
     include/nioc/terminus/idl/testSchema.capnp
-  LINK_LIBRARIES
-    nioc::commonIdl
   COMPILE_FEATURES
     PUBLIC cxx_std_23
   COMPILE_OPTIONS
@@ -91,6 +89,7 @@ add_exported_library(
     PUBLIC nioc::concurrent
     PUBLIC nioc::logger
     PUBLIC nioc::terminusConfig
+    PUBLIC nioc::terminusIdl
     PUBLIC spdlog::spdlog
   COMPILE_FEATURES
     PUBLIC cxx_std_23

@@ -3,7 +3,7 @@
 using Cxx = import "/capnp/c++.capnp";
 $Cxx.namespace("nioc::sensors");
 
-using Header = import "/nioc/common/idl/header.capnp".Header;
+using Header = import "header.capnp".Header;
 
 
 struct Gnss @0xbd02583ac98eb501

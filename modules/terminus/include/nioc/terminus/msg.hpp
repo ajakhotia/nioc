@@ -6,6 +6,7 @@
 #pragma once
 
 #include "msgBase.hpp"
+#include <chrono>
 
 namespace nioc::terminus
 {
@@ -39,10 +40,21 @@ public:
   /// @brief This schema's message type ID, known at compile time.
   static constexpr auto kMsgId = MsgId{static_cast<std::uint64_t>(Schema::_capnpPrivate::typeId)};
 
-  /// @brief Creates an empty message, ready to build.
-  Msg()
+  /// @brief Creates an empty message, stamped with its arrival time and sequence number.
+  ///
+  /// The payload is a gap until @ref builder allocates it; the envelope itself is set up by
+  /// @ref MsgBase.
+  ///
+  /// @param arrivalTimestamp Moment the system perceived this data; defaults to now on the steady
+  /// clock.
+  ///
+  /// @param sequenceNumber Producer-assigned counter; 0 (the default) means unassigned.
+  explicit Msg(
+      const std::chrono::steady_clock::time_point arrivalTimestamp =
+          std::chrono::steady_clock::now(),
+      const std::uint64_t sequenceNumber = 0):
+    MsgBase(arrivalTimestamp, sequenceNumber)
   {
-    std::get<capnp::MallocMessageBuilder>(variant()).template initRoot<Schema>();
   }
 
   /// @brief Opens a message for reading from a MemoryCrate.
@@ -56,24 +68,32 @@ public:
   }
 
   /// @brief Returns a reader for the payload.
-  Reader reader()
-  {
-    return std::visit([](auto& var) { return Reader(var.template getRoot<Schema>()); }, variant());
-  }
-
-  /// @brief Returns a reader for the payload of a const message.
+  ///
+  /// Does not allocate, so a gap reads as a default payload and stays a gap. Check
+  /// @ref MsgBase::isGap first.
   [[nodiscard]] Reader reader() const
   {
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
-    return const_cast<Msg*>(this)->reader();
+    return std::visit(
+        [](auto& var)
+        {
+          const typename Envelope<Schema>::Reader envelope =
+              var.template getRoot<Envelope<Schema>>();
+          return Reader(envelope.getMessage());
+        },
+        // getRoot is non-const on both alternatives; this reads, never mutates.
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
+        const_cast<MsgBase::Variant&>(variant()));
   }
 
-  /// @brief Returns a builder for the payload.
+  /// @brief Returns a builder for the payload, allocating it.
   ///
-  /// Call only on a message you created empty, not one opened for reading.
+  /// Allocating the payload turns a freshly built message from a gap into a real message. Call
+  /// only on a message you created empty, not one opened for reading.
   Builder builder()
   {
-    return std::get<capnp::MallocMessageBuilder>(variant()).template getRoot<Schema>();
+    return std::get<capnp::MallocMessageBuilder>(variant())
+        .template getRoot<Envelope<Schema>>()
+        .getMessage();
   }
 };
 
