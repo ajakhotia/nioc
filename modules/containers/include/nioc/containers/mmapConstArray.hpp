@@ -58,41 +58,51 @@ public:
 
   MmapConstArray& operator=(MmapConstArray&&) noexcept = delete;
 
+  /// @brief Returns a pointer to the first element.
   [[nodiscard]] const_pointer data() const noexcept
   {
     return asElementPointer<ValueType>(mRegion.bytes());
   }
 
+  /// @brief Returns a reference to the element at @p index.
+  ///
+  /// @param index Element position, less than @ref size. Out-of-range access is undefined.
   [[nodiscard]] const_reference operator[](const size_type index) const noexcept
   {
     return data()[index];
   }
 
+  /// @brief Returns an iterator to the first element.
   [[nodiscard]] const_iterator begin() const noexcept
   {
     return data();
   }
 
+  /// @brief Returns an iterator one past the last element.
   [[nodiscard]] const_iterator end() const noexcept
   {
     return data() + size();
   }
 
+  /// @brief Returns a const iterator to the first element.
   [[nodiscard]] const_iterator cbegin() const noexcept
   {
     return begin();
   }
 
+  /// @brief Returns a const iterator one past the last element.
   [[nodiscard]] const_iterator cend() const noexcept
   {
     return end();
   }
 
+  /// @brief Returns whether the array holds no elements.
   [[nodiscard]] bool empty() const noexcept
   {
     return mRegion.empty();
   }
 
+  /// @brief Returns the number of elements.
   [[nodiscard]] size_type size() const noexcept
   {
     return mRegion.size() / sizeof(ValueType);
