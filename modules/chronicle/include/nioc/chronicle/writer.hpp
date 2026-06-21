@@ -5,10 +5,11 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include "channelWriter.hpp"
+#include "channel.hpp"
+#include "crate.hpp"
 #include "defines.hpp"
+#include <cstddef>
 #include <filesystem>
-#include <fstream>
 #include <memory>
 #include <nioc/common/locked.hpp>
 #include <span>
@@ -17,31 +18,39 @@
 namespace nioc::chronicle
 {
 
-/// @brief Records data frames to a chronicle for later playback.
+class Timeline;
+
+/// @brief Records byte frames to a chronicle for later replay.
 ///
-/// Appends each frame to its channel in arrival order. Thread-safe: a frame's bytes are never torn
-/// or interleaved. The order of writes that race is unspecified, so writes whose order matters must
-/// come from one thread.
+/// Frames from all channels are recorded in one global order, and a @ref Reader replays them in
+/// that order. Record through a @ref Channel from @ref channel, or use @ref write for a one-off
+/// frame.
+///
+/// Thread-safe across channels. A single channel has one producer: record on it from one thread
+/// only.
 class Writer
 {
 public:
-  /// @brief Default maximum size of one data file (1GB MB).
-  static constexpr auto kDefaultMaxFileSizeInBytes = 1024ULL * 1024ULL * 1024ULL;
+  /// @brief Default capacity of one roll file.
+  static constexpr auto kDefaultRollCapacity = 1024ULL * 1024ULL * 1024ULL;
+
+  /// @brief Default capacity of one timeline file; the timeline grows by adding files.
+  static constexpr auto kDefaultTimelineFileCapacity = 64ULL * 1024ULL * 1024ULL;
 
   /// @brief Records into @p rootDir.
   ///
   /// @param rootDir An existing empty directory to write into.
   ///
-  /// @param ioMechanism How to write the data.
+  /// @param rollCapacity Largest size of one roll file. A larger frame still records.
   ///
-  /// @param maxFileSizeInBytes Maximum size of one data file.
+  /// @param timelineFileCapacity Largest size of one timeline file.
   ///
   /// @throws std::invalid_argument If @p rootDir does not exist, is not a directory, or is not
   /// empty.
   explicit Writer(
       std::filesystem::path rootDir,
-      IoMechanism ioMechanism = IoMechanism::Stream,
-      std::size_t maxFileSizeInBytes = kDefaultMaxFileSizeInBytes);
+      std::size_t rollCapacity = kDefaultRollCapacity,
+      std::size_t timelineFileCapacity = kDefaultTimelineFileCapacity);
 
   Writer(const Writer&) = delete;
 
@@ -53,37 +62,32 @@ public:
 
   Writer& operator=(Writer&&) noexcept = delete;
 
-  /// @brief Appends one frame to a channel.
+  /// @brief Returns the channel for @p channelId, creating it on first use.
   ///
-  /// @param channelId Channel to append to.
+  /// The reference stays valid for the writer's lifetime.
   ///
-  /// @param data Frame payload.
-  ///
-  /// @throws std::invalid_argument On a channel's first frame if the I/O mechanism cannot write.
-  void write(ChannelId channelId, const std::span<const std::byte>& data);
+  /// @param channelId Channel to acquire.
+  [[nodiscard]] Channel& channel(ChannelId channelId);
 
-  /// @brief Appends several spans to a channel as one frame.
+  /// @brief Records @p data on a channel by copying it, returning a read-only view of the frame.
   ///
-  /// @param channelId Channel to append to.
+  /// @param channelId Channel to record on.
   ///
-  /// @param data Spans joined into one frame.
+  /// @param data Frame bytes.
   ///
-  /// @throws std::invalid_argument On a channel's first frame if the I/O mechanism cannot write.
-  void write(ChannelId channelId, std::span<const std::span<const std::byte>> data);
+  /// @return A crate over the recorded frame.
+  Crate write(ChannelId channelId, std::span<const std::byte> data);
 
   /// @brief Returns the chronicle directory.
   [[nodiscard]] const std::filesystem::path& path() const noexcept;
 
 private:
-  using ChannelPtrMap = std::unordered_map<ChannelId, std::unique_ptr<ChannelWriter>>;
+  using ChannelMap = std::unordered_map<ChannelId, std::unique_ptr<Channel>>;
 
-  const IoMechanism mIoMechanism;
-  const std::filesystem::path mLogDirectory;
-  const std::size_t mMaxFileSizeInBytes;
-  common::Locked<std::ofstream> mLockedSequenceFile;
-  common::Locked<ChannelPtrMap> mLockedChannelPtrMap;
-
-  ChannelWriter& acquireChannel(ChannelId channelId, ChannelPtrMap& channelPtrMap);
+  const std::filesystem::path mLogRoot;
+  const std::size_t mRollCapacity;
+  const std::unique_ptr<Timeline> mTimeline;
+  common::Locked<ChannelMap> mLockedChannelMap;
 };
 
 } // namespace nioc::chronicle
