@@ -11,6 +11,7 @@ add_exported_library(
         PUBLIC include/nioc/containers/mmapRegion.hpp
         PUBLIC include/nioc/containers/mmapArray.hpp
         PUBLIC include/nioc/containers/mmapConstArray.hpp
+        PUBLIC include/nioc/containers/tape.hpp
     INCLUDE_DIRECTORIES
         ${CMAKE_CURRENT_SOURCE_DIR}/include
     LINK_LIBRARIES

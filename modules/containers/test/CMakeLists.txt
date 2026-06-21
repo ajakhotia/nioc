@@ -4,7 +4,8 @@ include(GoogleTest)
 add_executable(containersTest
     mmapRegionTest.cpp
     mmapArrayTest.cpp
-    mmapConstArrayTest.cpp)
+    mmapConstArrayTest.cpp
+    tapeTest.cpp)
 
 target_link_libraries(containersTest
     GTest::GTest

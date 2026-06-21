@@ -78,4 +78,12 @@ TEST(MmapConstArray, openingAMissingFileThrows)
   EXPECT_THROW((MmapConstArray<std::int32_t>{freshPath("missingConst")}), std::runtime_error);
 }
 
+TEST(MmapConstArray, openingAFileThatIsNotAWholeNumberOfElementsThrows)
+{
+  const auto path = freshPath("ragged");
+  static_cast<void>(MmapArray<std::byte>{path, 13}); // 13 is not a multiple of sizeof(int32_t)
+
+  EXPECT_THROW((MmapConstArray<std::int32_t>{path}), std::runtime_error);
+}
+
 } // namespace nioc::containers

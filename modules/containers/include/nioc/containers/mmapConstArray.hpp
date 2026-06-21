@@ -8,6 +8,8 @@
 #include "mmapRegion.hpp"
 #include <cstddef>
 #include <filesystem>
+#include <nioc/common/exception.hpp>
+#include <stdexcept>
 #include <type_traits>
 #include <utility>
 
@@ -43,10 +45,22 @@ public:
 
   /// @brief Maps the existing file at @p path read-only.
   ///
-  /// @param path File to map; must exist and be non-empty.
+  /// @param path File to map; must exist and its length must be a whole multiple of
+  /// `sizeof(ValueType)`.
   ///
-  /// @throws std::runtime_error If the file cannot be opened or mapped.
-  explicit MmapConstArray(std::filesystem::path path): mRegion{std::move(path)} {}
+  /// @throws std::runtime_error If the file cannot be opened or mapped, or its length is not a
+  /// whole number of elements.
+  explicit MmapConstArray(std::filesystem::path path): mRegion{std::move(path)}
+  {
+    if(mRegion.size() % sizeof(ValueType) != 0)
+    {
+      common::throwException<std::runtime_error>(
+          "{} is {} bytes, not a whole multiple of the {}-byte element size",
+          mRegion.path().string(),
+          mRegion.size(),
+          sizeof(ValueType));
+    }
+  }
 
   MmapConstArray(const MmapConstArray&) = delete;
 
@@ -69,7 +83,7 @@ public:
   /// @param index Element position, less than @ref size. Out-of-range access is undefined.
   [[nodiscard]] const_reference operator[](const size_type index) const noexcept
   {
-    return data()[index];
+    return data()[index]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
   }
 
   /// @brief Returns an iterator to the first element.
@@ -81,7 +95,7 @@ public:
   /// @brief Returns an iterator one past the last element.
   [[nodiscard]] const_iterator end() const noexcept
   {
-    return data() + size();
+    return data() + size(); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
   }
 
   /// @brief Returns a const iterator to the first element.

@@ -76,7 +76,7 @@ public:
   /// @param index Element position, less than @ref size. Out-of-range access is undefined.
   [[nodiscard]] decltype(auto) operator[](this auto&& self, const size_type index) noexcept
   {
-    return self.data()[index];
+    return self.data()[index];  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
   }
 
   /// @brief Returns an iterator to the first element.
@@ -88,7 +88,7 @@ public:
   /// @brief Returns an iterator one past the last element.
   [[nodiscard]] auto end(this auto&& self) noexcept
   {
-    return self.data() + self.size();
+    return self.data() + self.size(); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
   }
 
   /// @brief Returns a const iterator to the first element.

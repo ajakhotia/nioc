@@ -54,6 +54,9 @@ public:
     return self.bytes().data();
   }
 
+  /// @brief Returns the path of the backing file.
+  [[nodiscard]] const std::filesystem::path& path() const noexcept;
+
   /// @brief Returns whether the region maps no bytes.
   [[nodiscard]] bool empty() const noexcept;
 

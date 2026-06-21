@@ -137,6 +137,11 @@ std::span<const std::byte> MmapRegion::bytes() const noexcept
   return mBytes;
 }
 
+const std::filesystem::path& MmapRegion::path() const noexcept
+{
+  return mPath;
+}
+
 bool MmapRegion::empty() const noexcept
 {
   return mBytes.empty();
