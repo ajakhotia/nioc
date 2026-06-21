@@ -20,6 +20,21 @@ struct ChannelId
   constexpr bool operator==(const ChannelId&) const = default;
 };
 
+/// @brief One ordering record: locates a recorded frame and names its channel.
+///
+/// The timeline is an array of these in record order, spread across a growing run of files, so a
+/// reader replays every channel in one order. Stored as its raw bytes, in host byte order.
+struct TimelineEntry
+{
+  ChannelId mChannelId;
+
+  std::uint64_t mRollId{0ULL};
+
+  std::uint64_t mOffset{0ULL};
+
+  std::uint64_t mSize{0ULL};
+};
+
 /// @brief Combines a payload type id and a topic name into a channel id.
 ///
 /// Equal inputs always give the same channel; the same type on two topics maps to two channels.
