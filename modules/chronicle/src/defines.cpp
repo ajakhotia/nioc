@@ -4,55 +4,17 @@
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#include <boost/hash2/fnv1a.hpp>
 #include <nioc/chronicle/defines.hpp>
-#include <nioc/common/exception.hpp>
-#include <nioc/common/makeBimap.hpp>
-#include <stdexcept>
-
-using namespace std::string_literals;
 
 namespace nioc::chronicle
 {
-namespace
+
+ChannelId makeChannelId(const std::uint64_t typeId, const std::string_view topic)
 {
-
-const auto& ioMechanismBimap()
-{
-  static const auto kBimap = common::makeBimap({
-      std::make_pair(IoMechanism::Stream, "Stream"s),
-      std::make_pair(IoMechanism::Mmap, "Mmap"s),
-  });
-  return kBimap;
-}
-
-} // namespace
-
-std::string stringFromIoMechanism(const IoMechanism mechanism)
-{
-  const auto& bimap = ioMechanismBimap();
-  const auto iter = bimap.left.find(mechanism);
-
-  if(iter == bimap.left.end())
-  {
-    common::throwException<std::logic_error>(
-        "Programming error: IoMechanism bimap missing entry for value {}.",
-        static_cast<int>(mechanism));
-  }
-
-  return iter->second;
-}
-
-IoMechanism ioMechanismFromString(const std::string& str)
-{
-  const auto& bimap = ioMechanismBimap();
-  const auto iter = bimap.right.find(str);
-
-  if(iter == bimap.right.end())
-  {
-    common::throwException<std::out_of_range>("Unknown IoMechanism string: '{}'", str);
-  }
-
-  return iter->second;
+  auto hasher = boost::hash2::fnv1a_64{typeId};
+  hasher.update(topic.data(), topic.size());
+  return ChannelId{hasher.result()};
 }
 
 } // namespace nioc::chronicle
