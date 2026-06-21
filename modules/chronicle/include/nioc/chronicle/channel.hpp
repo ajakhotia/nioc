@@ -20,7 +20,6 @@ namespace nioc::chronicle
 {
 
 class Timeline;
-struct TimelineEntry;
 
 /// @brief One append-only channel of a chronicle.
 ///
