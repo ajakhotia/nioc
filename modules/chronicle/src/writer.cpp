@@ -18,8 +18,8 @@ namespace nioc::chronicle
 
 Writer::Writer(
     std::filesystem::path rootDir,
-    const std::size_t rollCapacity,           // NOLINT(bugprone-easily-swappable-parameters)
-    const std::size_t timelineFileCapacity):  // NOLINT(bugprone-easily-swappable-parameters)
+    const std::size_t rollCapacity,          // NOLINT(bugprone-easily-swappable-parameters)
+    const std::size_t timelineFileCapacity): // NOLINT(bugprone-easily-swappable-parameters)
   mLogRoot{common::requireEmptyDirectory(std::move(rootDir))},
   mRollCapacity{rollCapacity},
   mTimeline{std::make_unique<Timeline>(mLogRoot / kTimelineDirName, timelineFileCapacity)}
