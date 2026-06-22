@@ -5,7 +5,6 @@ add_executable(chronicleTest
     crateTest.cpp
     channelTest.cpp
     readerTest.cpp
-    timelineTest.cpp
     utilsTest.cpp
     writerTest.cpp)
 

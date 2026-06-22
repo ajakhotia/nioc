@@ -4,27 +4,41 @@
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "utils.hpp"
+#include <array>
+#include <cstddef>
+#include <functional>
 #include <gtest/gtest.h>
+#include <iterator>
 #include <nioc/chronicle/reader.hpp>
 #include <nioc/chronicle/writer.hpp>
-#include <numeric>
+#include <ranges>
+#include <span>
+#include <utility>
+#include <vector>
 
 namespace nioc::chronicle
 {
 namespace fs = std::filesystem;
 
+static_assert(std::input_iterator<Reader::Iterator>);
+static_assert(std::ranges::input_range<Reader>);
+
 namespace
 {
-std::vector<char> generateData(std::uint64_t size)
+
+constexpr auto channelA = ChannelId{16983ULL};
+constexpr auto channelB = ChannelId{68964786ULL};
+
+std::vector<std::byte> makeBytes(const std::size_t size, const unsigned char start = 0U)
 {
-  auto data = std::vector<char>(size);
-  std::ranges::iota(data, size);
-  return data;
+  auto bytes = std::vector<std::byte>(size);
+  for(auto index = std::size_t{0}; index < size; ++index)
+  {
+    bytes[index] = std::byte(static_cast<unsigned char>(start + index));
+  }
+  return bytes;
 }
 
-/// Create a fresh empty directory at a deterministic path under the system temp
-/// directory. Any prior contents are wiped.
 fs::path makeFreshEmptyDir(std::string_view name)
 {
   const auto path = fs::temp_directory_path() / "nioc-chronicleTest" / name;
@@ -33,80 +47,56 @@ fs::path makeFreshEmptyDir(std::string_view name)
   return path;
 }
 
-constexpr auto channelA = ChannelId{16983UL};
-constexpr auto channelB = ChannelId{68964786UL};
-constexpr auto dataASize = 20ULL;
-constexpr auto dataBSize = 34ULL;
-
-std::vector<char> dataA()
-{
-  return generateData(dataASize);
-}
-
-std::vector<char> dataB()
-{
-  return generateData(dataBSize);
-}
-
-fs::path createLog()
-{
-  const auto dataAValue = dataA();
-  const auto dataBValue = dataB();
-  const auto dataAAsBytes = std::as_bytes(std::span(dataAValue));
-  const auto dataBAsBytes = std::as_bytes(std::span(dataBValue));
-
-  auto writer = Writer{makeFreshEmptyDir("readerTest-createLog")};
-
-  writer.write(channelA, dataAAsBytes);
-  writer.write(channelB, dataBAsBytes);
-  writer.write(channelA, dataAAsBytes);
-  writer.write(channelB, dataBAsBytes);
-
-  return writer.path();
-}
-
-void expectSpanEqual(const std::span<const std::byte>& lhs, const std::span<const std::byte>& rhs)
+void expectBytesEqual(std::span<const std::byte> lhs, std::span<const std::byte> rhs)
 {
   EXPECT_TRUE(std::ranges::equal(lhs, rhs));
 }
 
 } // namespace
 
-TEST(Reader, read)
+TEST(Reader, readsFramesInRecordOrder)
 {
-  const auto logPath = createLog();
+  const auto dataA = makeBytes(20, 1);
+  const auto dataB = makeBytes(34, 100);
+
+  const auto logPath = [&]
+  {
+    auto writer = Writer{makeFreshEmptyDir("reader-recordOrder"), 4096};
+    writer.write(channelA, dataA);
+    writer.write(channelB, dataB);
+    writer.write(channelA, dataA);
+    writer.write(channelB, dataB);
+    return writer.path();
+  }();
+
+  const auto expected = std::array{
+      std::pair{channelA, std::cref(dataA)},
+      std::pair{channelB, std::cref(dataB)},
+      std::pair{channelA, std::cref(dataA)},
+      std::pair{channelB, std::cref(dataB)}
+  };
+
+  auto index = std::size_t{0};
+  for(const auto& entry: Reader{logPath})
+  {
+    ASSERT_LT(index, expected.size());
+    EXPECT_EQ(expected[index].first, entry.mChannelId);
+    expectBytesEqual(expected[index].second.get(), entry.mCrate.span());
+    ++index;
+  }
+  EXPECT_EQ(index, expected.size());
+}
+
+TEST(Reader, emptyChronicleHasNoEntries)
+{
+  const auto logPath = [&]
+  {
+    const auto writer = Writer{makeFreshEmptyDir("reader-empty")};
+    return writer.path();
+  }();
+
   auto reader = Reader{logPath};
-
-  const auto dataAValue = dataA();
-  const auto dataBValue = dataB();
-  const auto dataAAsBytes = std::as_bytes(std::span(dataAValue));
-  const auto dataBAsBytes = std::as_bytes(std::span(dataBValue));
-
-  {
-    const auto entry = reader.read();
-    EXPECT_EQ(channelA, entry.mChannelId);
-    expectSpanEqual(dataAAsBytes, entry.mMemoryCrate.span());
-  }
-
-  {
-    const auto entry = reader.read();
-    EXPECT_EQ(channelB, entry.mChannelId);
-    expectSpanEqual(dataBAsBytes, entry.mMemoryCrate.span());
-  }
-
-  {
-    const auto entry = reader.read();
-    EXPECT_EQ(channelA, entry.mChannelId);
-    expectSpanEqual(dataAAsBytes, entry.mMemoryCrate.span());
-  }
-
-  {
-    const auto entry = reader.read();
-    EXPECT_EQ(channelB, entry.mChannelId);
-    expectSpanEqual(dataBAsBytes, entry.mMemoryCrate.span());
-  }
-
-  EXPECT_THROW(reader.read(), std::runtime_error);
+  EXPECT_TRUE(reader.begin() == reader.end());
 }
 
 TEST(Reader, constructionRejectsMissingDirectory)
@@ -115,21 +105,5 @@ TEST(Reader, constructionRejectsMissingDirectory)
   fs::remove_all(missing);
   EXPECT_THROW(Reader{missing}, std::invalid_argument);
 }
-
-// KNOWN HOLE: IoMechanism::Stream has a writer but no reader, so a chronicle recorded with the
-// default Stream mechanism can only be replayed through Mmap. Conceptually each mechanism that
-// writes should also read back; this test states that expectation and fails until a stream
-// channel reader exists.
-// TEST(Reader, streamMechanismReadsBackWrittenData)
-//{
-//  const auto logPath = createLog();
-//  auto reader = Reader{logPath, IoMechanism::Stream};
-//
-//  const auto dataAValue = dataA();
-//  const auto entry = reader.read();
-//  EXPECT_EQ(channelA, entry.mChannelId);
-//  expectSpanEqual(std::as_bytes(std::span(dataAValue)), entry.mMemoryCrate.span());
-//}
-
 
 } // namespace nioc::chronicle

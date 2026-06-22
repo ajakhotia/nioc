@@ -19,7 +19,6 @@ add_exported_library(
         src/utils.cpp
         src/writer.cpp
     HEADERS
-        PRIVATE src/timeline.hpp
         PRIVATE src/utils.hpp
         PUBLIC include/nioc/chronicle/channel.hpp
         PUBLIC include/nioc/chronicle/crate.hpp
