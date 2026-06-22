@@ -4,7 +4,6 @@
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "timeline.hpp"
 #include "utils.hpp"
 #include <memory>
 #include <nioc/chronicle/channel.hpp>
@@ -18,32 +17,35 @@ namespace nioc::chronicle
 
 Writer::Writer(
     std::filesystem::path rootDir,
-    const std::size_t rollCapacity,          // NOLINT(bugprone-easily-swappable-parameters)
-    const std::size_t timelineFileCapacity): // NOLINT(bugprone-easily-swappable-parameters)
+    const std::size_t rollCapacity,      // NOLINT(bugprone-easily-swappable-parameters)
+    const std::size_t timelineCapacity): // NOLINT(bugprone-easily-swappable-parameters)
   mLogRoot{common::requireEmptyDirectory(std::move(rootDir))},
   mRollCapacity{rollCapacity},
-  mTimeline{std::make_unique<Timeline>(mLogRoot / kTimelineDirName, timelineFileCapacity)}
+  mTimeline{mLogRoot / kTimelineFileName, timelineCapacity / sizeof(TimelineEntry)}
 {
   logger::info("Writing chronicle to {} with roll capacity {}.", mLogRoot.string(), mRollCapacity);
 }
 
-Writer::~Writer() = default;
+Writer::~Writer()
+{
+  mTimeline.shrink_to_fit();
+}
 
 Channel& Writer::channel(const ChannelId channelId)
 {
   return mLockedChannelMap.execute(
       [this, channelId](ChannelMap& channelMap) -> Channel&
       {
-        auto& slot = channelMap[channelId];
-        if(not slot)
+        auto& channelPtr = channelMap[channelId];
+        if(not channelPtr)
         {
-          slot = std::make_unique<Channel>(
+          channelPtr = std::make_unique<Channel>(
               channelId,
               mLogRoot / hexString(channelId.mValue),
               mRollCapacity,
-              *mTimeline);
+              mTimeline);
         }
-        return *slot;
+        return *channelPtr;
       });
 }
 

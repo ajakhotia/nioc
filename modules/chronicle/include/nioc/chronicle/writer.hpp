@@ -12,19 +12,18 @@
 #include <filesystem>
 #include <memory>
 #include <nioc/common/locked.hpp>
+#include <nioc/containers/mmapArray.hpp>
+#include <nioc/containers/tape.hpp>
 #include <span>
 #include <unordered_map>
 
 namespace nioc::chronicle
 {
 
-class Timeline;
-
 /// @brief Records byte frames to a chronicle for later replay.
 ///
 /// Frames from all channels are recorded in one global order, and a @ref Reader replays them in
-/// that order. Record through a @ref Channel from @ref channel, or use @ref write for a one-off
-/// frame.
+/// that order. Record through a @ref Channel from @ref channel, or use the @ref write method.
 ///
 /// Thread-safe across channels. A single channel has one producer: record on it from one thread
 /// only.
@@ -34,8 +33,13 @@ public:
   /// @brief Default capacity of one roll file.
   static constexpr auto kDefaultRollCapacity = 1024ULL * 1024ULL * 1024ULL;
 
-  /// @brief Default capacity of one timeline file; the timeline grows by adding files.
-  static constexpr auto kDefaultTimelineFileCapacity = 64ULL * 1024ULL * 1024ULL;
+  /// @brief Default capacity of the timeline file.
+  ///
+  /// A self-imposed budget on how many frames can be recorded (one @ref TimelineEntry each), traded
+  /// against the address space left for channel rolls — not a hardware-derived limit. The file is
+  /// sparse, so the reservation costs address space, not disk. Tune it per deployment: raise it for
+  /// huge counts of tiny frames, lower it to be frugal.
+  static constexpr auto kDefaultTimelineCapacity = 4ULL * 1024ULL * 1024ULL * 1024ULL * 1024ULL;
 
   /// @brief Records into @p rootDir.
   ///
@@ -43,14 +47,14 @@ public:
   ///
   /// @param rollCapacity Largest size of one roll file. A larger frame still records.
   ///
-  /// @param timelineFileCapacity Largest size of one timeline file.
+  /// @param timelineCapacity Size of the timeline file; see @ref kDefaultTimelineCapacity.
   ///
   /// @throws std::invalid_argument If @p rootDir does not exist, is not a directory, or is not
   /// empty.
   explicit Writer(
       std::filesystem::path rootDir,
       std::size_t rollCapacity = kDefaultRollCapacity,
-      std::size_t timelineFileCapacity = kDefaultTimelineFileCapacity);
+      std::size_t timelineCapacity = kDefaultTimelineCapacity);
 
   Writer(const Writer&) = delete;
 
@@ -86,7 +90,7 @@ private:
 
   const std::filesystem::path mLogRoot;
   const std::size_t mRollCapacity;
-  const std::unique_ptr<Timeline> mTimeline;
+  containers::Tape<containers::MmapArray<TimelineEntry>> mTimeline;
   common::Locked<ChannelMap> mLockedChannelMap;
 };
 

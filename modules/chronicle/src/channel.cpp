@@ -4,15 +4,15 @@
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "timeline.hpp"
 #include "utils.hpp"
 #include <algorithm>
 #include <cstddef>
-#include <cstdint>
 #include <cstring>
 #include <memory>
 #include <nioc/chronicle/channel.hpp>
+#include <nioc/common/exception.hpp>
 #include <span>
+#include <stdexcept>
 #include <utility>
 
 namespace nioc::chronicle
@@ -22,7 +22,7 @@ Channel::Channel(
     const ChannelId channelId,
     std::filesystem::path channelDir,
     const std::size_t rollCapacity,
-    Timeline& timeline):
+    containers::Tape<containers::MmapArray<TimelineEntry>>& timeline):
   mChannelId{channelId},
   mChannelDir{std::move(channelDir)},
   mRollCapacity{rollCapacity},
@@ -80,7 +80,14 @@ void Channel::openNewRoll(const std::size_t minCapacity)
 
 void Channel::append(const TimelineEntry& entry)
 {
-  mTimeline.append(entry);
+  const auto slot = mTimeline.claim();
+  if(slot.empty())
+  {
+    common::throwException<std::runtime_error>(
+        "Timeline capacity of {} entries is exhausted.",
+        mTimeline.capacity());
+  }
+  slot[0] = entry;
 }
 
 } // namespace nioc::chronicle

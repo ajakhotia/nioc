@@ -23,10 +23,4 @@ std::string buildRollName(const std::uint64_t rollId)
          kFileNameExtension;
 }
 
-std::string buildTimelineFileName(const std::uint64_t fileIndex)
-{
-  return kTimelineFileNamePrefix + padString(std::to_string(fileIndex), kPaddedNumberLength) +
-         kFileNameExtension;
-}
-
 } // namespace nioc::chronicle

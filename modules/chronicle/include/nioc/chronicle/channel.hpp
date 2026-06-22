@@ -19,8 +19,6 @@
 namespace nioc::chronicle
 {
 
-class Timeline;
-
 /// @brief One append-only channel of a chronicle.
 ///
 /// Records byte frames on the channel into a growing run of roll files. A channel has a single
@@ -37,12 +35,12 @@ public:
   ///
   /// @param rollCapacity Largest size of one roll file.
   ///
-  /// @param timeline The chronicle's ordering; must outlive this channel.
+  /// @param timeline The chronicle's ordering, shared across channels; must outlive this channel.
   Channel(
       ChannelId channelId,
       std::filesystem::path channelDir,
       std::size_t rollCapacity,
-      Timeline& timeline);
+      containers::Tape<containers::MmapArray<TimelineEntry>>& timeline);
 
   Channel(const Channel&) = delete;
 
@@ -80,7 +78,7 @@ private:
   const ChannelId mChannelId;
   const std::filesystem::path mChannelDir;
   const std::size_t mRollCapacity;
-  Timeline& mTimeline;
+  containers::Tape<containers::MmapArray<TimelineEntry>>& mTimeline;
   std::shared_ptr<containers::Tape<containers::MmapArray<std::byte>>> mActiveRoll;
   std::uint64_t mActiveRollId{0ULL};
 
