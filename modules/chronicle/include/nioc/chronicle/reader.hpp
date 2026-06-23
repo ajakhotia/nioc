@@ -7,7 +7,6 @@
 
 #include "crate.hpp"
 #include "defines.hpp"
-#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -75,54 +74,30 @@ public:
     /// @brief Constructs a past-the-end iterator.
     Iterator() = default;
 
-    [[nodiscard]] const Entry& operator*() const noexcept
-    {
-      assert(mEntry.has_value());
-      return *mEntry;
-    }
+    [[nodiscard]] const Entry& operator*() const noexcept;
 
-    [[nodiscard]] const Entry* operator->() const noexcept
-    {
-      assert(mEntry.has_value());
-      return &*mEntry;
-    }
+    [[nodiscard]] const Entry* operator->() const noexcept;
 
-    Iterator& operator++()
-    {
-      mEntry = mReader->readNextEntry();
-      return *this;
-    }
+    Iterator& operator++();
 
-    void operator++(int)
-    {
-      ++*this;
-    }
+    void operator++(int);
 
-    [[nodiscard]] bool operator==(std::default_sentinel_t /*end*/) const noexcept
-    {
-      return not mEntry.has_value();
-    }
+    [[nodiscard]] bool operator==(std::default_sentinel_t end) const noexcept;
 
   private:
     friend class Reader;
 
-    explicit Iterator(Reader& reader): mReader{&reader}, mEntry{mReader->readNextEntry()} {}
+    explicit Iterator(Reader& reader);
 
     Reader* mReader{nullptr};
     std::optional<Entry> mEntry;
   };
 
   /// @brief Returns an iterator to the first frame, reading it.
-  [[nodiscard]] Iterator begin()
-  {
-    return Iterator{*this};
-  }
+  [[nodiscard]] Iterator begin();
 
   /// @brief Returns the past-the-end sentinel.
-  [[nodiscard]] static std::default_sentinel_t end() noexcept
-  {
-    return {};
-  }
+  [[nodiscard]] static std::default_sentinel_t end() noexcept;
 
 private:
   using TimelineFile = containers::MmapConstArray<TimelineEntry>;

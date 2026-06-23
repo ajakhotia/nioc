@@ -5,14 +5,57 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "utils.hpp"
+#include <cassert>
+#include <iterator>
 #include <nioc/chronicle/reader.hpp>
 #include <nioc/common/filesystem.hpp>
+#include <optional>
 #include <span>
 #include <system_error>
 #include <utility>
 
 namespace nioc::chronicle
 {
+
+const Entry& Reader::Iterator::operator*() const noexcept
+{
+  assert(mEntry.has_value());
+  return *mEntry; // NOLINT(bugprone-unchecked-optional-access)
+}
+
+const Entry* Reader::Iterator::operator->() const noexcept
+{
+  assert(mEntry.has_value());
+  return &*mEntry; // NOLINT(bugprone-unchecked-optional-access)
+}
+
+auto Reader::Iterator::operator++() -> Iterator&
+{
+  mEntry = mReader->readNextEntry();
+  return *this;
+}
+
+void Reader::Iterator::operator++(int)
+{
+  ++*this;
+}
+
+bool Reader::Iterator::operator==(const std::default_sentinel_t /*end*/) const noexcept
+{
+  return not mEntry.has_value();
+}
+
+Reader::Iterator::Iterator(Reader& reader): mReader{&reader}, mEntry{mReader->readNextEntry()} {}
+
+auto Reader::begin() -> Iterator
+{
+  return Iterator{*this};
+}
+
+std::default_sentinel_t Reader::end() noexcept
+{
+  return {};
+}
 
 Reader::Reader(std::filesystem::path logRoot):
   mLogRoot{common::requireExistingDirectory(std::move(logRoot))}
