@@ -11,57 +11,67 @@
 #include <nioc/containers/mmapArray.hpp>
 #include <nioc/containers/tape.hpp>
 #include <span>
-#include <utility>
 
 namespace nioc::chronicle
 {
 
 class Channel;
+class Crate;
 
 /// @brief A claimed, writable region of a channel to build one frame into.
 ///
-/// Write the frame into @ref span, then hand the reservation to @ref Crate to record the frame and
-/// obtain a view over it (`Crate{std::move(reservation), usedSize}`). A reservation that is dropped
-/// without being made into a crate records nothing. Mint one with @ref Channel::reserve.
+/// Write the frame into @ref span, then @ref commit it to get a @ref Crate viewing the frame. A
+/// reservation dropped without being committed records nothing. Mint one with @ref
+/// Channel::reserve.
 class Reservation
 {
 public:
   /// @brief Constructs an empty reservation; its @ref span is empty and it records nothing.
-  Reservation() noexcept = default;
+  Reservation() noexcept = delete;
 
   Reservation(const Reservation&) = delete;
 
   Reservation(Reservation&&) noexcept = default;
 
-  ~Reservation() = default;
+  /// @brief Rewinds the claim off the channel unless it was consumed (made into a @ref Crate or
+  /// resized away), so an abandoned reservation records nothing.
+  ~Reservation();
 
   Reservation& operator=(const Reservation&) = delete;
 
-  Reservation& operator=(Reservation&&) noexcept = default;
+  /// @brief Rewinds this reservation's claim (if unconsumed) before taking over @p other's.
+  Reservation& operator=(Reservation&& other) noexcept;
 
   /// @brief Returns the writable region to build the frame into.
-  [[nodiscard]] std::span<std::byte> span() const noexcept
-  {
-    return mSpan;
-  }
+  [[nodiscard]] std::span<std::byte> span() const noexcept;
+
+  /// @brief Resizes this reservation to @p newSize writable bytes.
+  ///
+  /// Routes through the channel (see @ref Channel::modify): the current claim is released and a new
+  /// one of @p newSize is taken, on a fresh roll if it no longer fits the current one. No bytes are
+  /// carried over — @ref span's contents are abandoned, so copy out anything worth keeping first.
+  ///
+  /// @param newSize New writable size in bytes.
+  void modify(std::size_t newSize);
+
+  /// @brief Commits the first @p usedSize bytes as a frame and returns a @ref Crate viewing them.
+  ///
+  /// The channel reclaims the reserved space the frame did not use and appends the frame's place to
+  /// its timeline; the returned crate takes over keeping the roll mapped. Spends the reservation.
+  ///
+  /// @param usedSize Number of leading bytes of @ref span that hold the frame.
+  [[nodiscard]] Crate commit(std::size_t usedSize) &&;
 
 private:
   friend class Channel;
-  friend class Crate;
 
   Reservation(
       Channel& channel,
       std::shared_ptr<containers::Tape<containers::MmapArray<std::byte>>> rollPtr,
-      const std::uint64_t rollId,
-      const std::span<std::byte> span):
-    mChannel{&channel},
-    mRollPtr{std::move(rollPtr)},
-    mRollId{rollId},
-    mSpan{span}
-  {
-  }
+      std::uint64_t rollId,
+      std::span<std::byte> span);
 
-  Channel* mChannel{nullptr};
+  Channel* mChannelPtr;
   std::shared_ptr<containers::Tape<containers::MmapArray<std::byte>>> mRollPtr;
   std::uint64_t mRollId{0ULL};
   std::span<std::byte> mSpan;
