@@ -95,6 +95,45 @@ TEST(Tape, claimLargerThanCapacityReturnsAnEmptySpan)
   EXPECT_EQ(tape.size(), 0U);
 }
 
+TEST(Tape, rewindAtTheTailFreesTheUnusedSpace)
+{
+  auto tape = Tape<std::array<int, 8>>{};
+
+  const auto slot = tape.claim(6);
+  ASSERT_EQ(slot.size(), 6U);
+  EXPECT_EQ(tape.size(), 6U);
+
+  // Keep only the first two of the six claimed slots; the unused tail returns to the tape.
+  EXPECT_TRUE(tape.rewind(slot, 2));
+  EXPECT_EQ(tape.size(), 2U);
+
+  // The next claim reuses the freed space, abutting the kept prefix.
+  const auto next = tape.claim(3);
+  ASSERT_EQ(next.size(), 3U);
+  EXPECT_EQ(next.data(), slot.data() + 2);
+  EXPECT_EQ(tape.size(), 5U);
+}
+
+TEST(Tape, rewindIsANoOpOnceALaterClaimStrandsTheTail)
+{
+  auto tape = Tape<std::array<int, 8>>{};
+
+  const auto first = tape.claim(4);
+  ASSERT_EQ(first.size(), 4U);
+  const auto second = tape.claim(2); // moves the cursor off the tail of `first`
+  ASSERT_EQ(second.size(), 2U);
+  EXPECT_EQ(tape.size(), 6U);
+
+  // `first` is no longer at the tail, so its tail is stranded: rewind does nothing.
+  EXPECT_FALSE(tape.rewind(first, 1));
+  EXPECT_EQ(tape.size(), 6U);
+
+  // Claims continue past `second`, never reusing the stranded space inside `first`.
+  const auto third = tape.claim(2);
+  ASSERT_EQ(third.size(), 2U);
+  EXPECT_EQ(third.data(), second.data() + 2);
+}
+
 TEST(Tape, emplaceConstructsInPlaceAndReportsFullWithNull)
 {
   auto tape = Tape<std::array<int, 3>>{};

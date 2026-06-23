@@ -6,13 +6,15 @@
 #pragma once
 
 #include <atomic>
-#include <cassert>
 #include <concepts>
 #include <cstddef>
 #include <iterator>
 #include <memory>
+#include <nioc/common/exception.hpp>
+#include <nioc/logger/logger.hpp>
 #include <ranges>
 #include <span>
+#include <stdexcept>
 #include <type_traits>
 #include <utility>
 
@@ -147,9 +149,14 @@ public:
   /// @param count Number of slots to reserve; at least one.
   ///
   /// @return A span over the reserved slots, or an empty span if they do not fit.
-  [[nodiscard]] std::span<value_type> claim(const size_type count = 1) noexcept
+  [[nodiscard]] std::span<value_type> claim(const size_type count = 1)
   {
-    assert(count != 0); // an empty span means "full", so a zero-slot claim would be ambiguous.
+    if(count == 0)
+    {
+      common::throwException<std::invalid_argument>(
+          "Cannot claim {} slots; count must be non-zero.",
+          count);
+    }
 
     // Atomically advance the cursor; the RMW makes reservations disjoint without a lock. The cursor
     // only reserves space — making the slot's contents visible to a reader is the caller's concern.
@@ -179,14 +186,24 @@ public:
   ///
   /// @param slot A span previously returned by @ref claim from this tape.
   ///
-  /// @param usedCount Number of leading elements of @p slot to keep; at most @c slot.size().
-  void rewind(const std::span<value_type> slot, const size_type usedCount) noexcept
+  /// @param usedCount Number of leading elements of a @p slot to keep; at most @c slot.size().
+  ///
+  /// @return True if the tail was reclaimed; false if a @p slot was no longer the tail (nothing
+  /// changed), or if @p usedCount exceeds the slot size (a misuse, logged as an error).
+  [[nodiscard]] bool rewind(const std::span<value_type> slot, const size_type usedCount) noexcept
   {
-    assert(usedCount <= slot.size());
+    if(usedCount > slot.size())
+    {
+      logger::error("Rewind usedCount {} exceeds slot size {}.", usedCount, slot.size());
+      return false;
+    }
 
     const auto slotStart = static_cast<size_type>(std::distance(data(), slot.data()));
     auto slotEnd = slotStart + slot.size();
-    mCursor.compare_exchange_strong(slotEnd, slotStart + usedCount, std::memory_order_relaxed);
+    return mCursor.compare_exchange_strong(
+        slotEnd,
+        slotStart + usedCount,
+        std::memory_order_relaxed);
   }
 
   /// @brief Constructs one element in place at the tail from @p args.
