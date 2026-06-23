@@ -7,14 +7,15 @@
 #include <array>
 #include <bit>
 #include <capnp/message.h>
-#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <kj/array.h>
 #include <kj/common.h>
+#include <nioc/common/exception.hpp>
 #include <nioc/terminus/arenaMessageBuilder.hpp>
 #include <span>
+#include <stdexcept>
 #include <utility>
 
 namespace nioc::terminus
@@ -30,7 +31,12 @@ bool ArenaMessageBuilder::overflowed() const
 std::span<std::byte> ArenaMessageBuilder::frame()
 {
   const auto segments = getSegmentsForOutput();
-  assert(segments.size() == 1 and segments[0].begin() == firstSegment().begin());
+  if(segments.size() != 1 or segments[0].begin() != firstSegment().begin())
+  {
+    common::throwException<std::logic_error>(
+        "Cannot frame a {}-segment build; a single in-arena segment is required.",
+        segments.size());
+  }
 
   const auto segmentWords = segments[0].size();
   writeHeader(mArena.data(), segmentWords);
