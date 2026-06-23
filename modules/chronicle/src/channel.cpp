@@ -11,6 +11,7 @@
 #include <memory>
 #include <nioc/chronicle/channel.hpp>
 #include <nioc/common/exception.hpp>
+#include <nioc/logger/logger.hpp>
 #include <span>
 #include <stdexcept>
 #include <utility>
@@ -62,7 +63,37 @@ Crate Channel::write(const std::span<const std::byte> data)
 {
   auto reservation = reserve(data.size());
   std::memcpy(reservation.span().data(), data.data(), data.size());
-  return Crate{std::move(reservation), data.size()};
+  return std::move(reservation).commit(data.size());
+}
+
+void Channel::rewind(const Reservation& reservation, const std::size_t usedSize)
+{
+  if(not mActiveRoll->rewind(reservation.span(), usedSize))
+  {
+    logger::warn(
+        "Unable to rewind a reservation on channel {} from {} bytes to {} bytes.",
+        mChannelId.mValue,
+        reservation.span().size(),
+        usedSize);
+  }
+}
+
+void Channel::modify(Reservation& reservation, const std::size_t newSize)
+{
+  if(newSize <= reservation.span().size())
+  {
+    rewind(reservation, newSize);
+  }
+  else
+  {
+    // Remove the old reservation first. May help reclaim space from old reservation.
+    {
+      const auto spent = std::move(reservation);
+    }
+
+    // Create a new reservation with the newSize and shove it into the passed parameter
+    reservation = reserve(newSize);
+  }
 }
 
 void Channel::openNewRoll(const std::size_t minCapacity)

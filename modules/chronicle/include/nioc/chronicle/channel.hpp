@@ -73,7 +73,7 @@ public:
   Crate write(std::span<const std::byte> data);
 
 private:
-  friend class Crate;
+  friend class Reservation;
 
   const ChannelId mChannelId;
   const std::filesystem::path mChannelDir;
@@ -81,6 +81,28 @@ private:
   containers::Tape<containers::MmapArray<TimelineEntry>>& mTimeline;
   std::shared_ptr<containers::Tape<containers::MmapArray<std::byte>>> mActiveRoll;
   std::uint64_t mActiveRollId{0ULL};
+
+  /// @brief Rewinds @p reservation's claim off by trimming it to the @p usedSize. Defaults
+  ///        to removing the entire reservation.
+  ///
+  /// @param reservation The reservation whose claim to release.
+  ///
+  /// @param usedSize
+  ///
+  /// @return True if the claim was released; false if a later claim had already stranded it.
+  void rewind(const Reservation& reservation, std::size_t usedSize = 0);
+
+  /// @brief Resizes @p reservation to @p newSize bytes, rolling over to a fresh roll if needed.
+  ///
+  /// Releases @p reservation's claim back to its roll and replaces it in place with a new one of
+  /// @p newSize (see @ref reserve), opening a fresh roll when the new size no longer fits. No bytes
+  /// are carried over — the previous contents are abandoned, so the caller must copy out anything
+  /// it needs first. @p reservation must be the tail of its roll (single-producer use).
+  ///
+  /// @param reservation The reservation to resize, replaced in place with the new claim.
+  ///
+  /// @param newSize New writable size in bytes.
+  void modify(Reservation& reservation, std::size_t newSize);
 
   /// @brief Opens a fresh roll of at least @p minCapacity bytes, trimming the retiring one.
   void openNewRoll(std::size_t minCapacity);
