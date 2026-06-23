@@ -8,39 +8,42 @@
 #include "configStore.hpp"
 #include "consignment.hpp"
 #include "manifest.hpp"
-#include "msg.hpp"
-#include "msgBase.hpp"
 #include "runContext.hpp"
+#include "schemaId.hpp"
 #include <atomic>
 #include <chrono>
 #include <filesystem>
 #include <functional>
 #include <memory>
+#include <nioc/chronicle/defines.hpp>
+#include <nioc/chronicle/writer.hpp>
+#include <nioc/common/exception.hpp>
 #include <nioc/common/locked.hpp>
 #include <nioc/common/typeTraits.hpp>
 #include <nioc/concurrent/runner.hpp>
-#include <spdlog/fwd.h>
+#include <stdexcept>
 #include <stop_token>
 #include <string>
 #include <string_view>
 #include <unordered_map>
 #include <unordered_set>
-#include <utility>
 #include <vector>
 
 namespace nioc::terminus
 {
 
-class AsyncChronicleWriter;
 class Component;
 class Driver;
 
+template<typename Schema_>
+class Publisher;
+
 /// @brief Central data hub for one run of a nioc binary.
 ///
-/// A Port owns the on-disk recording for one run. It creates the recording directory, holds the
+/// A Port owns the on-disk recording for one run: it creates the recording directory, holds the
 /// run's @ref Manifest (exposed via @ref runContext and @ref config), copies in supporting files,
-/// writes the run's log output into the recording, and opens the chronicle writer for time-series
-/// data.
+/// writes the run's log output into the recording, and opens the chronicle that backs every
+/// message.
 ///
 /// A Port also owns the run's routine graph. The @ref Setup callback, passed at construction,
 /// builds the Drivers and Components and launches them on Runners. On destruction the Port shuts
@@ -65,10 +68,10 @@ public:
 
   /// @brief Creates a fresh recording directory and builds the run.
   ///
-  /// The recording directory is named `<iso8601>_<uuid>`, under the context's log root (created if
-  /// missing). Inside it: log output goes to `console.log`; the manifest writes `manifest.json` and
-  /// `config.json`; each listed resource is copied in and mapped in `resources.json`; chronicle
-  /// data goes to `chronicle/` when the context asks for it.
+  /// The recording directory is named `<iso8601>_<uuid>`, under the context's log root. Inside it:
+  /// log output goes to `console.log`; the manifest writes `manifest.json` and `config.json`; each
+  /// listed resource is copied in and mapped in `resources.json`; chronicle data goes to
+  /// `chronicle/`.
   ///
   /// @param manifest The run's context and configuration (see @ref Manifest); the Port takes
   /// ownership.
@@ -124,9 +127,6 @@ public:
 
   /// @brief Returns the working-directory copy of a resource, adding it first if needed.
   ///
-  /// If @p source was not added yet, copies it first (see @ref addResource). Read from the returned
-  /// copy so the recording is self-contained.
-  ///
   /// @param source The resource's original path.
   ///
   /// @return Path to the resource's copy inside the working directory.
@@ -137,8 +137,6 @@ public:
 
   /// @brief Returns the working-directory copy of an already-added resource.
   ///
-  /// Const overload. Never adds a resource; @p source must already be added (see @ref addResource).
-  ///
   /// @param source The original path of an already-added resource.
   ///
   /// @return Path to the resource's copy inside the working directory.
@@ -146,45 +144,59 @@ public:
   /// @throws std::out_of_range If @p source was not added.
   [[nodiscard]] std::filesystem::path acquireResource(const std::filesystem::path& source) const;
 
-  /// @brief Registers a callback to receive every message published on a channel.
+  /// @brief Mints a producer handle for a topic.
   ///
-  /// The Port owns @p callback for the rest of the run and runs it on the publishing thread.
-  /// Usually reached through @ref Component::subscribe rather than called directly.
+  /// Call once at construction and keep the handle. The same @p Schema on two topics yields two
+  /// channels.
   ///
-  /// @param channelId Channel to receive messages from (see @ref makeChannelId).
+  /// @tparam Schema Cap'n Proto schema of the messages.
   ///
-  /// @param callback Callback run with each published message. Multiple callbacks may share a
-  /// channel; all of them receive every message.
-  void subscribe(ChannelId channelId, ConsignmentCallback callback);
-
-  /// @brief Publishes a typed message on a topic, sending it to subscribers and recording it.
+  /// @param topic Topic to publish on.
   ///
-  /// Delivers synchronously on the caller's thread: every subscriber on the channel gets the
-  /// message in its own inbox, and a copy is recorded to the chronicle when this run records.
-  /// Thread-safe.
+  /// @return A @ref Publisher for the topic.
   ///
-  /// @tparam Schema Cap'n Proto schema of the message.
-  ///
-  /// @param topic Topic to publish on; combined with @p Schema into a channel (see @ref
-  /// makeChannelId).
-  ///
-  /// @param msgPtr Message to publish; ownership passes to the Port.
+  /// @throws std::logic_error If the run does not record; a publisher needs a channel to record and
+  /// reserve into (non-recording publish is not supported for now).
   template<typename Schema>
-  void publish(const std::string_view& topic, ConstMsgPtr<Schema> msgPtr)
+  [[nodiscard]] Publisher<Schema> publisher(const std::string_view& topic)
   {
-    const auto channelId = makeChannelId(Msg<Schema>::kMsgId, topic);
+    if(mWriter == nullptr)
+    {
+      common::throwException<std::logic_error>(
+          "Port::publisher requires a recording run; this run does not record");
+    }
+
+    const auto channelId = chronicle::makeChannelId(kSchemaId<Schema>, topic);
     recordTopic(channelId, topic, common::prettyName<Schema>());
-    publish(channelId, std::move(msgPtr));
+    return Publisher<Schema>{*this, mWriter->channel(channelId)};
   }
 
-  /// @brief Requests a graceful shutdown: producers stop and in-flight work drains.
+  /// @brief Registers a callback to receive every message delivered on a channel.
   ///
-  /// Trips @ref shutdownToken, which a @ref Driver watches.
+  /// Call only at construction; the communication graph is frozen once the run starts. Usually
+  /// reached through @ref Component::subscribe.
+  ///
+  /// @param channelId Channel to receive frames from.
+  ///
+  /// @param callback Callback run with each delivered frame. Multiple callbacks may share a
+  /// channel; all of them receive every frame.
+  void subscribe(ChannelId channelId, ConsignmentCallback callback);
+
+  /// @brief Delivers a frame to a channel's subscribers.
+  ///
+  /// The delivery primitive behind both a fresh @ref Publisher::publish and a @ref LogPlayer
+  /// replay: the frame is handed to every callback subscribed to @p channelId. A channel with no
+  /// subscribers drops the frame.
+  ///
+  /// @param channelId Channel the frame belongs to.
+  ///
+  /// @param crate Frame to deliver; copied to each subscriber.
+  void deliver(ChannelId channelId, const chronicle::Crate& crate) const;
+
+  /// @brief Requests a graceful shutdown: producers stop and in-flight work drains.
   void shutdown() const noexcept;
 
   /// @brief Requests an immediate halt: stop now and abandon in-flight work.
-  ///
-  /// Trips @ref abortToken, which a @ref Component watches.
   void abort() const noexcept;
 
   /// @brief Returns the token tripped by @ref shutdown.
@@ -193,19 +205,13 @@ public:
   /// @brief Returns the token tripped by @ref abort.
   [[nodiscard]] std::stop_token abortToken() const noexcept;
 
-  /// @brief Blocks until no published message is in flight: every message handed to a subscriber
-  /// has been destroyed.
+  /// @brief Blocks until no delivered frame is in flight.
   ///
-  /// Call after producers have stopped — usually once @ref shutdown has tripped and the drivers are
-  /// done — to let in-flight work drain before tearing down the routine graph. A subscriber that
-  /// holds onto its messages forever prevents this call from ever returning.
+  /// Call after producers have stopped, to let in-flight work drain before tearing down the routine
+  /// graph. A subscriber that holds onto its frames forever prevents this call from returning.
   void awaitQuiescence() const;
 
   /// @brief Paces one beat of the caller's main loop and reports whether the run is still live.
-  ///
-  /// Runs @p housekeeping, then checks the drivers. If all drivers are done, returns false at once
-  /// so the caller's loop can end. Otherwise sleeps the rest of @p duration — timed from the start
-  /// of the call, so housekeeping does not stretch the beat — and returns true.
   ///
   /// @param duration Length of one beat of the loop.
   ///
@@ -225,36 +231,23 @@ private:
   const Manifest mManifest;
   const std::filesystem::path mWorkingDir;
   const std::shared_ptr<spdlog::sinks::sink> mConsoleLogSink;
+  const std::unique_ptr<chronicle::Writer> mWriter;
 
   common::Locked<ResourceMap> mLockedResourceMap;
-  common::Locked<SubscriptionMap> mLockedSubscriptionMap;
-  common::Locked<ChannelIdSet> mLockedChannelIdSet;
+  ChannelIdSet mRecordedTopics;
+  SubscriptionMap mSubscriptionMap;
 
   mutable std::atomic_uint32_t mPendingConsignments{0};
   std::stop_source mShutdownSource;
   std::stop_source mAbortSource;
-  std::unique_ptr<AsyncChronicleWriter> mChronicleWriter;
 
-  // The run's routine graph. Declared in this order so natural member destruction runs drivers →
+  // The run's routine graph. Declared in this order, so natural member destruction runs drivers →
   // components → runners, matching the destructor's teardown order.
   Runners mRunners;
   Components mComponents;
   Drivers mDrivers;
 
-  /// @brief Sends a message to the subscribers of a channel.
-  ///
-  /// @param channelId Channel to publish on.
-  ///
-  /// @param msgBasePtr Message to publish; ownership passes to the Port.
-  void publish(ChannelId channelId, const ConstMsgBasePtr& msgBasePtr);
-
-  /// @brief Records a topic in human-readable form.
-  ///
-  /// @param channelId Channel id of the message.
-  ///
-  /// @param topic Human-readable name of the topic.
-  ///
-  /// @param schemaName Human-readable name of the message schema on the topic.
+  /// @brief Records a topic in human-readable form, once per channel.
   void recordTopic(
       ChannelId channelId,
       const std::string_view& topic,
