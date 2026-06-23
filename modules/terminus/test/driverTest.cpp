@@ -6,14 +6,20 @@
 
 #include <filesystem>
 #include <gtest/gtest.h>
-#include <memory>
+#include <nioc/chronicle/defines.hpp>
+#include <nioc/terminus/configStore.hpp>
 #include <nioc/terminus/consignment.hpp>
 #include <nioc/terminus/driver.hpp>
 #include <nioc/terminus/idl/testSchema.capnp.h>
-#include <nioc/terminus/msg.hpp>
+#include <nioc/terminus/manifest.hpp>
+#include <nioc/terminus/message.hpp>
 #include <nioc/terminus/port.hpp>
+#include <nioc/terminus/publisher.hpp>
+#include <nioc/terminus/runContext.hpp>
+#include <nioc/terminus/schemaId.hpp>
 #include <stdexcept>
-#include <string>
+#include <string_view>
+#include <utility>
 #include <vector>
 
 namespace nioc::terminus
@@ -40,6 +46,7 @@ class CountingDriver final: public Driver
 public:
   CountingDriver(Port& port, const int messageCount):
     Driver{port, "CountingDriver"},
+    mPublisher{publisher<TestSchema>(kTopic)},
     mRemaining{messageCount}
   {
   }
@@ -51,6 +58,7 @@ public:
   }
 
 private:
+  Publisher<TestSchema> mPublisher;
   int mRemaining;
 
   State run() final
@@ -60,9 +68,9 @@ private:
       return State::Done;
     }
 
-    auto msg = std::make_shared<Msg<TestSchema>>();
-    msg->builder().setValue(mRemaining);
-    publish<TestSchema>(kTopic, std::move(msg));
+    auto draft = mPublisher.draft();
+    draft.builder().setValue(mRemaining);
+    mPublisher.publish(std::move(draft));
 
     --mRemaining;
     return mRemaining > 0 ? State::Continue : State::Done;
@@ -90,12 +98,11 @@ TEST(DriverTest, publishesOntoThePortUntilDone)
 
   auto received = std::vector<std::int64_t>{};
   port.subscribe(
-      makeChannelId(Msg<TestSchema>::kMsgId, kTopic),
-      [&received](const Consignment consignment)
+      chronicle::makeChannelId(kSchemaId<TestSchema>, kTopic),
+      [&received](Consignment consignment)
       {
-        received.push_back(std::static_pointer_cast<const Msg<TestSchema>>(consignment.msg())
-                               ->reader()
-                               .getValue());
+        const auto message = Message<TestSchema>{consignment.crate()};
+        received.push_back(message.reader().getValue());
       });
 
   auto driver = CountingDriver{port, 2};

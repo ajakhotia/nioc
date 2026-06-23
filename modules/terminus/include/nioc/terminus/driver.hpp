@@ -5,13 +5,13 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include "msg.hpp"
 #include "port.hpp"
+#include "publisher.hpp"
 #include <nioc/concurrent/routine.hpp>
 #include <nioc/terminus/config/driverConfig.capnp.h>
 #include <stop_token>
 #include <string>
-#include <utility>
+#include <string_view>
 
 namespace nioc::terminus
 {
@@ -19,9 +19,9 @@ namespace nioc::terminus
 /// @brief A @ref Routine that publishes messages onto a @ref Port and receives none.
 ///
 /// Use a Driver to bring outside data into the process: a sensor reader, a file reader, a
-/// generator. A subclass implements @ref run to produce work and calls @ref publish to send typed
-/// messages to the Port. A Driver has no inbox; use @ref Component instead if you also need to
-/// receive messages.
+/// generator. A subclass mints @ref Publisher handles with @ref publisher at construction,
+/// implements @ref run to produce work, and publishes through those handles. A Driver has no inbox;
+/// use @ref Component instead if you also need to receive messages.
 ///
 /// Construct through a subclass. The Port is held by reference and must outlive the Driver.
 class Driver: public concurrent::Routine
@@ -41,9 +41,6 @@ protected:
 
   /// @brief Configures the driver base from a config block.
   ///
-  /// Reads the routine's name (see @ref Routine::name) from @p config. A subclass passes the
-  /// `driver` subsection of its own config block here.
-  ///
   /// @param port Port to publish onto; must outlive this driver.
   ///
   /// @param config The driver's config block (see driverConfig.capnp).
@@ -57,17 +54,23 @@ protected:
   /// work, and return @ref State::Done.
   [[nodiscard]] const std::stop_token& shutdownToken() const noexcept;
 
-  /// @brief Publishes a typed message onto the bound Port.
+  /// @brief Returns the Port this driver publishes onto.
   ///
-  /// @tparam Schema Cap'n Proto schema of the message.
+  /// Most drivers produce through @ref publisher handles; reach for the Port directly only to
+  /// deliver pre-built frames a typed publisher cannot mint, as a @ref LogPlayer does on replay.
+  [[nodiscard]] Port& port() noexcept;
+
+  /// @brief Mints a producer handle for a topic.
+  ///
+  /// @tparam Schema Cap'n Proto schema of the messages.
   ///
   /// @param topic Topic to publish on.
   ///
-  /// @param msgPtr Message to publish. Ownership passes to the Port.
+  /// @return A @ref Publisher bound to the topic.
   template<typename Schema>
-  void publish(const std::string_view& topic, ConstMsgPtr<Schema> msgPtr)
+  [[nodiscard]] Publisher<Schema> publisher(const std::string_view& topic)
   {
-    mPort.publish<Schema>(topic, std::move(msgPtr));
+    return mPort.publisher<Schema>(topic);
   }
 
 private:
@@ -76,15 +79,10 @@ private:
 
   /// @brief Runs one iteration by calling @ref run, turning any failure into a clean finish.
   ///
-  /// Catches and logs any exception from @ref run, then returns @ref State::Done so a failing
-  /// driver stops cleanly. Never throws.
-  ///
   /// @return Whatever @ref run returns, or @ref State::Done if @ref run throws.
   [[nodiscard]] State step() noexcept final;
 
-  /// @brief Produces one iteration of work, sending messages via @ref publish.
-  ///
-  /// Implement this to generate and publish the next message(s). Called once per iteration.
+  /// @brief Produces one iteration of work, publishing through held @ref Publisher handles.
   ///
   /// @return @ref State::Continue to run again right away, @ref State::Waiting when no work is
   /// ready yet, or @ref State::Done when the source is exhausted.
