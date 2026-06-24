@@ -9,9 +9,9 @@
 #include <nioc/example/idl/sample2.capnp.h>
 #include <nioc/example/idl/sample3.capnp.h>
 #include <nioc/terminus/component.hpp>
-#include <nioc/terminus/msg.hpp>
+#include <nioc/terminus/message.hpp>
 #include <nioc/terminus/port.hpp>
-#include <string>
+#include <nioc/terminus/publisher.hpp>
 
 namespace nioc::example
 {
@@ -32,10 +32,9 @@ public:
   ExampleComponent1(terminus::Port& port, ExampleComponent1Config::Reader config);
 
 private:
-  std::string mSample3Topic;
-  std::string mSample2Topic;
+  terminus::Publisher<Sample2> mSample2Publisher;
 
-  void process(const terminus::ConstMsgPtr<Sample3>& msgPtr);
+  void process(const terminus::Message<Sample3>& message);
 };
 
 } // namespace nioc::example
