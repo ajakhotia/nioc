@@ -16,6 +16,7 @@ add_exported_library(
         src/crate.cpp
         src/defines.cpp
         src/reader.cpp
+        src/reservation.cpp
         src/utils.cpp
         src/writer.cpp
     HEADERS

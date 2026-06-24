@@ -15,7 +15,7 @@ add_exported_library(
     INCLUDE_DIRECTORIES
         ${CMAKE_CURRENT_SOURCE_DIR}/include
     LINK_LIBRARIES
-        PRIVATE nioc::logger
+        PUBLIC nioc::logger
         PUBLIC nioc::common
     COMPILE_FEATURES
         PUBLIC cxx_std_23

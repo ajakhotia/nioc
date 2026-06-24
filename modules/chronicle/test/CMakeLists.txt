@@ -4,7 +4,9 @@ include(GoogleTest)
 add_executable(chronicleTest
     crateTest.cpp
     channelTest.cpp
+    definesTest.cpp
     readerTest.cpp
+    reservationTest.cpp
     utilsTest.cpp
     writerTest.cpp)
 
