@@ -143,13 +143,13 @@ TEST(Writer, reserveAndRecordBuildsInPlace)
     {
       auto reservation = channel.reserve(64);
       fill(reservation, first);
-      static_cast<void>(Crate{std::move(reservation), first.size()});
+      static_cast<void>(std::move(reservation).commit(first.size()));
     } // making the crate records the frame's timeline entry
 
     {
       auto reservation = channel.reserve(64);
       fill(reservation, second);
-      static_cast<void>(Crate{std::move(reservation), second.size()});
+      static_cast<void>(std::move(reservation).commit(second.size()));
     }
 
     return writer.path();
