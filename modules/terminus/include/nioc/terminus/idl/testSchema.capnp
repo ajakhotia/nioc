@@ -6,4 +6,6 @@ $Cxx.namespace("nioc::terminus");
 struct TestSchema @0x9bdd32ecb9bd982f
 {
     value @0 : Int64;
+    text @1 : Text;
+    numbers @2 : List(Int64);
 }
