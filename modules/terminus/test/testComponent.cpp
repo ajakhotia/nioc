@@ -6,7 +6,7 @@
 
 #include "testComponent.hpp"
 #include <nioc/terminus/idl/testSchema.capnp.h>
-#include <nioc/terminus/msg.hpp>
+#include <nioc/terminus/message.hpp>
 
 namespace nioc::terminus
 {
@@ -19,7 +19,7 @@ EarthComponent::EarthComponent(
 {
   subscribe<TestSchema>(
       kTopic,
-      [this](const ConstMsgPtr<TestSchema>&)
+      [this](const Message<TestSchema>&)
       {
         ++mStepCount;
         return State::Continue;
@@ -39,7 +39,7 @@ MarsComponent::MarsComponent(
 {
   subscribe<TestSchema>(
       kTopic,
-      [this](const ConstMsgPtr<TestSchema>&)
+      [this](const Message<TestSchema>&)
       {
         ++mStepCount;
         return State::Continue;
