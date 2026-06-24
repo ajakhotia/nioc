@@ -58,19 +58,19 @@ std::uint64_t ExampleComponent2::sample3Count() const noexcept
   return mSample3Count.load();
 }
 
-void ExampleComponent2::process(const terminus::ConstMsgPtr<Sample1>& /* msgPtr */)
+void ExampleComponent2::process(const terminus::Message<Sample1>& /* message */)
 {
   mSample1Count.fetch_add(1);
   logCounts();
 }
 
-void ExampleComponent2::process(const terminus::ConstMsgPtr<Sample2>& /* msgPtr */)
+void ExampleComponent2::process(const terminus::Message<Sample2>& /* message */)
 {
   mSample2Count.fetch_add(1);
   logCounts();
 }
 
-void ExampleComponent2::process(const terminus::ConstMsgPtr<Sample3>& /* msgPtr */)
+void ExampleComponent2::process(const terminus::Message<Sample3>& /* message */)
 {
   mSample3Count.fetch_add(1);
   logCounts();

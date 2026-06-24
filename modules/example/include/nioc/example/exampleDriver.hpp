@@ -7,9 +7,11 @@
 
 #include <cstddef>
 #include <nioc/example/config/exampleDriverConfig.capnp.h>
+#include <nioc/example/idl/sample1.capnp.h>
+#include <nioc/example/idl/sample3.capnp.h>
 #include <nioc/terminus/driver.hpp>
 #include <nioc/terminus/port.hpp>
-#include <string>
+#include <nioc/terminus/publisher.hpp>
 
 namespace nioc::example
 {
@@ -30,8 +32,8 @@ public:
   ExampleDriver(terminus::Port& port, ExampleDriverConfig::Reader config);
 
 private:
-  std::string mSample1Topic;
-  std::string mSample3Topic;
+  terminus::Publisher<Sample1> mSample1Publisher;
+  terminus::Publisher<Sample3> mSample3Publisher;
   std::size_t mRound{0};
 
   /// @brief Publishes one round of messages, or finishes once all rounds are done.

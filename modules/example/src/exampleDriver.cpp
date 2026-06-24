@@ -4,11 +4,7 @@
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include <memory>
 #include <nioc/example/exampleDriver.hpp>
-#include <nioc/example/idl/sample1.capnp.h>
-#include <nioc/example/idl/sample3.capnp.h>
-#include <nioc/terminus/msg.hpp>
 #include <utility>
 
 namespace nioc::example
@@ -16,8 +12,8 @@ namespace nioc::example
 
 ExampleDriver::ExampleDriver(terminus::Port& port, const ExampleDriverConfig::Reader config):
   Driver{port, config.getDriver()},
-  mSample1Topic{config.getSample1Topic().cStr()},
-  mSample3Topic{config.getSample3Topic().cStr()}
+  mSample1Publisher{publisher<Sample1>(config.getSample1Topic().cStr())},
+  mSample3Publisher{publisher<Sample3>(config.getSample3Topic().cStr())}
 {
 }
 
@@ -28,17 +24,17 @@ auto ExampleDriver::run() -> State
     return State::Done;
   }
 
-  auto sample1 = std::make_shared<terminus::Msg<Sample1>>();
-  auto sample1Builder = sample1->builder();
+  auto sample1 = mSample1Publisher.draft();
+  auto sample1Builder = sample1.builder();
   sample1Builder.setName("sample1");
   sample1Builder.setValue(static_cast<std::int64_t>(mRound));
-  publish<Sample1>(mSample1Topic, std::move(sample1));
+  mSample1Publisher.publish(std::move(sample1));
 
-  auto sample3 = std::make_shared<terminus::Msg<Sample3>>();
-  auto sample3Builder = sample3->builder();
+  auto sample3 = mSample3Publisher.draft();
+  auto sample3Builder = sample3.builder();
   sample3Builder.setLabel("sample3");
   sample3Builder.setFlag(mRound % 2 == 0);
-  publish<Sample3>(mSample3Topic, std::move(sample3));
+  mSample3Publisher.publish(std::move(sample3));
 
   ++mRound;
   return State::Continue;

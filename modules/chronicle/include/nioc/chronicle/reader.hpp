@@ -1,32 +1,44 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2021.
+// Copyright (c) 2026.
 // Project  : nioc
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include "channelReader.hpp"
+#include "crate.hpp"
 #include "defines.hpp"
-#include "memoryCrate.hpp"
-#include <boost/iostreams/device/mapped_file.hpp>
+#include <cstddef>
+#include <cstdint>
 #include <filesystem>
+#include <iterator>
 #include <memory>
-#include <nioc/common/locked.hpp>
+#include <nioc/containers/mmapConstArray.hpp>
+#include <optional>
 #include <unordered_map>
 
 namespace nioc::chronicle
 {
 
-/// @brief One frame read from a chronicle: its channel ID and its data.
+/// @brief One frame read from a chronicle: its channel and its bytes.
 struct Entry
 {
   ChannelId mChannelId;
-  MemoryCrate mMemoryCrate;
+  Crate mCrate;
 };
 
-/// @brief Reads a chronicle's entries back for playback.
+/// @brief Replays a chronicle's frames in the order they were recorded.
 ///
-/// Returns entries in the order they were written. Not thread-safe: use from one thread only.
+/// A single-pass input range: iterate it once with a range-for, or pass it to a standard algorithm.
+///
+/// @code
+/// for(const auto& entry: Reader{logRoot})
+/// {
+///   use(entry.mChannelId, entry.mCrate);
+/// }
+/// @endcode
+///
+/// Each frame's bytes stay mapped only while a @ref Crate over them lives; copy the crate out of an
+/// entry to keep its bytes past the next step. Not thread-safe: use from one thread only.
 class Reader
 {
 public:
@@ -34,10 +46,8 @@ public:
   ///
   /// @param logRoot Path to the chronicle directory.
   ///
-  /// @param ioMechanism How to read the data.
-  ///
   /// @throws std::invalid_argument If @p logRoot does not exist or is not a directory.
-  explicit Reader(std::filesystem::path logRoot, IoMechanism ioMechanism = IoMechanism::Mmap);
+  explicit Reader(std::filesystem::path logRoot);
 
   Reader(const Reader&) = delete;
 
@@ -49,22 +59,61 @@ public:
 
   Reader& operator=(Reader&&) noexcept = delete;
 
-  /// @brief Reads the next entry.
-  /// @return The next entry.
-  /// @throws std::runtime_error At end of the chronicle.
-  /// @throws std::invalid_argument If the I/O mechanism does not support reading.
-  Entry read();
+  /// @brief A single-pass input iterator over a chronicle's frames.
+  ///
+  /// Reads the frame it points at from the owning @ref Reader; advancing it reads the next. All
+  /// iterators over one reader share that reader's position, so iterate a reader only once.
+  class Iterator
+  {
+  public:
+    using iterator_concept = std::input_iterator_tag;
+    using iterator_category = std::input_iterator_tag;
+    using value_type = Entry;
+    using difference_type = std::ptrdiff_t;
+
+    /// @brief Constructs a past-the-end iterator.
+    Iterator() = default;
+
+    [[nodiscard]] const Entry& operator*() const noexcept;
+
+    [[nodiscard]] const Entry* operator->() const noexcept;
+
+    Iterator& operator++();
+
+    void operator++(int);
+
+    [[nodiscard]] bool operator==(std::default_sentinel_t end) const noexcept;
+
+  private:
+    friend class Reader;
+
+    explicit Iterator(Reader& reader);
+
+    Reader* mReader{nullptr};
+    std::optional<Entry> mEntry;
+  };
+
+  /// @brief Returns an iterator to the first frame, reading it.
+  [[nodiscard]] Iterator begin();
+
+  /// @brief Returns the past-the-end sentinel.
+  [[nodiscard]] static std::default_sentinel_t end() noexcept;
 
 private:
-  using ChannelReaderMap = std::unordered_map<ChannelId, std::unique_ptr<ChannelReader>>;
+  using TimelineFile = containers::MmapConstArray<TimelineEntry>;
+  using Roll = containers::MmapConstArray<std::byte>;
+  using RollCache = std::unordered_map<std::uint64_t, std::weak_ptr<const Roll>>;
 
-  const IoMechanism mIoMechanism;
   const std::filesystem::path mLogRoot;
-  const boost::iostreams::mapped_file_source mSequenceFile;
-  std::uint64_t mNextReadIndex{0ULL};
-  common::Locked<ChannelReaderMap> mLockedChannelReaderMap;
+  std::unique_ptr<const TimelineFile> mTimelineFile;
+  std::uint64_t mEntryInTimeline{0ULL};
+  std::unordered_map<ChannelId, RollCache> mRollCache;
 
-  ChannelReader& acquireChannel(ChannelId channelId, ChannelReaderMap& channelReaderMap);
+  /// @brief Reads the next frame, or nothing once the chronicle is exhausted.
+  std::optional<Entry> readNextEntry();
+
+  /// @brief Returns the roll for @p rollId on @p channelId, mapping it if it is not still cached.
+  std::shared_ptr<const Roll> acquireRoll(ChannelId channelId, std::uint64_t rollId);
 };
 
 } // namespace nioc::chronicle

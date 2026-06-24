@@ -11,10 +11,8 @@ capnproto_generate_library(
   EXPORT
     niocTargets
   SCHEMA_FILES
-    include/nioc/terminus/idl/frame.capnp
+    include/nioc/terminus/idl/envelope.capnp
     include/nioc/terminus/idl/testSchema.capnp
-  LINK_LIBRARIES
-    nioc::commonIdl
   COMPILE_FEATURES
     PUBLIC cxx_std_23
   COMPILE_OPTIONS
@@ -54,29 +52,33 @@ add_exported_library(
   EXPORT
     niocTargets
   SOURCES
-    src/asyncChronicleWriter.cpp
+    src/arenaMessageBuilder.cpp
     src/component.cpp
     src/configStore.cpp
     src/defaultSignalCatcher.cpp
+    src/draft.cpp
     src/driver.cpp
+    src/logPlayer.cpp
     src/manifest.cpp
-    src/msgBase.cpp
     src/port.cpp
     src/programOption.cpp
     src/runContext.cpp
   HEADERS
-    PUBLIC include/nioc/terminus/asyncChronicleWriter.hpp
+    PUBLIC include/nioc/terminus/arenaMessageBuilder.hpp
     PUBLIC include/nioc/terminus/component.hpp
     PUBLIC include/nioc/terminus/configStore.hpp
     PUBLIC include/nioc/terminus/consignment.hpp
     PUBLIC include/nioc/terminus/defaultSignalCatcher.hpp
+    PUBLIC include/nioc/terminus/draft.hpp
     PUBLIC include/nioc/terminus/driver.hpp
+    PUBLIC include/nioc/terminus/logPlayer.hpp
     PUBLIC include/nioc/terminus/manifest.hpp
-    PUBLIC include/nioc/terminus/msg.hpp
-    PUBLIC include/nioc/terminus/msgBase.hpp
+    PUBLIC include/nioc/terminus/message.hpp
     PUBLIC include/nioc/terminus/port.hpp
     PUBLIC include/nioc/terminus/programOption.hpp
+    PUBLIC include/nioc/terminus/publisher.hpp
     PUBLIC include/nioc/terminus/runContext.hpp
+    PUBLIC include/nioc/terminus/schemaId.hpp
   INCLUDE_DIRECTORIES
     ${CMAKE_CURRENT_SOURCE_DIR}/include
   LINK_LIBRARIES
@@ -91,6 +93,7 @@ add_exported_library(
     PUBLIC nioc::concurrent
     PUBLIC nioc::logger
     PUBLIC nioc::terminusConfig
+    PUBLIC nioc::terminusIdl
     PUBLIC spdlog::spdlog
   COMPILE_FEATURES
     PUBLIC cxx_std_23

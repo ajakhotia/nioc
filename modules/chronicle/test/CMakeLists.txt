@@ -1,19 +1,18 @@
 find_package(GTest REQUIRED)
 include(GoogleTest)
 
-find_package(Boost CONFIG REQUIRED COMPONENTS iostreams)
-
 add_executable(chronicleTest
-    streamChannelWriterTest.cpp
-    mmapChannelReaderTest.cpp
-    writerTest.cpp
+    crateTest.cpp
+    channelTest.cpp
+    definesTest.cpp
     readerTest.cpp
-    utilsTest.cpp)
+    reservationTest.cpp
+    utilsTest.cpp
+    writerTest.cpp)
 
 target_include_directories(chronicleTest PRIVATE ../src)
 
 target_link_libraries(chronicleTest
-    Boost::iostreams
     GTest::GTest
     GTest::Main
     nioc::chronicle)

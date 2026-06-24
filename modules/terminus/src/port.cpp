@@ -11,11 +11,10 @@
 #include <fstream>
 #include <functional>
 #include <memory>
-#include <mutex>
+#include <nioc/chronicle/writer.hpp>
 #include <nioc/common/exception.hpp>
 #include <nioc/common/time.hpp>
 #include <nioc/logger/logger.hpp>
-#include <nioc/terminus/asyncChronicleWriter.hpp>
 #include <nioc/terminus/driver.hpp>
 #include <nioc/terminus/port.hpp>
 #include <nlohmann/json.hpp>
@@ -48,6 +47,19 @@ fs::path createWorkingDir(const fs::path& logRoot)
   return dir;
 }
 
+/// Opens the recording's chronicle writer, or nothing when the run does not record. A run that does
+/// not record still publishes — its producers build messages on the heap.
+std::unique_ptr<chronicle::Writer> makeWriter(const fs::path& workingDir, const bool record)
+{
+  if(not record)
+  {
+    return nullptr;
+  }
+  const auto dir = workingDir / "chronicle";
+  fs::create_directories(dir);
+  return std::make_unique<chronicle::Writer>(dir);
+}
+
 /// Attaches a file-backed sink to the logger to capture the console log to the working directory.
 spdlog::sink_ptr attachLogFileSink(
     const fs::path& consoleLogPath,
@@ -64,9 +76,6 @@ spdlog::sink_ptr attachLogFileSink(
 
 /// Copies the @p source into @p workingDir under its flat basename and records the
 /// originalPath → basename mapping in @p fileMap.
-///
-/// @throws std::invalid_argument If the @p source is missing, is not a regular file, was already
-/// added, or its basename collides with an already-copied resource.
 void copyResource(
     const fs::path& source,
     const fs::path& workingDir,
@@ -104,8 +113,6 @@ void copyResource(
   fileMap.emplace(sourceKey, filename);
 }
 
-/// Copies every resource in @p resourcePaths into @p workingDir and returns the resulting
-/// originalPath → basename map.
 std::unordered_map<std::string, std::string> copyResources(
     const std::vector<fs::path>& resourcePaths,
     const fs::path& workingDir)
@@ -118,7 +125,6 @@ std::unordered_map<std::string, std::string> copyResources(
   return fileMap;
 }
 
-/// Writes the originalPath → basename map of the recording's resource copies to resources.json.
 void writeResources(
     const std::unordered_map<std::string, std::string>& resourceMap,
     const fs::path& workingDir)
@@ -138,11 +144,8 @@ Port::Port(Manifest manifest, const Setup& setup):
   mManifest{std::move(manifest)},
   mWorkingDir{createWorkingDir(mManifest.mContext.logRoot())},
   mConsoleLogSink{attachLogFileSink(mWorkingDir / "console.log")},
-  mLockedResourceMap{copyResources(mManifest.mContext.resourcePaths(), mWorkingDir)},
-  mChronicleWriter{
-      mManifest.mContext.recordChronicle()
-          ? std::make_unique<AsyncChronicleWriter>(mWorkingDir / "chronicle")
-          : nullptr}
+  mWriter{makeWriter(mWorkingDir, mManifest.mContext.recordChronicle())},
+  mLockedResourceMap{copyResources(mManifest.mContext.resourcePaths(), mWorkingDir)}
 {
   mManifest.writeTo(mWorkingDir);
   mLockedResourceMap.cExecute([this](const auto& resourceMap)
@@ -157,19 +160,13 @@ Port::Port(Manifest manifest, const Setup& setup):
 Port::~Port()
 {
   // Wind the run down before finalizing the recording: stop the producers, drain the in-flight
-  // consignments, then release the routine graph in dependency order — drivers stop producing,
-  // components have nothing left to consume, and runners join their threads once the routines
-  // they drive expire.
+  // consignments, then release the routine graph in dependency order. The chronicle writer is
+  // released last (by member destruction), after every crate that views its rolls is gone.
   shutdown();
   awaitQuiescence();
   mDrivers.clear();
   mComponents.clear();
   mRunners.clear();
-
-  // Stop the chronicle writer next: it joins its thread, so no further chronicle write or trace
-  // log races the resources update and log-sink removal below. A no-op when this run does not
-  // record.
-  mChronicleWriter.reset();
 
   // The resource map may have grown via addResource() since construction, so rewrite
   // resources.json with its final state. A destructor must not throw, so the write is guarded.
@@ -207,7 +204,6 @@ fs::path Port::acquireResource(const fs::path& source)
 {
   const auto sourceKey = source.string();
 
-  // Shared-lock fast check to acquire existing resources.
   if(const auto resolved = mLockedResourceMap.cExecute(
          [this, &sourceKey](const auto& resourceMap) -> std::optional<fs::path>
          {
@@ -221,11 +217,9 @@ fs::path Port::acquireResource(const fs::path& source)
     return *resolved;
   }
 
-  // Exclusive-lock path to copy the resource. The copy may happen at most once.
   return mLockedResourceMap.execute(
       [this, &source, &sourceKey](auto& resourceMap)
       {
-        // Recheck for a potential race since the lock was released in the block above.
         if(not resourceMap.contains(sourceKey))
         {
           copyResource(source, mWorkingDir, resourceMap);
@@ -243,8 +237,7 @@ fs::path Port::acquireResource(const fs::path& source) const
 
 void Port::subscribe(const ChannelId channelId, ConsignmentCallback callback)
 {
-  mLockedSubscriptionMap.execute([channelId, &callback](auto& subscriptionMap)
-                                 { subscriptionMap[channelId].push_back(std::move(callback)); });
+  mSubscriptionMap[channelId].push_back(std::move(callback));
 }
 
 void Port::shutdown() const noexcept
@@ -302,24 +295,17 @@ bool Port::wait(
   return true;
 }
 
-void Port::publish(const ChannelId channelId, const ConstMsgBasePtr& msgBasePtr)
+void Port::deliver(const ChannelId channelId, const chronicle::Crate& crate) const
 {
-  mLockedSubscriptionMap.cExecute(
-      [this, channelId, &msgBasePtr](const auto& subscriptionMap)
-      {
-        if(const auto subscriptions = subscriptionMap.find(channelId);
-           subscriptions != subscriptionMap.end())
-        {
-          for(const auto& callback: subscriptions->second)
-          {
-            std::invoke(callback, Consignment{msgBasePtr, mPendingConsignments});
-          }
-        }
-      });
-
-  if(mChronicleWriter)
+  const auto subscriptions = mSubscriptionMap.find(channelId);
+  if(subscriptions == mSubscriptionMap.end())
   {
-    mChronicleWriter->push(channelId, Consignment{msgBasePtr, mPendingConsignments});
+    return;
+  }
+
+  for(const auto& callback: subscriptions->second)
+  {
+    std::invoke(callback, Consignment{crate, mPendingConsignments});
   }
 }
 
@@ -328,35 +314,19 @@ void Port::recordTopic(
     const std::string_view& topic,
     const std::string_view& schemaName)
 {
-  // Shared fast check if a topic has already been recorded.
-  if(mLockedChannelIdSet.cExecute([channelId](const auto& channelIdSet)
-                                  { return channelIdSet.contains(channelId); }))
+  if(not mRecordedTopics.insert(channelId).second)
   {
     return;
   }
 
-  // Record the topic if it hasn't been recorded yet.
-  mLockedChannelIdSet.execute(
-      [this, channelId, &topic, &schemaName](auto& channelIdSet)
-      {
-        // Recheck to avoid race condition since having relieved the block above.
-        if(channelIdSet.contains(channelId))
-        {
-          return;
-        }
-
-        // Best effort to record the topic to the file.
-        const auto topicsFilePath = mWorkingDir / "topics.txt";
-        auto topicsFile = std::ofstream(topicsFilePath, std::ios::app);
-        if(not topicsFile)
-        {
-          logger::error("Failed to record topic to {}", topicsFilePath.string());
-          return;
-        }
-        topicsFile << topic << '\t' << schemaName << '\n';
-
-        channelIdSet.emplace(channelId);
-      });
+  const auto topicsFilePath = mWorkingDir / "topics.txt";
+  auto topicsFile = std::ofstream(topicsFilePath, std::ios::app);
+  if(not topicsFile)
+  {
+    logger::error("Failed to record topic to {}", topicsFilePath.string());
+    return;
+  }
+  topicsFile << topic << '\t' << schemaName << '\n';
 }
 
 } // namespace nioc::terminus

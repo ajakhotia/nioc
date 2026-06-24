@@ -47,6 +47,11 @@ const std::stop_token& Driver::shutdownToken() const noexcept
   return mShutdownToken;
 }
 
+Port& Driver::port() noexcept
+{
+  return mPort;
+}
+
 Driver::State Driver::step() noexcept
 {
   try

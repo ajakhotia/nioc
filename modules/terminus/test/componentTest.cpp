@@ -7,28 +7,29 @@
 #include "testComponent.hpp"
 #include <filesystem>
 #include <gtest/gtest.h>
-#include <memory>
 #include <nioc/concurrent/routine.hpp>
 #include <nioc/terminus/component.hpp>
 #include <nioc/terminus/configStore.hpp>
 #include <nioc/terminus/idl/testSchema.capnp.h>
 #include <nioc/terminus/manifest.hpp>
-#include <nioc/terminus/msg.hpp>
+#include <nioc/terminus/message.hpp>
 #include <nioc/terminus/port.hpp>
+#include <nioc/terminus/publisher.hpp>
 #include <nioc/terminus/runContext.hpp>
 #include <stdexcept>
-#include <utility>
+#include <string_view>
 
 namespace nioc::terminus
 {
 namespace
 {
 
-/// A finalized message to publish. step() drains by pointer and the test handler never inspects the
-/// payload, so any real message exercises the inbox identically.
-ConstMsgPtr<TestSchema> makeMessage()
+/// Publishes one (gap) message on @p topic; the test handlers never inspect the payload, so a gap
+/// exercises the inbox identically.
+void publishOne(Port& port, const std::string_view topic)
 {
-  return std::make_shared<const Msg<TestSchema>>();
+  auto publisher = port.publisher<TestSchema>(topic);
+  publisher.publish(publisher.draft());
 }
 
 /// A Port recording under the default temp root. The setup builds no routines; these tests
@@ -64,8 +65,8 @@ TEST(ComponentTest, drainsOneMessagePerRun)
 {
   auto port = makePort();
   auto component = EarthComponent{port, 4, concurrent::BufferMode::Overwriting};
-  port.publish<TestSchema>(EarthComponent::kTopic, makeMessage());
-  port.publish<TestSchema>(EarthComponent::kTopic, makeMessage());
+  publishOne(port, EarthComponent::kTopic);
+  publishOne(port, EarthComponent::kTopic);
 
   EXPECT_EQ(component.tick(), concurrent::Routine::State::Continue);
   EXPECT_EQ(component.tick(), concurrent::Routine::State::Continue);
@@ -79,7 +80,7 @@ TEST(ComponentTest, overwriteDropsOldestWhenFull)
   constexpr auto kPublishCount = 5;
   for(auto count = 0; count < kPublishCount; ++count)
   {
-    port.publish<TestSchema>(EarthComponent::kTopic, makeMessage());
+    publishOne(port, EarthComponent::kTopic);
   }
 
   // Two slots keep the newest two; the other three were overwritten.
@@ -99,7 +100,7 @@ TEST(ComponentTest, duplicateSubscriptionThrows)
     explicit DoubleSubscriber(Port& port):
       Component{port, 1, concurrent::BufferMode::Unbounded, "DoubleSubscriber"}
     {
-      const auto handler = [](const ConstMsgPtr<TestSchema>&) { return State::Continue; };
+      const auto handler = [](const Message<TestSchema>&) { return State::Continue; };
       subscribe<TestSchema>("topic", handler);
       subscribe<TestSchema>("topic", handler);
     }
@@ -122,13 +123,13 @@ TEST(ComponentTest, callbackFailureEndsTheComponentWithoutEscaping)
     {
       subscribe<TestSchema>(
           topic,
-          [](const ConstMsgPtr<TestSchema>&) -> State
+          [](const Message<TestSchema>&) -> State
           { throw std::runtime_error{"callback failure"}; });
     }
   };
 
   auto component = ThrowingComponent{port, kThrowingTopic};
-  port.publish<TestSchema>(kThrowingTopic, makeMessage());
+  publishOne(port, kThrowingTopic);
 
   // The exception is caught and logged; the component reports Done so its Runner winds it down.
   EXPECT_EQ(component.tick(), concurrent::Routine::State::Done);
@@ -141,7 +142,7 @@ TEST(ComponentTest, unboundedRetainsEveryMessage)
   constexpr auto kPublishCount = 5;
   for(auto count = 0; count < kPublishCount; ++count)
   {
-    port.publish<TestSchema>(EarthComponent::kTopic, makeMessage());
+    publishOne(port, EarthComponent::kTopic);
   }
 
   // Unbounded keeps all five despite a nominal capacity of 1.

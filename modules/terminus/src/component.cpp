@@ -73,16 +73,16 @@ Component::State Component::step() noexcept
 {
   try
   {
-    const auto value = mInbox.tryPop();
+    auto value = mInbox.tryPop();
     if(not value)
     {
       return State::Waiting;
     }
 
-    // Dispatch hands the message to the subscribed callback, which returns the next State. When
-    // `value` leaves scope its Consignment is destroyed, decrementing the port's in-flight counter
+    // Dispatch hands the consignment to the subscribed callback, which returns the next State. The
+    // consignment is destroyed when the callback returns, decrementing the port's in-flight counter
     // to report the delivery.
-    return std::invoke(*value->first, value->second.msg());
+    return std::invoke(*value->first, std::move(value->second));
   }
   catch(const std::exception& exception)
   {

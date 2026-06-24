@@ -7,9 +7,11 @@ add_executable(terminusTest
   configStoreTest.cpp
   consignmentTest.cpp
   driverTest.cpp
+  logPlayerTest.cpp
   manifestTest.cpp
-  msgTest.cpp
-  portTest.cpp)
+  messageTest.cpp
+  portTest.cpp
+  schemaIdTest.cpp)
 
 target_link_libraries(terminusTest
   GTest::GTest

@@ -11,7 +11,7 @@
 #include <nioc/example/idl/sample2.capnp.h>
 #include <nioc/example/idl/sample3.capnp.h>
 #include <nioc/terminus/component.hpp>
-#include <nioc/terminus/msg.hpp>
+#include <nioc/terminus/message.hpp>
 #include <nioc/terminus/port.hpp>
 #include <string>
 
@@ -50,11 +50,11 @@ private:
   std::atomic<std::uint64_t> mSample2Count{0};
   std::atomic<std::uint64_t> mSample3Count{0};
 
-  void process(const terminus::ConstMsgPtr<Sample1>& msgPtr);
+  void process(const terminus::Message<Sample1>& message);
 
-  void process(const terminus::ConstMsgPtr<Sample2>& msgPtr);
+  void process(const terminus::Message<Sample2>& message);
 
-  void process(const terminus::ConstMsgPtr<Sample3>& msgPtr);
+  void process(const terminus::Message<Sample3>& message);
 
   void logCounts() const;
 };
