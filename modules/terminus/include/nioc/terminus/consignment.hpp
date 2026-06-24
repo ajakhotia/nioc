@@ -5,58 +5,52 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include "msgBase.hpp"
 #include <atomic>
+#include <nioc/chronicle/crate.hpp>
 #include <nioc/common/raiiToken.hpp>
+#include <utility>
 
 namespace nioc::terminus
 {
 
-/// @brief Holds one message and counts itself as in flight while it lives.
+/// @brief Holds one delivered frame and counts as in flight while it lives.
 ///
-/// Construction adds one to a shared counter; destruction subtracts one. The counter always equals
-/// the number of live consignments built against it. The counter must outlive every consignment
-/// built against it.
+/// The shared in-flight counter must outlive every consignment built against it.
 class Consignment
 {
 public:
-  /// @param msgBasePtr Message to hold.
+  /// @param crate Frame to carry to a subscriber.
   ///
-  /// @param counter In-flight counter. Raised now, lowered on destruction. Must outlive this
-  /// consignment.
-  Consignment(ConstMsgBasePtr msgBasePtr, std::atomic_uint32_t& counter):
-    mMsgBasePtr{std::move(msgBasePtr)},
+  /// @param counter Shared in-flight counter; must outlive this consignment.
+  Consignment(chronicle::Crate crate, std::atomic_uint32_t& counter):
+    mCrate{std::move(crate)},
     mToken{Acquire{counter}, Release{counter}}
   {
   }
 
-  /// @brief Returns the held message.
-  [[nodiscard]] const ConstMsgBasePtr& msg() const noexcept
+  /// @brief Returns the carried frame.
+  [[nodiscard]] const chronicle::Crate& crate() const noexcept
   {
-    return mMsgBasePtr;
+    return mCrate;
   }
 
 private:
   /// @brief Guard entry action: raises the in-flight counter.
   struct Acquire
   {
-    /// @brief Counter to raise. Must outlive this action.
     std::atomic_uint32_t& mConsignmentCounter;
 
-    /// @brief Adds one to the counter.
     void operator()() const noexcept
     {
       mConsignmentCounter.fetch_add(1);
     }
   };
 
-  /// @brief Guard exit action: lowers the in-flight counter.
+  /// @brief Guard exit action: lowers the in-flight counter and wakes waiters at zero.
   struct Release
   {
-    /// @brief Counter to lower. Must outlive this action.
     std::atomic_uint32_t& mConsignmentCounter;
 
-    /// @brief Subtracts one. Wakes threads waiting on the counter when it hits zero.
     void operator()() const noexcept
     {
       if(mConsignmentCounter.fetch_sub(1, std::memory_order_acq_rel) == 1)
@@ -66,7 +60,7 @@ private:
     }
   };
 
-  ConstMsgBasePtr mMsgBasePtr;
+  chronicle::Crate mCrate;
   common::RaiiToken<Release> mToken;
 };
 
