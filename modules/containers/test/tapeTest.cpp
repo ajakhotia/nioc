@@ -157,7 +157,7 @@ TEST(Tape, adaptsAPreSizedVector)
   EXPECT_TRUE(tape.empty());
 
   const auto slots = tape.claim(3);
-  std::iota(slots.begin(), slots.end(), 1); // 1, 2, 3
+  std::ranges::iota(slots, 1); // 1, 2, 3
 
   EXPECT_EQ(tape.size(), 3U);
   EXPECT_EQ(std::accumulate(tape.begin(), tape.end(), 0), 6);
@@ -192,7 +192,7 @@ TEST(Tape, shrinkToFitTrimsCapacityToTheWrittenSize)
   EXPECT_EQ(tape.capacity(), 8U);
 
   const auto slots = tape.claim(3);
-  std::iota(slots.begin(), slots.end(), 1); // 1, 2, 3
+  std::ranges::iota(slots, 1); // 1, 2, 3
 
   tape.shrink_to_fit();
   EXPECT_EQ(tape.capacity(), 3U);
@@ -254,7 +254,7 @@ TEST(Tape, concurrentClaimsAreDisjointAndComplete)
   std::ranges::sort(offsets);
 
   auto expected = std::vector<std::ptrdiff_t>(kCount);
-  std::iota(expected.begin(), expected.end(), 0);
+  std::ranges::iota(expected, 0);
   EXPECT_EQ(offsets, expected); // each slot claimed exactly once: disjoint and complete
 }
 
