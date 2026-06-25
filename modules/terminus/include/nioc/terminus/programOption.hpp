@@ -11,45 +11,53 @@
 namespace nioc::terminus
 {
 
-/// @brief Returns the top-level options group, captioned @p programName and declaring `--help`.
+/// @brief Create a fresh options description that already carries the standard `--help`/`-h` flag.
 ///
-/// Add subsystem and application flags to the group, then pass it to @ref parseCommandLine.
+/// Use this to start defining a program's command-line interface, then chain `add_options()` to
+/// register your own flags before handing the result to @ref parseCommandLine.
 ///
-/// @code
-/// auto options = nioc::terminus::programOptions("myProgramName");
-/// options.add(nioc::terminus::Manifest::cliOptions());
+/// Example:
 ///
-/// // clang-format off
-/// options.add_options()
-/// (
-///   "input,i",
-///   boost::program_options::value<std::string>()->required(),
-///   "Path to the input file"
-/// );
-/// // clang-format on
+///     auto options = programOptions("myTool");
+///     options.add_options()("count,c", boost::program_options::value<int>(), "Item count");
 ///
-/// const auto variableMap = nioc::terminus::parseCommandLine(argC, argV, options);
-/// const auto& input = variableMap.at("input").as<std::string>();
-/// @endcode
+/// @param programName Names the program. Used as the title prefix in the generated help text.
 ///
-/// @param programName Program name.
+/// @see parseCommandLine
 [[nodiscard]] boost::program_options::options_description programOptions(
     const std::string& programName);
 
-/// @brief Parses the command line against @p options and returns the variables map.
+/// @brief Parse a process's argument vector against @p options and return the populated variable
+/// map, handling `--help` and errors by terminating the process.
 ///
-/// With `--help`, prints @p options to `stdout` and exits with `EXIT_SUCCESS`. On a parse error,
-/// prints the error and @p options to `stderr` and exits with `EXIT_FAILURE`. Neither case returns.
+/// Call this once from `main` after building @p options with @ref programOptions. On success the
+/// returned map also holds a `"commandLine"` string entry: every argument joined by single spaces.
 ///
-/// On success, the map also holds a `"commandLine"` string entry with the verbatim launch command.
+/// Example:
 ///
-/// @param argC Number of entries in @p argV (usually `argc` from `main`).
+///     int main(int argC, char** argV)
+///     {
+///         auto options = programOptions("myTool");
+///         auto vm = parseCommandLine(argC, argV, options);
+///         // vm["commandLine"].as<std::string>() == "myTool ..."
+///     }
 ///
-/// @param argV Launch arguments (usually `argv` from `main`).
+/// This function does not always return. If `--help` is present it prints @p options to stdout and
+/// calls `std::exit(EXIT_SUCCESS)`. If parsing or notifier validation fails it prints the error and
+/// @p options to stderr and calls `std::exit(EXIT_FAILURE)`. On success it runs all registered
+/// notifiers before returning.
 ///
-/// @param options Options group to parse against (see @ref programOptions).
+/// @param argC Number of entries in @p argV. Typically `main`'s `argc`.
 ///
-/// @return The parsed options, plus a `"commandLine"` string entry.
+/// @param argV Points to @p argC C-strings, including the program name at index 0. Typically
+/// `main`'s `argv`. Must stay valid for the duration of the call.
+///
+/// @param options The option set to parse against. Pass the result of @ref programOptions,
+/// extended with your own flags.
+///
+/// @return The parsed variable map, with the extra `"commandLine"` entry injected.
+///
+/// @see programOptions
 [[nodiscard]] boost::program_options::variables_map parseCommandLine(
     int argC,
     const char* const* argV,

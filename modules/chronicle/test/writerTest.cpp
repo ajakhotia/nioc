@@ -29,7 +29,6 @@ namespace
 constexpr auto channelA = ChannelId{16983ULL};
 constexpr auto channelB = ChannelId{68964786ULL};
 
-/// A small roll capacity keeps test roll files tiny and lets roll-over be exercised cheaply.
 constexpr auto kRollCapacity = std::size_t{4096};
 
 std::vector<std::byte> makeBytes(const std::size_t size, const unsigned char start = 0U)

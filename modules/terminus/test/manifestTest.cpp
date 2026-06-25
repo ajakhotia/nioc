@@ -21,7 +21,6 @@ namespace fs = std::filesystem;
 namespace
 {
 
-/// Parses @p arguments against the manifest's options, as a real main would.
 boost::program_options::variables_map parse(std::vector<const char*> arguments)
 {
   arguments.insert(arguments.begin(), "manifestTest");
@@ -30,7 +29,6 @@ boost::program_options::variables_map parse(std::vector<const char*> arguments)
   return parseCommandLine(static_cast<int>(arguments.size()), arguments.data(), options);
 }
 
-/// Creates a minimal recording — a directory holding the given config.json — and returns its path.
 fs::path makeRecording(const fs::path& name, const std::string& configText)
 {
   const auto dir = fs::temp_directory_path() / "niocManifestTest" / name;

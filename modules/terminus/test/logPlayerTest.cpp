@@ -38,8 +38,6 @@ chronicle::ChannelId channelFor(const std::string_view topic)
   return chronicle::makeChannelId(kSchemaId<TestSchema>, topic);
 }
 
-/// A Port recording under a fresh per-test temp root; @p record toggles whether it owns a
-/// chronicle.
 Port makePort(const std::string_view name, const bool record)
 {
   return Port{
@@ -57,7 +55,6 @@ void publishValue(Publisher<TestSchema>& publisher, const std::int64_t value)
   publisher.publish(std::move(draft));
 }
 
-/// Replays @p chronicleDir onto @p port, driving the player by hand until it is exhausted.
 void replay(Port& port, const fs::path& chronicleDir)
 {
   auto player = LogPlayer{port, chronicleDir};

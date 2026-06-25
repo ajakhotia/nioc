@@ -17,20 +17,40 @@
 namespace nioc::terminus
 {
 
-/// @brief A Cap'n Proto builder that frames its message into a caller-provided arena.
+/// @brief A `capnp::MessageBuilder` that builds a message in place inside a caller-owned byte
+/// buffer and frames it for the wire with zero extra copies.
 ///
-/// The arena's leading word is held back for the single-segment flat-array header; the message
-/// builds into the words that follow, spilling onto the heap only if it outgrows them. So a message
-/// that fits leaves the arena holding a complete, ready-to-record frame: `[header][segment]`.
-/// @ref single reports whether that happened, and @ref frame stamps the header and hands back the
-/// frame.
+/// Build your message as usual through the `capnp::MessageBuilder` interface (e.g. `initRoot`),
+/// then call `frame` to get a contiguous, ready-to-send frame: an 8-byte flat-array header followed
+/// by the single message segment, all living in the buffer you supplied. This is the fast path for
+/// the common case where one message fits in one preallocated buffer.
 ///
-/// The arena must be zero-filled, per Cap'n Proto's zero-filled-segment contract.
+/// Example:
+///
+///     std::array<std::byte, 4096> buffer{};
+///     ArenaMessageBuilder builder{buffer};
+///     auto root = builder.initRoot<MyMessage>();
+///     // ... fill root ...
+///     if(not builder.overflowed())
+///     {
+///       std::span<std::byte> wireFrame = builder.frame();  // aliases buffer
+///     }
+///
+/// The buffer (`arena`) must outlive the builder and every view it returns; the builder does not
+/// own it. The first 8 bytes are reserved for the header and the message segment fills the rest. If
+/// the message needs more room than the buffer holds, the build spills into heap segments and can
+/// no longer be framed; always check `overflowed` before calling `frame`.
+///
+/// Not copyable, not movable, not thread-safe.
+///
+/// @see asWords, asByteSpan
 class ArenaMessageBuilder final: public capnp::MessageBuilder
 {
 public:
-  /// @brief Frames into @p arena, holding back its leading word for the header.
-  /// @param arena Zero-filled bytes to build the frame into.
+  /// @brief Construct a builder that builds into `arena`, with `arena`'s first 8 bytes reserved for
+  /// the frame header and the rest available for the message segment.
+  ///
+  /// @param arena Backing buffer. Must outlive the builder and any view returned by `frame`.
   explicit ArenaMessageBuilder(std::span<std::byte> arena);
 
   ArenaMessageBuilder(const ArenaMessageBuilder&) = delete;
@@ -44,65 +64,89 @@ public:
 
   ArenaMessageBuilder& operator=(ArenaMessageBuilder&&) = delete;
 
-  /// @brief Whether the message spilled onto the heap instead of staying within the arena.
+  /// @brief Report whether any part of the message landed in heap segments instead of the arena.
   ///
-  /// False is the zero-copy case: the whole message is the single arena segment, so the frame is
-  /// already in place and @ref frame just stamps its header. True means it must be re-rooted into a
-  /// fresh arena before it can be framed.
+  /// Returns true once the message outgrew the arena. An overflowed build cannot be framed; check
+  /// this before calling `frame`.
   [[nodiscard]] bool overflowed() const;
 
-  /// @brief Stamps the flat-array header into the held-back word and returns the whole frame.
+  /// @brief Write the frame header into the arena and return the contiguous frame: the 8-byte
+  /// header followed by the message segment.
   ///
-  /// The returned span is `[header][segment]`, ready to record. Precondition: not @ref overflowed —
-  /// the build is one segment in the arena.
+  /// The returned span aliases the arena and stays valid only while the arena lives.
+  ///
+  /// @return A prefix of the arena holding the complete wire frame.
+  ///
+  /// @throws std::logic_error If the build is not a single segment placed in the arena, i.e. if it
+  /// overflowed or no message was written.
   [[nodiscard]] std::span<std::byte> frame();
 
-  /// @brief Byte length of a frame whose single segment is @p segmentWords words: header + segment.
-  ///
-  /// Size a destination to this before @ref writeFrame.
+  /// @brief Return the total framed byte length for a segment of `segmentWords` words (header plus
+  /// segment).
   [[nodiscard]] static std::size_t frameSize(std::size_t segmentWords) noexcept;
 
-  /// @brief Writes a `[header][segment]` frame for @p segment into @p destination and returns it.
+  /// @brief Copy `segment` into `destination` behind a fresh frame header and return the frame
+  /// view.
   ///
-  /// Frames a single segment built elsewhere — e.g. a message re-rooted into one segment — into a
-  /// caller's buffer, the same format @ref frame produces in place. @p destination must hold
-  /// @ref frameSize bytes for @p segment.
+  /// Standalone framing helper for a segment that was built elsewhere; does not need an
+  /// `ArenaMessageBuilder` instance.
+  ///
+  /// @param destination Output buffer. Must hold at least `frameSize(segment.size())` bytes and
+  /// must not overlap `segment`.
+  ///
+  /// @param segment The single message segment to frame.
+  ///
+  /// @return A prefix of `destination` holding the complete wire frame.
   static std::span<std::byte> writeFrame(
       std::span<std::byte> destination,
       kj::ArrayPtr<const capnp::word> segment);
 
+  /// @brief Supply Cap'n Proto a segment of at least `minimumSize` words; called by the framework,
+  /// not by users.
+  ///
+  /// Serves the root segment from the arena once. Every later request, or a root that does not fit
+  /// the arena, is served from a zero-filled heap segment and sets `overflowed`.
   kj::ArrayPtr<capnp::word> allocateSegment(unsigned int minimumSize) final;
 
 private:
-  /// Bytes held back at the front of the arena for the single-segment flat-array header, which is
-  /// `[segmentCount - 1 == 0][segmentWords]` as two little-endian 32-bit words.
+  /// The number of bytes the frame header occupies at the front of the arena.
   static constexpr std::size_t kHeaderBytes = 8;
 
-  /// @brief The first segment the message builds into: the arena past its header. Empty when the
-  /// arena cannot hold even the header, which sends the build to the heap.
+  /// @brief Return the word view of the arena region reserved for the message segment, i.e. the
+  /// arena past the header, rounded down to a whole number of words.
+  ///
+  /// This is the region handed out on the first `allocateSegment` call.
   [[nodiscard]] kj::ArrayPtr<capnp::word> firstSegment() const;
 
-  /// @brief Stamps the flat-array header for a @p segmentWords-word segment at @p destination.
+  /// @brief Write the 8-byte frame header for a single segment of `segmentWords` words at
+  /// `destination`.
+  ///
+  /// @param destination Start of the header. Must have room for at least `kHeaderBytes` bytes.
+  ///
+  /// @param segmentWords Length of the framed segment in words.
   static void writeHeader(std::byte* destination, std::size_t segmentWords);
 
+  /// The caller-owned backing buffer. The first `kHeaderBytes` bytes hold the header and the rest
+  /// backs the message segment. Not owned by the builder.
   std::span<std::byte> mArena;
 
-  /// Whether @ref firstSegment has been handed to Cap'n Proto. It is offered only for the first
-  /// segment request; without this flag a build that fills the arena and asks for another segment
-  /// would be handed the arena again and overwrite itself (the single-segment case never touches
-  /// @ref mArenaOverflow, so its emptiness cannot stand in for this).
+  /// Whether the arena has already been served as the root segment, so further allocations must
+  /// spill to the heap.
   bool mArenaTaken{false};
 
+  /// Heap segments allocated once the message outgrew the arena. A non-empty vector means the build
+  /// overflowed and cannot be framed.
   std::vector<kj::Array<capnp::word>> mArenaOverflow;
 };
 
-/// @brief Views @p bytes as Cap'n Proto words, preserving constness (inverse of @ref asByteSpan).
+/// @brief View a byte span as Cap'n Proto words without copying, preserving constness.
 ///
-/// kj omits this direction (its `ArrayPtr::asBytes` only goes word→byte) because the bytes must be
-/// word-aligned; a chronicle frame is, since every claim is word-sized over a page-aligned roll. A
-/// writable byte span yields writable words; a read-only one yields read-only words.
+/// The result is `const`-qualified when `Byte` is `const std::byte`.
 ///
-/// @param bytes Word-aligned bytes.
+/// @tparam Byte Either `std::byte` or `const std::byte`.
+///
+/// @param bytes Source bytes. `bytes.data()` must be word-aligned. Trailing bytes that do not fill
+/// a whole word are dropped. The result aliases `bytes` and shares its lifetime.
 template<typename Byte>
   requires std::is_same_v<std::remove_const_t<Byte>, std::byte>
 [[nodiscard]] auto asWords(std::span<Byte> bytes)
@@ -111,10 +155,13 @@ template<typename Byte>
   return kj::arrayPtr(std::bit_cast<Word*>(bytes.data()), bytes.size() / sizeof(capnp::word));
 }
 
-/// @brief Views Cap'n Proto @p words as a byte span, preserving constness (inverse of @ref
-/// asWords).
+/// @brief View a Cap'n Proto word array as a byte span without copying, preserving constness.
 ///
-/// @param words Cap'n Proto words.
+/// The result is `const`-qualified when `Word` is `const capnp::word`.
+///
+/// @tparam Word Either `capnp::word` or `const capnp::word`.
+///
+/// @param words Source words. The result aliases `words` and shares its lifetime.
 template<typename Word>
   requires std::is_same_v<std::remove_const_t<Word>, capnp::word>
 [[nodiscard]] auto asByteSpan(kj::ArrayPtr<Word> words)

@@ -23,7 +23,6 @@ namespace fs = std::filesystem;
 namespace
 {
 
-/// Writes @p text to a fresh file under the test's temp directory and returns its path.
 fs::path writeTempConfig(const fs::path& filename, const std::string& text)
 {
   const auto dir = fs::temp_directory_path() / "niocConfigStoreTest";

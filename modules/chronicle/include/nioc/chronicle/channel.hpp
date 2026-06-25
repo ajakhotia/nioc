@@ -19,23 +19,35 @@
 namespace nioc::chronicle
 {
 
-/// @brief One append-only channel of a chronicle.
+/// @brief An append-only byte log for a single stream of data, a.k.a. a Channel: stores each
+/// record's bytes and indexes it on a shared timeline.
 ///
-/// Records byte frames on the channel into a growing run of roll files. A channel has a single
-/// producer: call it from one thread only. Acquire it once with @ref Writer::channel; the reference
-/// stays valid for the writer's lifetime.
+/// A Channel owns a directory of rolls (memory-mapped data files). It appends record bytes to the
+/// active roll, seals that roll and opens a fresh one once it fills, and records the location of
+/// each committed record on a timeline shared with readers. Write a record in one call with
+/// write(), or in stages: reserve() space, fill the returned span, then commit.
+///
+/// Not copyable and not movable: pass it by reference, never by value. Not thread-safe; serialize
+/// all access to a given Channel yourself. A Writer creates and owns its Channels; do not construct
+/// one standalone.
+///
+/// @see Reservation, Crate, Writer
 class Channel
 {
 public:
-  /// @brief Creates a channel that records under @p channelDir.
+  /// @brief Bind a channel to its on-disk roll directory and a shared timeline.
   ///
-  /// @param channelId Identity recorded for every frame on this channel.
+  /// No directory or file is touched here; the directory is created on the first reserve().
   ///
-  /// @param channelDir Directory for this channel's roll files.
+  /// @param channelId Identity stamped onto every record written through this channel.
   ///
-  /// @param rollCapacity Largest size of one roll file.
+  /// @param channelDir Directory that holds this channel's rolls. Copied and stored.
   ///
-  /// @param timeline The chronicle's ordering, shared across channels; must outlive this channel.
+  /// @param rollCapacity Bytes each new roll is sized to. A record larger than this grows its own
+  /// roll to fit.
+  ///
+  /// @param timeline Shared record index. Must outlive this channel; each commit appends to
+  /// it.
   Channel(
       ChannelId channelId,
       std::filesystem::path channelDir,
@@ -46,30 +58,33 @@ public:
 
   Channel(Channel&&) noexcept = delete;
 
+  /// @brief Seal the active roll, trimming its data file down to the bytes actually written.
   ~Channel();
 
   Channel& operator=(const Channel&) = delete;
 
   Channel& operator=(Channel&&) noexcept = delete;
 
-  /// @brief This channel's identity.
+  /// @brief This channel's identity, as supplied at construction.
   [[nodiscard]] ChannelId id() const noexcept;
 
-  /// @brief Claims a writable region to build a frame into.
+  /// @brief Reserve a writable byte span for one record, to be filled and then committed.
   ///
-  /// Fill the returned reservation's @ref Reservation::span, then make a @ref Crate from it to
-  /// record the frame. A reservation larger than @p rollCapacity gets its own oversized roll.
+  /// Rounds @p size up to a word boundary and carves that many bytes from the active roll, opening
+  /// a fresh roll first when the current one cannot fit. The returned Reservation borrows space in
+  /// the channel: fill its span(), then commit it to publish the record, or drop it to release the
+  /// space. Each outstanding reservation keeps its roll alive. Creates the channel directory on its
+  /// first call.
   ///
-  /// @param size Number of bytes to claim.
-  ///
-  /// @return A reservation over the claimed region.
+  /// @param size Minimum writable bytes needed. The returned span may be larger after rounding.
   [[nodiscard]] Reservation reserve(std::size_t size);
 
-  /// @brief Records @p data by copying it, returning a read-only view of the frame.
+  /// @brief Append @p data as a single record and return a Crate viewing the stored bytes.
   ///
-  /// @param data Frame bytes.
+  /// Shorthand for reserve(), copy into the span, then commit. The returned Crate keeps the
+  /// underlying roll alive for as long as it lives.
   ///
-  /// @return A crate over the recorded frame.
+  /// @throws std::runtime_error If the shared timeline is full.
   Crate write(std::span<const std::byte> data);
 
 private:
@@ -82,32 +97,46 @@ private:
   std::shared_ptr<containers::Tape<containers::MmapArray<std::byte>>> mActiveRoll;
   std::uint64_t mActiveRollId{0ULL};
 
-  /// @brief Rewinds @p reservation's claim off by trimming it to the @p usedSize. Defaults
-  ///        to removing the entire reservation.
+  /// @brief Return the unused tail of @p reservation's span to the active roll, keeping only its
+  /// first @p usedSize bytes.
   ///
-  /// @param reservation The reservation whose claim to release.
+  /// Only the roll's most recent claim can shrink; if the roll declines (e.g. another reservation
+  /// has since claimed space past this one), the span stays at full size and a warning is logged
+  /// rather than throwing. Called when a Reservation is dropped (@p usedSize 0, releasing all) and
+  /// internally by modify() to shrink in place.
   ///
-  /// @param usedSize
+  /// @param reservation The reservation whose span is being trimmed.
   ///
-  /// @return True if the claim was released; false if a later claim had already stranded it.
+  /// @param usedSize Bytes to keep from the span's front; 0 (the default) releases all of it.
   void rewind(const Reservation& reservation, std::size_t usedSize = 0);
 
-  /// @brief Resizes @p reservation to @p newSize bytes, rolling over to a fresh roll if needed.
+  /// @brief Resize @p reservation to @p newSize bytes, updating it in place.
   ///
-  /// Releases @p reservation's claim back to its roll and replaces it in place with a new one of
-  /// @p newSize (see @ref reserve), opening a fresh roll when the new size no longer fits. No bytes
-  /// are carried over — the previous contents are abandoned, so the caller must copy out anything
-  /// it needs first. @p reservation must be the tail of its roll (single-producer use).
+  /// Shrinks within the existing span when @p newSize fits (via rewind); otherwise releases the old
+  /// span and reseats @p reservation onto a fresh reservation of @p newSize, which may open a new
+  /// roll. The handle is rebound either way, so any span() taken earlier is invalidated.
   ///
-  /// @param reservation The reservation to resize, replaced in place with the new claim.
+  /// @param reservation Reservation to resize; replaced in place when growth needs new space.
   ///
-  /// @param newSize New writable size in bytes.
+  /// @param newSize The reservation's new byte count.
+  ///
+  /// @see rewind, reserve
   void modify(Reservation& reservation, std::size_t newSize);
 
-  /// @brief Opens a fresh roll of at least @p minCapacity bytes, trimming the retiring one.
+  /// @brief Seal the active roll and install a fresh one to append into.
+  ///
+  /// Shrinks the current roll to its written bytes and bumps the roll id before allocating the
+  /// replacement, which is sized to the larger of the channel's roll capacity and @p minCapacity so
+  /// an oversized record still fits in a roll of its own.
+  ///
+  /// @param minCapacity Smallest byte capacity the new roll must have.
   void openNewRoll(std::size_t minCapacity);
 
-  /// @brief Appends a frame's locator to this channel's timeline; called by @ref Crate.
+  /// @brief Record @p entry on the shared timeline, indexing one committed record.
+  ///
+  /// @param entry Timeline entry locating the just-committed record.
+  ///
+  /// @throws std::runtime_error If the shared timeline is at capacity.
   void append(const TimelineEntry& entry);
 };
 

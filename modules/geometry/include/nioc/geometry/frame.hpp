@@ -10,14 +10,24 @@
 
 namespace nioc::geometry
 {
-/// @brief A reference frame identified by a type at compile time.
+/// @brief A coordinate frame whose identity is fixed at compile time by a tag type.
 ///
-/// @code
-/// class World;
-/// using WorldFrame = nioc::geometry::StaticFrame<World>;
-/// @endcode
+/// Each distinct @p FrameId_ tag names one frame. The frame's name is derived from the tag's
+/// type name, so two `StaticFrame` specializations name the same frame only if their tags are the
+/// same type. This is a pure compile-time vocabulary type: it has no objects, no state, and no
+/// runtime cost. Use it as a template argument (for example to `FrameReferences`) and call its
+/// static `name()`.
 ///
-/// @tparam FrameId_ Type that names this frame. Cannot itself be a StaticFrame.
+/// Example:
+///
+///     struct WorldTag {};
+///     using World = StaticFrame<WorldTag>;
+///     std::string_view n = World::name();  // e.g. "WorldTag"
+///
+/// @tparam FrameId_ The tag type identifying the frame. Must be named explicitly and must not
+/// itself be a `StaticFrame` specialization; violating this fails a static assertion.
+///
+/// @see DynamicFrame, FrameReferences
 template<typename FrameId_>
 class StaticFrame
 {
@@ -40,21 +50,39 @@ public:
 
   ~StaticFrame() = delete;
 
-  /// @brief Returns the frame's name.
+  /// @brief Return the frame's name.
+  ///
+  /// The returned view points at static storage that lives for the whole program. The exact
+  /// spelling is compiler-dependent, so use it for diagnostics, not as a stable identifier.
   static constexpr const std::string_view& name() noexcept
   {
     return kFrameName;
   }
 
 private:
+  /// The frame's name, derived once at compile time from the tag type's spelling. Backs name().
   static constexpr const auto kFrameName = common::prettyName<FrameId>();
 };
 
-/// @brief A reference frame identified by a name string at run time.
+/// @brief A coordinate frame whose name is chosen at run time by a string.
+///
+/// Use this when frames are not known until run time. The name is set at construction and never
+/// changes afterward. This is the value-semantic counterpart to `StaticFrame`: it holds state, is
+/// freely copyable and movable, and compares equal to another frame when their names match.
+///
+/// Example:
+///
+///     DynamicFrame world{"world"};
+///     DynamicFrame sensor{"sensor"};
+///     bool same = (world == sensor);  // false
+///
+/// @see StaticFrame, operator==, operator!=
 class DynamicFrame
 {
 public:
-  /// @param frameId Name of this frame.
+  /// @brief Construct a frame with the given name.
+  ///
+  /// @param frameId The frame's name. Moved into the frame.
   explicit DynamicFrame(std::string frameId) noexcept;
 
   DynamicFrame(const DynamicFrame&) = default;
@@ -67,17 +95,20 @@ public:
 
   DynamicFrame& operator=(DynamicFrame&&) noexcept = default;
 
-  /// @brief Returns the frame's name.
+  /// @brief Return the frame's name.
+  ///
+  /// The reference stays valid until the frame is assigned to, moved from, or destroyed.
   [[nodiscard]] const std::string& name() const noexcept;
 
 private:
+  /// The frame's name, set at construction and never changed afterward. Returned by name().
   std::string mFrameId;
 };
 
-/// @return True if both frames have the same name.
+/// @brief Return true when both frames have the same name.
 bool operator==(const DynamicFrame& lhs, const DynamicFrame& rhs);
 
-/// @return True if the frames have different names.
+/// @brief Return true when the frames have different names.
 bool operator!=(const DynamicFrame& lhs, const DynamicFrame& rhs);
 
 

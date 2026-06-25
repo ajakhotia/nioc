@@ -12,26 +12,31 @@
 namespace nioc::common
 {
 
-/// @brief Throws @p Exception with a std::format message tagged by call site.
+/// @brief Throws an `Exception` whose message is the formatted text, prefixed with the file name
+/// and line of the call site.
 ///
-/// The message is `[<file>:<line>] <formatted message>`. The location is captured for you.
+/// The exception's message is `"[<file>:<line>] <formatted-message>"`, where `<file>` is the base
+/// file name (no directory) and `<line>` is the line of the call. The call site is captured
+/// automatically by @p format; you do not pass it.
 ///
-/// @tparam Exception Type to throw. Must be constructible from std::string (e.g.
-/// std::runtime_error, std::invalid_argument, std::logic_error).
+/// Example:
 ///
-/// @param format Format string with `{}` placeholders. Pass a string literal; it captures the
-/// call site. std::format has no formatter for std::filesystem::path, so pass `path.string()`,
-/// not a path. The string is checked against @p args at compile time; a mismatch is a
-/// compile error.
+///     // Throws std::runtime_error{"[widget.cpp:42] bad id 7, expected < 5"}.
+///     throwException<std::runtime_error>("bad id {}, expected < {}", 7, 5);
 ///
-/// @param args Values for the placeholders, left to right.
+/// @tparam Exception The exception type to throw. Must be specified explicitly (it cannot be
+/// deduced) and must be constructible from a `std::string`.
 ///
-/// @throws Exception Always.
+/// @tparam Args The types of the format arguments, deduced from @p args.
 ///
-/// @code
-/// common::throwException<std::invalid_argument>("resource does not exist: {}", path.string());
-/// // what(): "[port.cpp:259] resource does not exist: /tmp/missing"
-/// @endcode
+/// @param format The format string, with the call site captured implicitly. Validated against
+/// @p args at compile time, so type mismatches are compile errors, not runtime throws.
+///
+/// @param args The values substituted into @p format.
+///
+/// @throws Exception Always; this function never returns normally.
+///
+/// @see FormatWithLocation
 template<typename Exception, typename... Args>
 [[noreturn]] void throwException(
     const FormatWithLocation<std::format_string<Args...>>& format,

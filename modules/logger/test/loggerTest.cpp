@@ -20,7 +20,6 @@ namespace nioc::logger
 namespace
 {
 
-/// A sink that fails on every message; exercises the never-throws contract of the level functions.
 class ThrowingSink final: public spdlog::sinks::base_sink<std::mutex>
 {
 private:
@@ -32,7 +31,6 @@ private:
   void flush_() override {}
 };
 
-/// A sink that fails with a value not derived from std::exception; exercises the catch-all path.
 class IntThrowingSink final: public spdlog::sinks::base_sink<std::mutex>
 {
 private:
@@ -51,7 +49,6 @@ private:
 // always this many characters, so a test can skip the timestamp and assert the remainder exactly.
 constexpr auto kTimestampPrefixWidth = std::string_view{"[2026-05-27T14:02:11.337Z] "}.size();
 
-/// Installs a default logger that writes to @p buffer using @p pattern.
 void installBufferLogger(std::ostringstream& buffer, std::string pattern)
 {
   auto sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(buffer);

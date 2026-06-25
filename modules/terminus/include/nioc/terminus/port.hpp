@@ -38,125 +38,134 @@ class Driver;
 template<typename Schema_>
 class Publisher;
 
-/// @brief Central data hub for one run of a nioc binary.
+/// @brief The hub of one recording run: it owns the run's working directory, logging, chronicle,
+/// publish/subscribe bus, routine graph, and shutdown/abort signals.
 ///
-/// A Port owns the on-disk recording for one run: it creates the recording directory, holds the
-/// run's @ref Manifest (exposed via @ref runContext and @ref config), copies in supporting files,
-/// writes the run's log output into the recording, and opens the chronicle that backs every
-/// message.
+/// A Port's lifetime is the run's lifetime. Construction stamps out a unique working directory,
+/// attaches a console log and (when the run records) a chronicle writer, then runs the @ref Setup
+/// hook to build the graph of drivers, components, and runners. Destruction winds the run down and
+/// tears the graph down in dependency order. Routines hold a reference to their Port and use it to
+/// publish, subscribe, acquire resources, and observe the shutdown/abort tokens.
 ///
-/// A Port also owns the run's routine graph. The @ref Setup callback, passed at construction,
-/// builds the Drivers and Components and launches them on Runners. On destruction the Port shuts
-/// down, drains in-flight messages, and destroys drivers, components, and runners in that order.
+/// Neither copyable nor movable; pass by reference. One Port is shared across the run's worker
+/// threads. `addResource`/`acquireResource`, `deliver`, `shutdown`, and `abort` are thread-safe;
+/// `publisher` and `subscribe` are wiring-time operations and are not safe against concurrent
+/// delivery.
+///
+/// @see Publisher, Consignment, Manifest
 class Port
 {
 public:
+  /// Identifies one publish/subscribe channel; derived from a `(Schema, topic)` pair.
   using ChannelId = chronicle::ChannelId;
+
+  /// Subscriber invoked once per delivered consignment, synchronously on the publishing thread.
   using ConsignmentCallback = std::function<void(Consignment)>;
 
+  /// The run's data sources, torn down first.
   using Drivers = std::vector<std::shared_ptr<Driver>>;
+
+  /// The run's processing nodes, torn down after drivers.
   using Components = std::vector<std::shared_ptr<Component>>;
+
+  /// The run's thread runners, torn down last.
   using Runners = std::vector<std::shared_ptr<concurrent::Runner>>;
 
-  /// @brief Callback that builds the run's routine graph.
+  /// @brief Wiring hook that builds the run's routine graph.
   ///
-  /// Called once at the end of construction with the ready Port and its three routine sets. Build
-  /// Drivers and Components bound to the Port, launch them on Runners, and put all of them in the
-  /// supplied vectors. The Port destroys them at destruction in this order: drivers, components,
-  /// runners.
+  /// Called once by the constructor against the fully initialized Port. Push the run's drivers,
+  /// components, and runners into the matching vectors and register their subscriptions. The graph
+  /// is later torn down in order: drivers, then components, then runners.
   using Setup = std::function<void(Port&, Drivers&, Components&, Runners&)>;
 
-  /// @brief Creates a fresh recording directory and builds the run.
+  /// @brief Create the run: build its working directory, attach logging and the chronicle writer,
+  /// copy in the manifest's resources, then call @p setup to wire the routine graph.
   ///
-  /// The recording directory is named `<iso8601>_<uuid>`, under the context's log root. Inside it:
-  /// log output goes to `console.log`; the manifest writes `manifest.json` and `config.json`; each
-  /// listed resource is copied in and mapped in `resources.json`; chronicle data goes to
-  /// `chronicle/`.
+  /// Writes the manifest and a `resources.json` into the working directory. @p setup runs against
+  /// the fully constructed Port.
   ///
-  /// @param manifest The run's context and configuration (see @ref Manifest); the Port takes
-  /// ownership.
+  /// @param manifest Defines the log root, whether to record a chronicle, and the resource files
+  /// to copy in.
   ///
-  /// @param setup Builds the run's routine graph (see @ref Setup); called once the recording is
-  /// ready.
+  /// @param setup Wiring hook run against the fully constructed Port to build the routine graph.
   ///
-  /// @throws std::invalid_argument If a listed resource is missing, is not a regular file, or its
-  /// filename collides.
-  ///
-  /// @throws std::runtime_error If the recording directory cannot be populated.
+  /// @throws std::invalid_argument if a resource file is missing, is not a regular file, or
+  /// collides with another resource by full path or by filename.
   explicit Port(Manifest manifest, const Setup& setup);
 
   Port(const Port&) = delete;
 
   Port(Port&&) noexcept = delete;
 
+  /// @brief Wind the run down: request shutdown, drain in-flight consignments, release the routine
+  /// graph in dependency order, rewrite `resources.json`, then detach logging.
+  ///
+  /// The chronicle writer is finalized last, after every crate viewing its rolls is gone. Does not
+  /// throw.
   ~Port();
 
   Port& operator=(const Port&) = delete;
 
   Port& operator=(Port&&) noexcept = delete;
 
-  /// @brief Returns the working directory that holds this run's recording.
+  /// Root directory holding this run's chronicle, console log, and copied resources.
   [[nodiscard]] const std::filesystem::path& workingDir() const noexcept;
 
-  /// @brief Returns this run's context: its mode, input log, and recording settings.
+  /// Read-only view of how this run was launched: log root, resources, record/playback mode, and
+  /// command line. For the decoded config, use @ref config.
+  ///
+  /// @see RunContext
   [[nodiscard]] const RunContext& runContext() const noexcept;
 
-  /// @brief Returns a typed read-only view of the run's configuration.
+  /// @brief Return a typed reader over the run's decoded configuration.
   ///
-  /// The returned reader and its sub-readers stay valid for the Port's lifetime.
+  /// The reader borrows from this Port and must not outlive it.
   ///
-  /// @tparam Schema The root schema the manifest was built against.
+  /// @tparam Schema Must be supplied explicitly and match the schema the config was decoded
+  /// against.
   ///
-  /// @throws kj::Exception If @p Schema is not that root schema.
+  /// @throws std::logic_error if the run's config was built without a schema.
   template<typename Schema>
   [[nodiscard]] typename Schema::Reader config() const
   {
     return mManifest.mConfigStore.get<Schema>();
   }
 
-  /// @brief Adds a supporting file to the recording.
+  /// @brief Copy @p source into the working directory and register it as a run resource.
   ///
-  /// Copies @p source into the recording directory under its filename. The mapping
-  /// `originalPath → filename` is recorded in `resources.json` at shutdown.
+  /// Thread-safe.
   ///
-  /// @param source Path to the file to add.
+  /// @param source An existing regular file.
   ///
-  /// @throws std::invalid_argument If @p source does not exist, is not a regular file, or its
-  /// filename collides with an already-added resource.
+  /// @throws std::invalid_argument if @p source is missing, is not a regular file, or collides by
+  /// full path or by filename with an already added resource.
   void addResource(const std::filesystem::path& source);
 
-  /// @brief Returns the working-directory copy of a resource, adding it first if needed.
+  /// @brief Return the working-directory path of @p source, copying it in on first request.
   ///
-  /// @param source The resource's original path.
+  /// Idempotent: repeated calls for the same @p source return the same path without re-copying.
+  /// Thread-safe.
   ///
-  /// @return Path to the resource's copy inside the working directory.
-  ///
-  /// @throws std::invalid_argument If @p source must be added but is missing, is not a regular
-  /// file, or its filename collides with an already-added resource.
+  /// @throws std::invalid_argument on the first (copying) call if @p source is missing, is not a
+  /// regular file, or collides by filename with another resource.
   [[nodiscard]] std::filesystem::path acquireResource(const std::filesystem::path& source);
 
-  /// @brief Returns the working-directory copy of an already-added resource.
+  /// @brief Return the working-directory path of an already added @p source; never copies.
   ///
-  /// @param source The original path of an already-added resource.
+  /// Thread-safe.
   ///
-  /// @return Path to the resource's copy inside the working directory.
-  ///
-  /// @throws std::out_of_range If @p source was not added.
+  /// @throws std::out_of_range if @p source was not previously added.
   [[nodiscard]] std::filesystem::path acquireResource(const std::filesystem::path& source) const;
 
-  /// @brief Mints a producer handle for a topic.
+  /// @brief Open a publisher for @p topic carrying messages of @p Schema, recording the topic to
+  /// the run's `topics.txt`.
   ///
-  /// Call once at construction and keep the handle. The same @p Schema on two topics yields two
-  /// channels.
+  /// Each distinct `(Schema, topic)` pair is one channel; calling again with the same pair yields
+  /// an independent publisher onto the same channel. Call at wiring time.
   ///
-  /// @tparam Schema Cap'n Proto schema of the messages.
+  /// @tparam Schema The Cap'n Proto payload schema. Must be supplied explicitly.
   ///
-  /// @param topic Topic to publish on.
-  ///
-  /// @return A @ref Publisher for the topic.
-  ///
-  /// @throws std::logic_error If the run does not record; a publisher needs a channel to record and
-  /// reserve into (non-recording publish is not supported for now).
+  /// @throws std::logic_error if this run does not record a chronicle.
   template<typename Schema>
   [[nodiscard]] Publisher<Schema> publisher(const std::string_view& topic)
   {
@@ -171,74 +180,100 @@ public:
     return Publisher<Schema>{*this, mWriter->channel(channelId)};
   }
 
-  /// @brief Registers a callback to receive every message delivered on a channel.
+  /// @brief Register @p callback to receive every crate delivered on @p channelId.
   ///
-  /// Call only at construction; the communication graph is frozen once the run starts. Usually
-  /// reached through @ref Component::subscribe.
-  ///
-  /// @param channelId Channel to receive frames from.
-  ///
-  /// @param callback Callback run with each delivered frame. Multiple callbacks may share a
-  /// channel; all of them receive every frame.
+  /// Multiple callbacks may subscribe to one channel; each is invoked in registration order. Call
+  /// at wiring time, before delivery begins. Not synchronized against concurrent @ref deliver.
   void subscribe(ChannelId channelId, ConsignmentCallback callback);
 
-  /// @brief Delivers a frame to a channel's subscribers.
+  /// @brief Fan @p crate out to every subscriber of @p channelId, synchronously on the calling
+  /// thread.
   ///
-  /// The delivery primitive behind both a fresh @ref Publisher::publish and a @ref LogPlayer
-  /// replay: the frame is handed to every callback subscribed to @p channelId. A channel with no
-  /// subscribers drops the frame.
+  /// Each callback receives a fresh Consignment that holds the run back from quiescence for as long
+  /// as the callback (or anything it hands the consignment to) keeps it alive. Channels with no
+  /// subscribers are dropped silently. Usually called by a Publisher, not directly.
   ///
-  /// @param channelId Channel the frame belongs to.
-  ///
-  /// @param crate Frame to deliver; copied to each subscriber.
+  /// @see Consignment, awaitQuiescence
   void deliver(ChannelId channelId, const chronicle::Crate& crate) const;
 
-  /// @brief Requests a graceful shutdown: producers stop and in-flight work drains.
+  /// @brief Request a graceful stop: signal the shutdown token so producers finish and the run
+  /// winds down.
+  ///
+  /// Idempotent and thread-safe; returns immediately without waiting for the run to stop.
   void shutdown() const noexcept;
 
-  /// @brief Requests an immediate halt: stop now and abandon in-flight work.
+  /// @brief Request an immediate abort: signal both the shutdown and abort tokens and release any
+  /// thread blocked in @ref awaitQuiescence, abandoning still in-flight consignments.
+  ///
+  /// Idempotent and thread-safe; returns immediately.
   void abort() const noexcept;
 
-  /// @brief Returns the token tripped by @ref shutdown.
+  /// Token stopped on @ref shutdown (and @ref abort); poll or register a callback to drive a
+  /// routine's graceful exit.
   [[nodiscard]] std::stop_token shutdownToken() const noexcept;
 
-  /// @brief Returns the token tripped by @ref abort.
+  /// Token stopped only on @ref abort; signals that in-flight work should be abandoned.
   [[nodiscard]] std::stop_token abortToken() const noexcept;
 
-  /// @brief Blocks until no delivered frame is in flight.
+  /// @brief Block until every in-flight consignment has been destroyed, or @ref abort is requested.
   ///
-  /// Call after producers have stopped, to let in-flight work drain before tearing down the routine
-  /// graph. A subscriber that holds onto its frames forever prevents this call from returning.
+  /// Returns immediately when nothing is in flight. Call after @ref shutdown to drain the bus
+  /// before tearing routines down.
   void awaitQuiescence() const;
 
-  /// @brief Paces one beat of the caller's main loop and reports whether the run is still live.
+  /// @brief Run @p housekeeping once, then sleep until @p duration elapses unless every driver has
+  /// finished.
   ///
-  /// @param duration Length of one beat of the loop.
+  /// Drive a polling supervisor loop by calling this until it returns `false`. @p duration is
+  /// measured from entry, before @p housekeeping runs.
   ///
-  /// @param housekeeping Work to run on this beat, on the caller's thread.
-  ///
-  /// @return True while at least one driver is still working; false once all drivers are done.
+  /// @return `false` once all drivers reach the Done state (no sleep is performed); otherwise
+  /// sleeps to the deadline and returns `true`.
   [[nodiscard]] bool wait(
       std::chrono::nanoseconds duration,
       const std::function<void()>& housekeeping) const;
 
 private:
+  /// Maps each added resource's source path to its filename inside the working directory.
   using ResourceMap = std::unordered_map<std::string, std::string>;
+
+  /// The subscribers on one channel, invoked in registration order.
   using SubscriptionList = std::vector<ConsignmentCallback>;
+
+  /// Maps each subscribed channel to its list of subscribers.
   using SubscriptionMap = std::unordered_map<ChannelId, SubscriptionList>;
+
+  /// The set of channels already recorded to `topics.txt`.
   using ChannelIdSet = std::unordered_set<ChannelId>;
 
+  /// How this run was launched: log root, resources, record/playback mode, and config.
   const Manifest mManifest;
+
+  /// Root directory holding this run's chronicle, console log, and copied resources.
   const std::filesystem::path mWorkingDir;
+
+  /// The console log sink attached at construction and detached during teardown.
   const std::shared_ptr<spdlog::sinks::sink> mConsoleLogSink;
+
+  /// The chronicle writer for a recording run; null when the run does not record.
   const std::unique_ptr<chronicle::Writer> mWriter;
 
+  /// The added resources, guarded for concurrent @ref addResource and @ref acquireResource.
   common::Locked<ResourceMap> mLockedResourceMap;
+
+  /// The channels already written to `topics.txt`, used to record each topic only once.
   ChannelIdSet mRecordedTopics;
+
+  /// The subscribers registered per channel, consulted by @ref deliver.
   SubscriptionMap mSubscriptionMap;
 
+  /// The count of consignments still in flight; drives @ref awaitQuiescence.
   mutable std::atomic_uint32_t mPendingConsignments{0};
+
+  /// The source behind @ref shutdownToken, signalled by @ref shutdown and @ref abort.
   std::stop_source mShutdownSource;
+
+  /// The source behind @ref abortToken, signalled by @ref abort.
   std::stop_source mAbortSource;
 
   // The run's routine graph. Declared in this order, so natural member destruction runs drivers →
@@ -247,7 +282,18 @@ private:
   Components mComponents;
   Drivers mDrivers;
 
-  /// @brief Records a topic in human-readable form, once per channel.
+  /// @brief Append @p topic and @p schemaName to the run's `topics.txt`, but only the first time
+  /// @p channelId is seen.
+  ///
+  /// Called by @ref publisher while opening a channel. Subsequent calls for the same @p channelId
+  /// are ignored, so a topic is listed exactly once.
+  ///
+  /// @param channelId Identifies the channel; the first sighting drives whether the topic is
+  /// appended.
+  ///
+  /// @param topic The topic name to append.
+  ///
+  /// @param schemaName The human-readable name of the channel's payload schema.
   void recordTopic(
       ChannelId channelId,
       const std::string_view& topic,

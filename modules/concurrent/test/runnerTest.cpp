@@ -22,7 +22,6 @@ namespace
 
 using namespace std::chrono_literals;
 
-/// Returns Done after a fixed number of iterations, counting how many times it ran.
 class CountingRoutine final: public Routine
 {
 public:
@@ -49,8 +48,6 @@ private:
   }
 };
 
-/// Sleeps briefly and returns Continue forever; the Runner ends it when stop is requested between
-/// iterations.
 class ForeverRoutine final: public Routine
 {
 public:
@@ -64,7 +61,6 @@ private:
   }
 };
 
-/// Reports Waiting until released; exercises the Waiting-park / trigger-wake handshake.
 class GatedRoutine final: public Routine
 {
 public:
@@ -85,8 +81,6 @@ private:
   }
 };
 
-/// Alternates Waiting and Continue for a scripted number of steps; exercises the wake handshake
-/// under rapid park/trigger cycles.
 class FlickerRoutine final: public Routine
 {
 public:
@@ -111,7 +105,6 @@ private:
   }
 };
 
-/// Reports a scripted sequence of States, one per step, to exercise state() recording.
 class ScriptedRoutine final: public Routine
 {
 public:

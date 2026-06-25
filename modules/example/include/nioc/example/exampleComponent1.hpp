@@ -16,24 +16,37 @@
 namespace nioc::example
 {
 
-/// @brief Example @ref terminus::Component that turns each `Sample3` into a `Sample2`.
+/// @brief A reference terminus Component that publishes one fixed Sample2 every time it receives a
+/// Sample3.
 ///
-/// Shows how to subscribe and publish. Subscribes to `Sample3` on one topic. For each message,
-/// publishes one `Sample2` on another topic.
+/// It subscribes to a Sample3 topic and publishes to a Sample2 topic, both named in its config. The
+/// inbound Sample3 payload is ignored; each delivery triggers one outbound Sample2 with fixed
+/// fields. Use it as a worked example of wiring a Component's subscription and publisher together.
+///
+/// As a Component it is driven by the surrounding runtime: messages are queued on the base class
+/// inbox and handled one at a time on the component's own tick, not on the publishing thread.
+/// Construct it, then let the runtime drive it. Non-copyable and non-movable.
+///
+/// @see terminus::Component, terminus::Publisher
 class ExampleComponent1 final: public terminus::Component
 {
 public:
-  /// @brief Builds the component from its config block.
+  /// @brief Subscribe to the config's Sample3 topic and open a publisher on its Sample2 topic.
   ///
-  /// @param port Hub it subscribes to and publishes on. Must outlive this component.
+  /// @param port The owning Port that delivers and routes messages. Must outlive the component.
   ///
-  /// @param config This component's config block (see exampleComponent1Config.capnp): the input and
-  /// output topics, plus a `component` subsection passed to the @ref terminus::Component base.
+  /// @param config Supplies the Sample3 and Sample2 topic names and the base Component config.
+  /// Read only during construction.
   ExampleComponent1(terminus::Port& port, ExampleComponent1Config::Reader config);
 
 private:
+  /// The open publisher on the config's Sample2 topic. Opened during construction and used by
+  /// process to emit each outbound Sample2.
   terminus::Publisher<Sample2> mSample2Publisher;
 
+  /// @brief Build and publish one Sample2 with fixed fields, ignoring the inbound Sample3.
+  ///
+  /// Runs on the component's tick, one message at a time. @p message is unused.
   void process(const terminus::Message<Sample3>& message);
 };
 

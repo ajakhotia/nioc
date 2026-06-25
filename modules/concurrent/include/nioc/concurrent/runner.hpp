@@ -12,14 +12,18 @@
 namespace nioc::concurrent
 {
 
-/// @brief Calls one @ref Routine's @ref Routine::step in a loop until it is done.
+/// @brief Abstract base for an object that drives one Routine on an execution context, such as a
+/// thread, supplied by the concrete subclass.
 ///
-/// After @ref launch, the Runner calls @ref Routine::step again and again. The return value picks
-/// what happens next: @ref State::Continue steps again right away, @ref State::Waiting parks until
-/// the routine triggers a wake, and @ref State::Done ends the loop. @ref Routine::step never
-/// throws; a failing routine returns Done. @ref ThreadedRunner runs the loop on a thread.
+/// A Runner repeatedly ticks its Routine, parks it while the Routine reports State::Waiting, and
+/// resumes it when the Routine's wake trigger fires. This base provides only the trigger closure
+/// via makeTrigger(); subclasses supply the execution context and the wake mechanism. To use,
+/// derive a concrete Runner, create it with std::make_shared, then call launch() with a Routine.
 ///
-/// Hold a Runner through a `shared_ptr`. Each Runner drives one routine.
+/// Non-copyable and non-movable. Must be owned through a std::shared_ptr: makeTrigger() captures
+/// weak_from_this(), so a Runner not managed by a shared_ptr can never be woken.
+///
+/// @see Routine, makeTrigger
 class Runner: public std::enable_shared_from_this<Runner>
 {
 public:
@@ -35,21 +39,34 @@ public:
 
   Runner& operator=(Runner&&) noexcept = delete;
 
-  /// @brief Starts the step loop for @p routine.
+  /// @brief Start driving @p routine on this Runner's execution context.
   ///
-  /// The Runner holds the routine weakly. Once the routine expires, the loop stops at the next step
-  /// or wake (not the instant it expires). Call once per Runner.
+  /// The Routine is held weakly: the caller must keep a shared_ptr to it alive for as long as it
+  /// should run; once the Routine expires, the Runner stops. Implementations attach the closure
+  /// from makeTrigger() to the Routine before the first tick. Call at most once per Runner.
   ///
-  /// @param routine Routine to drive.
+  /// @param routine The Routine to drive. If it has already expired at the call, the Runner has
+  /// nothing to drive and stops.
   virtual void launch(std::weak_ptr<Routine> routine) = 0;
 
 protected:
-  /// @brief Builds the trigger the routine calls to wake this Runner from @ref State::Waiting.
+  /// @brief Build the wake callback that a Routine invokes to ask this Runner to resume ticking.
   ///
-  /// The trigger holds the Runner weakly. Safe to call after the Runner is gone.
+  /// The returned closure calls wake() on this Runner. It captures only a weak reference, so it is
+  /// safe to outlive the Runner: once the Runner is destroyed, invoking it is a no-op. A subclass
+  /// hands the result to its Routine via Routine::attachTrigger, typically during launch().
+  ///
+  /// @return A closure that invokes wake() while the Runner is alive, else does nothing.
+  ///
+  /// @see wake, Routine::attachTrigger
   [[nodiscard]] std::function<void()> makeTrigger();
 
-  /// @brief Wakes a Runner parked on @ref State::Waiting.
+  /// @brief Resume this Runner's parked execution context so it ticks the Routine again.
+  ///
+  /// Called from the trigger built by makeTrigger(), typically from a thread other than the
+  /// execution context, so the override must be thread-safe.
+  ///
+  /// @see makeTrigger
   virtual void wake() = 0;
 };
 

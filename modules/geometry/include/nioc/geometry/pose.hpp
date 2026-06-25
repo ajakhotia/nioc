@@ -18,19 +18,34 @@ namespace nioc::geometry
 template<typename>
 class Pose;
 
-/// @brief 3D pose (SE3): position plus orientation.
+/// @brief The shared rigid-body transform (SE(3)) interface that every pose representation
+/// inherits.
 ///
-/// Orientation is a unit quaternion; position is a 3D vector.
+/// A pose maps a point from a child frame into a parent frame by rotating then translating it:
+/// `p_parent = orientation * p_child + position`. This is a CRTP base, so it is never used on its
+/// own; instantiate `Pose` (owns its data) or an `Eigen::Map<Pose>` (views data owned elsewhere)
+/// and call this interface through them.
 ///
-/// @tparam Derived The class deriving from this one (CRTP).
+/// The seven scalar parameters live in `Derived` and are reached through `cParameters()` /
+/// `parameters()`. Their layout is fixed: indices 0-3 are the orientation quaternion in Eigen
+/// coefficient order (x, y, z, w), indices 4-6 are the position (x, y, z). The quaternion is
+/// assumed to be unit-norm; constructors of the concrete types enforce that, but writing through
+/// the mutable accessors here does not.
+///
+/// @tparam Derived The concrete pose type. Its `Scalar` comes from `Traits<Derived>`.
+///
+/// @see Pose, Traits
 template<typename Derived>
 class Se3
 {
 public:
+  /// Total number of stored scalars: four for orientation plus three for position.
   static constexpr auto kNumParams = 7U;
 
+  /// Number of leading scalars holding the orientation quaternion.
   static constexpr auto kNumOrientationParams = 4U;
 
+  /// Number of trailing scalars holding the position.
   static constexpr auto kNumPositionParams = 3U;
 
   using Scalar = typename Traits<Derived>::Scalar;
@@ -47,76 +62,102 @@ public:
 
   using Vector3ConstMap = Eigen::Map<const Vector3>;
 
-  /// @brief Const pointer to the 7 contiguous parameters [qx, qy, qz, qw, px, py, pz].
+  /// @brief Return a read-only pointer to the seven contiguous parameters, orientation first.
+  ///
+  /// The pointer aliases `Derived`'s parameter storage. For a map that storage is the caller's
+  /// buffer, so the pointer stays valid as long as that buffer lives, not merely this object.
   [[nodiscard]] constexpr const Scalar* cData() const noexcept
   {
     return cDerived().cParameters().data();
   }
 
-  /// @brief Same as @ref cData.
+  /// Const overload of `data()`; aliases `cData()`.
   [[nodiscard]] constexpr const Scalar* data() const noexcept
   {
     return cData();
   }
 
-  /// @brief Mutable pointer to the 7 parameters.
+  /// @brief Return a mutable pointer to the seven contiguous parameters, orientation first.
+  ///
+  /// Writing through it bypasses normalization, so keep the orientation portion unit-norm
+  /// yourself. Lifetime matches `cData()`.
   constexpr Scalar* data() noexcept
   {
     return derived().parameters().data();
   }
 
-  /// @brief Read-only quaternion view of the orientation.
+  /// @brief View the orientation as a read-only quaternion mapped onto the stored parameters.
+  ///
+  /// The returned map aliases the parameter storage; it is valid only while that storage lives and
+  /// stays in place.
   [[nodiscard]] QuaternionConstMap cOrientation() const noexcept
   {
     return QuaternionConstMap(cData());
   }
 
-  /// @brief Same as @ref cOrientation.
+  /// Const overload of `orientation()`; aliases `cOrientation()`.
   [[nodiscard]] QuaternionConstMap orientation() const noexcept
   {
     return cOrientation();
   }
 
-  /// @brief Writable quaternion view of the orientation.
+  /// @brief View the orientation as a mutable quaternion mapped onto the stored parameters.
+  ///
+  /// Assigning through the map writes the four orientation scalars in place and does not
+  /// renormalize; supply a unit quaternion. Valid only while the parameter storage lives and stays
+  /// in place.
   QuaternionMap orientation() noexcept
   {
     return QuaternionMap(data());
   }
 
-  /// @brief Read-only vector view of the position.
+  /// @brief View the position as a read-only 3-vector mapped onto the stored parameters.
+  ///
+  /// The returned map aliases the parameter storage; it is valid only while that storage lives and
+  /// stays in place.
   [[nodiscard]] Vector3ConstMap cPosition() const noexcept
   {
     return Vector3ConstMap(std::next(cData(), kNumOrientationParams));
   }
 
-  /// @brief Same as @ref cPosition.
+  /// Const overload of `position()`; aliases `cPosition()`.
   [[nodiscard]] Vector3ConstMap position() const noexcept
   {
     return cPosition();
   }
 
-  /// @brief Writable vector view of the position.
+  /// @brief View the position as a mutable 3-vector mapped onto the stored parameters.
+  ///
+  /// The returned map aliases the parameter storage; it is valid only while that storage lives and
+  /// stays in place.
   Vector3Map position() noexcept
   {
     return Vector3Map(std::next(data(), kNumOrientationParams));
   }
 
-  /// @brief Copy of this pose with its scalar type changed.
-  /// @tparam ResultScalar Floating-point type of the returned pose.
+  /// @brief Return an owning copy of this pose with its scalars converted to `ResultScalar`.
+  ///
+  /// Example:
+  ///
+  ///     Pose<double> p = ...;
+  ///     Pose<float> f = p.cast<float>();
+  ///
+  /// The result renormalizes its orientation.
+  ///
+  /// @tparam ResultScalar The scalar type of the copy. Must be named explicitly.
   template<typename ResultScalar>
   [[nodiscard]] Pose<ResultScalar> cast() const
   {
     return Pose<ResultScalar>(std::span<const Scalar>(cData(), kNumParams));
   }
 
-  /// @brief Inverse pose (a new copy).
+  /// @brief Return the inverse transform as a fresh owning `Pose`, leaving this object unchanged.
   [[nodiscard]] Pose<Scalar> inverse() const
   {
     return Pose<Scalar>(derived()).invert();
   }
 
-  /// @brief Inverts this pose in place.
-  /// @return Reference to this pose.
+  /// @brief Invert this transform in place and return a reference to the derived object.
   Derived& invert()
   {
     const Quaternion inverseOrientation = orientation().inverse();
@@ -126,25 +167,19 @@ public:
     return derived();
   }
 
-  /// @brief The identity pose (no rotation, zero position).
+  /// @brief Return the identity pose: no rotation, zero translation.
   static constexpr Pose<Scalar> identity()
   {
     return Pose<Scalar>({0, 0, 0, 1, 0, 0, 0});
   }
 
 protected:
-private:
   Se3() noexcept = default;
 
-protected:
-private:
   Se3(const Se3&) noexcept = default;
 
-protected:
-private:
   Se3(Se3&&) noexcept = default;
 
-protected:
   ~Se3() noexcept = default;
 
   Se3& operator=(const Se3&) noexcept = default;
@@ -152,29 +187,41 @@ protected:
   Se3& operator=(Se3&&) noexcept = default;
 
 private:
+  /// @brief Downcast this base to a read-only reference to the concrete `Derived` pose.
+  ///
+  /// The CRTP contract guarantees that every `Se3` is in fact a `Derived`, so the static cast is
+  /// always sound. Used by the interface methods to reach `Derived`'s parameter storage.
   [[nodiscard]] constexpr const Derived& cDerived() const noexcept
   {
     return static_cast<const Derived&>(*this);
   }
 
+  /// Const overload of `derived()`; aliases `cDerived()`.
   [[nodiscard]] constexpr const Derived& derived() const noexcept
   {
     return cDerived();
   }
 
+  /// @brief Downcast this base to a mutable reference to the concrete `Derived` pose.
+  ///
+  /// Same CRTP soundness guarantee as `cDerived()`. Used by the mutating interface methods.
   constexpr Derived& derived() noexcept
   {
     return static_cast<Derived&>(*this);
   }
-
-  friend Derived;
-  friend Derived;
-  friend Derived;
 };
 
-/// @brief 3D pose that owns its 7 parameters [qx, qy, qz, qw, px, py, pz].
+/// @brief A value-semantic rigid-body transform (SE(3)) that owns its seven parameters inline.
 ///
-/// @tparam Scalar_ Floating-point type (float, double).
+/// The concrete pose-object to reach for when you need to store or pass a transform by value. It
+/// holds a `std::array` of orientation (quaternion) then position, and every constructor
+/// renormalizes the quaternion, so a `Pose` always represents a valid rotation regardless of input
+/// precision. To operate on parameters owned elsewhere, use `Eigen::Map<Pose>` instead. Composition
+/// (`operator*`) and the inherited operations yield and accept `Pose`.
+///
+/// @tparam Scalar_ The floating-point scalar of each parameter.
+///
+/// @see Se3, operator*
 template<typename Scalar_>
 class Pose: public Se3<Pose<Scalar_>>
 {
@@ -189,11 +236,10 @@ public:
 
   using Vector3 = typename Base::Vector3;
 
+  /// Inline storage for the seven parameters: orientation (x, y, z, w), then position (x, y, z).
   using Parameters = std::array<Scalar, kNumParams>;
 
-  /// @brief Builds a pose from an orientation and a position.
-  /// @param orientation Rotation quaternion. Normalized for you.
-  /// @param position Position vector.
+  /// @brief Construct from an explicit orientation and position; the orientation is normalized.
   Pose(const Quaternion& orientation, const Vector3& position)
   {
     std::memcpy(
@@ -209,23 +255,28 @@ public:
     Base::orientation().normalize();
   }
 
-  /// @brief Builds a pose by copying a parameter array. Quaternion part is normalized.
-  /// @param parameters 7 values [qx, qy, qz, qw, px, py, pz].
+  /// @brief Construct from a raw 7-parameter array, orientation first; the orientation is
+  /// normalized.
   explicit Pose(const Parameters& parameters) noexcept: mParameters(parameters)
   {
     Base::orientation().normalize();
   }
 
-  /// @brief Builds a pose by moving a parameter array. Quaternion part is normalized.
-  /// @param parameters 7 values [qx, qy, qz, qw, px, py, pz].
+  /// @brief Construct by moving a raw 7-parameter array; the orientation is normalized.
   explicit Pose(Parameters&& parameters) noexcept: mParameters(std::move(parameters))
   {
     Base::orientation().normalize();
   }
 
-  /// @brief Builds a pose from a span of parameters. Quaternion part is normalized.
-  /// @param span 7 values [qx, qy, qz, qw, px, py, pz].
-  /// @throws std::invalid_argument if the span does not hold exactly 7 values.
+  /// @brief Construct by copying seven parameters out of a span; the orientation is normalized.
+  ///
+  /// The span is only read from; no reference to it is retained.
+  ///
+  /// @tparam InputScalar The span's element-type. Maybe `const`.
+  ///
+  /// @param span Must have exactly `kNumParams` elements.
+  ///
+  /// @throws std::invalid_argument If `span.size() != kNumParams`.
   template<typename InputScalar>
   explicit Pose(const std::span<InputScalar>& span)
   {
@@ -252,19 +303,21 @@ public:
 
   Pose& operator=(Pose&&) noexcept = default;
 
-  /// @brief Read-only 7-element parameter array [qx, qy, qz, qw, px, py, pz].
+  /// @brief Return the seven parameters by const reference: orientation first, then position.
   [[nodiscard]] constexpr const Parameters& cParameters() const noexcept
   {
     return mParameters;
   }
 
-  /// @brief Same as @ref cParameters.
+  /// Const overload of `parameters()`; aliases `cParameters()`.
   [[nodiscard]] constexpr const Parameters& parameters() const noexcept
   {
     return cParameters();
   }
 
-  /// @brief Mutable parameter array.
+  /// @brief Return the seven parameters by mutable reference.
+  ///
+  /// Editing them directly bypasses normalization; keep the orientation portion unit-norm.
   constexpr Parameters& parameters() noexcept
   {
     return mParameters;
@@ -274,10 +327,7 @@ private:
   Parameters mParameters;
 };
 
-/// @brief Writes a pose to a stream.
-/// @param stream Output stream.
-/// @param se3 Pose to write.
-/// @return The same stream.
+/// @brief Stream the pose as `{ Orientation:[x, y, z, w], Position:[x, y, z] }`.
 template<typename Derived>
 std::ostream& operator<<(std::ostream& stream, const Se3<Derived>& se3)
 {
@@ -291,10 +341,14 @@ std::ostream& operator<<(std::ostream& stream, const Se3<Derived>& se3)
   return stream;
 }
 
-/// @brief Composes two poses (lhs applied after rhs).
-/// @param lhs Left pose.
-/// @param rhs Right pose.
-/// @return The composed pose.
+/// @brief Compose two transforms: apply `rhs` then `lhs`, returning the combined pose.
+///
+/// Mirrors matrix multiplication of homogeneous transforms, so the order matters: `a * b` is not
+/// `b * a`. The result is a fresh owning `Pose`.
+///
+/// @return A `Pose` with the left operand's `Scalar`.
+///
+/// @note Both operands must share the same `Scalar`; a mismatch fails a static assertion.
 template<typename LhsDerived, typename RhsDerived>
 Pose<typename LhsDerived::Scalar> operator*(const Se3<LhsDerived>& lhs, const Se3<RhsDerived>& rhs)
 {
@@ -309,11 +363,17 @@ Pose<typename LhsDerived::Scalar> operator*(const Se3<LhsDerived>& lhs, const Se
 
 } // namespace nioc::geometry
 
-/// @brief Writable pose view over external memory (no storage of its own).
+/// @brief A non-owning, mutable SE(3) view over seven pose parameters owned elsewhere.
 ///
-/// Treats the buffer you pass as the pose parameters.
+/// Stores an `std::span<Scalar>` over caller-supplied storage and exposes the full `Se3`
+/// interface against it. Reads and writes go straight through to that buffer, so changes are seen
+/// by whoever owns it. Convert to an owning `Pose` with an explicit cast.
 ///
-/// @tparam Scalar_ Floating-point type.
+/// @tparam Scalar_ The floating-point scalar of each parameter.
+///
+/// @note The referenced storage must outlive the map and stay fixed in place.
+///
+/// @see nioc::geometry::Pose, Eigen::Map<const nioc::geometry::Pose>
 template<typename Scalar_>
 class Eigen::Map<nioc::geometry::Pose<Scalar_>>:
   public nioc::geometry::Se3<Eigen::Map<nioc::geometry::Pose<Scalar_>>>
@@ -325,9 +385,14 @@ public:
 
   using Scalar = typename Base::Scalar;
 
-  /// @brief Maps a writable 7-element parameter buffer. Quaternion part is normalized.
-  /// @param parameters View over 7 values [qx, qy, qz, qw, px, py, pz].
-  /// @throws std::invalid_argument if the span does not hold exactly 7 values.
+  /// @brief Bind the view to `parameters` and normalize the orientation in that storage.
+  ///
+  /// Retains a reference to the buffer, which must outlive this map; the normalization mutates that
+  /// buffer in place.
+  ///
+  /// @param parameters Must have exactly `kNumParams` elements.
+  ///
+  /// @throws std::invalid_argument If `parameters.size() != kNumParams`.
   explicit Map(const std::span<Scalar> parameters): mParameters(parameters)
   {
     if(parameters.size() != kNumParams)
@@ -350,25 +415,25 @@ public:
 
   Map& operator=(Map&&) noexcept = default;
 
-  /// @brief Read-only view of the mapped 7 parameters.
+  /// @brief Return a read-only span over the viewed parameters.
   [[nodiscard]] constexpr std::span<const Scalar> cParameters() const noexcept
   {
     return mParameters;
   }
 
-  /// @brief Same as @ref cParameters.
+  /// Const overload of `parameters()`; aliases `cParameters()`.
   [[nodiscard]] constexpr std::span<const Scalar> parameters() const noexcept
   {
     return cParameters();
   }
 
-  /// @brief Writable view of the mapped parameters.
+  /// @brief Return a mutable span over the viewed parameters; writes reach the underlying storage.
   constexpr std::span<Scalar> parameters() noexcept
   {
     return mParameters;
   }
 
-  /// @brief Copies the mapped parameters into an owned @ref Pose.
+  /// @brief Copy the viewed parameters into a fresh owning `Pose`.
   explicit operator nioc::geometry::Pose<Scalar>() const
   {
     return nioc::geometry::Pose<Scalar>(cParameters());
@@ -378,11 +443,18 @@ private:
   std::span<Scalar> mParameters;
 };
 
-/// @brief Read-only pose view over external memory (no storage of its own).
+/// @brief A non-owning, read-only SE(3) view over seven pose parameters owned elsewhere.
 ///
-/// Treats the const buffer you pass as the pose parameters.
+/// The const counterpart of `Eigen::Map<Pose>`: a view over `std::span<const Scalar>` exposing
+/// only the read side of the `Se3` interface. Because it cannot mutate its storage, it never
+/// renormalizes; instead, the constructor demands an already unit-norm orientation. Convert to an
+/// owning `Pose` with an explicit cast.
 ///
-/// @tparam Scalar_ Floating-point type.
+/// @tparam Scalar_ The floating-point scalar of each parameter.
+///
+/// @note The referenced storage must outlive the map and stay fixed in place.
+///
+/// @see nioc::geometry::Pose, Eigen::Map<nioc::geometry::Pose>
 template<typename Scalar_>
 class Eigen::Map<const nioc::geometry::Pose<Scalar_>>:
   public nioc::geometry::Se3<Eigen::Map<const nioc::geometry::Pose<Scalar_>>>
@@ -394,11 +466,15 @@ public:
 
   using Scalar = typename Base::Scalar;
 
-  /// @brief Maps a read-only 7-element parameter buffer. The quaternion part must already be unit
-  /// norm; it is not normalized for you.
-  /// @param parameters View over 7 values [qx, qy, qz, qw, px, py, pz].
-  /// @throws std::invalid_argument if the span does not hold exactly 7 values, or the quaternion
-  /// part is not unit norm.
+  /// @brief Bind the read-only view to `parameters`, requiring an already unit-norm orientation.
+  ///
+  /// Retains a reference to the buffer, which must outlive this map.
+  ///
+  /// @param parameters Must have exactly `kNumParams` elements with a unit-norm orientation
+  /// quaternion.
+  ///
+  /// @throws std::invalid_argument If `parameters.size() != kNumParams`, or if the orientation
+  /// norm differs from 1 by more than machine epsilon.
   explicit Map(const std::span<const Scalar> parameters): mParameters(parameters)
   {
     if(parameters.size() != kNumParams)
@@ -426,19 +502,19 @@ public:
 
   Map& operator=(Map&&) noexcept = default;
 
-  /// @brief Read-only view of the mapped 7 parameters.
+  /// @brief Return a read-only span over the viewed parameters.
   [[nodiscard]] constexpr std::span<const Scalar> cParameters() const noexcept
   {
     return mParameters;
   }
 
-  /// @brief Same as @ref cParameters.
+  /// Const overload of `parameters()`; aliases `cParameters()`.
   [[nodiscard]] constexpr std::span<const Scalar> parameters() const noexcept
   {
     return cParameters();
   }
 
-  /// @brief Copies the mapped parameters into an owned @ref Pose.
+  /// @brief Copy the viewed parameters into a fresh owning `Pose`.
   explicit operator nioc::geometry::Pose<Scalar>() const
   {
     return nioc::geometry::Pose<Scalar>(cParameters());
@@ -450,21 +526,23 @@ private:
 
 namespace nioc::geometry
 {
-/// @brief Traits for Pose.
+/// @brief `Traits` specialization exposing `Pose`'s scalar type to the `Se3` CRTP base.
 template<typename Scalar_>
 struct Traits<Pose<Scalar_>>
 {
   using Scalar = Scalar_;
 };
 
-/// @brief Traits for mapped Pose.
+/// @brief `Traits` specialization exposing a mutable `Pose` map's scalar type to the `Se3` CRTP
+/// base.
 template<typename Scalar_>
 struct Traits<Eigen::Map<Pose<Scalar_>>>
 {
   using Scalar = Scalar_;
 };
 
-/// @brief Traits for const mapped Pose.
+/// @brief `Traits` specialization exposing a read-only `Pose` map's scalar type to the `Se3` CRTP
+/// base.
 template<typename Scalar_>
 struct Traits<Eigen::Map<const Pose<Scalar_>>>
 {

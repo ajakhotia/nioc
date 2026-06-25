@@ -20,6 +20,8 @@ namespace nioc::logger
 namespace detail
 {
 
+/// @brief Forward declaration of the logging core that the public severity functions call; the
+/// contract is documented on its definition below.
 template<spdlog::level::level_enum Level, typename... Args>
 void logAt(
     const common::FormatWithLocation<spdlog::format_string_t<Args...>>& message,
@@ -27,33 +29,42 @@ void logAt(
 
 } // namespace detail
 
-/// @brief Default severity: the compile-time minimum and the default runtime level.
+/// @brief The compile-time severity floor: the emit step of any log call below this level is
+/// discarded at compile time and costs nothing at run time.
 ///
-/// Comes from spdlog's SPDLOG_ACTIVE_LEVEL (default SPDLOG_LEVEL_INFO). Set it at build time the
-/// spdlog way: `-DSPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_WARN`. Calls below this level compile to
-/// nothing. The runtime level can raise the minimum but not lower it below this. Call arguments
-/// still get evaluated, so avoid log arguments with side effects.
+/// Set from `SPDLOG_ACTIVE_LEVEL`. Also the default run-time level for @ref setupDefaultLogger.
+///
+/// @see setupDefaultLogger
 constexpr auto kDefaultActiveLevel = static_cast<spdlog::level::level_enum>(SPDLOG_ACTIVE_LEVEL);
 
-/// @brief Default format pattern applied to each sink this API attaches.
+/// @brief The default log line layout: ISO-8601 timestamp, colored severity, `file:line`, then the
+/// message.
 ///
-/// In spdlog/fmt pattern syntax. Shows an ISO 8601 local timestamp with the local UTC offset
-/// (`%z`), colored severity, source location, and the message. The offset makes each line state its
-/// own zone, so no fixed zone is assumed.
+/// In spdlog pattern syntax. Used by @ref setupDefaultLogger and @ref addSink unless you pass your
+/// own pattern.
+///
+/// @see setupDefaultLogger, addSink
 constexpr std::string_view kDefaultLogPattern = "[%Y-%m-%dT%H:%M:%S.%e%z] [%^%l%$] [%s:%#] %v";
 
-/// @brief Logs at trace severity: fine detail, usually on only while diagnosing a problem.
+/// @brief Log a `trace`-severity message through the process-wide default logger.
 ///
-/// Captures the call site. Never throws; a failure goes to stderr. The format string is checked
-/// against @p args at compile time: a placeholder/argument mismatch fails to compile.
+/// Example:
 ///
-/// @param message Format string with `{}` placeholders (spdlog/fmt syntax).
+///     nioc::logger::trace("loaded {} items in {} ms", count, elapsed);
 ///
-/// @param args Values for the placeholders, left to right.
+/// Never throws: a formatting or sink failure is written to stderr and swallowed. When `trace` is
+/// below @ref kDefaultActiveLevel the emit is elided at compile time, but this is a plain function,
+/// so @p args are still evaluated at the call site. Call @ref setupDefaultLogger first to control
+/// where output goes; otherwise spdlog's stock logger is used.
 ///
-/// @code
-/// nioc::logger::trace("packet {}: byte {} of {}", packetId, offset, total);
-/// @endcode
+/// @tparam Args Types of the values substituted into @p message.
+///
+/// @param message The format string. A string literal whose `{}` placeholders are filled by
+/// @p args; it also captures the call-site file and line shown in the output.
+///
+/// @param args The values substituted into @p message, one per `{}` placeholder.
+///
+/// @see debug, info, warn, error, critical, setupDefaultLogger
 template<typename... Args>
 void trace(
     const common::FormatWithLocation<spdlog::format_string_t<Args...>>& message,
@@ -62,9 +73,9 @@ void trace(
   detail::logAt<spdlog::level::trace>(message, std::forward<Args>(args)...);
 }
 
-/// @brief Logs at debug severity: diagnostic detail useful while developing.
+/// @brief Log a `debug`-severity message; otherwise identical to @ref trace.
 ///
-/// Same contract as @ref trace.
+/// @see trace
 template<typename... Args>
 void debug(
     const common::FormatWithLocation<spdlog::format_string_t<Args...>>& message,
@@ -73,10 +84,9 @@ void debug(
   detail::logAt<spdlog::level::debug>(message, std::forward<Args>(args)...);
 }
 
-/// @brief Logs at info severity: normal events worth recording, such as startup, configuration,
-/// and lifecycle milestones.
+/// @brief Log an `info`-severity message; otherwise identical to @ref trace.
 ///
-/// Same contract as @ref trace.
+/// @see trace
 template<typename... Args>
 void info(
     const common::FormatWithLocation<spdlog::format_string_t<Args...>>& message,
@@ -85,9 +95,9 @@ void info(
   detail::logAt<spdlog::level::info>(message, std::forward<Args>(args)...);
 }
 
-/// @brief Logs at warning severity: an unexpected but recoverable situation worth flagging.
+/// @brief Log a `warn`-severity message; otherwise identical to @ref trace.
 ///
-/// Same contract as @ref trace.
+/// @see trace
 template<typename... Args>
 void warn(
     const common::FormatWithLocation<spdlog::format_string_t<Args...>>& message,
@@ -96,9 +106,9 @@ void warn(
   detail::logAt<spdlog::level::warn>(message, std::forward<Args>(args)...);
 }
 
-/// @brief Logs at error severity: an operation failed but the program keeps running.
+/// @brief Log an `error`-severity message; otherwise identical to @ref trace.
 ///
-/// Same contract as @ref trace.
+/// @see trace
 template<typename... Args>
 void error(
     const common::FormatWithLocation<spdlog::format_string_t<Args...>>& message,
@@ -107,10 +117,9 @@ void error(
   detail::logAt<spdlog::level::err>(message, std::forward<Args>(args)...);
 }
 
-/// @brief Logs at critical severity: a fatal condition, usually logged just before the program
-/// aborts.
+/// @brief Log a `critical`-severity message; otherwise identical to @ref trace.
 ///
-/// Same contract as @ref trace.
+/// @see trace
 template<typename... Args>
 void critical(
     const common::FormatWithLocation<spdlog::format_string_t<Args...>>& message,
@@ -119,63 +128,76 @@ void critical(
   detail::logAt<spdlog::level::critical>(message, std::forward<Args>(args)...);
 }
 
-/// @brief Installs the process-wide default logger.
+/// @brief Install the process-wide default logger, backed by a fan-out sink that @ref addSink and
+/// @ref removeSink later target.
 ///
-/// Call once at program start, before any logging. @ref addSink can add more sinks at run time.
+/// Example:
 ///
-/// @param name Logger name. Identifies it in spdlog's registry and appears in output when the
-/// pattern includes the `%n` flag.
+///     nioc::logger::setupDefaultLogger("myApp");
 ///
-/// @param enableStderrSink True (the default) attaches a colored stderr sink. False installs the
-/// logger with no stderr sink.
+/// Replaces any existing default logger. Call once at startup before any logging. Not safe to call
+/// while other threads log.
 ///
-/// @param logLevel Runtime minimum severity; messages below it are dropped. Defaults to
-/// kDefaultActiveLevel. A value below the compile-time minimum has no effect, since those calls are
-/// already removed.
+/// @param name Tag identifying this logger.
 ///
-/// @param pattern Format pattern (spdlog syntax) for the stderr sink. Defaults to
-/// kDefaultLogPattern. Ignored when @p enableStderrSink is false.
+/// @param enableStderrSink When true, attaches a colored stderr sink rendered with @p pattern.
+///
+/// @param logLevel Sets both the run-time severity threshold and the level at which the
+/// logger flushes.
+///
+/// @param pattern spdlog layout for the stderr sink. Ignored when @p enableStderrSink is
+/// false.
+///
+/// @see addSink, removeSink, kDefaultActiveLevel, kDefaultLogPattern
 void setupDefaultLogger(
     std::string name,
     bool enableStderrSink = true,
     spdlog::level::level_enum logLevel = kDefaultActiveLevel,
     std::string_view pattern = kDefaultLogPattern);
 
-/// @brief Adds @p sink to the default logger; it receives every later message until removed with
-/// @ref removeSink.
+/// @brief Attach a sink to the default logger so it also receives every log message.
 ///
-/// Thread-safe if @ref setupDefaultLogger was called first: the sink attaches to the nioc fan-out,
-/// which is synchronized, so you may call this while other threads log. Without that setup, the
-/// sink attaches to spdlog's own default logger, which is not synchronized against concurrent
-/// logging.
+/// When @ref setupDefaultLogger installed the fan-out, this attaches there and is synchronized, so
+/// it is safe to call while other threads log. Otherwise it appends to spdlog's stock default
+/// logger, which is not synchronized against concurrent logging. Shares ownership of @p sink.
 ///
-/// @param sink Sink to attach.
+/// @param sink The sink to attach. Its formatter is set to @p pattern.
 ///
-/// @param pattern Format pattern (spdlog syntax) applied to @p sink. Defaults to
-/// kDefaultLogPattern, matching the stderr sink from @ref setupDefaultLogger.
+/// @param pattern spdlog layout applied to @p sink. Set per sink because the fan-out does not push
+/// its formatter to sinks added later.
+///
+/// @see removeSink, setupDefaultLogger
 void addSink(spdlog::sink_ptr sink, std::string_view pattern = kDefaultLogPattern);
 
-/// @brief Removes a sink added with @ref addSink. Does nothing if @p sink is not attached.
+/// @brief Detach a previously attached sink from the default logger.
 ///
-/// Never throws, so it is safe to call from destructors and other teardown paths. On an internal
-/// failure the sink stays attached and the failure is logged at critical.
+/// Detaching a sink that was never attached is a no-op. Mirrors @ref addSink's target selection:
+/// synchronized, and safe under concurrent logging, only when the @ref setupDefaultLogger fan-out
+/// is in place. Never throws; a lock failure is reported via @ref critical and swallowed.
 ///
-/// @param sink Sink to detach.
+/// @param sink The sink to detach.
+///
+/// @see addSink, setupDefaultLogger
 void removeSink(const spdlog::sink_ptr& sink) noexcept;
 
 namespace detail
 {
 
-/// @brief Forwards a formatted message to the process-wide default logger.
+/// @brief Format and emit a message at @p Level through the default logger; the shared core behind
+/// @ref trace and the other severity functions.
 ///
-/// Shared implementation behind every level function. When @p Level is below
-/// nioc::logger::kDefaultActiveLevel the call compiles to nothing. Otherwise spdlog skips the
-/// formatting work at run time when the logger's runtime level is above @p Level.
+/// The emit is elided at compile time when @p Level is below @ref kDefaultActiveLevel. Never
+/// throws: any formatting or sink failure is written to stderr and swallowed. The spdlog pattern is
+/// bypassed on this path, so the report carries its own fixed `[CRITICAL] [logger::logAt]` prefix
+/// instead of the usual severity and source location.
 ///
-/// Never throws: any exception from formatting or the sinks is caught and written to stderr instead
-/// of reaching the caller.
+/// @tparam Level Explicit template argument selecting the severity to log at.
 ///
-/// @tparam Level Severity the message is logged at.
+/// @tparam Args Types of the values substituted into @p message.
+///
+/// @param message The format string, capturing the call-site file and line.
+///
+/// @param args The values substituted into @p message, one per `{}` placeholder.
 template<spdlog::level::level_enum Level, typename... Args>
 void logAt(
     const common::FormatWithLocation<spdlog::format_string_t<Args...>>& message,

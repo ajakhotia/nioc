@@ -24,16 +24,12 @@ namespace nioc::terminus
 namespace
 {
 
-/// Publishes one (gap) message on @p topic; the test handlers never inspect the payload, so a gap
-/// exercises the inbox identically.
 void publishOne(Port& port, const std::string_view topic)
 {
   auto publisher = port.publisher<TestSchema>(topic);
   publisher.publish(publisher.draft());
 }
 
-/// A Port recording under the default temp root. The setup builds no routines; these tests
-/// construct and tick their components by hand.
 Port makePort()
 {
   return Port{
@@ -93,7 +89,6 @@ TEST(ComponentTest, duplicateSubscriptionThrows)
 {
   auto port = makePort();
 
-  /// Subscribing the same topic twice is a programming error the component refuses.
   class DoubleSubscriber final: public Component
   {
   public:
@@ -114,7 +109,6 @@ TEST(ComponentTest, callbackFailureEndsTheComponentWithoutEscaping)
   auto port = makePort();
   constexpr auto kThrowingTopic = std::string_view{"throwing"};
 
-  /// Reports a callback that always fails; step must catch it and finish the component.
   class ThrowingComponent final: public Component
   {
   public:

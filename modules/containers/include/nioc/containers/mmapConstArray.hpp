@@ -16,20 +16,32 @@
 namespace nioc::containers
 {
 
-/// @brief A read-only, memory-mapped array of @p ValueType over an existing file.
+/// @brief A read-only, random-access container that views an existing file's bytes as a contiguous
+/// sequence of @p ValueType elements, without copying the file into the heap.
 ///
-/// Maps an existing file read-only; its size determines the element count. The elements form a
-/// contiguous range whose address is stable for the object's lifetime, so a pointer or iterator
-/// into it stays valid until the object is destroyed. A contiguous range, so it converts to a
-/// `std::span` and works with the standard algorithms. The backing storage is read-only: a stray
-/// write is a hardware fault, not a silent corruption.
+/// The file is memory-mapped, so the OS pages it in on demand and nothing is read until an element
+/// is accessed. The view is fixed-size and immutable: there is no resize and no way to mutate
+/// elements. It models a contiguous range, so it works with range-based for loops and standard
+/// algorithms.
 ///
-/// Allocate it on the heap and share it through a pointer: the type is neither copyable nor
-/// movable, so a pointer or iterator never outlives its mapping.
+/// Example:
 ///
-/// @tparam ValueType Element type: a non-const, non-volatile, trivially copyable type (its bytes
-/// are its whole value). The array is read-only because it is an @ref MmapConstArray, not because
-/// @p ValueType is const.
+///     // Map a file of recorded floats and sum them.
+///     MmapConstArray<float> samples{"/data/samples.bin"};
+///     float total = 0.0F;
+///     for(const float value: samples)
+///     {
+///       total += value;
+///     }
+///
+/// Non-copyable and non-movable. Every pointer, reference, and iterator it returns stays valid
+/// until the container is destroyed. Concurrent reads are safe; behaviour is unspecified if the
+/// file is changed through another handle while it is mapped.
+///
+/// @tparam ValueType The element type the file's bytes are reinterpreted as. Must be trivially
+/// copyable and have no top-level cv-qualifiers; elements are mapped, never constructed.
+///
+/// @see MmapRegion
 template<typename ValueType>
   requires std::is_trivially_copyable_v<ValueType> and
            std::is_same_v<ValueType, std::remove_cv_t<ValueType>>
@@ -39,17 +51,24 @@ public:
   using value_type = ValueType;
   using size_type = std::size_t;
   using difference_type = std::ptrdiff_t;
+
+  /// Reference to an element; always const since the view is read-only.
   using const_reference = const ValueType&;
+
+  /// Pointer to an element; always const since the view is read-only.
   using const_pointer = const ValueType*;
+
+  /// Iterator over elements; a raw const pointer, so the range is contiguous.
   using const_iterator = const_pointer;
 
-  /// @brief Maps the existing file at @p path read-only.
+  /// @brief Map the existing file at @p path read-only and view its bytes as a sequence of
+  /// @p ValueType.
   ///
-  /// @param path File to map; must exist and its length must be a whole multiple of
-  /// `sizeof(ValueType)`.
+  /// @param path Path to an existing file. Its byte length must be a whole multiple of
+  /// sizeof(ValueType).
   ///
-  /// @throws std::runtime_error If the file cannot be opened or mapped, or its length is not a
-  /// whole number of elements.
+  /// @throws std::runtime_error if the file cannot be opened or mapped, or if its byte length is
+  /// not a whole multiple of sizeof(ValueType).
   explicit MmapConstArray(std::filesystem::path path): mRegion{std::move(path)}
   {
     if(mRegion.size() % sizeof(ValueType) != 0)
@@ -72,57 +91,65 @@ public:
 
   MmapConstArray& operator=(MmapConstArray&&) noexcept = delete;
 
-  /// @brief Returns a pointer to the first element.
+  /// @brief Pointer to the first element. Equals end() when empty.
+  ///
+  /// Stays valid for the container's lifetime.
   [[nodiscard]] const_pointer data() const noexcept
   {
     return asElementPointer<ValueType>(mRegion.bytes());
   }
 
-  /// @brief Returns a reference to the element at @p index.
+  /// @brief Element at @p index.
   ///
-  /// @param index Element position, less than @ref size. Out-of-range access is undefined.
+  /// @param index Position to read. Unchecked: must be less than size(), otherwise behaviour is
+  /// undefined.
   [[nodiscard]] const_reference operator[](const size_type index) const noexcept
   {
     return data()[index]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
   }
 
-  /// @brief Returns an iterator to the first element.
+  /// Iterator to the first element.
   [[nodiscard]] const_iterator begin() const noexcept
   {
     return data();
   }
 
-  /// @brief Returns an iterator one past the last element.
+  /// Iterator one past the last element.
   [[nodiscard]] const_iterator end() const noexcept
   {
     return data() + size(); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
   }
 
-  /// @brief Returns a const iterator to the first element.
+  /// Iterator to the first element; same as begin().
   [[nodiscard]] const_iterator cbegin() const noexcept
   {
     return begin();
   }
 
-  /// @brief Returns a const iterator one past the last element.
+  /// Iterator one past the last element; same as end().
   [[nodiscard]] const_iterator cend() const noexcept
   {
     return end();
   }
 
-  /// @brief Returns whether the array holds no elements.
+  /// True if the view holds no elements.
   [[nodiscard]] bool empty() const noexcept
   {
     return mRegion.empty();
   }
 
-  /// @brief Returns the number of elements.
+  /// @brief Number of elements.
+  ///
+  /// Equals the file's byte length divided by sizeof(ValueType).
   [[nodiscard]] size_type size() const noexcept
   {
     return mRegion.size() / sizeof(ValueType);
   }
 
 private:
+  /// The read-only memory mapping of the file. Owns the lifetime of the bytes that every element
+  /// pointer, reference, and iterator refers to, and supplies the byte length divided to compute
+  /// size().
   const MmapRegion mRegion;
 };
 

@@ -17,17 +17,39 @@ namespace nioc::common
 namespace detail
 {
 
-/// A tuple-like type with exactly two elements (e.g. std::pair, or a two-element std::tuple or
-/// std::array): the value carried by a @ref makeBimap input.
+/// @brief Satisfied by any type that decomposes into exactly two tuple elements, such as
+/// `std::pair`, a size-2 `std::tuple`, or a size-2 `std::array`.
+///
+/// Element 0 is treated as the left key and element 1 as the right key.
+///
+/// @tparam T The candidate pair-like type. Cv-qualifiers and references are ignored.
 template<typename T>
 concept PairLike = requires { requires std::tuple_size<std::remove_cvref_t<T>>::value == 2; };
 
-/// A range whose elements are pair-like.
+/// @brief Satisfied by an input range whose element type is `PairLike`.
+///
+/// @tparam T The candidate range type.
+///
+/// @see PairLike
 template<typename T>
 concept PairRange = std::ranges::input_range<T> and PairLike<std::ranges::range_value_t<T>>;
 
-/// The single insertion: each element's first member keys the left side, its second the right; the
-/// first pair for a key on either side wins. The bimap's key types are deduced from the pair.
+/// @brief Shared implementation that all public `makeBimap` overloads funnel into: builds a
+/// `boost::bimap` from a range of pairs, taking element 0 of each pair as the left key and element
+/// 1 as the right key.
+///
+/// The left and right key types are the pair element types with const, volatile, and reference
+/// qualifiers removed. Keys are copied into the result. Pairs are inserted in iteration order, and
+/// any pair whose left or right key already exists is dropped, so the first occurrence of each key
+/// wins.
+///
+/// @tparam Range A `PairRange`; its element type must decompose into exactly two elements.
+///
+/// @param pairs The range of pairs to insert, read in iteration order.
+///
+/// @return A `boost::bimap` keyed by the cvref-stripped pair element types.
+///
+/// @see makeBimap(const Range&), makeBimap(std::initializer_list<Pair>)
 template<PairRange Range>
 auto makeBimap(const Range& pairs)
 {
@@ -45,56 +67,60 @@ auto makeBimap(const Range& pairs)
 
 } // namespace detail
 
-/// @brief Builds a two-way map from a range of pair-like elements.
+/// @brief Builds a `boost::bimap` from a range of pairs, using element 0 of each pair as the left
+/// key and element 1 as the right key.
 ///
-/// @tparam Range Range whose elements are pair-like (a std::pair, or a two-element std::tuple or
-/// std::array). The bimap's two key types are deduced from the element.
+/// Example:
 ///
-/// @param pairs Pairs to insert; the first pair for a key on either side wins.
+///     std::vector<std::pair<int, std::string>> data{{1, "one"}, {2, "two"}};
+///     auto bimap = makeBimap(data);  // bimap.left.at(1) == "one"
 ///
-/// @return The filled boost::bimap.
+/// The bimap's left and right key types are the pair element types with const, volatile, and
+/// reference qualifiers removed. Keys are copied into the result, so the source range need not
+/// outlive it. Both sides stay unique: pairs are inserted in iteration order, and any pair whose
+/// left or right key already exists is dropped, so the first occurrence of each key wins.
 ///
-/// @code
-/// using namespace std::string_literals;
-/// const auto bimap = makeBimap(std::vector{std::pair{1, "Red"s}, std::pair{2, "Green"s}});
-/// // bimap.left.at(1) == "Red"; bimap.right.at("Green") == 2
-/// @endcode
+/// @return A `boost::bimap` keyed by the cvref-stripped pair element types.
+///
+/// @see PairRange
 template<detail::PairRange Range>
 auto makeBimap(const Range& pairs)
 {
   return detail::makeBimap(pairs);
 }
 
-/// @brief Builds a two-way map from a braced list of pair-like elements.
+/// @brief Builds a `boost::bimap` directly from a braced list of pairs.
 ///
-/// Template deduction cannot see through bare nested braces, so each element must be a typed pair
-/// (e.g. `std::pair{a, b}`), not `{a, b}`.
+/// Use this overload to write the pairs inline, for example
+/// `makeBimap({std::pair{1, "one"}, std::pair{2, "two"}})`. Insertion order and duplicate handling
+/// match the range overload: first occurrence of each key wins.
 ///
-/// @tparam Pair Pair-like element type.
+/// @return A `boost::bimap` keyed by the cvref-stripped pair element types.
 ///
-/// @param pairs Pairs to insert; the first pair for a key on either side wins.
-///
-/// @return The filled boost::bimap.
+/// @see makeBimap(const Range&)
 template<detail::PairLike Pair>
 auto makeBimap(std::initializer_list<Pair> pairs)
 {
   return detail::makeBimap(pairs);
 }
 
-/// @brief Builds a two-way map by pairing a range of left keys with a range of right keys.
+/// @brief Builds a `boost::bimap` from two parallel ranges, pairing each element of @p lefts with
+/// the element of @p rights at the same position.
 ///
-/// Pairs elements positionally and stops at the shorter range. The first pair for a key on either
-/// side wins.
+/// Example:
 ///
-/// @tparam LeftRange Range of left keys.
+///     std::vector ids{1, 2, 3};
+///     std::vector names{"a", "b", "c"};
+///     auto bimap = makeBimap(ids, names);  // bimap.left.at(2) == "b"
 ///
-/// @tparam RightRange Range of right keys.
+/// The bimap's left and right key types are the @p lefts and @p rights element types with const,
+/// volatile, and reference qualifiers removed. Pairing stops at the shorter range, so trailing
+/// elements of the longer range are ignored. Duplicate handling matches the range overload: first
+/// occurrence of each key wins.
 ///
-/// @param lefts Left keys.
+/// @return A `boost::bimap` keyed by the cvref-stripped element types of the two ranges.
 ///
-/// @param rights Right keys.
-///
-/// @return The filled boost::bimap.
+/// @see makeBimap(const Range&)
 template<std::ranges::input_range LeftRange, std::ranges::input_range RightRange>
 auto makeBimap(const LeftRange& lefts, const RightRange& rights)
 {

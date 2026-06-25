@@ -29,7 +29,6 @@ namespace
 
 constexpr auto kTopic = std::string_view{"driverTopic"};
 
-/// A Port recording under the default temp root; the tests drive their routines by hand.
 Port makePort()
 {
   return Port{
@@ -40,7 +39,6 @@ Port makePort()
   };
 }
 
-/// Publishes one value per run, reporting Done once the scripted count is exhausted.
 class CountingDriver final: public Driver
 {
 public:
@@ -51,7 +49,6 @@ public:
   {
   }
 
-  /// Exposes the protected token's state, so a test can observe the driver's view of a shutdown.
   [[nodiscard]] bool shutdownRequested() const
   {
     return shutdownToken().stop_requested();
@@ -77,7 +74,6 @@ private:
   }
 };
 
-/// Fails on its first run; the base must convert the exception into a clean finish.
 class FailingDriver final: public Driver
 {
 public:

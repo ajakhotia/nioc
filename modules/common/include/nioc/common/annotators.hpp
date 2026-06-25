@@ -10,34 +10,36 @@
 namespace nioc::common
 {
 
-/// @brief A format string plus the source location of the call that built it.
+/// @brief A struct that is implicitly constructible from a format string, and that quietly
+/// captures the source location (file + line number) of that format string.
 ///
-/// Pass a string literal where one of these is expected; it converts implicitly. The literal is
-/// checked against @p FormatString's argument types at compile time, and the call site is captured.
-/// A variadic function can thus record where it was called without a trailing source_location
-/// parameter or a macro. A format string that does not match its arguments fails to compile.
+/// Example:
 ///
-/// @tparam FormatString The format-string type. It fixes the expected argument types and checks the
-/// literal against them. Pass `std::format_string<Args...>` or a compatible type such as
-/// `fmt::format_string<Args...>`.
+///     // Takes a format string plus, automatically, the caller's file and line.
+///     void logLine(FormatWithLocation<std::format_string<int, int>> fmt, int a, int b);
+///
+///     logLine("The value of A is {} and B is {}.", 7, 8);
+///     fmt.mLocation points at THIS line, not at logLine.
+///
+/// @tparam FormatString The format-string type; can be validated using std::format at compile
+/// time.
+///
+/// @see throwException, logAt
 template<typename FormatString>
 struct FormatWithLocation
 {
-  /// @brief The format string, already checked against @p FormatString's argument types.
+  /// The format string itself.
   FormatString mFormat;
 
-  /// @brief The source location of the call that built this wrapper.
+  /// The file and line where the format string was written. Defaults to the caller's location.
   std::source_location mLocation;
 
-  /// @brief Stores @p format and the call site, checking @p format at compile time.
+  /// @brief Implicitly converts a `const char*` string literal into a `FormatWithLocation`, while
+  /// the default @p location captures the call site.
   ///
-  /// consteval, so the @p format string must be a compile-time constant (normally a string
-  /// literal). It is checked against @p FormatString's argument types. The whole wrapper, location
-  /// included, is built at compile time.
+  /// @param format The format string. Must be known at compile-time.
   ///
-  /// @param format A compile-time-constant format string, normally a literal.
-  ///
-  /// @param location Defaulted to the call site. Do not pass it.
+  /// @param location Defaults to the call site. Leave it defaulted; do not pass it explicitly.
   // NOLINTNEXTLINE(google-explicit-constructor,hicpp-explicit-conversions)
   consteval FormatWithLocation(
       const char* format,

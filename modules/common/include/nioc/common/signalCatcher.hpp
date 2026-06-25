@@ -12,52 +12,47 @@
 namespace nioc::common
 {
 
-/// @brief Runs a callback on a background thread when a registered signal arrives.
+/// @brief A guard object that installs process signal handlers for its lifetime and runs your
+/// per-signal callbacks on a dedicated background thread instead of inside the OS signal handler.
 ///
-/// Give it a map of signal number to action. It installs a handler for each signal and starts one
-/// watcher thread. When a registered signal arrives, the watcher calls that signal's action and
-/// passes how many times the signal has been received so far (1 on the first, 2 on the second,
-/// ...). An action can use the count to escalate, e.g. ask for a clean shutdown on the first
-/// interrupt and exit on the second.
+/// Build it with a map from signal number to action. While it is alive, delivery of any registered
+/// signal wakes an internal watcher thread, which then calls that signal's action. Because the
+/// action runs on a normal thread (not in the async-signal context), it may use any code, including
+/// locks, allocation, and I/O. Handlers are installed at construction and reset to the OS default
+/// at destruction.
 ///
-/// Actions run on the watcher thread, not in the OS signal handler, so they may do work that is not
-/// async-signal-safe (logging, locking, allocating). The watcher runs actions one at a time.
+/// Example:
 ///
-/// Signals coalesce: only one delivery can be pending. If another signal arrives before the watcher
-/// handles the pending one, it replaces it and the earlier delivery is lost.
+///     // Catch SIGINT and SIGTERM; print and request shutdown.
+///     nioc::common::SignalCatcher catcher{{
+///         {SIGINT, [&](std::int32_t n) { std::cout << "interrupted " << n << " times\n"; }},
+///         {SIGTERM, [&](std::int32_t) { shutdown(); }},
+///     }};
 ///
-/// Keep the instance alive for as long as you want signals handled. The destructor restores each
-/// signal's default behavior and joins the watcher thread. The pending slot and stop signal are
-/// process-global, so create at most one SignalCatcher per process.
-///
-/// @code
-/// auto stopSource = std::stop_source{};
-///
-/// // First Ctrl-C asks for a clean shutdown; a second one exits immediately.
-/// auto catcher = nioc::common::SignalCatcher{
-///     std::pair{SIGINT, [&stopSource](const std::int32_t count)
-///                       {
-///                         if(count == 1)
-///                         {
-///                           stopSource.request_stop();
-///                         }
-///                         else
-///                         {
-///                           std::_Exit(130);
-///                         }
-///                       }}};
-/// @endcode
+/// Gotchas:
+/// - Process-global. All instances share one signal slot and one handler, so only ONE may be alive
+///   at a time. A second live instance corrupts both dispatch and the shutdown handshake.
+/// - Lossy. Deliveries pass through a single value slot, so rapid or interleaved signals may
+///   coalesce; not every delivery produces an action call.
+/// - Actions are serialized on the watcher thread and block its loop, so keep them short.
+/// - Non-copyable and non-movable.
 class SignalCatcher
 {
 public:
-  /// @brief Callback run when a registered signal arrives.
-  /// @param count Times this signal has been received so far (1 on the first delivery).
+  /// @brief Callback invoked once per caught delivery of a registered signal.
+  ///
+  /// Its single argument is the running count of how many times this instance has caught that
+  /// specific signal (1 on the first delivery). This is a count, not the signal number.
   using SignalAction = std::function<void(std::int32_t)>;
 
-  /// @brief Installs a handler for each signal and starts the watcher thread.
+  /// @brief Register signal/action pairs, install the handlers, and start the watcher thread.
   ///
-  /// @tparam Args Types of the `{signal number, SignalAction}` pairs.
-  /// @param args One `{signal, action}` pair per signal to handle.
+  /// Catching begins immediately. Pass at most one live instance per process.
+  ///
+  /// @tparam Args Forwarded to construct an `unordered_map<std::int32_t, SignalAction>`; typically
+  /// a single brace-enclosed list of `{signalNumber, action}` pairs.
+  ///
+  /// @param args The `{signalNumber, action}` pairs to register, one per signal to catch.
   template<typename... Args>
   explicit SignalCatcher(Args&&... args):
     mSignalActions{std::forward<Args>(args)...},
@@ -73,7 +68,10 @@ public:
 
   SignalCatcher(SignalCatcher&&) noexcept = delete;
 
-  /// @brief Restores the default behavior of each registered signal and stops the watcher thread.
+  /// @brief Restore the OS default disposition for every registered signal and stop the watcher
+  /// thread.
+  ///
+  /// Blocks until the watcher thread joins; an action already in progress runs to completion.
   ~SignalCatcher();
 
   SignalCatcher& operator=(const SignalCatcher&) = delete;
@@ -81,15 +79,26 @@ public:
   SignalCatcher& operator=(SignalCatcher&&) noexcept = delete;
 
 private:
+  /// The action to run for each registered signal, keyed by signal number. Fixed at construction.
   const std::unordered_map<std::int32_t, SignalAction> mSignalActions;
+
+  /// The background thread that waits for a delivered signal and runs its action. Joined on
+  /// destruction.
   std::jthread mWatchThread;
+
+  /// Running count of deliveries caught per signal number, passed to each action. Owned and updated
+  /// only by the watcher thread.
   std::unordered_map<std::int32_t, std::int32_t> mSignalCounter;
 
-  /// @brief Watcher-thread loop: waits for a delivered signal and runs its action with the count.
+  /// @brief Loop on the watcher thread: block until a registered signal is delivered, then
+  /// increment its count and invoke its action. Returns once the thread is asked to stop during
+  /// destruction.
   void watch();
 
-  /// @brief Installs the process handler that records @p signal for the watcher.
-  static void setupHandler(int signal);
+  /// @brief Install this class's handler for one signal so its delivery wakes the watcher thread.
+  ///
+  /// @param signal The signal number whose OS disposition is replaced.
+  static void setupHandler(std::int32_t signal);
 };
 
 } // namespace nioc::common

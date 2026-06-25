@@ -13,38 +13,49 @@
 namespace nioc::terminus
 {
 
-/// @brief A @ref Driver that replays a recorded chronicle onto a Port in record order.
+/// @brief A source Driver that replays a recorded chronicle log onto a Port in recorded order.
 ///
-/// Reads the chronicle at the input log and, one frame per @ref run, delivers it to the subscribers
-/// of its channel - so the run sees the recorded frames in the exact global order they were first
-/// recorded, across every channel. Replay is schema-agnostic: each frame is delivered as its raw
-/// recorded bytes, and the receiving subscriber decodes it as its own @ref Message.
+/// Each tick delivers the next log entry to the Port on the channel it was captured on. It
+/// reproduces order only, not the original inter-entry timing: one entry per tick, as fast as the
+/// run ticks it. Wire it into the Driver/Routine lifecycle and let the Runner tick it; it finishes
+/// at end of log or when shutdown is requested.
 ///
-/// Replay delivers; it does not re-record. The frames are not written into the current run's
-/// chronicle. Pacing is not modelled: frames are delivered as fast as the run consumes them, not at
-/// their original arrival cadence.
+/// Example:
+///
+///     LogPlayer player{port, "/path/to/chronicleLog"};
+///     // The Runner now ticks `player` until it reports State::Done.
+///
+/// Single use: the underlying reader cannot rewind. Construct a fresh instance to replay again.
+///
+/// @see Driver, chronicle::Reader
 class LogPlayer final: public Driver
 {
 public:
-  /// @brief Replays the chronicle in @p inputLog onto @p port.
+  /// @brief Open a chronicle log for replay, seating the cursor on its first entry without
+  /// delivering anything yet.
   ///
-  /// @param port Port whose subscribers receive the replayed frames; must outlive this player.
+  /// @param port Borrowed; must outlive this player.
   ///
-  /// @param inputLog Chronicle directory to replay.
+  /// @param inputLog Path to an existing chronicle log directory. An empty log is valid and the
+  /// player completes on its first tick.
   ///
-  /// @throws std::invalid_argument If @p inputLog does not exist or is not a directory.
+  /// @throws std::invalid_argument If @p inputLog does not name an existing directory.
   LogPlayer(Port& port, std::filesystem::path inputLog);
 
 private:
-  // mReader is declared before mCursor: the cursor reads the first frame from the reader as it is
-  // constructed, so the reader must already exist.
+  /// The opened chronicle log being replayed. Declared before mCursor because the cursor reads the
+  /// first entry from this reader during its own construction, so the reader must already exist.
   chronicle::Reader mReader;
+
+  /// The position of the next log entry to deliver. Advances by one on every tick and reaches the
+  /// reader's end iterator once the whole log has been replayed.
   chronicle::Reader::Iterator mCursor;
 
-  /// @brief Delivers the frame under the cursor, then advances it.
+  /// @brief Deliver the entry at mCursor to the Port, advance the cursor, and report whether replay
+  /// should continue.
   ///
-  /// @return @ref State::Continue while frames remain, @ref State::Done once the log is exhausted
-  /// or a shutdown has been requested.
+  /// @return State::Done once the cursor reaches the end of the log, otherwise the running state
+  /// that asks the Runner to tick again.
   [[nodiscard]] State run() final;
 };
 

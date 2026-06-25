@@ -16,14 +16,35 @@
 namespace nioc::terminus
 {
 
-/// @brief A @ref Routine that publishes messages onto a @ref Port and receives none.
+/// @brief Abstract base for a source routine that originates data and publishes it onto a Port.
 ///
-/// Use a Driver to bring outside data into the process: a sensor reader, a file reader, a
-/// generator. A subclass mints @ref Publisher handles with @ref publisher at construction,
-/// implements @ref run to produce work, and publishes through those handles. A Driver has no inbox;
-/// use @ref Component instead if you also need to receive messages.
+/// A Driver is the producer end of a run. Unlike a message-driven Component, it has no inbox: it
+/// pulls from a sensor, file, or clock and publishes the result. Derive from Driver, supply a name,
+/// open publishers with @ref publisher, and implement @ref run to do one non-blocking slice of work
+/// per tick. The driving Runner ticks the driver until @ref run reports `State::Done`.
 ///
-/// Construct through a subclass. The Port is held by reference and must outlive the Driver.
+/// Example:
+///
+///     class ClockDriver : public Driver
+///     {
+///     public:
+///       ClockDriver(Port& port) : Driver(port, "clock"), mPub(publisher<TickSchema>("tick")) {}
+///     private:
+///       State run() override
+///       {
+///         if(shutdownToken().stop_requested()) return State::Done;
+///         auto draft = mPub.draft();
+///         // ... fill the draft ...
+///         mPub.publish(draft.seal());
+///         return State::Continue;
+///       }
+///       Publisher<TickSchema> mPub;
+///     };
+///
+/// Non-copyable and non-movable. The owning Port holds the driver via `shared_ptr` and tears it
+/// down while winding the run down, so the Port always outlives the driver that references it.
+///
+/// @see Port, Publisher, concurrent::Routine
 class Driver: public concurrent::Routine
 {
 public:
@@ -34,39 +55,44 @@ public:
   ~Driver() noexcept override = default;
 
 protected:
-  /// @brief Binds the driver to the Port it publishes onto.
-  /// @param port Port to publish onto; must outlive this driver.
-  /// @param name Name for this driver (see @ref Routine::name).
+  /// @brief Construct bound to @p port and labeled @p name.
+  ///
+  /// @param port The Port this driver publishes onto. Must outlive the driver; held by reference.
+  ///
+  /// @param name Identifying label, fixed for the driver's lifetime.
   Driver(Port& port, std::string name);
 
-  /// @brief Configures the driver base from a config block.
+  /// @brief Construct bound to @p port, taking the driver's name from @p config.
   ///
-  /// @param port Port to publish onto; must outlive this driver.
+  /// @param port The Port this driver publishes onto. Must outlive the driver; held by reference.
   ///
-  /// @param config The driver's config block (see driverConfig.capnp).
+  /// @param config Driver configuration; its `name` field becomes the driver's name.
   ///
-  /// @throws std::invalid_argument If the name is empty. The config must supply it.
+  /// @throws std::invalid_argument If the config's name is empty.
   Driver(Port& port, DriverConfig::Reader config);
 
-  /// @brief Returns the token set when the bound Port is asked to shut down.
+  /// @brief The run's cooperative shutdown token; becomes stopped when the run begins winding down.
   ///
-  /// Check this token in @ref run. Once shutdown is requested, stop producing, finish in-flight
-  /// work, and return @ref State::Done.
+  /// Poll it from @ref run and return `State::Done` once a stop is requested. The reference stays
+  /// valid for the driver's lifetime.
   [[nodiscard]] const std::stop_token& shutdownToken() const noexcept;
 
-  /// @brief Returns the Port this driver publishes onto.
-  ///
-  /// Most drivers produce through @ref publisher handles; reach for the Port directly only to
-  /// deliver pre-built frames a typed publisher cannot mint, as a @ref LogPlayer does on replay.
+  /// @brief The Port this driver publishes onto; outlives the driver.
   [[nodiscard]] Port& port() noexcept;
 
-  /// @brief Mints a producer handle for a topic.
+  /// @brief Open a publisher for @p topic carrying messages of @p Schema, recording the topic on
+  /// the run.
   ///
-  /// @tparam Schema Cap'n Proto schema of the messages.
+  /// @tparam Schema The Cap'n Proto message schema; must be named explicitly.
   ///
-  /// @param topic Topic to publish on.
+  /// @param topic Topic name. The `(Schema, topic)` pair identifies one channel.
   ///
-  /// @return A @ref Publisher bound to the topic.
+  /// @return A publisher bound to this driver's Port and channel. It borrows from the Port and must
+  /// not outlive the driver.
+  ///
+  /// @throws std::logic_error If the run does not record a chronicle.
+  ///
+  /// @see Port::publisher
   template<typename Schema>
   [[nodiscard]] Publisher<Schema> publisher(const std::string_view& topic)
   {
@@ -74,20 +100,32 @@ protected:
   }
 
 private:
+  /// The Port this driver publishes onto. Held by reference; the Port outlives the driver.
   Port& mPort;
+
+  /// The run's cooperative shutdown token, captured at construction and stopped when the run winds
+  /// down. Exposed to subclasses through @ref shutdownToken.
   const std::stop_token mShutdownToken;
 
-  /// @brief Runs one iteration by calling @ref run, turning any failure into a clean finish.
+  /// @brief Drive one tick: invoke @ref run, translate any thrown exception into `State::Done`, and
+  /// report the resulting State to the Runner.
   ///
-  /// @return Whatever @ref run returns, or @ref State::Done if @ref run throws.
+  /// This is the Routine hook the Runner calls; it never throws. Catches any exception from
+  /// @ref run, logs it under the driver's name, and reports `State::Done` so the driver ends
+  /// cleanly.
+  ///
+  /// @return The State returned by @ref run, or `State::Done` if @ref run threw.
   [[nodiscard]] State step() noexcept final;
 
-  /// @brief Produces one iteration of work, publishing through held @ref Publisher handles.
+  /// @brief Produce one non-blocking slice of work and report what to do next.
   ///
-  /// @return @ref State::Continue to run again right away, @ref State::Waiting when no work is
-  /// ready yet, or @ref State::Done when the source is exhausted.
+  /// Override to implement the driver. Called serially by the driving Runner.
   ///
-  /// @throws std::exception Any exception may escape; @ref step catches it.
+  /// @return `State::Continue` when more work is ready now, `State::Waiting` when none is ready, or
+  /// `State::Done` when finished.
+  ///
+  /// @note May throw. The driver's `step()` catches any exception, logs it under the driver's name,
+  /// and ends the driver by reporting `State::Done`.
   [[nodiscard]] virtual State run() = 0;
 };
 
