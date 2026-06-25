@@ -23,7 +23,6 @@ namespace po = boost::program_options;
 namespace
 {
 
-/// Patches the file at @p path into @p config; its entries override existing ones.
 void mergeConfigFile(nlohmann::json& config, const fs::path& path)
 {
   auto file = std::ifstream(path);
@@ -35,9 +34,6 @@ void mergeConfigFile(nlohmann::json& config, const fs::path& path)
   config.merge_patch(nlohmann::json::parse(file));
 }
 
-/// Patches one `path.to.key=value` override into @p config with RFC 7386 semantics: the value
-/// parses as json when it can (so `null` deletes, arrays replace, objects merge) and is taken as a
-/// string otherwise.
 void applyOverride(nlohmann::json& config, const std::string& override)
 {
   const auto separator = override.find('=');
@@ -60,8 +56,6 @@ void applyOverride(nlohmann::json& config, const std::string& override)
   config.merge_patch(patch);
 }
 
-/// Patches the @p configPaths files (left-to-right) and then the @p overrides (in order) into
-/// @p tree and returns it.
 nlohmann::json layeredTree(
     nlohmann::json tree,
     const std::vector<fs::path>& configPaths,
@@ -78,9 +72,6 @@ nlohmann::json layeredTree(
   return tree;
 }
 
-/// Builds the json tree of @p schema's defaults: the bottom layer every other config layer
-/// patches. Reading an untouched message yields each field's default — struct literals included —
-/// so the tree is assembled by walking such readers and encoding every field explicitly.
 nlohmann::json defaultsTree(const capnp::StructSchema schema, const capnp::JsonCodec& codec)
 {
   auto message = capnp::MallocMessageBuilder{};
@@ -120,9 +111,6 @@ nlohmann::json defaultsTree(const capnp::StructSchema schema, const capnp::JsonC
   return tree;
 }
 
-/// Returns the canonical, fully-explicit config text: @p schema's defaults patched by the
-/// @p configPaths files and @p overrides, with a key a `null` override deleted restored to its
-/// default.
 std::string canonicalConfigText(
     const std::vector<fs::path>& configPaths,
     const std::vector<std::string>& overrides,
@@ -136,8 +124,6 @@ std::string canonicalConfigText(
   return canonical.dump(2);
 }
 
-/// Decodes @p mergedJson strictly against @p schema — a key naming no schema field fails — and
-/// returns the message holding the result.
 std::unique_ptr<capnp::MallocMessageBuilder> decodedConfig(
     const std::string& mergedJson,
     const capnp::StructSchema schema)

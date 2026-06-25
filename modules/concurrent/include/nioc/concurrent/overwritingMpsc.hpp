@@ -17,17 +17,23 @@
 namespace nioc::concurrent
 {
 
-/// @brief Bounded multi-producer, single-consumer queue. When full, drops the oldest value to fit
-/// the newest.
+/// @brief A bounded, thread-safe FIFO queue for many producers and one consumer that drops its
+/// oldest element when full instead of blocking or failing.
 ///
-/// A producer never blocks and never loses its own value. When the queue is full, @ref push and
-/// @ref emplace drop the oldest value and return it, so the caller can count what was lost. Use it
-/// when the consumer wants the freshest data and can tolerate gaps, such as sensor samples or state
-/// updates.
+/// Models @ref MpscQueue. Pushing into a full queue evicts the oldest element and returns it to the
+/// caller, so the queue always keeps the newest @c capacity elements. Use it when stale data is
+/// worthless and the freshest samples must win, such as sensor frames. Every method is safe to call
+/// concurrently from any thread; the queue is neither copyable nor movable.
 ///
-/// Models @ref MpscQueue. See it for the producer/consumer contract.
+/// Example:
 ///
-/// @tparam ValueType Type of the queued values.
+///     auto queue = OverwritingMpsc<Frame>(8);
+///     queue.push(frame);              // producer thread(s)
+///     auto next = queue.tryPop();     // consumer thread
+///
+/// @tparam ValueType The element type. Must be movable.
+///
+/// @see MpscQueue, DroppingMpsc, UnboundedMpsc
 template<typename ValueType>
 class OverwritingMpsc
 {
@@ -35,9 +41,11 @@ public:
   using value_type = ValueType;
   using size_type = std::size_t;
 
-  /// @brief Builds an empty queue.
-  /// @param capacity Maximum number of values held at once. Must be at least 1.
-  /// @throws std::invalid_argument If @p capacity is 0.
+  /// @brief Construct a queue that holds at most @p capacity elements.
+  ///
+  /// @param capacity Maximum number of elements retained. Must be at least 1.
+  ///
+  /// @throws std::invalid_argument if @p capacity is 0.
   explicit OverwritingMpsc(const size_type capacity): mBuffer(capacity)
   {
     if(capacity < 1)
@@ -52,9 +60,9 @@ public:
   OverwritingMpsc& operator=(const OverwritingMpsc&) = delete;
   OverwritingMpsc& operator=(OverwritingMpsc&&) noexcept = delete;
 
-  /// @brief Adds @p value. If full, drops the oldest value and returns it.
-  /// @param value Value to add.
-  /// @return The dropped oldest value if the queue was full, otherwise nullopt.
+  /// @brief Append @p value to the back of the queue.
+  ///
+  /// @return The evicted oldest element if the queue was full before the call, else @c nullopt.
   std::optional<value_type> push(value_type value)
   {
     return [&]() -> std::optional<value_type>
@@ -69,11 +77,13 @@ public:
     }();
   }
 
-  /// @brief Builds a value from @p args and adds it. If full, drops the oldest value and returns
-  /// it.
-  /// @param args Constructor arguments for a value_type.
-  /// @return The dropped oldest value if the queue was full, otherwise nullopt.
-  /// @note The value is built once, then moved into the queue (not constructed in place).
+  /// @brief Construct an element in place from @p args and append it to the back of the queue.
+  ///
+  /// @tparam Args Argument types; @c value_type must be constructible from them.
+  ///
+  /// @param args Arguments forwarded to the @c value_type constructor.
+  ///
+  /// @return The evicted oldest element if the queue was full before the call, else @c nullopt.
   template<typename... Args>
     requires std::constructible_from<value_type, Args...>
   std::optional<value_type> emplace(Args&&... args)
@@ -90,7 +100,9 @@ public:
     }();
   }
 
-  /// @brief Removes and returns the oldest value, or nullopt if empty. Single consumer only.
+  /// @brief Remove and return the oldest element, or @c nullopt if the queue is empty.
+  ///
+  /// Call this only from the single consumer thread.
   [[nodiscard]] std::optional<value_type> tryPop()
   {
     return [&]() -> std::optional<value_type>
@@ -107,8 +119,9 @@ public:
     }();
   }
 
-  /// @brief Number of values currently queued. Stale once other threads push or pop; use for
-  /// metrics only.
+  /// @brief Return the current element count.
+  ///
+  /// The result is a momentary snapshot and may be stale once it returns.
   [[nodiscard]] size_type size() const
   {
     return [&]() -> size_type
@@ -118,16 +131,21 @@ public:
     }();
   }
 
-  /// @brief Fraction of capacity in use, in [0, 1]; 1.0 when full.
+  /// @brief Return the current fraction filled, size divided by capacity, in the range [0, 1].
   ///
-  /// Stale once other threads push or pop. Use for metrics only, not to decide control flow.
+  /// The result is a momentary snapshot and may be stale once it returns.
   [[nodiscard]] double occupancy() const
   {
     return static_cast<double>(size()) / static_cast<double>(mBuffer.capacity());
   }
 
 private:
+  /// Guards every access to mBuffer so that producers and the consumer never race. Marked mutable
+  /// so const observers such as size() and occupancy() can lock it.
   mutable std::mutex mMutex;
+
+  /// Fixed-capacity ring that retains the newest @c capacity elements; a push into a full ring
+  /// overwrites the oldest slot. Access it only while holding mMutex.
   boost::circular_buffer<value_type> mBuffer;
 };
 

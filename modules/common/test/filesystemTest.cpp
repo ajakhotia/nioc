@@ -15,8 +15,6 @@ namespace fs = std::filesystem;
 namespace
 {
 
-/// Create a fresh empty directory at a deterministic path under the system temp directory.
-/// Any prior contents are wiped.
 fs::path makeFreshEmptyDir(std::string_view name)
 {
   const auto path = fs::temp_directory_path() / "nioc-filesystemTest" / name;

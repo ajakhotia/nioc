@@ -36,7 +36,6 @@ chronicle::ChannelId channelFor(const std::string_view topic)
   return chronicle::makeChannelId(kSchemaId<TestSchema>, topic);
 }
 
-/// A recording Port under a fresh per-test temp root; its publishers mint the drafts under test.
 Port makePort(const std::string_view name)
 {
   return Port{

@@ -47,8 +47,6 @@ fs::path createWorkingDir(const fs::path& logRoot)
   return dir;
 }
 
-/// Opens the recording's chronicle writer, or nothing when the run does not record. A run that does
-/// not record still publishes — its producers build messages on the heap.
 std::unique_ptr<chronicle::Writer> makeWriter(const fs::path& workingDir, const bool record)
 {
   if(not record)
@@ -60,7 +58,6 @@ std::unique_ptr<chronicle::Writer> makeWriter(const fs::path& workingDir, const 
   return std::make_unique<chronicle::Writer>(dir);
 }
 
-/// Attaches a file-backed sink to the logger to capture the console log to the working directory.
 spdlog::sink_ptr attachLogFileSink(
     const fs::path& consoleLogPath,
     const std::string_view pattern = logger::kDefaultLogPattern)
@@ -74,8 +71,6 @@ spdlog::sink_ptr attachLogFileSink(
   return sink;
 }
 
-/// Copies the @p source into @p workingDir under its flat basename and records the
-/// originalPath → basename mapping in @p fileMap.
 void copyResource(
     const fs::path& source,
     const fs::path& workingDir,
@@ -268,6 +263,9 @@ std::stop_token Port::abortToken() const noexcept
 
 void Port::awaitQuiescence() const
 {
+  // Acquire is the read side of the handshake with Consignment's release-decrements: this is the
+  // only place that reads work guarded by the count reaching zero, so once we observe 0 here, every
+  // consumer thread's finished work is visible. Keep this acquire if that invariant ever changes.
   for(auto pendingConsignments = mPendingConsignments.load(std::memory_order_acquire);
       pendingConsignments > 0 && not mAbortSource.stop_requested();
       pendingConsignments = mPendingConsignments.load(std::memory_order_acquire))

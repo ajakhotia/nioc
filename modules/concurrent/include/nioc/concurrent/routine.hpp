@@ -13,28 +13,46 @@
 namespace nioc::concurrent
 {
 
-/// @brief A unit of work run one iteration at a time by a @ref Runner.
+/// @brief Abstract base for a unit of cooperative, non-blocking work that a Runner drives one
+/// step at a time.
 ///
-/// A @ref Runner drives the loop. Each turn it calls @ref step, which does one iteration and
-/// returns a @ref State telling the Runner what to do next:
-/// - @ref State::Continue: run again right away,
-/// - @ref State::Waiting: no work now, run again later,
-/// - @ref State::Done: finished or failed, stop scheduling.
+/// Derive from `Routine`, give it a name, and override the private `step()` to do one small slice
+/// of work per call and report what to do next. A Runner owns the execution context (e.g. a
+/// thread): it repeatedly calls `tick()` and acts on the returned `State`, parking when the
+/// routine has nothing to do and resuming when the routine fires its trigger. The routine must
+/// never block; it yields control back to the Runner by returning from `step()`.
 ///
-/// @ref step never throws: if it can fail, it catches the exception and returns @ref State::Done.
+/// Example:
+///
+///     class Counter : public Routine
+///     {
+///     public:
+///       Counter() : Routine("counter") {}
+///     private:
+///       State step() noexcept override
+///       {
+///         return (++mCount < 10) ? State::Continue : State::Done;
+///       }
+///       int mCount{0};
+///     };
+///
+/// Non-copyable and non-movable. A `Routine` is meant to be ticked serially from a single
+/// context; `state()` may be read concurrently from other threads.
+///
+/// @see step, tick, attachTrigger, triggerRunner
 class Routine
 {
 public:
-  /// @brief Result of one @ref step iteration.
+  /// @brief Outcome of one step, telling the driving Runner how to proceed.
   enum class State : std::uint8_t
   {
-    /// @brief More work now; run again immediately.
+    /// More work is ready now; tick again immediately.
     Continue,
 
-    /// @brief No work now; run again later instead of spinning.
+    /// No work available; park the runner until the trigger fires, then tick again.
     Waiting,
 
-    /// @brief Finished or failed; stop scheduling it.
+    /// Work is complete or unrecoverable; stop driving this routine.
     Done
   };
 
@@ -48,12 +66,12 @@ public:
 
   Routine& operator=(Routine&&) noexcept = delete;
 
-  /// @brief Runs one iteration and records its result.
+  /// @brief Run one step and publish its result.
   ///
-  /// Runs @ref step and stores the returned @ref State so @ref state can read it from another
-  /// thread. Never throws. Called by the driving @ref Runner once per loop turn.
+  /// Calls the overridden `step()` once, stores the result so `state()` can read it, and returns
+  /// it. Meant to be called by the driving Runner, serially from a single context.
   ///
-  /// @return The @ref State that @ref step returned.
+  /// @return The `State` reported by `step()`.
   [[nodiscard]] State tick() noexcept
   {
     const auto state = step();
@@ -61,54 +79,71 @@ public:
     return state;
   }
 
-  /// @brief Returns this routine's human-readable name.
+  /// @brief Identifying label, fixed for the routine's lifetime.
   [[nodiscard]] const std::string& name() const noexcept
   {
     return mName;
   }
 
-  /// @brief Returns the @ref State from the last @ref tick.
+  /// @brief The `State` recorded by the most recent `tick()`, or `State::Continue` before the
+  /// first tick.
+  ///
+  /// Safe to read from any thread; loaded with relaxed atomics.
   [[nodiscard]] State state() const noexcept
   {
     return mState.load(std::memory_order_relaxed);
   }
 
-  /// @brief Sets the callback that wakes the Runner when work arrives.
+  /// @brief Install the callback used to wake the driving Runner, replacing any previous trigger.
   ///
-  /// After returning @ref State::Waiting, the routine fires this callback (via @ref triggerRunner)
-  /// when new work arrives, so the Runner resumes it instead of polling.
+  /// Typically called by the Runner during launch.
   ///
-  /// @param trigger Callback that wakes the driving @ref Runner.
+  /// @param trigger Invoked by `triggerRunner()` to resume ticking. May be null.
+  ///
+  /// @warning Not synchronized against concurrent `tick()` or `triggerRunner()`; attach before the
+  /// routine is driven.
   void attachTrigger(std::function<void()> trigger);
 
 protected:
-  /// @brief Sets the name and, optionally, the wake-up callback.
+  /// @brief Construct with an identifying name and, optionally, a wake trigger.
   ///
-  /// @param name Human-readable name; see @ref name.
+  /// @param name Identifying label; fixed for the routine's lifetime.
   ///
-  /// @param trigger Callback the routine fires (via @ref triggerRunner) to wake its @ref Runner
-  /// when work arrives. Defaults to none; the Runner can set one later via @ref attachTrigger.
+  /// @param trigger Callback that wakes the driving Runner. May be null and supplied later via
+  /// `attachTrigger()`.
   explicit Routine(std::string name, std::function<void()> trigger = nullptr);
 
-  /// @brief Wakes the driving @ref Runner if a trigger is set.
+  /// @brief Invoke the attached trigger to ask the driving Runner to resume ticking.
   ///
-  /// A subclass calls this when it goes from idle to having work, to wake a Runner parked after a
-  /// @ref State::Waiting return. Does nothing while no trigger is set (none passed at construction
-  /// and @ref attachTrigger not yet called).
+  /// Call this from inside the routine when new work arrives so a routine that previously returned
+  /// `State::Waiting` gets ticked again. No-op when no trigger is attached.
+  ///
+  /// @note As thread-safe as the attached trigger (Runner-supplied triggers wake safely from any
+  /// thread). The trigger is read without synchronization, so attach it before driving the
+  /// routine.
+  ///
+  /// @see attachTrigger
   void triggerRunner() const;
 
 private:
+  /// @brief Identifying label, fixed at construction for the routine's lifetime.
   const std::string mName;
+
+  /// @brief Callback that wakes the driving Runner; null until attached.
   std::function<void()> mTrigger{nullptr};
+
+  /// @brief State reported by the most recent tick, published for concurrent reads.
   std::atomic<State> mState{State::Continue};
 
-  /// @brief Does one iteration of work; a subclass implements it, @ref tick runs it.
+  /// @brief Perform one non-blocking slice of work and report what to do next.
   ///
-  /// Must not throw: if it can fail, catch the exception and return @ref State::Done so the Runner
-  /// shuts the routine down cleanly.
+  /// Override to implement the routine. Called serially via `tick()`.
   ///
-  /// @return @ref State::Continue to run again now, @ref State::Waiting to run again later, or
-  /// @ref State::Done when finished or failed.
+  /// @return `State::Continue` when more work remains, `State::Waiting` when no work is ready, or
+  /// `State::Done` when finished.
+  ///
+  /// @warning Must not block and must not throw (declared `noexcept`). Handle errors internally
+  /// and return `State::Done` to terminate.
   [[nodiscard]] virtual State step() noexcept = 0;
 };
 

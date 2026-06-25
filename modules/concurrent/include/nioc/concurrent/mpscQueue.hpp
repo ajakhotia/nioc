@@ -12,44 +12,64 @@
 namespace nioc::concurrent
 {
 
-/// @brief A multi-producer, single-consumer queue of values.
+/// @brief Constrains a type to the multi-producer, single-consumer (MPSC) queue contract: a
+/// thread-safe FIFO that many threads may enqueue into while exactly one thread dequeues.
 ///
-/// Many threads may enqueue at the same time with @ref push or @ref emplace. Exactly one thread
-/// may dequeue with @ref tryPop. No operation blocks: a bounded queue at capacity drops a value
-/// instead of waiting; an unbounded queue grows.
+/// Use this concept to write code that works with any MPSC queue regardless of its capacity policy.
+/// A bounded queue may drop a value when full and returns the dropped value from its enqueue call;
+/// which value is dropped depends on the policy (`OverwritingMpsc` drops the oldest, `DroppingMpsc`
+/// drops the incoming value). An unbounded queue (`UnboundedMpsc`) never drops and always returns
+/// `nullopt`.
 ///
-/// @ref push and @ref emplace return the value they dropped, if any. A bounded queue that is full
-/// returns the dropped value (the evicted oldest or the rejected new one, depending on its policy);
-/// a queue with room returns nullopt. What a drop means is up to the caller.
+/// Example:
 ///
-/// Enqueue and dequeue move values in and out; they never hand back a reference into the queue.
-/// That is what keeps them safe across concurrent producers and a value-dropping enqueue.
+///     template<MpscQueue Queue>
+///     void produce(Queue& queue, typename Queue::value_type item)
+///     {
+///       if (auto dropped = queue.push(std::move(item)))
+///       {
+///         // A bounded queue dropped a value to stay within capacity.
+///       }
+///     }
 ///
-/// The queue handles its own locking, so no external lock is needed. The type cannot enforce the
-/// single-consumer rule: only one thread may ever call @ref tryPop.
+/// A conforming type provides:
+///   - `value_type`: the element type.
+///   - `size_type`: the count type.
+///   - `push(value_type)`: enqueue by move; returns the dropped value (if any) or `nullopt`.
+///   - `emplace(...)`: enqueue an in-place-constructed value; same return as `push`.
+///   - `tryPop()`: dequeue the oldest value, or `nullopt` if empty. Consumer thread only.
+///   - `size() const`: the current element count.
+///   - `occupancy() const`: the fraction of capacity in use, in [0, 1].
+///
+/// @tparam Queue The candidate queue type.
+///
+/// @see OverwritingMpsc, DroppingMpsc, UnboundedMpsc, AnyMpsc
 template<typename Queue>
 concept MpscQueue =
     requires(Queue queue, const Queue& constQueue, typename Queue::value_type value) {
       typename Queue::value_type;
       typename Queue::size_type;
 
-      // Enqueue by move. Returns the dropped value, or nullopt if none was dropped.
+      /// Enqueue by move. Returns the value dropped to make room when a bounded queue is full, else
+      /// `nullopt`. Callable from any producer thread.
       { queue.push(std::move(value)) } -> std::same_as<std::optional<typename Queue::value_type>>;
 
-      // Construct a value in place from forwarded arguments. Same return as push.
+      /// Construct an element in place and enqueue it. Same drop-return semantics as `push`.
       {
         queue.emplace(std::move(value))
       } -> std::same_as<std::optional<typename Queue::value_type>>;
 
-      // Remove and return the oldest value, or nullopt when empty. Single consumer only.
+      /// Remove and return the oldest value, or `nullopt` when empty. Call only from the single
+      /// consumer thread.
       { queue.tryPop() } -> std::same_as<std::optional<typename Queue::value_type>>;
 
-      // Number of values queued. Racy under concurrent producers; for metrics only. The only
-      // backlog signal an unbounded queue offers.
+      /// Number of queued elements. A momentary snapshot; racy under concurrent producers, so use
+      /// it for metrics, not control flow.
       { constQueue.size() } -> std::same_as<typename Queue::size_type>;
 
-      // Fraction of capacity in use, in [0, 1]; 1.0 when full. An unbounded queue always
-      // reports 0.0. Racy; shows how close a bounded queue is to dropping.
+      /// Fraction of capacity in use, in [0, 1]: 1.0 when a bounded queue is full, 0.0 for an
+      /// unbounded queue. A momentary snapshot; racy. Signals how close a bounded queue is to
+      /// dropping.
       { constQueue.occupancy() } -> std::same_as<double>;
     };
 

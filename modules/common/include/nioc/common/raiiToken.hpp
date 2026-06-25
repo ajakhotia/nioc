@@ -14,26 +14,49 @@
 namespace nioc::common
 {
 
-/// RAII guard. Runs an entry action now and an exit action at scope exit.
+/// @brief A scope guard that runs a setup action at construction and a matching teardown action
+/// when it is destroyed, giving any acquire/release pair classic RAII semantics.
 ///
-/// The exit action runs once when the token is destroyed. A moved-from token runs nothing.
+/// Construct the token to run the entry action once, immediately. The stored exit action then runs
+/// once, automatically, when the token is destroyed (or replaced via move-assignment). Keep the
+/// token alive while the effect must hold; let it leave scope to release.
 ///
-/// @tparam ExitAction_ No-argument callable run at scope exit. Must be no-throw to call and
-/// no-throw move-constructible.
+/// Example:
+///
+///     // Lock now, unlock when `guard` leaves scope.
+///     RaiiToken guard{[&] { mutex.lock(); }, [&]() noexcept { mutex.unlock(); }};
+///
+/// Moving transfers the exit action: the moved-from token is disengaged and runs nothing on
+/// destruction. Copying is disabled. Marked `[[nodiscard]]` because ignoring the returned token
+/// destroys it at once, firing the exit action before the guarded effect is used.
+///
+/// @tparam ExitAction_ The stored teardown callable. Must be nothrow-invocable with no arguments
+/// and nothrow-move-constructible, because it is invoked during `noexcept` destruction and
+/// move-assignment, and relocated during `noexcept` move construction and move-assignment. Deduce
+/// it from the constructor; do not name it explicitly.
 template<std::invocable ExitAction_>
   requires std::is_nothrow_invocable_v<ExitAction_> &&
            std::is_nothrow_move_constructible_v<ExitAction_>
 class [[nodiscard]] RaiiToken
 {
 public:
-  /// The exit action callable type.
   using ExitAction = ExitAction_;
 
-  /// Runs the entry action now. Stores the exit action to run at scope exit.
+  /// @brief Run @p entryAction immediately and store @p exitAction to run when the token is
+  /// destroyed.
   ///
-  /// @param entryAction Callable run now with @p args.
-  /// @param exitAction  Callable run when the token is destroyed.
-  /// @param args        Arguments forwarded to @p entryAction.
+  /// If @p entryAction throws, construction fails and the exit action never runs. The exit action
+  /// is always invoked with no arguments; @p args reach the entry action only.
+  ///
+  /// @tparam EntryAction Type of the setup callable, deduced from @p entryAction.
+  ///
+  /// @tparam Args Types of the trailing arguments, deduced from @p args.
+  ///
+  /// @param entryAction Setup callable, invoked once with @p args.
+  ///
+  /// @param exitAction Teardown callable, stored by value and invoked later with no arguments.
+  ///
+  /// @param args Forwarded to @p entryAction only.
   template<typename EntryAction, typename... Args>
     requires std::invocable<EntryAction, Args...>
   explicit RaiiToken(EntryAction&& entryAction, ExitAction exitAction, Args&&... args):
@@ -47,17 +70,17 @@ public:
 
   RaiiToken& operator=(const RaiiToken&) = delete;
 
-  /// Takes over the pending exit action from @p other, which is left holding none.
+  /// @brief Adopt @p other's exit action, leaving @p other disengaged so only this token runs it.
   RaiiToken(RaiiToken&& other) noexcept:
     mExitAction{std::move(other.mExitAction)},
     mEngaged{std::exchange(other.mEngaged, false)}
   {
   }
 
-  /// Runs this token's exit action, then takes over the one from @p other.
+  /// @brief Run this token's pending exit action, then adopt @p other's, leaving @p other
+  /// disengaged.
   ///
-  /// @param other Source token, left holding no exit action.
-  /// @return Reference to this token.
+  /// Self-assignment is a no-op and does not fire the exit action.
   RaiiToken& operator=(RaiiToken&& other) noexcept
   {
     if(this != &other)
@@ -77,7 +100,7 @@ public:
     return *this;
   }
 
-  /// Runs the exit action, unless the token has been moved from.
+  /// @brief Run the exit action, unless the token has been moved from.
   ~RaiiToken() noexcept
   {
     if(mEngaged)
@@ -87,11 +110,16 @@ public:
   }
 
 private:
+  /// The teardown callable to invoke once when this token is destroyed or move-assigned over.
   [[no_unique_address]] ExitAction mExitAction;
+
+  /// Whether this token still owns a pending exit action. False after the token is moved from, so
+  /// destruction and move-assignment skip the exit action.
   bool mEngaged{false};
 };
 
-/// Deduces the token's exit action type from the constructor arguments.
+/// @brief Deduce `RaiiToken` from its constructor arguments, fixing the template parameter to the
+/// exit action's type so the entry action and args stay unconstrained at deduction.
 template<typename EntryAction, typename ExitAction, typename... Args>
 RaiiToken(EntryAction&&, ExitAction, Args&&...) -> RaiiToken<ExitAction>;
 

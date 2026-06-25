@@ -21,21 +21,31 @@
 namespace nioc::containers
 {
 
-/// @brief A fixed-capacity, append-only container that fills a contiguous storage front to back.
+/// @brief A fixed-capacity, append-only buffer that hands disjoint slices to concurrent writers.
 ///
-/// Adapts a fixed-extent contiguous storage (such as @ref MmapArray, `std::array`, or a pre-sized
-/// `std::vector`) into an append-only container, the way `std::stack` adapts a container. A cursor
-/// marks how much has been written; @ref claim and @ref emplace reserve the next slots at the tail
-/// until the storage is full. @ref begin "begin()"..@ref end "end()" iterate the written region
-/// `[0, size())`; the whole storage, including the unwritten tail, stays reachable through
-/// @ref storage.
+/// Think of it as a tape with a cursor. The cursor starts at 0 and only moves forward as callers
+/// reserve slots with claim or emplace. Every reservation returns its own region; no two overlap.
+/// The cursor moves backward only when rewind gives back the unused tail of the latest claim.
+/// Capacity is fixed at construction and never grows (shrink_to_fit can lower it).
 ///
-/// Reservations are atomic, so several threads may append at once. A reservation that does not fit
-/// returns an empty span (@ref claim) or a null pointer (@ref emplace); the caller then moves on to
-/// a fresh tape. Iterating the written region while other threads are appending sees a racing
-/// snapshot, so iterate only once appending has stopped.
+/// The tape reserves space; it does not construct, destroy, or zero elements. Filling a claimed
+/// slot is the caller's job, and element access is unchecked.
 ///
-/// @tparam Storage A fixed-extent contiguous, sized range whose element type is trivially copyable.
+/// Example:
+///
+///     Tape<std::vector<int>> tape(1000); // capacity 1000 ints
+///     std::span<int> slot = tape.claim(3);
+///     slot[0] = 1; slot[1] = 2; slot[2] = 3;
+///
+/// The reservation methods (claim, emplace, rewind, size, capacity, empty, full) are safe to call
+/// from many threads at once. The cursor does NOT publish element contents: claim only reserves
+/// bytes, so a reader that sees a grown size() must establish its own happens-before with the
+/// writer before reading those bytes. The tape cannot be copied or moved; it is pinned to its
+/// storage.
+///
+/// @tparam Storage A contiguous, sized range of trivially-copyable elements, owned by the tape.
+///
+/// @see claim, emplace, rewind
 template<typename Storage>
   requires std::ranges::contiguous_range<Storage> and std::ranges::sized_range<Storage> and
            std::is_trivially_copyable_v<std::ranges::range_value_t<Storage>>
@@ -52,7 +62,13 @@ public:
   using iterator = pointer;
   using const_iterator = const_pointer;
 
-  /// @brief Constructs the storage in place from @p args; the tape starts empty.
+  /// @brief Build the backing storage in place by forwarding @p args to its constructor.
+  ///
+  /// The storage's element count becomes the tape's fixed capacity; the cursor starts at 0.
+  ///
+  /// @tparam Args Types of the arguments forwarded to the @p Storage constructor.
+  ///
+  /// @param args Arguments forwarded to the @p Storage constructor.
   template<typename... Args>
     requires std::constructible_from<Storage, Args...>
   explicit Tape(Args&&... args): mStorage(std::forward<Args>(args)...)
@@ -69,86 +85,95 @@ public:
 
   Tape& operator=(Tape&&) noexcept = delete;
 
-  /// @brief Returns a pointer to the first element.
+  /// @brief Pointer to the first element of the backing buffer. Const through a const tape.
   [[nodiscard]] auto data(this auto&& self) noexcept
   {
     return std::ranges::data(self.mStorage);
   }
 
-  /// @brief Returns a reference to the written element at @p index.
+  /// @brief Reference to the element at @p index. Const through a const tape.
   ///
-  /// @param index Element position, less than @ref size. Out-of-range access is undefined.
+  /// @param index Element offset. Unchecked; must be < size().
   [[nodiscard]] decltype(auto) operator[](this auto&& self, const size_type index) noexcept
   {
     return self.data()[index]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
   }
 
-  /// @brief Returns an iterator to the first element.
+  /// @brief Iterator to the start of the claimed prefix [0, size()). Const through a const tape.
+  ///
+  /// Concurrent claims can extend the range while you iterate, so snapshot size() and iterate
+  /// single-threaded, or stop other writers first.
   [[nodiscard]] auto begin(this auto&& self) noexcept
   {
     return self.data();
   }
 
-  /// @brief Returns an iterator one past the last written element.
+  /// @brief Past-the-end iterator at the current cursor position. Const through a const tape.
   [[nodiscard]] auto end(this auto&& self) noexcept
   {
     return self.data() + self.size(); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
   }
 
-  /// @brief Returns a const iterator to the first element.
+  /// @brief Const iterator to the start of the claimed prefix.
   [[nodiscard]] const_iterator cbegin() const noexcept
   {
     return begin();
   }
 
-  /// @brief Returns a const iterator one past the last written element.
+  /// @brief Const past-the-end iterator at the current cursor position.
   [[nodiscard]] const_iterator cend() const noexcept
   {
     return end();
   }
 
-  /// @brief Returns whether nothing has been written yet.
+  /// @brief True when no slots have been claimed yet (size() == 0).
   [[nodiscard]] bool empty() const noexcept
   {
     return size() == 0;
   }
 
-  /// @brief Returns whether the tape has no room left.
+  /// @brief True when the cursor has reached capacity; any further non-zero claim will fail.
   [[nodiscard]] bool full() const noexcept
   {
     return size() == capacity();
   }
 
-  /// @brief Returns the number of written elements.
+  /// @brief Number of slots claimed so far, i.e. the cursor position.
+  ///
+  /// Read atomically. Under concurrent claims it may already be stale when it returns.
   [[nodiscard]] size_type size() const noexcept
   {
     return mCursor.load(std::memory_order_relaxed);
   }
 
-  /// @brief Returns the maximum number of elements the storage holds.
+  /// @brief Total slot capacity, fixed at construction (until shrink_to_fit).
   [[nodiscard]] size_type capacity() const noexcept
   {
     return std::ranges::size(mStorage);
   }
 
-  /// @brief Trims the storage to the written size, releasing the unwritten tail.
+  /// @brief Drop unclaimed capacity by resizing the storage down to size().
   ///
-  /// Resizes the storage down to @ref size elements, the way `std::vector::shrink_to_fit` trims
-  /// spare capacity. Storage that keeps a persistent mapping (such as @ref MmapArray) trims its
-  /// backing file but leaves the mapping in place, so pointers and spans into the written region
-  /// stay valid. Available only when the storage can be resized. Not safe to call concurrently with
-  /// @ref claim or @ref emplace.
+  /// Afterward capacity() equals size(). Only available when @p Storage has a resize member.
+  /// NOT thread-safe: call it with no concurrent reservations. It invalidates every pointer, span,
+  /// and iterator previously obtained from this tape.
   void shrink_to_fit() noexcept
     requires requires(Storage& storage, size_type count) { storage.resize(count); }
   {
     mStorage.resize(size());
   }
 
-  /// @brief Reserves @p count contiguous slots at the tail.
+  /// @brief Reserve @p count contiguous slots and return a writable span over them.
   ///
-  /// @param count Number of slots to reserve; at least one.
+  /// The returned region is disjoint from every other reservation. Thread-safe. If fewer than
+  /// @p count slots remain, returns an empty span and leaves the cursor unchanged. The slots are
+  /// uninitialized: fill them, then arrange your own happens-before before signaling any reader.
   ///
-  /// @return A span over the reserved slots, or an empty span if they do not fit.
+  /// @param count Number of slots to reserve. Must be non-zero.
+  ///
+  /// @return A span over the reserved slots, or an empty span if not enough room.
+  ///
+  /// @throws std::invalid_argument if @p count is zero.
   [[nodiscard]] std::span<value_type> claim(const size_type count = 1)
   {
     if(count == 0)
@@ -176,20 +201,19 @@ public:
     }
   }
 
-  /// @brief Gives the unused tail of a claimed slot back to the tape.
+  /// @brief Give back the unused tail of a just-claimed @p slot, keeping only its first
+  /// @p usedCount elements.
   ///
-  /// Winds the cursor back so the next @ref claim reuses the space beyond the first @p usedCount
-  /// elements of @p slot — but only while @p slot is still at the tail, i.e. nothing has been
-  /// claimed since. Once a later claim has moved the cursor on, the tail is stranded and this does
-  /// nothing. Single-producer use only: not safe to call concurrently with @ref claim or
-  /// @ref emplace.
+  /// Thread-safe. Succeeds only when @p slot is the most recent claim and the cursor still sits at
+  /// its end (no other claim has advanced past it); then the reclaimed tail becomes available to
+  /// later claims. Otherwise the reservation stands and this returns false.
   ///
-  /// @param slot A span previously returned by @ref claim from this tape.
+  /// @param slot A span returned by a prior claim on this tape.
   ///
-  /// @param usedCount Number of leading elements of a @p slot to keep; at most @c slot.size().
+  /// @param usedCount Number of leading elements to keep. Must be <= slot.size(); if larger, the
+  /// call logs an error and returns false.
   ///
-  /// @return True if the tail was reclaimed; false if a @p slot was no longer the tail (nothing
-  /// changed), or if @p usedCount exceeds the slot size (a misuse, logged as an error).
+  /// @return True if the cursor moved back to release the tail; false otherwise.
   [[nodiscard]] bool rewind(const std::span<value_type> slot, const size_type usedCount) noexcept
   {
     if(usedCount > slot.size())
@@ -206,9 +230,17 @@ public:
         std::memory_order_relaxed);
   }
 
-  /// @brief Constructs one element in place at the tail from @p args.
+  /// @brief Claim one slot and construct an element in it from @p args.
   ///
-  /// @return A pointer to the new element, or null if the tape is full.
+  /// Thread-safe. Making the new element visible to readers is still your responsibility.
+  ///
+  /// @tparam Args Types of the arguments forwarded to the @p value_type constructor.
+  ///
+  /// @param args Arguments forwarded to the @p value_type constructor.
+  ///
+  /// @return Pointer to the constructed element, or nullptr if the tape is full.
+  ///
+  /// @see claim
   template<typename... Args>
   [[nodiscard]] pointer emplace(Args&&... args) noexcept(
       std::is_nothrow_constructible_v<value_type, Args...>)
@@ -222,17 +254,23 @@ public:
     return std::construct_at(slot.data(), std::forward<Args>(args)...);
   }
 
-  /// @brief Returns the underlying storage, including the unwritten tail.
+  /// @brief Reference to the backing storage object itself. Const through a const tape.
   ///
-  /// @note Resizing the storage through this reference invalidates every pointer, span, and
-  /// iterator the tape has handed out.
+  /// Bypasses the cursor and exposes the whole buffer, including unclaimed slots. Use it for
+  /// storage-level operations, not for reading claimed contents.
   [[nodiscard]] auto& storage(this auto&& self) noexcept
   {
     return self.mStorage;
   }
 
 private:
+  /// The backing buffer that owns the slots. Its element count is the tape's fixed capacity.
   Storage mStorage;
+
+  /// The cursor: the number of slots claimed so far, and the offset of the next free slot. Advanced
+  /// atomically by claim and emplace, so concurrent reservations stay disjoint without a lock;
+  /// moved back only by rewind. Accessed with relaxed ordering, so it orders the reservation but
+  /// does NOT publish the claimed slots' contents.
   std::atomic<size_type> mCursor{0};
 };
 

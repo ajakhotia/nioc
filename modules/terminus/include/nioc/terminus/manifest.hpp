@@ -13,62 +13,69 @@
 namespace nioc::terminus
 {
 
-/// @brief A Port's outside-the-process input: the run context plus its configuration.
+/// @brief A value that bundles one program invocation's run context with its merged configuration,
+/// and can persist both into a recording directory for later replay and audit.
+///
+/// A program builds one `Manifest` from its parsed command line at startup, then calls @ref writeTo
+/// to drop the recording's `config.json` and `manifest.json` into the run's output directory.
+///
+/// Example:
+///
+///     auto vm = po::variables_map{};
+///     po::store(po::parse_command_line(argc, argv, Manifest::cliOptions()), vm);
+///     po::notify(vm);
+///     auto manifest = Manifest{vm, MyConfig::schema};
+///     manifest.writeTo(recordingDir);
+///
+/// Non-copyable and not move-assignable (the embedded @ref ConfigStore is move-construct-only);
+/// pass it by value to move it.
+///
+/// @see RunContext, ConfigStore
 struct Manifest
 {
+  /// How this run was invoked: log root, resources, record/playback mode, and command line.
   RunContext mContext;
+
+  /// The layered, optionally schema-decoded configuration for this run.
   ConfigStore mConfigStore;
 
-  /// @brief Returns the command-line options a manifest reads: the run-context options (@ref
-  /// RunContext::cliOptions) plus the config options (@ref ConfigStore::cliOptions).
+  /// @brief Return the full set of command-line options the @ref Manifest(const
+  /// boost::program_options::variables_map&, capnp::StructSchema) constructor reads.
+  ///
+  /// Combines `RunContext::cliOptions()` and `ConfigStore::cliOptions()`. Merge this into the
+  /// program's option set before parsing, then feed the resulting map to that constructor.
   [[nodiscard]] static boost::program_options::options_description cliOptions();
 
-  /// @brief Builds a manifest from a ready context and config. For tests and embedding.
-  ///
-  /// @param context The run context.
-  ///
-  /// @param configStore The configuration.
+  /// @brief Assemble a manifest from already-built components, moving both into place.
   Manifest(RunContext context, ConfigStore configStore);
 
-  /// @brief Builds a manifest from parsed command-line options and a config schema.
+  /// @brief Build a manifest from parsed command-line options, decoding the merged config against
+  /// @p schema.
   ///
-  /// Layers the configuration in this order, each one patching the last:
+  /// When the run context selects playback, the replayed recording's `config.json` is layered
+  /// first, beneath this invocation's `--append-config` files and `--config-override` entries.
   ///
-  ///   schema defaults → recording's config.json (playback only) → config files → overrides.
+  /// @param variableMap A map parsed against @ref cliOptions(); entries `append-config` and
+  /// `config-override` must be present.
   ///
-  /// In playback the recording's config is the base, so a bare `--playback <recording>` reproduces
-  /// the recorded setup; extra files or overrides change it. The result is validated against @p
-  /// schema and stored canonical and fully explicit (@ref ConfigStore).
+  /// @param schema The Cap'n Proto struct schema that supplies config defaults and the decode
+  /// target.
   ///
-  /// @code
-  /// auto port = Port{Manifest{variableMap, capnp::Schema::from<MyRootConfig>()}, setup};
-  /// @endcode
+  /// @throws std::invalid_argument if the playback path holds no `config.json`, or an override is
+  /// malformed.
   ///
-  /// @param variableMap Parsed options. Must come from @ref parseCommandLine.
+  /// @throws std::runtime_error if a config file cannot be opened.
   ///
-  /// @param schema Cap'n Proto schema for the full config tree, usually
-  /// `capnp::Schema::from<MyRootConfig>()`.
-  ///
-  /// @throws std::invalid_argument If `--playback` does not name a nioc recording, or an override
-  /// is malformed.
-  ///
-  /// @throws std::runtime_error If a config file cannot be opened.
-  ///
-  /// @throws nlohmann::json::parse_error If a config file holds malformed JSON.
-  ///
-  /// @throws kj::Exception If the merged configuration does not match @p schema.
+  /// @throws kj::Exception if the merged JSON does not decode against @p schema.
   Manifest(const boost::program_options::variables_map& variableMap, capnp::StructSchema schema);
 
-  /// @brief Writes the manifest to a recording directory, one file per member.
+  /// @brief Write `config.json` (the merged config) and `manifest.json` (command line plus
+  /// online/playback mode, and the input log when replaying) into @p recordingDir, overwriting any
+  /// existing files.
   ///
-  /// Writes the config to `config.json` (@ref ConfigStore::writeTo) and the run context to
-  /// `manifest.json` (`cmdline`, `mode`, and — in playback — `inputLog`; values the recording
-  /// already answers, like its own location, are skipped). Both files are written once and never
-  /// rewritten.
+  /// @param recordingDir Destination directory; must already exist.
   ///
-  /// @param recordingDir The run's working directory.
-  ///
-  /// @throws std::runtime_error If a file cannot be written.
+  /// @throws std::runtime_error if either file cannot be opened for writing.
   void writeTo(const std::filesystem::path& recordingDir) const;
 };
 

@@ -22,7 +22,7 @@ std::atomic_int& signalCache()
   return signalCache;
 }
 
-void signalHandler(const int signal)
+void signalHandler(const std::int32_t signal)
 {
   signalCache() = signal;
   signalCache().notify_one();
@@ -64,7 +64,7 @@ void SignalCatcher::watch()
   }
 }
 
-void SignalCatcher::setupHandler(const int signal)
+void SignalCatcher::setupHandler(const std::int32_t signal)
 {
   static_cast<void>(std::signal(signal, signalHandler));
 }

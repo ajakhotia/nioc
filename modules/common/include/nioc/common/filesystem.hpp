@@ -12,10 +12,23 @@
 namespace nioc::common
 {
 
-/// @brief Checks that @p path exists and is a directory.
+/// @brief Returns @p path if it names an existing directory; throws otherwise.
 ///
-/// @return @p path unchanged, so you can chain the call.
-/// @throws std::invalid_argument If @p path does not exist or is not a directory.
+/// Use as a guard at an API boundary to reject bad inputs early. It returns the path, so it reads
+/// well inline:
+///
+///     auto dir = requireExistingDirectory(arg);
+///
+/// @param path The directory to check. Passed and returned by value.
+///
+/// @return @p path, unchanged.
+///
+/// @throws std::invalid_argument if @p path does not exist or is not a directory.
+///
+/// @throws std::filesystem::filesystem_error if a filesystem status query fails (for example, a
+/// permission error while looking up the path).
+///
+/// @see requireEmptyDirectory
 inline std::filesystem::path requireExistingDirectory(std::filesystem::path path)
 {
   if(not std::filesystem::exists(path))
@@ -29,10 +42,20 @@ inline std::filesystem::path requireExistingDirectory(std::filesystem::path path
   return path;
 }
 
-/// @brief Checks that @p path exists, is a directory, and is empty.
+/// @brief Returns @p path if it names an existing directory that is empty; throws otherwise.
 ///
-/// @return @p path unchanged, so you can chain the call.
-/// @throws std::invalid_argument If @p path does not exist, is not a directory, or is not empty.
+/// Use to claim a directory as a fresh output location before writing into it.
+///
+/// @param path The directory to check. Passed and returned by value.
+///
+/// @return @p path, unchanged.
+///
+/// @throws std::invalid_argument if @p path does not exist, is not a directory, or is not empty.
+///
+/// @throws std::filesystem::filesystem_error if a filesystem status query fails (for example, a
+/// permission error while looking up the path).
+///
+/// @see requireExistingDirectory
 inline std::filesystem::path requireEmptyDirectory(std::filesystem::path path)
 {
   path = requireExistingDirectory(std::move(path));

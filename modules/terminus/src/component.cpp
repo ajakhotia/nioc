@@ -22,7 +22,6 @@ namespace nioc::terminus
 namespace
 {
 
-/// Maps the config-schema BufferMode onto the concurrent one the inbox understands.
 concurrent::BufferMode toConcurrentBufferMode(const BufferMode bufferMode)
 {
   switch(bufferMode)
@@ -37,7 +36,6 @@ concurrent::BufferMode toConcurrentBufferMode(const BufferMode bufferMode)
       static_cast<std::uint16_t>(bufferMode));
 }
 
-/// Returns the instance name a config block provides; an empty one is a config authoring error.
 std::string requiredName(const capnp::Text::Reader name)
 {
   if(name.size() == 0)

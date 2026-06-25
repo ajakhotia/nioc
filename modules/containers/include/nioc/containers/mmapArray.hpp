@@ -14,18 +14,29 @@
 namespace nioc::containers
 {
 
-/// @brief A fixed-size, writable, memory-mapped array of @p ValueType.
+/// @brief A writable, file-backed array of `ValueType` whose storage is a memory-mapped file.
 ///
-/// Creates its file at a fixed element count and maps it read-write. The elements form a contiguous
-/// range whose address is stable for the object's lifetime, so a pointer or iterator into it stays
-/// valid until the object is destroyed. Read through a const array, write through a non-const one.
-/// A contiguous range, so it converts to a `std::span` and works with the standard algorithms.
+/// Use this as a fixed-size, std-like contiguous container that persists to disk. Reads and writes
+/// go straight to the mapping, so every element write reaches the backing file. The constructor
+/// creates or truncates the file and maps it read-write, so any prior file contents are discarded
+/// and every element starts zero-filled. Element access is unchecked; an out-of-range index is
+/// undefined behavior.
 ///
-/// Allocate it on the heap and share it through a pointer: the type is neither copyable nor
-/// movable, so a pointer or iterator never outlives its mapping.
+/// Example:
 ///
-/// @tparam ValueType Element type: a non-const, non-volatile, trivially copyable type (its bytes
-/// are its whole value). Constness is the container's job — use @ref MmapConstArray for read-only.
+///     // 1024 doubles backed by /data/scratch.bin, all initially 0.0.
+///     MmapArray<double> a{"/data/scratch.bin", 1024};
+///     a[0] = 3.14; // persisted to the file
+///     for (auto x : a) { ... }
+///
+/// The array is pinned to its mapped address: it is neither copyable nor movable, since it owns the
+/// mapping and the file descriptor. Destruction unmaps the region and closes the file. It is not
+/// thread-safe; synchronize concurrent access externally. Other processes mapping the same file
+/// share the same bytes.
+///
+/// @tparam ValueType Element type. Must be trivially copyable and have no top-level cv-qualifiers.
+///
+/// @see MmapConstArray for read-only mapping of an existing file, MmapRegion
 template<typename ValueType>
   requires std::is_trivially_copyable_v<ValueType> and
            std::is_same_v<ValueType, std::remove_cv_t<ValueType>>
@@ -42,12 +53,14 @@ public:
   using iterator = pointer;
   using const_iterator = const_pointer;
 
-  /// @brief Creates @p path holding @p count elements and maps it for writing.
+  /// @brief Create or truncate the file at @p path to hold @p count elements and map it read-write.
   ///
-  /// @param path File to create; its contents are discarded if it already exists. Parent
-  /// directories are created as needed.
+  /// Creates any missing parent directories. Discards existing file contents and zero-fills the new
+  /// storage.
   ///
-  /// @param count Number of elements.
+  /// @param path Backing file. Created if absent, truncated if present.
+  ///
+  /// @param count Number of elements. Must be non-zero; a zero-length mapping is rejected.
   ///
   /// @throws std::runtime_error If the file cannot be created, sized, or mapped.
   MmapArray(std::filesystem::path path, const size_type count):
@@ -65,69 +78,73 @@ public:
 
   MmapArray& operator=(MmapArray&&) noexcept = delete;
 
-  /// @brief Returns a pointer to the first element.
+  /// @brief Pointer to the first element. Const-qualified when called on a `const` array.
+  ///
+  /// Valid for the array's lifetime.
   [[nodiscard]] auto data(this auto&& self) noexcept
   {
     return asElementPointer<ValueType>(self.mRegion.bytes());
   }
 
-  /// @brief Returns a reference to the element at @p index.
+  /// @brief Reference to the element at @p index. Const-qualified when called on a `const` array.
   ///
-  /// @param index Element position, less than @ref size. Out-of-range access is undefined.
+  /// @param index Element position. Not bounds-checked; must be less than `size()`.
   [[nodiscard]] decltype(auto) operator[](this auto&& self, const size_type index) noexcept
   {
     return self.data()[index]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
   }
 
-  /// @brief Returns an iterator to the first element.
+  /// @brief Iterator to the first element. Const-qualified when called on a `const` array.
   [[nodiscard]] auto begin(this auto&& self) noexcept
   {
     return self.data();
   }
 
-  /// @brief Returns an iterator one past the last element.
+  /// @brief Iterator one past the last element. Const-qualified when called on a `const` array.
   [[nodiscard]] auto end(this auto&& self) noexcept
   {
     return self.data() + self.size(); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
   }
 
-  /// @brief Returns a const iterator to the first element.
+  /// @brief Const iterator to the first element.
   [[nodiscard]] const_iterator cbegin() const noexcept
   {
     return begin();
   }
 
-  /// @brief Returns a const iterator one past the last element.
+  /// @brief Const iterator one past the last element.
   [[nodiscard]] const_iterator cend() const noexcept
   {
     return end();
   }
 
-  /// @brief Returns whether the array holds no elements.
+  /// @brief True if the array holds no elements.
   [[nodiscard]] bool empty() const noexcept
   {
     return mRegion.empty();
   }
 
-  /// @brief Returns the number of elements.
+  /// @brief Number of elements currently mapped.
   [[nodiscard]] size_type size() const noexcept
   {
     return mRegion.size() / sizeof(ValueType);
   }
 
-  /// @brief Resizes the backing file to @p count elements.
+  /// @brief Truncate or extend the on-disk backing file to @p count elements; does not remap.
   ///
-  /// Drops the elements past @p count, the way resizing a `std::vector` smaller would. The mapping
-  /// is unchanged, so accessing elements at or beyond @p count afterward is undefined; call this
-  /// only once those elements are done with.
+  /// Only the file's length changes. The mapping is untouched, so `size()`, `data()`, and the
+  /// iterator range keep their original element count and stay valid. Typically used to trim
+  /// trailing slack before destruction. On failure, logs an error and leaves the file unchanged.
   ///
-  /// @param count Number of leading elements to keep; must not exceed @ref size.
+  /// @param count New element count on disk. May be larger or smaller than the mapped count.
   void resize(const size_type count) noexcept
   {
     mRegion.resize(count * sizeof(ValueType));
   }
 
 private:
+  /// The read-write memory mapping and its backing file. Owns both; sizing this region in bytes
+  /// defines the element count, and every element access reads or writes through it.
   MmapRegion mRegion;
 };
 

@@ -18,7 +18,6 @@ namespace nioc::terminus
 namespace
 {
 
-/// Returns the instance name a config block provides; an empty one is a config authoring error.
 std::string requiredName(const capnp::Text::Reader name)
 {
   if(name.size() == 0)

@@ -65,13 +65,11 @@ fs::path resource()
   return testDataDir() / "testResource.bin";
 }
 
-/// Shares testResource.bin's basename from a different directory to exercise the collision guard.
 fs::path resourceDuplicate()
 {
   return testDataDir() / "duplicate" / "testResource.bin";
 }
 
-/// Recording root for these tests; Port creates it on demand and names a unique recording under it.
 fs::path logRoot()
 {
   return fs::temp_directory_path() / "niocLogs";
@@ -82,7 +80,6 @@ std::string sampleCommandLine()
   return "myRobot --config /etc/foo.json";
 }
 
-/// Setup that builds no routines; these tests exercise the Port's recording duties directly.
 void emptySetup(
     Port& /*unused*/,
     Port::Drivers& /*unused*/,
@@ -91,7 +88,6 @@ void emptySetup(
 {
 }
 
-/// A manifest recording under logRoot() with the standard test config and no extras.
 Manifest testManifest(std::string commandLine = "")
 {
   return Manifest{
@@ -100,7 +96,6 @@ Manifest testManifest(std::string commandLine = "")
   };
 }
 
-/// Publishes one (gap) message on @p topic through a freshly minted publisher.
 void publishGap(Port& port, const std::string_view topic)
 {
   auto publisher = port.publisher<TestSchema>(topic);
@@ -480,7 +475,6 @@ TEST(PortTest, everyPublishedMessageIsRecordedInOrder)
 
 TEST(PortTest, waitReturnsFalseOnceEveryDriverIsDone)
 {
-  /// Reports Continue for a scripted number of runs, then Done; publishes nothing.
   class ScriptedDriver final: public Driver
   {
   public:

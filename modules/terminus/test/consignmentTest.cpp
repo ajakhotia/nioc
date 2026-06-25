@@ -20,7 +20,6 @@ namespace nioc::terminus
 namespace
 {
 
-/// A self-backed crate over a small heap buffer, for exercising Consignment without a chronicle.
 chronicle::Crate makeCrate()
 {
   constexpr auto kBufferSize = std::size_t{8};

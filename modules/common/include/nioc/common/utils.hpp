@@ -10,15 +10,23 @@
 namespace nioc::common
 {
 
-/// @brief Returns the program name: @p argV[0] with leading directories stripped.
+/// @brief Returns the running program's name: the filename part of `argV[0]`, with any leading
+/// directory path stripped.
 ///
-/// Use it in a usage or help header.
+/// Example:
 ///
-/// @param argC Argument count, as received by main.
+///     int main(int argC, char** argV)
+///     {
+///       const std::string name = nioc::common::programName(argC, argV); // e.g. "myApp"
+///     }
 ///
-/// @param argV Argument vector, as received by main.
+/// @param argC Argument count, passed straight through from `main`. When `<= 0`, the result is an
+/// empty string and @p argV is never dereferenced.
 ///
-/// @return The basename of @p argV[0]. Empty string when @p argC is 0.
+/// @param argV Argument vector, passed straight through from `main`. May be `nullptr` only when
+/// @p argC `<= 0`.
+///
+/// @return The basename of `argV[0]`, or an empty string when @p argC `<= 0`.
 std::string programName(int argC, const char* const* argV);
 
 } // namespace nioc::common

@@ -23,8 +23,6 @@ namespace po = boost::program_options;
 namespace
 {
 
-/// Returns the ordered config file layers @p context and @p variableMap imply: in playback the
-/// replayed recording's own config.json comes first, so this invocation's files patch it.
 std::vector<fs::path> configLayers(const RunContext& context, const po::variables_map& variableMap)
 {
   auto configPaths = std::vector<fs::path>{};

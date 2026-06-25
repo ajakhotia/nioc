@@ -10,39 +10,39 @@
 
 namespace nioc::common
 {
-/// @brief Thread-safe wrapper for a value.
+/// @brief A thread-safe wrapper that owns one value and exposes it only through caller-supplied
+/// callables run while a lock is held.
 ///
-/// Access the value only through a callable you pass in. Reading (const access, or @ref cExecute)
-/// gives the callable a const reference under a shared lock, so readers run at the same time.
-/// Writing (mutable access) gives a mutable reference under an exclusive lock, so a writer runs
-/// alone. Cannot be copied or moved; use @ref copy or @ref move to get the value out.
+/// You never get a raw reference to the value. Instead you hand in a callable; it receives a
+/// reference to the value for the duration of the call, under a lock. Reads take a shared lock and
+/// can run at the same time as other reads; writes take an exclusive lock and run alone. This makes
+/// every access to the value safe across threads, even if the value's own type is not thread-safe.
 ///
-/// @code
-/// nioc::common::Locked<int> counter(0);
+/// Example:
 ///
-/// // Read: the lambda gets a const reference.
-/// const int value = counter([](const auto& val) { return val; });
+///     Locked<std::vector<int>> shared{};
+///     shared.execute([](auto& v) { v.push_back(42); }); // exclusive lock
+///     const auto size = shared.cExecute([](const auto& v) { return v.size(); }); // shared lock
 ///
-/// // Write: the lambda gets a mutable reference.
-/// counter([](auto& val) { val++; });
+/// Not copyable or movable, because it owns a `std::shared_mutex`.
 ///
-/// // The call returns whatever the lambda returns.
-/// const bool wasZero = counter([](auto& val) {
-///   const bool result = (val == 0);
-///   val = 42;
-///   return result;
-/// });
-/// @endcode
+/// @tparam ValueType_ The guarded value's type. Any top-level `const` is stripped (see
+/// `ValueType`), so a value declared `const` can still be mutated under the exclusive lock.
 ///
-/// @tparam ValueType_ Type of the guarded value.
+/// @see cExecute, execute, operator()
 template<typename ValueType_>
 class Locked
 {
 public:
-  /// @brief The guarded value type, with any top-level const removed.
+  /// The stored value type: `ValueType_` with any top-level `const` removed.
   using ValueType = std::remove_const_t<ValueType_>;
 
-  /// @brief Builds the guarded value in place from @p args.
+  /// @brief Constructs the guarded value in place by forwarding the arguments to its constructor.
+  ///
+  /// @tparam Args The guarded value's constructor argument types.
+  ///
+  /// @param args Forwarded to `ValueType`'s constructor. With no arguments the value is
+  /// value-initialized.
   template<typename... Args>
   explicit Locked(Args&&... args): mLockedValue{std::forward<Args>(args)...}
   {
@@ -58,8 +58,15 @@ public:
 
   Locked& operator=(Locked&&) = delete;
 
-  /// @brief Runs @p operation with a const reference to the value, under a shared lock.
-  /// @return Whatever @p operation returns.
+  /// @brief Runs a read-only operation under a shared lock and returns whatever it returns.
+  ///
+  /// @tparam Operation The callable's type.
+  ///
+  /// @param operation Called with a `const` reference to the value. Must not let that reference
+  /// escape, and must not call back into the same `Locked` (that deadlocks). Other `cExecute` calls
+  /// may run concurrently. Anything it throws propagates out unchanged.
+  ///
+  /// @return The result of `operation`, with its exact type and value category preserved.
   template<typename Operation>
   decltype(auto) cExecute(Operation&& operation) const
   {
@@ -67,22 +74,35 @@ public:
     return std::forward<Operation>(operation)(mLockedValue);
   }
 
-  /// @brief Same as @ref cExecute.
+  /// @brief Runs a read-only operation under a shared lock; identical to `cExecute`.
+  ///
+  /// @see cExecute
   template<typename Operation>
   decltype(auto) execute(Operation&& operation) const
   {
     return cExecute(std::forward<Operation>(operation));
   }
 
-  /// @brief Same as @ref cExecute.
+  /// @brief Call syntax for the read-only `cExecute`: `locked(op)` runs `op` under a shared lock.
+  ///
+  /// @see cExecute
   template<typename Operation>
   decltype(auto) operator()(Operation&& operation) const
   {
     return cExecute(std::forward<Operation>(operation));
   }
 
-  /// @brief Runs @p operation with a mutable reference to the value, under an exclusive lock.
-  /// @return Whatever @p operation returns.
+  /// @brief Runs a mutating operation under an exclusive lock and returns whatever it returns.
+  ///
+  /// Blocks until no shared or exclusive lock is held, then runs alone.
+  ///
+  /// @tparam Operation The callable's type.
+  ///
+  /// @param operation Called with a mutable reference to the value. Must not let that reference
+  /// escape, and must not call back into the same `Locked` (that deadlocks). Anything it throws
+  /// propagates out unchanged.
+  ///
+  /// @return The result of `operation`, with its exact type and value category preserved.
   template<typename Operation>
   decltype(auto) execute(Operation&& operation)
   {
@@ -90,14 +110,20 @@ public:
     return std::forward<Operation>(operation)(mLockedValue);
   }
 
-  /// @brief Same as the mutable @ref execute.
+  /// @brief Call syntax for the mutating `execute`: `locked(op)` runs `op` under an exclusive lock.
+  ///
+  /// @see execute
   template<typename Operation>
   decltype(auto) operator()(Operation&& operation)
   {
     return execute(std::forward<Operation>(operation));
   }
 
-  /// @brief Copy-assigns @p other to the value, under an exclusive lock.
+  /// @brief Copy-assigns `other` into the guarded value under an exclusive lock.
+  ///
+  /// @tparam OtherType The assigned value's type.
+  ///
+  /// @param other Copied into the guarded value via its copy-assignment.
   template<typename OtherType>
   Locked& operator=(const OtherType& other)
   {
@@ -105,7 +131,11 @@ public:
     return *this;
   }
 
-  /// @brief Move-assigns @p other to the value, under an exclusive lock.
+  /// @brief Move-assigns `other` into the guarded value under an exclusive lock.
+  ///
+  /// @tparam OtherType The assigned value's type.
+  ///
+  /// @param other An rvalue moved into the guarded value, leaving it in its moved-from state.
   template<typename OtherType>
   Locked& operator=(OtherType&& other)
   {
@@ -115,104 +145,117 @@ public:
     return *this;
   }
 
-  /// @brief Returns a copy of the value.
+  /// @brief Returns a copy of the guarded value, taken under a shared lock.
   ValueType copy() const
   {
     return cExecute([](const auto value) { return value; });
   }
 
-  /// @brief Moves the value out. The wrapper is then moved-from but still assignable.
+  /// @brief Moves the guarded value out under an exclusive lock, leaving it in its moved-from
+  /// state.
   ValueType move()
   {
     return execute([](auto& value) { return std::move(value); });
   }
 
 private:
-  /// Guards mLockedValue against concurrent access.
+  /// Guards every access to `mLockedValue`. A shared lock serves reads; an exclusive lock serves
+  /// writes. Mutable so that `const` member functions can take a shared lock.
   mutable std::shared_mutex mMutex;
 
-  /// The protected value.
+  /// The guarded value. Touched only while `mMutex` is held.
   ValueType mLockedValue;
 };
 
-/// @brief Compares the protected value with @p otherValue, under a shared lock.
+/// @brief Compares the guarded value with `otherValue`, reading the guarded value under a shared
+/// lock.
+///
+/// The full relational family (`==`, `!=`, `<`, `<=`, `>`, `>=`, with the `Locked` on either side)
+/// follows this same pattern. Each call locks independently and is atomic with respect to writes,
+/// but a sequence of comparisons is not collectively atomic.
+///
+/// @return The result of `value == otherValue`.
 template<typename ValueType, typename Other>
 bool operator==(const Locked<ValueType>& lockedValue, const Other& otherValue)
 {
   return lockedValue([&otherValue](const auto& value) { return value == otherValue; });
 }
 
-/// @brief Compares @p otherValue with the protected value, under a shared lock.
+/// @brief Reversed-argument `==`: compares `otherValue` with the guarded value under a shared lock.
 template<typename Other, typename ValueType>
 bool operator==(const Other& otherValue, const Locked<ValueType>& lockedValue)
 {
   return lockedValue([&otherValue](const auto& value) { return otherValue == value; });
 }
 
-/// @brief Compares the protected value with @p otherValue, under a shared lock.
+/// @brief Compares the guarded value with `otherValue` for inequality under a shared lock.
 template<typename ValueType, typename Other>
 bool operator!=(const Locked<ValueType>& lockedValue, const Other& otherValue)
 {
   return lockedValue([&otherValue](const auto& value) { return value != otherValue; });
 }
 
-/// @brief Compares @p otherValue with the protected value, under a shared lock.
+/// @brief Reversed-argument `!=`: compares `otherValue` with the guarded value under a shared lock.
 template<typename Other, typename ValueType>
 bool operator!=(const Other& otherValue, const Locked<ValueType>& lockedValue)
 {
   return lockedValue([&otherValue](const auto& value) { return otherValue != value; });
 }
 
-/// @brief Compares the protected value with @p otherValue, under a shared lock.
+/// @brief Tests whether the guarded value is less than `otherValue` under a shared lock.
 template<typename ValueType, typename Other>
 bool operator<(const Locked<ValueType>& lockedValue, const Other& otherValue)
 {
   return lockedValue([&otherValue](const auto& value) { return value < otherValue; });
 }
 
-/// @brief Compares @p otherValue with the protected value, under a shared lock.
+/// @brief Tests whether `otherValue` is less than the guarded value under a shared lock.
 template<typename Other, typename ValueType>
 bool operator<(const Other& otherValue, const Locked<ValueType>& lockedValue)
 {
   return lockedValue([&otherValue](const auto& value) { return otherValue < value; });
 }
 
-/// @brief Compares the protected value with @p otherValue, under a shared lock.
+/// @brief Tests whether the guarded value is less than or equal to `otherValue` under a shared
+/// lock.
 template<typename ValueType, typename Other>
 bool operator<=(const Locked<ValueType>& lockedValue, const Other& otherValue)
 {
   return lockedValue([&otherValue](const auto& value) { return value <= otherValue; });
 }
 
-/// @brief Compares @p otherValue with the protected value, under a shared lock.
+/// @brief Tests whether `otherValue` is less than or equal to the guarded value under a shared
+/// lock.
 template<typename Other, typename ValueType>
 bool operator<=(const Other& otherValue, const Locked<ValueType>& lockedValue)
 {
   return lockedValue([&otherValue](const auto& value) { return otherValue <= value; });
 }
 
-/// @brief Compares the protected value with @p otherValue, under a shared lock.
+/// @brief Tests whether the guarded value is greater than `otherValue` under a shared lock.
 template<typename ValueType, typename Other>
 bool operator>(const Locked<ValueType>& lockedValue, const Other& otherValue)
 {
   return lockedValue([&otherValue](const auto& value) { return value > otherValue; });
 }
 
-/// @brief Compares @p otherValue with the protected value, under a shared lock.
+/// @brief Tests whether `otherValue` is greater than the guarded value under a shared lock.
 template<typename Other, typename ValueType>
 bool operator>(const Other& otherValue, const Locked<ValueType>& lockedValue)
 {
   return lockedValue([&otherValue](const auto& value) { return otherValue > value; });
 }
 
-/// @brief Compares the protected value with @p otherValue, under a shared lock.
+/// @brief Tests whether the guarded value is greater than or equal to `otherValue` under a shared
+/// lock.
 template<typename ValueType, typename Other>
 bool operator>=(const Locked<ValueType>& lockedValue, const Other& otherValue)
 {
   return lockedValue([&otherValue](const auto& value) { return value >= otherValue; });
 }
 
-/// @brief Compares @p otherValue with the protected value, under a shared lock.
+/// @brief Tests whether `otherValue` is greater than or equal to the guarded value under a shared
+/// lock.
 template<typename Other, typename ValueType>
 bool operator>=(const Other& otherValue, const Locked<ValueType>& lockedValue)
 {

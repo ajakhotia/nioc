@@ -20,14 +20,12 @@ namespace po = boost::program_options;
 namespace
 {
 
-/// Converts a repeatable string option's values into paths.
 std::vector<fs::path> pathsFromOption(const po::variables_map& variableMap, const std::string& key)
 {
   const auto& values = variableMap.at(key).as<std::vector<std::string>>();
   return {values.begin(), values.end()};
 }
 
-/// Returns a single-valued path option, or an empty path when absent.
 fs::path pathFromOption(const po::variables_map& variableMap, const std::string& key)
 {
   if(not variableMap.contains(key))
@@ -37,7 +35,6 @@ fs::path pathFromOption(const po::variables_map& variableMap, const std::string&
   return variableMap.at(key).as<std::string>();
 }
 
-/// Returns the verbatim launch command @ref parseCommandLine injects, or empty when absent.
 std::string commandLineFromOption(const po::variables_map& variableMap)
 {
   if(not variableMap.contains("commandLine"))
