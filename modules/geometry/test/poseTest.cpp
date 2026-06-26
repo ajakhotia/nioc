@@ -89,9 +89,12 @@ void poseParamCheck(
 {
   // Normalize the quaternion portion of the params.
   {
-    const auto norm = Scalar(std::sqrt(
-        std::pow(params[0], Scalar(2)) + std::pow(params[1], Scalar(2)) +
-        std::pow(params[2], Scalar(2)) + std::pow(params[3], Scalar(2))));
+    const auto norm = Scalar(
+        std::sqrt(
+            std::pow(params[0], Scalar(2)) +
+            std::pow(params[1], Scalar(2)) +
+            std::pow(params[2], Scalar(2)) +
+            std::pow(params[3], Scalar(2))));
 
     auto range = std::span(params.begin(), 4U);
     std::transform(

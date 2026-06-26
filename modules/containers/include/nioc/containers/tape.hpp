@@ -47,7 +47,8 @@ namespace nioc::containers
 ///
 /// @see claim, emplace, rewind
 template<typename Storage>
-  requires std::ranges::contiguous_range<Storage> and std::ranges::sized_range<Storage> and
+  requires std::ranges::contiguous_range<Storage> and
+           std::ranges::sized_range<Storage> and
            std::is_trivially_copyable_v<std::ranges::range_value_t<Storage>>
 class Tape
 {

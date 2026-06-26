@@ -38,7 +38,8 @@ fs::path createWorkingDir(const fs::path& logRoot)
 {
   fs::create_directories(logRoot);
 
-  const auto name = common::iso8601UtcFormat(std::chrono::system_clock::now()) + "_" +
+  const auto name = common::iso8601UtcFormat(std::chrono::system_clock::now()) +
+                    "_" +
                     boost::uuids::to_string(boost::uuids::random_generator_pure()());
 
   const auto dir = logRoot / name;

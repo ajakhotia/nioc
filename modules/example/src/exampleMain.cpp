@@ -51,14 +51,16 @@ int main(const int argC, const char* const* const argV)
           const auto config = port.config<nioc::example::ExampleMainConfig>();
 
           // ExampleComponent1 consumes Sample3 and produces Sample2.
-          components.push_back(std::make_shared<nioc::example::ExampleComponent1>(
-              port,
-              config.getExampleComponent1()));
+          components.push_back(
+              std::make_shared<nioc::example::ExampleComponent1>(
+                  port,
+                  config.getExampleComponent1()));
 
           // ExampleComponent2 consumes Sample1, Sample2, and Sample3 and logs the running counts.
-          components.push_back(std::make_shared<nioc::example::ExampleComponent2>(
-              port,
-              config.getExampleComponent2()));
+          components.push_back(
+              std::make_shared<nioc::example::ExampleComponent2>(
+                  port,
+                  config.getExampleComponent2()));
 
           // ExampleDriver produces Sample1 and Sample3.
           drivers.push_back(
