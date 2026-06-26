@@ -27,6 +27,8 @@ namespace fs = std::filesystem;
 // Read-only by construction, and a contiguous range with raw-pointer iterators.
 static_assert(
     std::is_same_v<decltype(std::declval<const MmapConstArray<int>&>().data()), const int*>);
+static_assert(
+    std::is_same_v<decltype(std::declval<const MmapConstArray<int>&>().at(0)), const int&>);
 static_assert(std::is_same_v<MmapConstArray<int>::const_iterator, const int*>);
 static_assert(std::contiguous_iterator<MmapConstArray<int>::const_iterator>);
 static_assert(std::ranges::contiguous_range<MmapConstArray<int>>);
@@ -84,6 +86,21 @@ TEST(MmapConstArray, openingAFileThatIsNotAWholeNumberOfElementsThrows)
   static_cast<void>(MmapArray<std::byte>{path, 13}); // 13 is not a multiple of sizeof(int32_t)
 
   EXPECT_THROW((MmapConstArray<std::int32_t>{path}), std::runtime_error);
+}
+
+TEST(MmapConstArray, atReadsElementsAndThrowsOutOfRange)
+{
+  constexpr auto kCount = std::size_t{5};
+  const auto path = writeRamp("constArrayAt", kCount);
+
+  const auto array = MmapConstArray<std::int32_t>{path};
+  for(auto index = std::size_t{0}; index < kCount; ++index)
+  {
+    EXPECT_EQ(array.at(index), static_cast<std::int32_t>(index));
+  }
+
+  EXPECT_NO_THROW(static_cast<void>(array.at(kCount - 1)));
+  EXPECT_THROW(static_cast<void>(array.at(kCount)), std::out_of_range);
 }
 
 } // namespace nioc::containers

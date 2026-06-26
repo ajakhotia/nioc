@@ -14,6 +14,7 @@
 #include <numeric>
 #include <ranges>
 #include <span>
+#include <stdexcept>
 #include <string_view>
 #include <type_traits>
 #include <utility>
@@ -31,6 +32,8 @@ static_assert(std::is_same_v<decltype(std::declval<MmapArray<int>&>().data()), i
 static_assert(std::is_same_v<decltype(std::declval<const MmapArray<int>&>().data()), const int*>);
 static_assert(std::is_same_v<decltype(std::declval<MmapArray<int>&>()[0]), int&>);
 static_assert(std::is_same_v<decltype(std::declval<const MmapArray<int>&>()[0]), const int&>);
+static_assert(std::is_same_v<decltype(std::declval<MmapArray<int>&>().at(0)), int&>);
+static_assert(std::is_same_v<decltype(std::declval<const MmapArray<int>&>().at(0)), const int&>);
 static_assert(std::is_same_v<MmapArray<int>::iterator, int*>);
 static_assert(std::contiguous_iterator<MmapArray<int>::iterator>);
 static_assert(std::ranges::contiguous_range<MmapArray<int>>);
@@ -92,6 +95,34 @@ TEST(MmapArray, resizeReducesTheElementCount)
 
   const auto array = MmapConstArray<int>{path};
   EXPECT_EQ(array.size(), 4U);
+}
+
+TEST(MmapArray, atReturnsTheElementAndIsWritable)
+{
+  constexpr auto kCount = std::size_t{4};
+  const auto path = freshPath("arrayAt");
+
+  auto array = MmapArray<int>{path, kCount};
+  for(auto index = std::size_t{0}; index < kCount; ++index)
+  {
+    array.at(index) = static_cast<int>(index * 10);
+  }
+
+  for(auto index = std::size_t{0}; index < kCount; ++index)
+  {
+    EXPECT_EQ(array.at(index), static_cast<int>(index * 10));
+    EXPECT_EQ(&array.at(index), &array[index]);
+  }
+}
+
+TEST(MmapArray, atThrowsWhenIndexIsOutOfRange)
+{
+  const auto path = freshPath("arrayAtThrows");
+  auto array = MmapArray<int>{path, 3};
+
+  EXPECT_NO_THROW(static_cast<void>(array.at(2)));
+  EXPECT_THROW(static_cast<void>(array.at(3)), std::out_of_range);
+  EXPECT_THROW(static_cast<void>(array.at(99)), std::out_of_range);
 }
 
 } // namespace nioc::containers

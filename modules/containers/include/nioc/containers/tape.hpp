@@ -100,6 +100,23 @@ public:
     return self.data()[index]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
   }
 
+  /// @brief Reference to the element at @p index, bounds-checked. Const through a const tape.
+  ///
+  /// @param index Element offset.
+  ///
+  /// @throws std::out_of_range if @p index is not less than `size()`.
+  [[nodiscard]] decltype(auto) at(this auto&& self, const size_type index)
+  {
+    if(index >= self.size())
+    {
+      common::throwException<std::out_of_range>(
+          "Index {} is out of range for a tape of size {}.",
+          index,
+          self.size());
+    }
+    return std::forward<decltype(self)>(self)[index];
+  }
+
   /// @brief Iterator to the start of the claimed prefix [0, size()). Const through a const tape.
   ///
   /// Concurrent claims can extend the range while you iterate, so snapshot size() and iterate

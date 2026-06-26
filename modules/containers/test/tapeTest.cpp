@@ -16,6 +16,7 @@
 #include <numeric>
 #include <ranges>
 #include <span>
+#include <stdexcept>
 #include <string_view>
 #include <thread>
 #include <type_traits>
@@ -38,6 +39,8 @@ static_assert(std::is_same_v<decltype(std::declval<IntArrayTape&>().claim(1)), s
 static_assert(std::is_same_v<decltype(std::declval<IntArrayTape&>().emplace(0)), int*>);
 static_assert(std::is_same_v<decltype(std::declval<IntArrayTape&>().data()), int*>);
 static_assert(std::is_same_v<decltype(std::declval<const IntArrayTape&>().data()), const int*>);
+static_assert(std::is_same_v<decltype(std::declval<IntArrayTape&>().at(0)), int&>);
+static_assert(std::is_same_v<decltype(std::declval<const IntArrayTape&>().at(0)), const int&>);
 
 // shrink_to_fit is available when the storage can be resized (e.g. std::vector, MmapArray).
 static_assert(requires(Tape<std::vector<int>> tape) { tape.shrink_to_fit(); });
@@ -120,7 +123,7 @@ TEST(Tape, rewindIsANoOpOnceALaterClaimStrandsTheTail)
 
   const auto first = tape.claim(4);
   ASSERT_EQ(first.size(), 4U);
-  const auto second = tape.claim(2); // moves the cursor off the tail of `first`
+  const auto second = tape.claim(2);
   ASSERT_EQ(second.size(), 2U);
   EXPECT_EQ(tape.size(), 6U);
 
@@ -307,6 +310,33 @@ TEST(Tape, concurrentVariableClaimsTileTheWrittenRegion)
   }
   EXPECT_EQ(static_cast<std::size_t>(next), tape.size());
   EXPECT_LE(tape.size(), kCapacity);
+}
+
+TEST(Tape, atReturnsClaimedElementsAndIsWritable)
+{
+  auto tape = Tape<std::array<int, 8>>{};
+  const auto slot = tape.claim(3);
+  ASSERT_EQ(slot.size(), 3U);
+
+  tape.at(0) = 10;
+  tape.at(1) = 20;
+  tape.at(2) = 30;
+
+  EXPECT_EQ(tape.at(0), 10);
+  EXPECT_EQ(tape.at(2), 30);
+  EXPECT_EQ(&tape.at(1), &tape[1]);
+}
+
+TEST(Tape, atThrowsBeyondTheClaimedSize)
+{
+  auto tape = Tape<std::array<int, 8>>{};
+  static_cast<void>(tape.claim(2)); // size() == 2, although capacity is 8
+
+  EXPECT_NO_THROW(static_cast<void>(tape.at(1)));
+  EXPECT_THROW(
+      static_cast<void>(tape.at(2)),
+      std::out_of_range); // index == size(), within capacity
+  EXPECT_THROW(static_cast<void>(tape.at(8)), std::out_of_range);
 }
 
 } // namespace
