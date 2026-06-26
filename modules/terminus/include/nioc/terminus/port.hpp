@@ -126,7 +126,7 @@ public:
   ///
   /// @throws std::logic_error if the run's config was built without a schema.
   template<typename Schema>
-  [[nodiscard]] typename Schema::Reader config() const
+  [[nodiscard]] Schema::Reader config() const
   {
     return mManifest.mConfigStore.get<Schema>();
   }

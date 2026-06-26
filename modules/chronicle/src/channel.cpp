@@ -118,7 +118,7 @@ void Channel::append(const TimelineEntry& entry)
         "Timeline capacity of {} entries is exhausted.",
         mTimeline.capacity());
   }
-  slot[0] = entry;
+  slot.front() = entry;
 }
 
 } // namespace nioc::chronicle

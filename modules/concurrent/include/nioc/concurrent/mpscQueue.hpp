@@ -45,32 +45,29 @@ namespace nioc::concurrent
 ///
 /// @see OverwritingMpsc, DroppingMpsc, UnboundedMpsc, AnyMpsc
 template<typename Queue>
-concept MpscQueue =
-    requires(Queue queue, const Queue& constQueue, typename Queue::value_type value) {
-      typename Queue::value_type;
-      typename Queue::size_type;
+concept MpscQueue = requires(Queue queue, const Queue& constQueue, Queue::value_type value) {
+  typename Queue::value_type;
+  typename Queue::size_type;
 
-      /// Enqueue by move. Returns the value dropped to make room when a bounded queue is full, else
-      /// `nullopt`. Callable from any producer thread.
-      { queue.push(std::move(value)) } -> std::same_as<std::optional<typename Queue::value_type>>;
+  /// Enqueue by move. Returns the value dropped to make room when a bounded queue is full, else
+  /// `nullopt`. Callable from any producer thread.
+  { queue.push(std::move(value)) } -> std::same_as<std::optional<typename Queue::value_type>>;
 
-      /// Construct an element in place and enqueue it. Same drop-return semantics as `push`.
-      {
-        queue.emplace(std::move(value))
-      } -> std::same_as<std::optional<typename Queue::value_type>>;
+  /// Construct an element in place and enqueue it. Same drop-return semantics as `push`.
+  { queue.emplace(std::move(value)) } -> std::same_as<std::optional<typename Queue::value_type>>;
 
-      /// Remove and return the oldest value, or `nullopt` when empty. Call only from the single
-      /// consumer thread.
-      { queue.tryPop() } -> std::same_as<std::optional<typename Queue::value_type>>;
+  /// Remove and return the oldest value, or `nullopt` when empty. Call only from the single
+  /// consumer thread.
+  { queue.tryPop() } -> std::same_as<std::optional<typename Queue::value_type>>;
 
-      /// Number of queued elements. A momentary snapshot; racy under concurrent producers, so use
-      /// it for metrics, not control flow.
-      { constQueue.size() } -> std::same_as<typename Queue::size_type>;
+  /// Number of queued elements. A momentary snapshot; racy under concurrent producers, so use
+  /// it for metrics, not control flow.
+  { constQueue.size() } -> std::same_as<typename Queue::size_type>;
 
-      /// Fraction of capacity in use, in [0, 1]: 1.0 when a bounded queue is full, 0.0 for an
-      /// unbounded queue. A momentary snapshot; racy. Signals how close a bounded queue is to
-      /// dropping.
-      { constQueue.occupancy() } -> std::same_as<double>;
-    };
+  /// Fraction of capacity in use, in [0, 1]: 1.0 when a bounded queue is full, 0.0 for an
+  /// unbounded queue. A momentary snapshot; racy. Signals how close a bounded queue is to
+  /// dropping.
+  { constQueue.occupancy() } -> std::same_as<double>;
+};
 
 } // namespace nioc::concurrent

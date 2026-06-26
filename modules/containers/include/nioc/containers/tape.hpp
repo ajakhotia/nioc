@@ -114,6 +114,7 @@ public:
           index,
           self.size());
     }
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
     return std::forward<decltype(self)>(self)[index];
   }
 

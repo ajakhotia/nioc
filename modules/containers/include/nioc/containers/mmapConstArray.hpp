@@ -122,6 +122,7 @@ public:
           index,
           size());
     }
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
     return (*this)[index];
   }
 

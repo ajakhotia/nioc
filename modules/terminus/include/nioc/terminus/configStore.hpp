@@ -107,7 +107,7 @@ public:
   ///
   /// @throws std::logic_error if the store was constructed without a schema.
   template<typename Schema>
-  [[nodiscard]] typename Schema::Reader get() const
+  [[nodiscard]] Schema::Reader get() const
   {
     if(not mDecodedConfig)
     {

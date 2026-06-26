@@ -144,7 +144,7 @@ public:
   /// @brief Return the rotation angle in radians, in the range `[0, 2*pi)`.
   [[nodiscard]] decltype(auto) angle() const noexcept
   {
-    using Scalar = typename Derived::Scalar;
+    using Scalar = Derived::Scalar;
     return Scalar(4) * std::atan(cDerived().cParameters().norm());
   }
 
@@ -169,7 +169,7 @@ public:
   /// The result applies @p rhsBase first, then `*this`, matching rotation-matrix multiplication.
   decltype(auto) operator*(const Mrp3& rhsBase) const
   {
-    using Scalar = typename Derived::Scalar;
+    using Scalar = Derived::Scalar;
 
     const auto& lhsMrp = this->cDerived().cParameters();
     const auto& rhsMrp = rhsBase.cDerived().cParameters();

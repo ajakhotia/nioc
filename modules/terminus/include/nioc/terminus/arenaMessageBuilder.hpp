@@ -5,11 +5,12 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include <bit>
 #include <capnp/message.h>
 #include <cstddef>
+#include <cstring>
 #include <kj/array.h>
 #include <kj/common.h>
+#include <memory>
 #include <span>
 #include <type_traits>
 #include <vector>
@@ -152,7 +153,22 @@ template<typename Byte>
 [[nodiscard]] auto asWords(std::span<Byte> bytes)
 {
   using Word = std::conditional_t<std::is_const_v<Byte>, const capnp::word, capnp::word>;
-  return kj::arrayPtr(std::bit_cast<Word*>(bytes.data()), bytes.size() / sizeof(capnp::word));
+  const auto wordCount = bytes.size() / sizeof(capnp::word);
+  if constexpr(std::is_const_v<Byte>)
+  {
+    // The const view's words already exist; reinterpret the storage to retype the pointer.
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+    return kj::arrayPtr(std::launder(reinterpret_cast<Word*>(bytes.data())), wordCount);
+  }
+  else
+  {
+    // memmove begins the word objects' lifetimes; with src == dest it is elided, so no bytes move.
+    return kj::arrayPtr(
+        std::launder(
+            static_cast<Word*>(
+                std::memmove(bytes.data(), bytes.data(), wordCount * sizeof(capnp::word)))),
+        wordCount);
+  }
 }
 
 /// @brief View a Cap'n Proto word array as a byte span without copying, preserving constness.
@@ -166,8 +182,15 @@ template<typename Word>
   requires std::is_same_v<std::remove_const_t<Word>, capnp::word>
 [[nodiscard]] auto asByteSpan(kj::ArrayPtr<Word> words)
 {
-  using Byte = std::conditional_t<std::is_const_v<Word>, const std::byte, std::byte>;
-  return std::span<Byte>{std::bit_cast<Byte*>(words.begin()), words.size() * sizeof(capnp::word)};
+  const auto wordSpan = std::span<Word>{words.begin(), words.size()};
+  if constexpr(std::is_const_v<Word>)
+  {
+    return std::as_bytes(wordSpan);
+  }
+  else
+  {
+    return std::as_writable_bytes(wordSpan);
+  }
 }
 
 } // namespace nioc::terminus

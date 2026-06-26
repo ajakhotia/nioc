@@ -31,14 +31,14 @@ bool ArenaMessageBuilder::overflowed() const
 std::span<std::byte> ArenaMessageBuilder::frame()
 {
   const auto segments = getSegmentsForOutput();
-  if(segments.size() != 1 or segments[0].begin() != firstSegment().begin())
+  if(segments.size() != 1 or segments.front().begin() != firstSegment().begin())
   {
     common::throwException<std::logic_error>(
         "Cannot frame a {}-segment build; a single in-arena segment is required.",
         segments.size());
   }
 
-  const auto segmentWords = segments[0].size();
+  const auto segmentWords = segments.front().size();
   writeHeader(mArena.data(), segmentWords);
 
   return mArena.first(frameSize(segmentWords));

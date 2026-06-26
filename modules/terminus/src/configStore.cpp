@@ -52,6 +52,7 @@ void applyOverride(nlohmann::json& config, const std::string& override)
                                                        : nlohmann::json(valueText);
 
   auto patch = nlohmann::json::object();
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
   patch[nlohmann::json::json_pointer{pointerText}] = value;
   config.merge_patch(patch);
 }
@@ -96,12 +97,14 @@ nlohmann::json defaultsTree(const capnp::StructSchema schema, const capnp::JsonC
       const auto path = node.mPath / field.getProto().getName().cStr();
       if(field.getType().isStruct())
       {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
         tree[path] = nlohmann::json::object();
         pending.push_back(
             Node{.mReader = node.mReader.get(field).as<capnp::DynamicStruct>(), .mPath = path});
       }
       else
       {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
         tree[path] = nlohmann::json::parse(
             codec.encode(node.mReader.get(field), field.getType()).cStr());
       }
