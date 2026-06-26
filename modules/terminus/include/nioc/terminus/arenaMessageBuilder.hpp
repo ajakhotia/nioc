@@ -7,12 +7,9 @@
 
 #include <capnp/message.h>
 #include <cstddef>
-#include <cstring>
 #include <kj/array.h>
 #include <kj/common.h>
-#include <memory>
 #include <span>
-#include <type_traits>
 #include <vector>
 
 namespace nioc::terminus
@@ -140,57 +137,26 @@ private:
   std::vector<kj::Array<capnp::word>> mArenaOverflow;
 };
 
-/// @brief View a byte span as Cap'n Proto words without copying, preserving constness.
-///
-/// The result is `const`-qualified when `Byte` is `const std::byte`.
-///
-/// @tparam Byte Either `std::byte` or `const std::byte`.
+/// @brief View a read-only byte span as Cap'n Proto words without copying.
 ///
 /// @param bytes Source bytes. `bytes.data()` must be word-aligned. Trailing bytes that do not fill
 /// a whole word are dropped. The result aliases `bytes` and shares its lifetime.
-template<typename Byte>
-  requires std::is_same_v<std::remove_const_t<Byte>, std::byte>
-[[nodiscard]] auto asWords(std::span<Byte> bytes)
-{
-  using Word = std::conditional_t<std::is_const_v<Byte>, const capnp::word, capnp::word>;
-  const auto wordCount = bytes.size() / sizeof(capnp::word);
-  if constexpr(std::is_const_v<Byte>)
-  {
-    // The const view's words already exist; reinterpret the storage to retype the pointer.
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-    return kj::arrayPtr(std::launder(reinterpret_cast<Word*>(bytes.data())), wordCount);
-  }
-  else
-  {
-    // memmove begins the word objects' lifetimes; with src == dest it is elided, so no bytes move.
-    return kj::arrayPtr(
-        std::launder(
-            static_cast<Word*>(
-                std::memmove(bytes.data(), bytes.data(), wordCount * sizeof(capnp::word)))),
-        wordCount);
-  }
-}
+[[nodiscard]] kj::ArrayPtr<const capnp::word> asWords(std::span<const std::byte> bytes);
 
-/// @brief View a Cap'n Proto word array as a byte span without copying, preserving constness.
+/// @brief View a writable byte span as Cap'n Proto words without copying.
 ///
-/// The result is `const`-qualified when `Word` is `const capnp::word`.
-///
-/// @tparam Word Either `capnp::word` or `const capnp::word`.
+/// @param bytes Source bytes. `bytes.data()` must be word-aligned. Trailing bytes that do not fill
+/// a whole word are dropped. The result aliases `bytes` and shares its lifetime.
+[[nodiscard]] kj::ArrayPtr<capnp::word> asWords(std::span<std::byte> bytes);
+
+/// @brief View a read-only Cap'n Proto word array as bytes without copying.
 ///
 /// @param words Source words. The result aliases `words` and shares its lifetime.
-template<typename Word>
-  requires std::is_same_v<std::remove_const_t<Word>, capnp::word>
-[[nodiscard]] auto asByteSpan(kj::ArrayPtr<Word> words)
-{
-  const auto wordSpan = std::span<Word>{words.begin(), words.size()};
-  if constexpr(std::is_const_v<Word>)
-  {
-    return std::as_bytes(wordSpan);
-  }
-  else
-  {
-    return std::as_writable_bytes(wordSpan);
-  }
-}
+[[nodiscard]] std::span<const std::byte> asByteSpan(kj::ArrayPtr<const capnp::word> words);
+
+/// @brief View a writable Cap'n Proto word array as bytes without copying.
+///
+/// @param words Source words. The result aliases `words` and shares its lifetime.
+[[nodiscard]] std::span<std::byte> asByteSpan(kj::ArrayPtr<capnp::word> words);
 
 } // namespace nioc::terminus
