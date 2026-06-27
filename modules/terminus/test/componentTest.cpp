@@ -5,10 +5,12 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "testComponent.hpp"
+#include <capnp/schema.h>
 #include <filesystem>
 #include <gtest/gtest.h>
 #include <nioc/concurrent/routine.hpp>
 #include <nioc/terminus/component.hpp>
+#include <nioc/terminus/config/testConfig.capnp.h>
 #include <nioc/terminus/configStore.hpp>
 #include <nioc/terminus/idl/testSchema.capnp.h>
 #include <nioc/terminus/manifest.hpp>
@@ -35,7 +37,7 @@ Port makePort()
   return Port{
       Manifest{
                RunContext{std::filesystem::temp_directory_path() / "niocLogs", {}, true, ""},
-               ConfigStore{{}, {}}},
+               ConfigStore{"{}", capnp::Schema::from<TestConfig>()}},
       [](Port&, Port::Drivers&, Port::Components&, Port::Runners&) {}
   };
 }

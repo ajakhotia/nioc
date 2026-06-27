@@ -11,7 +11,8 @@ add_executable(terminusTest
   manifestTest.cpp
   messageTest.cpp
   portTest.cpp
-  schemaIdTest.cpp)
+  schemaIdTest.cpp
+  utilsTest.cpp)
 
 target_link_libraries(terminusTest
   GTest::GTest

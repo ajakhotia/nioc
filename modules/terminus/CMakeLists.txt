@@ -64,6 +64,7 @@ add_exported_library(
     src/port.cpp
     src/programOption.cpp
     src/runContext.cpp
+    src/utils.cpp
   HEADERS
     PUBLIC include/nioc/terminus/arenaMessageBuilder.hpp
     PUBLIC include/nioc/terminus/component.hpp
@@ -80,13 +81,13 @@ add_exported_library(
     PUBLIC include/nioc/terminus/publisher.hpp
     PUBLIC include/nioc/terminus/runContext.hpp
     PUBLIC include/nioc/terminus/schemaId.hpp
+    PUBLIC include/nioc/terminus/utils.hpp
   INCLUDE_DIRECTORIES
     ${CMAKE_CURRENT_SOURCE_DIR}/include
   LINK_LIBRARIES
     PRIVATE Boost::headers
     PRIVATE CapnProto::capnp-json
     PRIVATE CapnProto::kj
-    PRIVATE nlohmann_json::nlohmann_json
     PUBLIC Boost::program_options
     PUBLIC CapnProto::capnp
     PUBLIC nioc::chronicle
@@ -95,6 +96,7 @@ add_exported_library(
     PUBLIC nioc::logger
     PUBLIC nioc::terminusConfig
     PUBLIC nioc::terminusIdl
+    PUBLIC nlohmann_json::nlohmann_json
     PUBLIC spdlog::spdlog
   COMPILE_FEATURES
     PUBLIC cxx_std_23

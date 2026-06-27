@@ -8,7 +8,6 @@
 #include <filesystem>
 #include <fstream>
 #include <gtest/gtest.h>
-#include <kj/exception.h>
 #include <nioc/terminus/config/testConfig.capnp.h>
 #include <nioc/terminus/configStore.hpp>
 #include <nlohmann/json.hpp>
@@ -91,32 +90,42 @@ TEST(ConfigStoreTest, overrideValuesParseAsJson)
   EXPECT_EQ(config.getLeaf().getValue(), 9);
 }
 
-TEST(ConfigStoreTest, nullOverrideDeletesKey)
+TEST(ConfigStoreTest, unknownOverrideKeyIsIgnored)
 {
-  // A raw (schema-less) store records the deletion itself; the revert-to-default behavior of the
-  // schema pipeline is covered by schemaConstructionResolvesNullOverrideToExplicitDefault.
-  const auto base = writeTempConfig("withName.json", R"({"name": "configured"})");
-  const auto store = ConfigStore{{base}, {"name=null"}};
+  // An override naming a field outside the schema is warned about and skipped, not fatal: the store
+  // still constructs with the schema defaults intact and the stray key never reaches the output.
+  const auto store = ConfigStore{{}, {"bogus=1"}, capnp::Schema::from<TestConfig>()};
+  EXPECT_EQ(store.get<TestConfig>().getCount(), 7U);
 
-  const auto outPath = fs::temp_directory_path() / "niocConfigStoreTest" / "nullDeleted.json";
-  store.writeTo(outPath);
-  EXPECT_FALSE(nlohmann::json::parse(std::ifstream(outPath)).contains("name"));
+  const auto outPath = fs::temp_directory_path() / "niocConfigStoreTest" / "unknownOverride.json";
+  store.write(outPath);
+  EXPECT_FALSE(nlohmann::json::parse(std::ifstream(outPath)).contains("bogus"));
 }
 
-TEST(ConfigStoreTest, unknownKeyFailsConstruction)
+TEST(ConfigStoreTest, unknownFileKeyIsToleratedButNotRecorded)
 {
-  EXPECT_THROW((ConfigStore{{}, {"bogus=1"}, capnp::Schema::from<TestConfig>()}), kj::Exception);
-}
+  // A config file may carry fields outside the current schema (e.g. written by a newer build). They
+  // are tolerated at decode time rather than rejected, but the recording is the schema projection,
+  // so an off-schema field never appears in it.
+  const auto base = writeTempConfig("futureFieldConfig.json", R"({"count": 5, "futureField": 42})");
+  const auto store = ConfigStore{{base}, {}, capnp::Schema::from<TestConfig>()};
 
-TEST(ConfigStoreTest, schemalessStoreRefusesTypedAccess)
-{
-  const auto store = ConfigStore{{}, {}};
-  EXPECT_THROW((void)store.get<TestConfig>(), std::logic_error);
+  EXPECT_EQ(
+      store.get<TestConfig>().getCount(),
+      5U); // known field decodes; the stray field is ignored
+
+  const auto outPath = fs::temp_directory_path() / "niocConfigStoreTest" / "futureFieldOut.json";
+  store.write(outPath);
+  const auto onDisk = nlohmann::json::parse(std::ifstream(outPath));
+  EXPECT_EQ(onDisk.at("count").get<int>(), 5);
+  EXPECT_FALSE(onDisk.contains("futureField")); // off-schema field absent from the projection
 }
 
 TEST(ConfigStoreTest, malformedOverrideThrows)
 {
-  EXPECT_THROW((ConfigStore{{}, {"noEqualsSign"}}), std::invalid_argument);
+  EXPECT_THROW(
+      (ConfigStore{{}, {"noEqualsSign"}, capnp::Schema::from<TestConfig>()}),
+      std::invalid_argument);
 }
 
 TEST(ConfigStoreTest, schemaConstructionMaterializesEveryDefault)
@@ -124,7 +133,7 @@ TEST(ConfigStoreTest, schemaConstructionMaterializesEveryDefault)
   const auto store = ConfigStore{{}, {}, capnp::Schema::from<TestConfig>()};
 
   const auto outPath = fs::temp_directory_path() / "niocConfigStoreTest" / "materialized.json";
-  store.writeTo(outPath);
+  store.write(outPath);
   const auto onDisk = nlohmann::json::parse(std::ifstream(outPath));
 
   // Every parameter is recorded explicitly, struct-literal and field defaults alike. JsonCodec
@@ -155,22 +164,22 @@ TEST(ConfigStoreTest, schemaConstructionResolvesNullOverrideToExplicitDefault)
 
   // The canonical recording shows the default the null reverted to, not a missing key.
   const auto outPath = fs::temp_directory_path() / "niocConfigStoreTest" / "nullReverted.json";
-  store.writeTo(outPath);
+  store.write(outPath);
   const auto onDisk = nlohmann::json::parse(std::ifstream(outPath));
   EXPECT_EQ(onDisk.at("count").get<int>(), 7);
 }
 
-TEST(ConfigStoreTest, writeToRecordsMergedTree)
+TEST(ConfigStoreTest, writeRecordsResolvedConfig)
 {
-  const auto base = writeTempConfig("recorded.json", R"({"count": 5})");
-  const auto store = ConfigStore{{base}, {"name=run1"}};
+  const auto base = writeTempConfig("recorded.json", R"({"count": 5, "name": "original"})");
+  const auto store = ConfigStore{{base}, {"name=run1"}, capnp::Schema::from<TestConfig>()};
 
   const auto outPath = fs::temp_directory_path() / "niocConfigStoreTest" / "merged.json";
-  store.writeTo(outPath);
+  store.write(outPath);
 
   const auto onDisk = nlohmann::json::parse(std::ifstream(outPath));
-  EXPECT_EQ(onDisk.at("count").get<int>(), 5);
-  EXPECT_EQ(onDisk.at("name").get<std::string>(), "run1");
+  EXPECT_EQ(onDisk.at("count").get<int>(), 5);             // from the file
+  EXPECT_EQ(onDisk.at("name").get<std::string>(), "run1"); // from the override
 }
 
 } // namespace nioc::terminus

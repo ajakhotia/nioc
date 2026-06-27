@@ -143,7 +143,7 @@ Port::Port(Manifest manifest, const Setup& setup):
   mWriter{makeWriter(mWorkingDir, mManifest.mContext.recordChronicle())},
   mLockedResourceMap{copyResources(mManifest.mContext.resourcePaths(), mWorkingDir)}
 {
-  mManifest.writeTo(mWorkingDir);
+  mManifest.write(mWorkingDir);
   mLockedResourceMap.cExecute([this](const auto& resourceMap)
                               { writeResources(resourceMap, mWorkingDir); });
 

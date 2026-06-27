@@ -4,12 +4,14 @@
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#include <capnp/schema.h>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <gtest/gtest.h>
 #include <nioc/chronicle/defines.hpp>
 #include <nioc/chronicle/reader.hpp>
+#include <nioc/terminus/config/testConfig.capnp.h>
 #include <nioc/terminus/configStore.hpp>
 #include <nioc/terminus/draft.hpp>
 #include <nioc/terminus/idl/testSchema.capnp.h>
@@ -41,7 +43,7 @@ Port makePort(const std::string_view name)
   return Port{
       Manifest{
                RunContext{fs::temp_directory_path() / "nioc-messageTest" / name, {}, true, ""},
-               ConfigStore{{}, {}}},
+               ConfigStore{"{}", capnp::Schema::from<TestConfig>()}},
       [](Port&, Port::Drivers&, Port::Components&, Port::Runners&) {}
   };
 }
