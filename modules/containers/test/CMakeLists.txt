@@ -17,4 +17,8 @@ target_compile_options(containersTest PRIVATE
         $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>
         $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Werror -Wno-unknown-pragmas>)
 
+if(CLANG_TIDY)
+  set_target_properties(containersTest PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY}")
+endif()
+
 gtest_discover_tests(containersTest)

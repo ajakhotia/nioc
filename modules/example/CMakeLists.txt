@@ -101,8 +101,8 @@ add_exported_executable(
 
 
 if(CLANG_TIDY)
-  set_target_properties(example PROPERTIES CXX_CLANG_TIDY ${CLANG_TIDY})
-  set_target_properties(exampleMain PROPERTIES CXX_CLANG_TIDY ${CLANG_TIDY})
+  set_target_properties(example PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY}")
+  set_target_properties(exampleMain PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY}")
 endif()
 
 
