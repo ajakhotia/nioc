@@ -73,8 +73,7 @@ TEST(Reader, readsFramesInRecordOrder)
       std::pair{channelA, std::cref(dataA)},
       std::pair{channelB, std::cref(dataB)},
       std::pair{channelA, std::cref(dataA)},
-      std::pair{channelB, std::cref(dataB)}
-  };
+      std::pair{channelB, std::cref(dataB)}};
 
   auto index = std::size_t{0};
   for(const auto& entry: Reader{logPath})

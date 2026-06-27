@@ -44,10 +44,9 @@ Port makePort(const std::string_view name, const bool record)
 {
   return Port{
       Manifest{
-               RunContext{fs::temp_directory_path() / "nioc-logPlayerTest" / name, {}, record, ""},
-               ConfigStore{"{}", capnp::Schema::from<TestConfig>()}},
-      [](Port&, Port::Drivers&, Port::Components&, Port::Runners&) {}
-  };
+          RunContext{fs::temp_directory_path() / "nioc-logPlayerTest" / name, {}, record, ""},
+          ConfigStore{"{}", capnp::Schema::from<TestConfig>()}},
+      [](Port&, Port::Drivers&, Port::Components&, Port::Runners&) {}};
 }
 
 void publishValue(Publisher<TestSchema>& publisher, const std::int64_t value)
@@ -110,8 +109,7 @@ TEST(LogPlayer, replaysFramesAcrossChannelsInGlobalRecordOrder)
       {channelB, 20},
       {channelA, 11},
       {channelB, 21},
-      {channelA, 12}
-  };
+      {channelA, 12}};
   EXPECT_EQ(expected, received);
 }
 

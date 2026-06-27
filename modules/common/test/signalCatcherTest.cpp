@@ -31,10 +31,11 @@ TEST(SignalCatcher, CatchesSigintAndSigabrt)
 
   const auto catcher = SignalCatcher{
       std::pair{
-                SIGINT,   SignalCatcher::SignalAction{[&sigintCount](std::int32_t) { ++sigintCount; }} },
+          SIGINT,
+          SignalCatcher::SignalAction{[&sigintCount](std::int32_t) { ++sigintCount; }}},
       std::pair{
-                SIGABRT, SignalCatcher::SignalAction{[&sigabrtCount](std::int32_t) { ++sigabrtCount; }}}
-  };
+          SIGABRT,
+          SignalCatcher::SignalAction{[&sigabrtCount](std::int32_t) { ++sigabrtCount; }}}};
 
   static_cast<void>(std::raise(SIGINT));
   std::this_thread::sleep_for(kDrainDelay);
@@ -50,11 +51,10 @@ TEST(SignalCatcher, ActionReceivesRunningCount)
 {
   auto observedCounts = std::vector<std::int32_t>{};
 
-  const auto catcher = SignalCatcher{
-      std::pair{
-                SIGINT, SignalCatcher::SignalAction{[&observedCounts](const std::int32_t count)
-                                      { observedCounts.push_back(count); }}}
-  };
+  const auto catcher = SignalCatcher{std::pair{
+      SIGINT,
+      SignalCatcher::SignalAction{[&observedCounts](const std::int32_t count)
+                                  { observedCounts.push_back(count); }}}};
 
   static_cast<void>(std::raise(SIGINT));
   std::this_thread::sleep_for(kDrainDelay);
@@ -69,8 +69,7 @@ TEST(SignalCatcher, DestructionRestoresDefaultHandlers)
 {
   {
     const auto catcher = SignalCatcher{
-        std::pair{SIGINT, SignalCatcher::SignalAction{[](std::int32_t) {}}}
-    };
+        std::pair{SIGINT, SignalCatcher::SignalAction{[](std::int32_t) {}}}};
   }
 
   // The destructor restored SIG_DFL; std::signal hands back the handler in effect.

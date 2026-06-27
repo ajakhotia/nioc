@@ -50,11 +50,7 @@ TEST(ConfigStoreTest, filesMergeLeftToRight)
   const auto base = writeTempConfig("base.json", R"({"name": "base", "count": 1})");
   const auto overlay = writeTempConfig("overlay.json", R"({"count": 2})");
 
-  const auto store = ConfigStore{
-      {base, overlay},
-      {},
-      capnp::Schema::from<TestConfig>()
-  };
+  const auto store = ConfigStore{{base, overlay}, {}, capnp::Schema::from<TestConfig>()};
   const auto config = store.get<TestConfig>();
 
   EXPECT_EQ(std::string{config.getName().cStr()}, "base");
@@ -64,11 +60,7 @@ TEST(ConfigStoreTest, filesMergeLeftToRight)
 TEST(ConfigStoreTest, overridesApplyAfterFilesInOrder)
 {
   const auto base = writeTempConfig("ordered.json", R"({"count": 1})");
-  const auto store = ConfigStore{
-      {base},
-      {"count=2", "count=3"},
-      capnp::Schema::from<TestConfig>()
-  };
+  const auto store = ConfigStore{{base}, {"count=2", "count=3"}, capnp::Schema::from<TestConfig>()};
   EXPECT_EQ(store.get<TestConfig>().getCount(), 3U);
 }
 
@@ -77,8 +69,7 @@ TEST(ConfigStoreTest, overrideValuesParseAsJson)
   const auto store = ConfigStore{
       {},
       {"name=hello", "count=42", "enabled=false", "gains=[1.5, 2.5]", "leaf.value=9"},
-      capnp::Schema::from<TestConfig>()
-  };
+      capnp::Schema::from<TestConfig>()};
   const auto config = store.get<TestConfig>();
 
   EXPECT_EQ(std::string{config.getName().cStr()}, "hello");
@@ -155,11 +146,7 @@ TEST(ConfigStoreTest, schemaConstructionKeepsLiteralsThroughPartialOverrides)
 
 TEST(ConfigStoreTest, schemaConstructionResolvesNullOverrideToExplicitDefault)
 {
-  const auto store = ConfigStore{
-      {},
-      {"count=1", "count=null"},
-      capnp::Schema::from<TestConfig>()
-  };
+  const auto store = ConfigStore{{}, {"count=1", "count=null"}, capnp::Schema::from<TestConfig>()};
   EXPECT_EQ(store.get<TestConfig>().getCount(), 7U);
 
   // The canonical recording shows the default the null reverted to, not a missing key.

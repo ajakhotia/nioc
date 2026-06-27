@@ -76,10 +76,7 @@ TEST(MakeBimap, buildsFromRuntimeRange)
 
 TEST(MakeBimap, acceptsTupleLikeElements)
 {
-  const auto pairs = std::vector{
-      std::tuple{ Color::Red,  "Red"s},
-      std::tuple{Color::Blue, "Blue"s}
-  };
+  const auto pairs = std::vector{std::tuple{Color::Red, "Red"s}, std::tuple{Color::Blue, "Blue"s}};
 
   const auto bimap = makeBimap(pairs);
 

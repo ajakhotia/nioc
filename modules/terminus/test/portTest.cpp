@@ -88,8 +88,7 @@ Manifest testManifest(std::string commandLine = "")
 {
   return Manifest{
       RunContext{logRoot(), {}, true, std::move(commandLine)},
-      ConfigStore{{config()}, {}, capnp::Schema::from<TestConfig>()}
-  };
+      ConfigStore{{config()}, {}, capnp::Schema::from<TestConfig>()}};
 }
 
 void publishGap(Port& port, const std::string_view topic)
@@ -175,10 +174,9 @@ TEST(PortTest, constructionCreatesMissingLogRoot)
 
   auto port = Port{
       Manifest{
-               RunContext{absentRoot, {}, true, ""},
-               ConfigStore{"{}", capnp::Schema::from<TestConfig>()}},
-      emptySetup
-  };
+          RunContext{absentRoot, {}, true, ""},
+          ConfigStore{"{}", capnp::Schema::from<TestConfig>()}},
+      emptySetup};
 
   EXPECT_TRUE(fs::is_directory(absentRoot));
   EXPECT_EQ(port.workingDir().parent_path(), absentRoot);
@@ -191,10 +189,9 @@ TEST(PortTest, recordChronicleFalseOmitsChronicleDir)
   {
     auto port = Port{
         Manifest{
-                 RunContext{logRoot(), {}, false, ""},
-                 ConfigStore{{config()}, {}, capnp::Schema::from<TestConfig>()}},
-        emptySetup
-    };
+            RunContext{logRoot(), {}, false, ""},
+            ConfigStore{{config()}, {}, capnp::Schema::from<TestConfig>()}},
+        emptySetup};
     const auto& recordingDir = port.workingDir();
 
     EXPECT_FALSE(fs::exists(recordingDir / "chronicle"));
@@ -215,10 +212,9 @@ TEST(PortTest, deliversToSubscribersWithoutRecording)
   // recordChronicle = false: the message is built on the heap and still fans out to subscribers.
   auto port = Port{
       Manifest{
-               RunContext{logRoot(), {}, false, ""},
-               ConfigStore{{config()}, {}, capnp::Schema::from<TestConfig>()}},
-      emptySetup
-  };
+          RunContext{logRoot(), {}, false, ""},
+          ConfigStore{{config()}, {}, capnp::Schema::from<TestConfig>()}},
+      emptySetup};
 
   auto received = std::vector<std::int64_t>{};
   port.subscribe(
@@ -240,10 +236,9 @@ TEST(PortTest, constructionAddsListedResources)
 {
   auto port = Port{
       Manifest{
-               RunContext{logRoot(), {resource()}, true, ""},
-               ConfigStore{{config()}, {}, capnp::Schema::from<TestConfig>()}},
-      emptySetup
-  };
+          RunContext{logRoot(), {resource()}, true, ""},
+          ConfigStore{{config()}, {}, capnp::Schema::from<TestConfig>()}},
+      emptySetup};
   EXPECT_TRUE(fs::is_regular_file(port.workingDir() / "testResource.bin"));
 }
 
@@ -285,10 +280,7 @@ TEST(PortTest, constructionFromCommandLineReadsEveryOption)
   // parseCommandLine injects the verbatim command line for the Port to record.
   EXPECT_TRUE(variableMap.contains("commandLine"));
 
-  auto port = Port{
-      Manifest{variableMap, capnp::Schema::from<TestConfig>()},
-      emptySetup
-  };
+  auto port = Port{Manifest{variableMap, capnp::Schema::from<TestConfig>()}, emptySetup};
 
   EXPECT_EQ(port.workingDir().parent_path(), logRoot());
   EXPECT_FALSE(port.runContext().playback());
@@ -306,13 +298,12 @@ TEST(PortTest, constructionRejectsUnreadableConfig)
   EXPECT_THROW(
       (Port{
           Manifest{
-                   RunContext{logRoot(), {}, true, ""},
-                   ConfigStore{
+              RunContext{logRoot(), {}, true, ""},
+              ConfigStore{
                   {testDataDir() / "doesNotExist.json"},
                   {},
                   capnp::Schema::from<TestConfig>()}},
-          emptySetup
-  }),
+          emptySetup}),
       std::runtime_error);
 }
 
@@ -321,10 +312,9 @@ TEST(PortTest, constructionRejectsMalformedConfig)
   EXPECT_THROW(
       (Port{
           Manifest{
-                   RunContext{logRoot(), {}, true, ""},
-                   ConfigStore{{malformedConfig()}, {}, capnp::Schema::from<TestConfig>()}},
-          emptySetup
-  }),
+              RunContext{logRoot(), {}, true, ""},
+              ConfigStore{{malformedConfig()}, {}, capnp::Schema::from<TestConfig>()}},
+          emptySetup}),
       nlohmann::json::parse_error);
 }
 

@@ -36,10 +36,9 @@ Port makePort()
 {
   return Port{
       Manifest{
-               RunContext{std::filesystem::temp_directory_path() / "niocLogs", {}, true, ""},
-               ConfigStore{"{}", capnp::Schema::from<TestConfig>()}},
-      [](Port&, Port::Drivers&, Port::Components&, Port::Runners&) {}
-  };
+          RunContext{std::filesystem::temp_directory_path() / "niocLogs", {}, true, ""},
+          ConfigStore{"{}", capnp::Schema::from<TestConfig>()}},
+      [](Port&, Port::Drivers&, Port::Components&, Port::Runners&) {}};
 }
 
 } // namespace

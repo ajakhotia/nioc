@@ -42,10 +42,9 @@ Port makePort(const std::string_view name)
 {
   return Port{
       Manifest{
-               RunContext{fs::temp_directory_path() / "nioc-messageTest" / name, {}, true, ""},
-               ConfigStore{"{}", capnp::Schema::from<TestConfig>()}},
-      [](Port&, Port::Drivers&, Port::Components&, Port::Runners&) {}
-  };
+          RunContext{fs::temp_directory_path() / "nioc-messageTest" / name, {}, true, ""},
+          ConfigStore{"{}", capnp::Schema::from<TestConfig>()}},
+      [](Port&, Port::Drivers&, Port::Components&, Port::Runners&) {}};
 }
 
 } // namespace
