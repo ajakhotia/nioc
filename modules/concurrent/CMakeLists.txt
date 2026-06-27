@@ -38,7 +38,7 @@ add_exported_library(
             "")
 
 if(CLANG_TIDY)
-    set_target_properties(concurrent PROPERTIES CXX_CLANG_TIDY ${CLANG_TIDY})
+    set_target_properties(concurrent PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY}")
 endif()
 
 if(BUILD_TESTING)

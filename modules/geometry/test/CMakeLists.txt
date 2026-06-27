@@ -17,4 +17,8 @@ target_compile_options(geometryTest PRIVATE
 
 target_compile_features(geometryTest PRIVATE cxx_std_23)
 
+if(CLANG_TIDY)
+  set_target_properties(geometryTest PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY}")
+endif()
+
 gtest_discover_tests(geometryTest)
