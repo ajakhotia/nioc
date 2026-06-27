@@ -15,22 +15,7 @@ namespace nioc::concurrent
 /// @brief Constrains a type to the multi-producer, single-consumer (MPSC) queue contract: a
 /// thread-safe FIFO that many threads may enqueue into while exactly one thread dequeues.
 ///
-/// Use this concept to write code that works with any MPSC queue regardless of its capacity policy.
-/// A bounded queue may drop a value when full and returns the dropped value from its enqueue call;
-/// which value is dropped depends on the policy (`OverwritingMpsc` drops the oldest, `DroppingMpsc`
-/// drops the incoming value). An unbounded queue (`UnboundedMpsc`) never drops and always returns
-/// `nullopt`.
-///
-/// Example:
-///
-///     template<MpscQueue Queue>
-///     void produce(Queue& queue, typename Queue::value_type item)
-///     {
-///       if (auto dropped = queue.push(std::move(item)))
-///       {
-///         // A bounded queue dropped a value to stay within capacity.
-///       }
-///     }
+/// Use this concept to write code that works with any MPSC queue.
 ///
 /// A conforming type provides:
 ///   - `value_type`: the element type.
@@ -45,29 +30,32 @@ namespace nioc::concurrent
 ///
 /// @see OverwritingMpsc, DroppingMpsc, UnboundedMpsc, AnyMpsc
 template<typename Queue>
-concept MpscQueue = requires(Queue queue, const Queue& constQueue, Queue::value_type value) {
-  typename Queue::value_type;
-  typename Queue::size_type;
+concept MpscQueue =
+    requires(Queue queue, const Queue& constQueue, Queue::value_type value) {
+      typename Queue::value_type;
+      typename Queue::size_type;
 
-  /// Enqueue by move. Returns the value dropped to make room when a bounded queue is full, else
-  /// `nullopt`. Callable from any producer thread.
-  { queue.push(std::move(value)) } -> std::same_as<std::optional<typename Queue::value_type>>;
+      /// Enqueue by move. Returns the value dropped to make room when a bounded queue is full, else
+      /// `nullopt`. Callable from any producer thread.
+      { queue.push(std::move(value)) } -> std::same_as<std::optional<typename Queue::value_type>>;
 
-  /// Construct an element in place and enqueue it. Same drop-return semantics as `push`.
-  { queue.emplace(std::move(value)) } -> std::same_as<std::optional<typename Queue::value_type>>;
+      /// Construct an element in place and enqueue it. Same drop-return semantics as `push`.
+      {
+        queue.emplace(std::move(value))
+      } -> std::same_as<std::optional<typename Queue::value_type>>;
 
-  /// Remove and return the oldest value, or `nullopt` when empty. Call only from the single
-  /// consumer thread.
-  { queue.tryPop() } -> std::same_as<std::optional<typename Queue::value_type>>;
+      /// Remove and return the oldest value, or `nullopt` when empty. Call only from the single
+      /// consumer thread.
+      { queue.tryPop() } -> std::same_as<std::optional<typename Queue::value_type>>;
 
-  /// Number of queued elements. A momentary snapshot; racy under concurrent producers, so use
-  /// it for metrics, not control flow.
-  { constQueue.size() } -> std::same_as<typename Queue::size_type>;
+      /// Number of queued elements. A momentary snapshot; racy under concurrent producers, so use
+      /// it for metrics, not control flow.
+      { constQueue.size() } -> std::same_as<typename Queue::size_type>;
 
-  /// Fraction of capacity in use, in [0, 1]: 1.0 when a bounded queue is full, 0.0 for an
-  /// unbounded queue. A momentary snapshot; racy. Signals how close a bounded queue is to
-  /// dropping.
-  { constQueue.occupancy() } -> std::same_as<double>;
-};
+      /// Fraction of capacity in use, in [0, 1]: 1.0 when a bounded queue is full, 0.0 for an
+      /// unbounded queue. A momentary snapshot; racy. Signals how close a bounded queue is to
+      /// dropping.
+      { constQueue.occupancy() } -> std::same_as<double>;
+    };
 
 } // namespace nioc::concurrent

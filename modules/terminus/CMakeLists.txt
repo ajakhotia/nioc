@@ -55,6 +55,7 @@ add_exported_library(
     src/arenaMessageBuilder.cpp
     src/component.cpp
     src/configStore.cpp
+    src/consignment.cpp
     src/defaultSignalCatcher.cpp
     src/draft.cpp
     src/driver.cpp
