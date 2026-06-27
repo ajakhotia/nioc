@@ -35,7 +35,7 @@ public:
   using FrameId = FrameId_;
 
   static_assert(
-      not(common::isSpecialization<FrameId, StaticFrame>),
+      not common::isSpecialization<FrameId, StaticFrame>,
       "FrameId cannot be a StaticFrame specialization.");
 
   StaticFrame() = delete;

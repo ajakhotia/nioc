@@ -14,9 +14,9 @@ namespace nioc::common
 TEST(TypeTraits, IsSpecialization)
 {
   static_assert(IsSpecialization<std::vector<int>, std::vector>::value);
-  static_assert(not(IsSpecialization<std::vector<int>, std::deque>::value));
+  static_assert(not IsSpecialization<std::vector<int>, std::deque>::value);
   static_assert(isSpecialization<std::vector<int>, std::vector>);
-  static_assert(not(isSpecialization<std::vector<int>, std::deque>));
+  static_assert(not isSpecialization<std::vector<int>, std::deque>);
 
   EXPECT_TRUE(bool(IsSpecialization<std::vector<int>, std::vector>::value));
   EXPECT_FALSE(bool(IsSpecialization<std::vector<int>, std::deque>::value));

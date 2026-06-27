@@ -24,7 +24,7 @@ namespace detail
 ///
 /// @tparam T The candidate pair-like type. Cv-qualifiers and references are ignored.
 template<typename T>
-concept PairLike = requires { requires std::tuple_size<std::remove_cvref_t<T>>::value == 2; };
+concept PairLike = requires { requires std::tuple_size_v<std::remove_cvref_t<T>> == 2; };
 
 /// @brief Satisfied by an input range whose element type is `PairLike`.
 ///
