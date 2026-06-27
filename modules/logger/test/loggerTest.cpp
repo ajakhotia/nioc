@@ -22,7 +22,7 @@ namespace
 
 class ThrowingSink final: public spdlog::sinks::base_sink<std::mutex>
 {
-private:
+protected:
   void sink_it_(const spdlog::details::log_msg& /*msg*/) override
   {
     throw std::runtime_error{"sink failure"};
@@ -33,7 +33,7 @@ private:
 
 class IntThrowingSink final: public spdlog::sinks::base_sink<std::mutex>
 {
-private:
+protected:
   void sink_it_(const spdlog::details::log_msg& /*msg*/) override
   {
     constexpr auto kArbitraryValue = 42;

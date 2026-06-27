@@ -260,7 +260,8 @@ public:
   /// @return Pointer to the constructed element, or nullptr if the tape is full.
   ///
   /// @throws Propagates any exception thrown by the @p value_type constructor. Not declared
-  /// `noexcept`: `claim` is a throwing function, so the promise could not be honored unconditionally.
+  /// `noexcept`: `claim` is a throwing function, so the promise could not be honored
+  /// unconditionally.
   ///
   /// @see claim
   template<typename... Args>

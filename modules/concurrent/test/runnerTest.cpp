@@ -120,7 +120,7 @@ private:
 
   State step() noexcept final
   {
-    return mIndex < mScript.size() ? mScript[mIndex++] : State::Done;
+    return mIndex < mScript.size() ? mScript.at(mIndex++) : State::Done;
   }
 };
 

@@ -192,9 +192,11 @@ TEST(Message, aMultiSegmentBuildFlattensAndRoundTrips)
   EXPECT_EQ(payload.getValue(), kValue);
   EXPECT_EQ(std::string{payload.getText().cStr()}, text);
   ASSERT_EQ(payload.getNumbers().size(), kCount);
-  for(auto i = std::size_t{0}; i < kCount; ++i)
+  auto index = std::size_t{0};
+  for(const auto number: payload.getNumbers())
   {
-    ASSERT_EQ(payload.getNumbers()[static_cast<unsigned int>(i)], static_cast<std::int64_t>(i));
+    ASSERT_EQ(number, static_cast<std::int64_t>(index));
+    ++index;
   }
 }
 

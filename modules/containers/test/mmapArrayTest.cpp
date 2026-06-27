@@ -68,7 +68,7 @@ TEST(MmapArray, writesAreReadableThroughAConstArray)
   ASSERT_EQ(array.size(), kCount);
   for(auto index = std::size_t{0}; index < kCount; ++index)
   {
-    EXPECT_EQ(array[index], static_cast<std::uint32_t>(index * index));
+    EXPECT_EQ(array.at(index), static_cast<std::uint32_t>(index * index));
   }
 }
 
@@ -89,7 +89,7 @@ TEST(MmapArray, resizeReducesTheElementCount)
   const auto path = freshPath("arrayResize");
 
   {
-    auto array = MmapArray<int>{path, 10};
+    auto array = MmapArray<int>{path, 16};
     array.resize(4);
   }
 
@@ -105,12 +105,12 @@ TEST(MmapArray, atReturnsTheElementAndIsWritable)
   auto array = MmapArray<int>{path, kCount};
   for(auto index = std::size_t{0}; index < kCount; ++index)
   {
-    array.at(index) = static_cast<int>(index * 10);
+    array.at(index) = static_cast<int>(index * 16);
   }
 
   for(auto index = std::size_t{0}; index < kCount; ++index)
   {
-    EXPECT_EQ(array.at(index), static_cast<int>(index * 10));
+    EXPECT_EQ(array.at(index), static_cast<int>(index * 16));
     EXPECT_EQ(&array.at(index), &array[index]);
   }
 }

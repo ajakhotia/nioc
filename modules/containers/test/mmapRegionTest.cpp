@@ -30,22 +30,21 @@ fs::path freshPath(const std::string_view name)
 
 TEST(MmapRegion, writesAreVisibleWhenReopenedReadOnly)
 {
-  constexpr auto kByteSize = std::size_t{64};
   const auto path = freshPath("region");
 
   {
-    auto region = MmapRegion{path, kByteSize};
-    EXPECT_EQ(region.size(), kByteSize);
-    region.data()[0] = std::byte{0xAB};
-    region.data()[kByteSize - 1] = std::byte{0xCD};
+    auto region = MmapRegion{path, 64};
+    EXPECT_EQ(region.size(), 64);
+    region.bytes().front() = std::byte{0xAB};
+    region.bytes().back() = std::byte{0xCD};
   }
 
-  EXPECT_EQ(fs::file_size(path), kByteSize);
+  EXPECT_EQ(fs::file_size(path), 64);
 
   const auto region = MmapRegion{path};
-  EXPECT_EQ(region.size(), kByteSize);
-  EXPECT_EQ(region.data()[0], std::byte{0xAB});
-  EXPECT_EQ(region.data()[kByteSize - 1], std::byte{0xCD});
+  EXPECT_EQ(region.size(), 64);
+  EXPECT_EQ(region.bytes().front(), std::byte{0xAB});
+  EXPECT_EQ(region.bytes().back(), std::byte{0xCD});
 }
 
 TEST(MmapRegion, resizeShrinksBackingFile)
@@ -53,11 +52,11 @@ TEST(MmapRegion, resizeShrinksBackingFile)
   const auto path = freshPath("regionResize");
 
   {
-    auto region = MmapRegion{path, 100};
-    region.resize(40);
+    auto region = MmapRegion{path, 64};
+    region.resize(16);
   }
 
-  EXPECT_EQ(fs::file_size(path), 40U);
+  EXPECT_EQ(fs::file_size(path), 16);
 }
 
 TEST(MmapRegion, openingAMissingFileThrows)

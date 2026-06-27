@@ -78,10 +78,10 @@ TEST(LogPlayer, replaysFramesAcrossChannelsInGlobalRecordOrder)
     auto publisherA = port.publisher<TestSchema>("alpha");
     auto publisherB = port.publisher<TestSchema>("beta");
 
-    publishValue(publisherA, 10);
-    publishValue(publisherB, 20);
+    publishValue(publisherA, 15);
+    publishValue(publisherB, 16);
     publishValue(publisherA, 11);
-    publishValue(publisherB, 21);
+    publishValue(publisherB, 24);
     publishValue(publisherA, 12);
 
     return port.workingDir() / "chronicle";
@@ -105,10 +105,10 @@ TEST(LogPlayer, replaysFramesAcrossChannelsInGlobalRecordOrder)
   replay(port, chronicleDir);
 
   const auto expected = std::vector<std::pair<chronicle::ChannelId, std::int64_t>>{
-      {channelA, 10},
-      {channelB, 20},
+      {channelA, 15},
+      {channelB, 16},
       {channelA, 11},
-      {channelB, 21},
+      {channelB, 24},
       {channelA, 12}};
   EXPECT_EQ(expected, received);
 }
@@ -121,8 +121,8 @@ TEST(LogPlayer, preservesPayloadAndSequenceNumberAcrossReplay)
   {
     auto port = makePort("fidelity", true);
     auto publisher = port.publisher<TestSchema>("telemetry");
-    publishValue(publisher, 100);
-    publishValue(publisher, 200);
+    publishValue(publisher, 25);
+    publishValue(publisher, 35);
     return port.workingDir() / "chronicle";
   }();
 
@@ -140,7 +140,7 @@ TEST(LogPlayer, preservesPayloadAndSequenceNumberAcrossReplay)
 
   replay(port, chronicleDir);
 
-  EXPECT_EQ((std::vector<std::int64_t>{100, 200}), values);
+  EXPECT_EQ((std::vector<std::int64_t>{25, 35}), values);
   EXPECT_EQ((std::vector<std::uint64_t>{1, 2}), sequenceNumbers);
 }
 

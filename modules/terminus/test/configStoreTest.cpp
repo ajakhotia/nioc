@@ -76,8 +76,15 @@ TEST(ConfigStoreTest, overrideValuesParseAsJson)
   EXPECT_EQ(config.getCount(), 42U);
   EXPECT_FALSE(config.getEnabled());
   ASSERT_EQ(config.getGains().size(), 2U);
-  EXPECT_DOUBLE_EQ(config.getGains()[0], 1.5);
-  EXPECT_DOUBLE_EQ(config.getGains()[1], 2.5);
+  // Materialize the Cap'n Proto List reader into a vector so the elements can be indexed via the
+  // checked .at() accessor (the reader itself offers only operator[]).
+  auto gains = std::vector<double>{};
+  for(const auto gain: config.getGains())
+  {
+    gains.push_back(gain);
+  }
+  EXPECT_DOUBLE_EQ(gains.at(0), 1.5);
+  EXPECT_DOUBLE_EQ(gains.at(1), 2.5);
   EXPECT_EQ(config.getLeaf().getValue(), 9);
 }
 

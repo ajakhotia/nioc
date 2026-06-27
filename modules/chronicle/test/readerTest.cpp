@@ -29,12 +29,13 @@ namespace
 constexpr auto channelA = ChannelId{16983ULL};
 constexpr auto channelB = ChannelId{68964786ULL};
 
-std::vector<std::byte> makeBytes(const std::size_t size, const unsigned char start = 0U)
+std::vector<std::byte> makeBytes(const std::size_t size, const std::byte start = std::byte{0})
 {
   auto bytes = std::vector<std::byte>(size);
   for(auto index = std::size_t{0}; index < size; ++index)
   {
-    bytes[index] = std::byte(static_cast<unsigned char>(start + index));
+    bytes.at(index) = std::byte(
+        static_cast<unsigned char>(std::to_integer<unsigned char>(start) + index));
   }
   return bytes;
 }
@@ -56,12 +57,12 @@ void expectBytesEqual(std::span<const std::byte> lhs, std::span<const std::byte>
 
 TEST(Reader, readsFramesInRecordOrder)
 {
-  const auto dataA = makeBytes(20, 1);
-  const auto dataB = makeBytes(34, 100);
+  const auto dataA = makeBytes(20, std::byte{1});
+  const auto dataB = makeBytes(34, std::byte{100});
 
   const auto logPath = [&]
   {
-    auto writer = Writer{makeFreshEmptyDir("reader-recordOrder"), 4096};
+    auto writer = Writer{makeFreshEmptyDir("reader-recordOrder"), 256};
     writer.write(channelA, dataA);
     writer.write(channelB, dataB);
     writer.write(channelA, dataA);
@@ -79,8 +80,8 @@ TEST(Reader, readsFramesInRecordOrder)
   for(const auto& entry: Reader{logPath})
   {
     ASSERT_LT(index, expected.size());
-    EXPECT_EQ(expected[index].first, entry.mChannelId);
-    expectBytesEqual(expected[index].second.get(), entry.mCrate.span());
+    EXPECT_EQ(expected.at(index).first, entry.mChannelId);
+    expectBytesEqual(expected.at(index).second.get(), entry.mCrate.span());
     ++index;
   }
   EXPECT_EQ(index, expected.size());

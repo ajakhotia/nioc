@@ -91,10 +91,10 @@ void poseParamCheck(
   {
     const auto norm = Scalar(
         std::sqrt(
-            std::pow(params[0], Scalar(2)) +
-            std::pow(params[1], Scalar(2)) +
-            std::pow(params[2], Scalar(2)) +
-            std::pow(params[3], Scalar(2))));
+            std::pow(params.at(0), Scalar(2)) +
+            std::pow(params.at(1), Scalar(2)) +
+            std::pow(params.at(2), Scalar(2)) +
+            std::pow(params.at(3), Scalar(2))));
 
     auto range = std::span(params.begin(), 4U);
     std::transform(
@@ -237,11 +237,11 @@ TEST(PoseMap, mutableMapNormalizesTheBufferInPlace)
   auto buffer = std::array{0.0, 0.0, 0.0, kScaledW, 1.0, kPosY, kPosZ};
   const auto map = Eigen::Map<Pose<double>>{std::span(buffer)};
 
-  EXPECT_DOUBLE_EQ(1.0, buffer[3]);
+  EXPECT_DOUBLE_EQ(1.0, buffer.at(3));
   EXPECT_DOUBLE_EQ(1.0, map.cOrientation().norm());
-  EXPECT_DOUBLE_EQ(1.0, buffer[4]);
-  EXPECT_DOUBLE_EQ(2.0, buffer[5]);
-  EXPECT_DOUBLE_EQ(3.0, buffer[6]);
+  EXPECT_DOUBLE_EQ(1.0, buffer.at(4));
+  EXPECT_DOUBLE_EQ(2.0, buffer.at(5));
+  EXPECT_DOUBLE_EQ(3.0, buffer.at(6));
 }
 
 TEST(PoseMap, constMapReadsTheBufferVerbatim)

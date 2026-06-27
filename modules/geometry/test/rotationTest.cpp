@@ -199,7 +199,7 @@ TEST(MapOfRotation3, construction)
 
   EXPECT_EQ(paramX, map.x());
   constexpr auto reassignedX = 0.4;
-  data[0] = reassignedX;
+  data.at(0) = reassignedX;
   EXPECT_EQ(reassignedX, map.x());
 }
 

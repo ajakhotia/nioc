@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <gtest/gtest.h>
+#include <iterator>
 #include <latch>
 #include <nioc/containers/mmapArray.hpp>
 #include <nioc/containers/tape.hpp>
@@ -62,13 +63,14 @@ TEST(Tape, claimReservesSlotsAndFillsToCapacity)
 
   const auto first = tape.claim(2);
   ASSERT_EQ(first.size(), 2U);
-  first[0] = 1;
-  first[1] = 2;
+  // claim() returns a std::span; its 2 slots are addressed via .front()/.back() (both checked).
+  first.front() = 1;
+  first.back() = 2;
 
   const auto second = tape.claim(2);
   ASSERT_EQ(second.size(), 2U);
-  second[0] = 3;
-  second[1] = 4;
+  second.front() = 3;
+  second.back() = 4;
 
   EXPECT_TRUE(tape.full());
   EXPECT_EQ(tape.size(), 4U);
@@ -113,7 +115,7 @@ TEST(Tape, rewindAtTheTailFreesTheUnusedSpace)
   // The next claim reuses the freed space, abutting the kept prefix.
   const auto next = tape.claim(3);
   ASSERT_EQ(next.size(), 3U);
-  EXPECT_EQ(next.data(), slot.data() + 2);
+  EXPECT_EQ(next.data(), std::next(slot.data(), 2));
   EXPECT_EQ(tape.size(), 5U);
 }
 
@@ -134,7 +136,7 @@ TEST(Tape, rewindIsANoOpOnceALaterClaimStrandsTheTail)
   // Claims continue past `second`, never reusing the stranded space inside `first`.
   const auto third = tape.claim(2);
   ASSERT_EQ(third.size(), 2U);
-  EXPECT_EQ(third.data(), second.data() + 2);
+  EXPECT_EQ(third.data(), std::next(second.data(), 2));
 }
 
 TEST(Tape, emplaceConstructsInPlaceAndReportsFullWithNull)
@@ -243,7 +245,7 @@ TEST(Tape, concurrentClaimsAreDisjointAndComplete)
             for(std::size_t i = 0; i < kPerThread; ++i)
             {
               const auto slot = tape.claim(1);
-              seen[thread].push_back(slot.empty() ? -1 : slot.data() - tape.data());
+              seen.at(thread).push_back(slot.empty() ? -1 : slot.data() - tape.data());
             }
           });
     }
@@ -288,7 +290,7 @@ TEST(Tape, concurrentVariableClaimsTileTheWrittenRegion)
               const auto slot = tape.claim(count);
               if(not slot.empty())
               {
-                runs[thread].emplace_back(slot.data() - tape.data(), slot.size());
+                runs.at(thread).emplace_back(slot.data() - tape.data(), slot.size());
               }
             }
           });
@@ -318,12 +320,12 @@ TEST(Tape, atReturnsClaimedElementsAndIsWritable)
   const auto slot = tape.claim(3);
   ASSERT_EQ(slot.size(), 3U);
 
-  tape.at(0) = 10;
-  tape.at(1) = 20;
-  tape.at(2) = 30;
+  tape.at(0) = 11;
+  tape.at(1) = 12;
+  tape.at(2) = 15;
 
-  EXPECT_EQ(tape.at(0), 10);
-  EXPECT_EQ(tape.at(2), 30);
+  EXPECT_EQ(tape.at(0), 11);
+  EXPECT_EQ(tape.at(2), 15);
   EXPECT_EQ(&tape.at(1), &tape[1]);
 }
 
