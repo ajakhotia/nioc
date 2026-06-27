@@ -255,7 +255,7 @@ public:
         sizeof(Scalar) * orientation.coeffs().size());
 
     std::memcpy(
-        parameters().data() + orientation.coeffs().size(),
+        std::next(parameters().data(), orientation.coeffs().size()),
         position.data(),
         sizeof(Scalar) * position.size());
 

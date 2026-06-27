@@ -73,6 +73,7 @@ template<
     typename ChildFrame_,
     typename ParentConcept = ParentConceptTmpl<ParentFrame_>,
     typename ChildConcept = ChildConceptTmpl<ChildFrame_>>
+// NOLINTNEXTLINE(misc-multiple-inheritance)
 class FrameReferences: public ParentConcept, public ChildConcept
 {
 public:
