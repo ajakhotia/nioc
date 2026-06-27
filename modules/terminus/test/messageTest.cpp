@@ -4,12 +4,14 @@
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#include <capnp/schema.h>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <gtest/gtest.h>
 #include <nioc/chronicle/defines.hpp>
 #include <nioc/chronicle/reader.hpp>
+#include <nioc/terminus/config/testConfig.capnp.h>
 #include <nioc/terminus/configStore.hpp>
 #include <nioc/terminus/draft.hpp>
 #include <nioc/terminus/idl/testSchema.capnp.h>
@@ -40,10 +42,9 @@ Port makePort(const std::string_view name)
 {
   return Port{
       Manifest{
-               RunContext{fs::temp_directory_path() / "nioc-messageTest" / name, {}, true, ""},
-               ConfigStore{{}, {}}},
-      [](Port&, Port::Drivers&, Port::Components&, Port::Runners&) {}
-  };
+          RunContext{fs::temp_directory_path() / "nioc-messageTest" / name, {}, true, ""},
+          ConfigStore{"{}", capnp::Schema::from<TestConfig>()}},
+      [](Port&, Port::Drivers&, Port::Components&, Port::Runners&) {}};
 }
 
 } // namespace
@@ -191,9 +192,11 @@ TEST(Message, aMultiSegmentBuildFlattensAndRoundTrips)
   EXPECT_EQ(payload.getValue(), kValue);
   EXPECT_EQ(std::string{payload.getText().cStr()}, text);
   ASSERT_EQ(payload.getNumbers().size(), kCount);
-  for(auto i = std::size_t{0}; i < kCount; ++i)
+  auto index = std::size_t{0};
+  for(const auto number: payload.getNumbers())
   {
-    ASSERT_EQ(payload.getNumbers()[static_cast<unsigned int>(i)], static_cast<std::int64_t>(i));
+    ASSERT_EQ(number, static_cast<std::int64_t>(index));
+    ++index;
   }
 }
 

@@ -7,9 +7,13 @@
 #include <algorithm>
 #include <boost/program_options.hpp>
 #include <capnp/compat/json.h>
+#include <capnp/dynamic.h>
+#include <capnp/schema.h>
 #include <fstream>
 #include <nioc/common/exception.hpp>
+#include <nioc/logger/logger.hpp>
 #include <nioc/terminus/configStore.hpp>
+#include <nioc/terminus/utils.hpp>
 #include <nlohmann/json.hpp>
 #include <stdexcept>
 #include <string>
@@ -23,122 +27,71 @@ namespace po = boost::program_options;
 namespace
 {
 
-void mergeConfigFile(nlohmann::json& config, const fs::path& path)
+/// Merge the JSON document at the @p path into @p json as a merge-patch.
+void mergeJsonFile(nlohmann::json& json, const fs::path& path)
 {
   auto file = std::ifstream(path);
   if(not file)
   {
-    common::throwException<std::runtime_error>("Cannot open config file: {}", path.string());
+    common::throwException<std::runtime_error>("Cannot open JSON file: {}", path.string());
   }
 
-  config.merge_patch(nlohmann::json::parse(file));
+  json.merge_patch(nlohmann::json::parse(file));
 }
 
-void applyOverride(nlohmann::json& config, const std::string& override)
+/// Apply one `path.to.key=value` assignment to @p json. The left of `=` is a dotted path to the
+/// field; the right parses as JSON when it can, otherwise it is taken verbatim as a string, and a
+/// `null` value deletes the field. A malformed assignment throws; one naming a field that @p json
+/// does not hold is logged and skipped.
+void applyAssignment(nlohmann::json& json, const std::string& assignment)
 {
-  const auto separator = override.find('=');
-  if(separator == std::string::npos || separator == 0)
+  const auto equalsPosition = assignment.find('=');
+  if(equalsPosition == std::string::npos or equalsPosition == 0)
   {
     common::throwException<std::invalid_argument>(
-        "Config override must take the form path.to.key=value, got: {}",
-        override);
+        "Assignment must take the form path.to.key=value, got: {}",
+        assignment);
   }
 
-  auto pointerText = "/" + override.substr(0, separator);
-  std::ranges::replace(pointerText, '.', '/');
+  // The dotted path ("log.level") becomes a JSON Pointer to the field ("/log/level").
+  auto fieldPointer = "/" + assignment.substr(0, equalsPosition);
+  std::ranges::replace(fieldPointer, '.', '/');
 
-  const auto valueText = override.substr(separator + 1);
+  const auto fieldPath = nlohmann::json::json_pointer{fieldPointer};
+  if(not json.contains(fieldPath))
+  {
+    logger::warn("Ignoring assignment for unknown field: {}", assignment);
+    return;
+  }
+
+  const auto valueText = assignment.substr(equalsPosition + 1);
   const auto value = nlohmann::json::accept(valueText) ? nlohmann::json::parse(valueText)
                                                        : nlohmann::json(valueText);
 
-  auto patch = nlohmann::json::object();
-  // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
-  patch[nlohmann::json::json_pointer{pointerText}] = value;
-  config.merge_patch(patch);
+  overrideField(json, fieldPath, value);
 }
 
-nlohmann::json layeredTree(
-    nlohmann::json tree,
-    const std::vector<fs::path>& configPaths,
-    const std::vector<std::string>& overrides)
+/// Assemble a complete JSON document from its sources: layer the @p jsonFilePaths (left-to-right)
+/// then the `path.to.key=value` @p assignments (in order) onto @p base as merge-patches, then
+/// re-anchor the result on @p base so that a `null` assignment reverts its field to the @p base
+/// value rather than dropping it.
+nlohmann::json assembleJson(
+    nlohmann::json base,
+    const std::vector<fs::path>& jsonFilePaths,
+    const std::vector<std::string>& assignments)
 {
-  for(const auto& path: configPaths)
+  auto layered = base;
+  for(const auto& path: jsonFilePaths)
   {
-    mergeConfigFile(tree, path);
+    mergeJsonFile(layered, path);
   }
-  for(const auto& override: overrides)
+  for(const auto& assignment: assignments)
   {
-    applyOverride(tree, override);
-  }
-  return tree;
-}
-
-nlohmann::json defaultsTree(const capnp::StructSchema schema, const capnp::JsonCodec& codec)
-{
-  auto message = capnp::MallocMessageBuilder{};
-  const auto root = message.initRoot<capnp::DynamicStruct>(schema).asReader();
-
-  struct Node
-  {
-    capnp::DynamicStruct::Reader mReader;
-    nlohmann::json::json_pointer mPath;
-  };
-
-  auto tree = nlohmann::json::object();
-  auto pending = std::vector<Node>{};
-  pending.push_back(Node{.mReader = root, .mPath = nlohmann::json::json_pointer{}});
-  while(not pending.empty())
-  {
-    const auto node = pending.back();
-    pending.pop_back();
-
-    for(const auto& field: node.mReader.getSchema().getFields())
-    {
-      const auto path = node.mPath / field.getProto().getName().cStr();
-      if(field.getType().isStruct())
-      {
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
-        tree[path] = nlohmann::json::object();
-        pending.push_back(
-            Node{.mReader = node.mReader.get(field).as<capnp::DynamicStruct>(), .mPath = path});
-      }
-      else
-      {
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
-        tree[path] = nlohmann::json::parse(
-            codec.encode(node.mReader.get(field), field.getType()).cStr());
-      }
-    }
+    applyAssignment(layered, assignment);
   }
 
-  return tree;
-}
-
-std::string canonicalConfigText(
-    const std::vector<fs::path>& configPaths,
-    const std::vector<std::string>& overrides,
-    const capnp::StructSchema schema)
-{
-  const auto codec = capnp::JsonCodec{};
-  const auto defaults = defaultsTree(schema, codec);
-
-  auto canonical = defaults;
-  canonical.merge_patch(layeredTree(defaults, configPaths, overrides));
-  return canonical.dump(2);
-}
-
-std::unique_ptr<capnp::MallocMessageBuilder> decodedConfig(
-    const std::string& mergedJson,
-    const capnp::StructSchema schema)
-{
-  auto codec = capnp::JsonCodec{};
-  codec.setRejectUnknownFields(true);
-
-  auto message = std::make_unique<capnp::MallocMessageBuilder>();
-  codec.decode(
-      kj::ArrayPtr<const char>{mergedJson.data(), mergedJson.size()},
-      message->initRoot<capnp::DynamicStruct>(schema));
-  return message;
+  base.merge_patch(layered);
+  return base;
 }
 
 } // namespace
@@ -159,41 +112,40 @@ po::options_description ConfigStore::cliOptions()
     "config-override",
     po::value<std::vector<std::string>>()->composing()->default_value({}, ""),
     "path.to.key=value entry overriding one config value after all files merge. Repeat to add "
-    "more; entries apply in order. The value parses as json (numbers, bools, arrays, objects), "
-    "falls back to a string, and null deletes the key"
+    "more; entries apply in order. The value parses as JSON (numbers, bools, arrays, objects), "
+    "falls back to a string, and null reverts the value to its schema default"
   );
   // clang-format on
 
   return options;
 }
 
-ConfigStore::ConfigStore(
-    const std::vector<fs::path>& configPaths,
-    const std::vector<std::string>& overrides):
-  mMergedJson{layeredTree(nlohmann::json::object(), configPaths, overrides).dump(2)}
+ConfigStore::ConfigStore(const std::string& json, const capnp::StructSchema schema):
+  mSchema{schema},
+  mDecodedConfig{decodeMessage(json, schema)}
 {
 }
 
-// mMergedJson is declared before mDecodedConfig, so the canonical text is ready by the time the
-// decode consumes it.
 ConfigStore::ConfigStore(
     const std::vector<fs::path>& configPaths,
     const std::vector<std::string>& overrides,
     const capnp::StructSchema schema):
-  mMergedJson{canonicalConfigText(configPaths, overrides, schema)},
-  mSchema{schema},
-  mDecodedConfig{decodedConfig(mMergedJson, schema)}
+  ConfigStore{assembleJson(makeDefaultJson(schema), configPaths, overrides).dump(2), schema}
 {
 }
 
-void ConfigStore::writeTo(const fs::path& path) const
+void ConfigStore::write(const fs::path& path) const
 {
-  auto file = std::ofstream(path);
-  if(not file)
+  auto outputFile = std::ofstream(path);
+  if(not outputFile)
   {
     common::throwException<std::runtime_error>("Cannot write {}", path.string());
   }
-  file << mMergedJson << '\n';
+
+  auto codec = capnp::JsonCodec{};
+  codec.setPrettyPrint(true);
+  const auto json = codec.encode(mDecodedConfig->getRoot<capnp::DynamicStruct>(mSchema).asReader());
+  outputFile << json.cStr() << '\n';
 }
 
 } // namespace nioc::terminus

@@ -4,9 +4,11 @@
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#include <capnp/schema.h>
 #include <filesystem>
 #include <gtest/gtest.h>
 #include <nioc/chronicle/defines.hpp>
+#include <nioc/terminus/config/testConfig.capnp.h>
 #include <nioc/terminus/configStore.hpp>
 #include <nioc/terminus/consignment.hpp>
 #include <nioc/terminus/driver.hpp>
@@ -33,10 +35,9 @@ Port makePort()
 {
   return Port{
       Manifest{
-               RunContext{std::filesystem::temp_directory_path() / "niocLogs", {}, true, ""},
-               ConfigStore{{}, {}}},
-      [](Port&, Port::Drivers&, Port::Components&, Port::Runners&) {}
-  };
+          RunContext{std::filesystem::temp_directory_path() / "niocLogs", {}, true, ""},
+          ConfigStore{"{}", capnp::Schema::from<TestConfig>()}},
+      [](Port&, Port::Drivers&, Port::Components&, Port::Runners&) {}};
 }
 
 class CountingDriver final: public Driver

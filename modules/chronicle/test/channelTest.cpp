@@ -41,12 +41,13 @@ fs::path freshDir(const std::string_view name)
   return path;
 }
 
-std::vector<std::byte> makeBytes(const std::size_t size, const unsigned char start = 0U)
+std::vector<std::byte> makeBytes(const std::size_t size, const std::byte start = std::byte{0})
 {
   auto bytes = std::vector<std::byte>(size);
   for(auto index = std::size_t{0}; index < size; ++index)
   {
-    bytes[index] = std::byte(static_cast<unsigned char>(start + index));
+    bytes.at(index) = std::byte(
+        static_cast<unsigned char>(std::to_integer<unsigned char>(start) + index));
   }
   return bytes;
 }
@@ -67,7 +68,7 @@ std::vector<TimelineEntry> readEntries(const fs::path& file)
 TEST(Channel, recordedFrameLandsInRollAndTimeline)
 {
   const auto dir = freshDir("chRecord");
-  const auto data = makeBytes(20, 1);
+  const auto data = makeBytes(20, std::byte{1});
 
   auto crate = Crate{};
   {
@@ -82,10 +83,10 @@ TEST(Channel, recordedFrameLandsInRollAndTimeline)
 
   const auto entries = readEntries(dir / kTimelineFileName);
   ASSERT_EQ(entries.size(), 1U);
-  EXPECT_EQ(entries[0].mChannelId, channelA);
-  EXPECT_EQ(entries[0].mRollId, 0U);
-  EXPECT_EQ(entries[0].mOffset, 0U);
-  EXPECT_EQ(entries[0].mSize, data.size());
+  EXPECT_EQ(entries.at(0).mChannelId, channelA);
+  EXPECT_EQ(entries.at(0).mRollId, 0U);
+  EXPECT_EQ(entries.at(0).mOffset, 0U);
+  EXPECT_EQ(entries.at(0).mSize, data.size());
 
   const auto roll = containers::MmapConstArray<std::byte>{dir / "chanA" / buildRollName(0)};
   ASSERT_GE(roll.size(), data.size());
@@ -129,7 +130,9 @@ TEST(Channel, rollsOverToANewRollWhenFull)
 {
   const auto dir = freshDir("chRollover");
   constexpr auto kTinyRoll = std::size_t{128};
-  const auto frame = makeBytes(100, 7); // 104 word-aligned; two will not share a 128-byte roll
+  const auto frame = makeBytes(
+      100,
+      std::byte{7}); // 104 word-aligned; two will not share a 128-byte roll
 
   {
     auto timeline = TimelineTape{dir / kTimelineFileName, kTimelineEntries};
@@ -144,15 +147,15 @@ TEST(Channel, rollsOverToANewRollWhenFull)
 
   const auto entries = readEntries(dir / kTimelineFileName);
   ASSERT_EQ(entries.size(), 2U);
-  EXPECT_EQ(entries[0].mRollId, 0U);
-  EXPECT_EQ(entries[1].mRollId, 1U);
+  EXPECT_EQ(entries.at(0).mRollId, 0U);
+  EXPECT_EQ(entries.at(1).mRollId, 1U);
 }
 
 TEST(Channel, aFrameLargerThanTheRollCapacityGetsItsOwnRoll)
 {
   const auto dir = freshDir("chBig");
   constexpr auto kTinyRoll = std::size_t{128};
-  const auto big = makeBytes(300, 3);
+  const auto big = makeBytes(300, std::byte{3});
 
   {
     auto timeline = TimelineTape{dir / kTimelineFileName, kTimelineEntries};
@@ -168,18 +171,21 @@ TEST(Channel, aFrameLargerThanTheRollCapacityGetsItsOwnRoll)
 TEST(Channel, reclaimsTheUnusedTailOfAnOverReservation)
 {
   const auto dir = freshDir("chReclaim");
-  constexpr auto kTinyRoll = std::size_t{128};
-  const auto frame = makeBytes(8, 1);
+  constexpr auto kTinyRoll = std::size_t{64};
+  const auto frame = makeBytes(8, std::byte{1});
 
   {
     auto timeline = TimelineTape{dir / kTimelineFileName, kTimelineEntries};
     auto channel = Channel{channelA, dir / "chanA", kTinyRoll, timeline};
 
-    // Reserve generously but use only a few bytes. Two 104-byte claims would not share a 128-byte
-    // roll, so if the unused tail were not reclaimed the second frame would land in roll 1.
+    // Reserve more than each frame uses, then commit only a few bytes so the over-reservation's
+    // unused tail is reclaimed and the next frame reuses the same roll instead of a fresh one. The
+    // reserve size is load-bearing relative to kTinyRoll: it exceeds half the roll, so without
+    // reclaim two claims would overflow into a second roll -- precisely what this test rules out --
+    // yet it still fits once the tail is reclaimed.
     for(auto round = 0; round < 2; ++round)
     {
-      auto reservation = channel.reserve(100);
+      auto reservation = channel.reserve(48);
       std::memcpy(reservation.span().data(), frame.data(), frame.size());
       static_cast<void>(std::move(reservation).commit(frame.size()));
     }
@@ -188,17 +194,17 @@ TEST(Channel, reclaimsTheUnusedTailOfAnOverReservation)
 
   const auto entries = readEntries(dir / kTimelineFileName);
   ASSERT_EQ(entries.size(), 2U);
-  EXPECT_EQ(entries[0].mRollId, 0U);
-  EXPECT_EQ(entries[0].mOffset, 0U);
-  EXPECT_EQ(entries[1].mRollId, 0U); // the second frame reused the same roll
-  EXPECT_EQ(entries[1].mOffset, 8U); // abutting the first frame's word-aligned end
+  EXPECT_EQ(entries.at(0).mRollId, 0U);
+  EXPECT_EQ(entries.at(0).mOffset, 0U);
+  EXPECT_EQ(entries.at(1).mRollId, 0U); // the second frame reused the same roll
+  EXPECT_EQ(entries.at(1).mOffset, 8U); // abutting the first frame's word-aligned end
   EXPECT_FALSE(fs::exists(dir / "chanA" / buildRollName(1)));
 }
 
 TEST(Channel, modifyGrowsAReservationInTheSameRollWhenItFits)
 {
   const auto dir = freshDir("chModifyFit");
-  const auto frame = makeBytes(80, 5);
+  const auto frame = makeBytes(80, std::byte{5});
 
   auto crate = Crate{};
   {
@@ -217,16 +223,16 @@ TEST(Channel, modifyGrowsAReservationInTheSameRollWhenItFits)
 
   const auto entries = readEntries(dir / kTimelineFileName);
   ASSERT_EQ(entries.size(), 1U);
-  EXPECT_EQ(entries[0].mRollId, 0U); // still the first roll
-  EXPECT_EQ(entries[0].mOffset, 0U); // re-claimed at the released start
-  EXPECT_EQ(entries[0].mSize, frame.size());
+  EXPECT_EQ(entries.at(0).mRollId, 0U); // still the first roll
+  EXPECT_EQ(entries.at(0).mOffset, 0U); // re-claimed at the released start
+  EXPECT_EQ(entries.at(0).mSize, frame.size());
 }
 
 TEST(Channel, modifyRollsOverWhenTheNewSizeNoLongerFits)
 {
   const auto dir = freshDir("chModifyRoll");
   constexpr auto kTinyRoll = std::size_t{128};
-  const auto big = makeBytes(300, 9); // larger than the 128-byte roll
+  const auto big = makeBytes(300, std::byte{9}); // larger than the 128-byte roll
 
   auto crate = Crate{};
   {
@@ -245,8 +251,8 @@ TEST(Channel, modifyRollsOverWhenTheNewSizeNoLongerFits)
 
   const auto entries = readEntries(dir / kTimelineFileName);
   ASSERT_EQ(entries.size(), 1U);
-  EXPECT_EQ(entries[0].mRollId, 1U); // the grow moved off roll 0 onto its own roll
-  EXPECT_EQ(entries[0].mSize, big.size());
+  EXPECT_EQ(entries.at(0).mRollId, 1U); // the grow moved off roll 0 onto its own roll
+  EXPECT_EQ(entries.at(0).mSize, big.size());
   EXPECT_TRUE(fs::exists(dir / "chanA" / buildRollName(1)));
 }
 
@@ -254,8 +260,8 @@ TEST(Channel, aCrateStaysReadableAfterTheChannelRollsToANewRoll)
 {
   const auto dir = freshDir("chWeak");
   constexpr auto kTinyRoll = std::size_t{128};
-  const auto first = makeBytes(100, 1);
-  const auto second = makeBytes(100, 200);
+  const auto first = makeBytes(100, std::byte{1});
+  const auto second = makeBytes(100, std::byte{200});
 
   auto timeline = TimelineTape{dir / kTimelineFileName, kTimelineEntries};
   auto channel = Channel{channelA, dir / "chanA", kTinyRoll, timeline};

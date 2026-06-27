@@ -63,7 +63,7 @@ TEST(MmapConstArray, readsAnExistingFile)
   EXPECT_FALSE(array.empty());
   for(auto index = std::size_t{0}; index < kCount; ++index)
   {
-    EXPECT_EQ(array[index], static_cast<std::int32_t>(index));
+    EXPECT_EQ(array.at(index), static_cast<std::int32_t>(index));
   }
 }
 
@@ -82,8 +82,9 @@ TEST(MmapConstArray, openingAMissingFileThrows)
 
 TEST(MmapConstArray, openingAFileThatIsNotAWholeNumberOfElementsThrows)
 {
+  // Not a multiple of sizeof(int32_t), so the file cannot be a whole number of elements.
   const auto path = freshPath("ragged");
-  static_cast<void>(MmapArray<std::byte>{path, 13}); // 13 is not a multiple of sizeof(int32_t)
+  static_cast<void>(MmapArray<std::byte>{path, std::size_t{15}});
 
   EXPECT_THROW((MmapConstArray<std::int32_t>{path}), std::runtime_error);
 }

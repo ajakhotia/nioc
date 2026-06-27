@@ -23,9 +23,13 @@ namespace po = boost::program_options;
 namespace
 {
 
-std::vector<fs::path> configLayers(const RunContext& context, const po::variables_map& variableMap)
+/// Collect the config files to layer, in merge order: the replayed recording's `config.json` first
+/// (playback only), then each `--append-config` file.
+std::vector<fs::path> configFileLayers(
+    const RunContext& context,
+    const po::variables_map& variableMap)
 {
-  auto configPaths = std::vector<fs::path>{};
+  auto configFilePaths = std::vector<fs::path>{};
   if(context.playback())
   {
     const auto recordedConfig = context.inputLog() / "config.json";
@@ -35,14 +39,39 @@ std::vector<fs::path> configLayers(const RunContext& context, const po::variable
           "Not a nioc recording (no config.json): {}",
           context.inputLog().string());
     }
-    configPaths.push_back(recordedConfig);
+    configFilePaths.push_back(recordedConfig);
   }
 
-  for(const auto& path: variableMap.at("append-config").as<std::vector<std::string>>())
+  for(const auto& appendConfigPath: variableMap.at("append-config").as<std::vector<std::string>>())
   {
-    configPaths.emplace_back(path);
+    configFilePaths.emplace_back(appendConfigPath);
   }
-  return configPaths;
+  return configFilePaths;
+}
+
+/// Build the `manifest.json` record: how this run was invoked, and what it replays when in
+/// playback.
+nlohmann::json manifestRecord(const RunContext& context)
+{
+  auto record = nlohmann::json::object();
+  record.emplace("cmdline", context.commandLine());
+  record.emplace("mode", context.playback() ? "playback" : "online");
+  if(context.playback())
+  {
+    record.emplace("inputLog", context.inputLog().string());
+  }
+  return record;
+}
+
+/// Write @p json as pretty-printed text to @p path, with a trailing newline.
+void writeJsonFile(const fs::path& path, const nlohmann::json& json)
+{
+  auto outputFile = std::ofstream(path);
+  if(not outputFile)
+  {
+    common::throwException<std::runtime_error>("Cannot write {}", path.string());
+  }
+  outputFile << json.dump(2) << '\n';
 }
 
 } // namespace
@@ -66,31 +95,16 @@ Manifest::Manifest(RunContext context, ConfigStore configStore):
 Manifest::Manifest(const po::variables_map& variableMap, const capnp::StructSchema schema):
   mContext{variableMap},
   mConfigStore{
-      configLayers(mContext, variableMap),
+      configFileLayers(mContext, variableMap),
       variableMap.at("config-override").as<std::vector<std::string>>(),
       schema}
 {
 }
 
-void Manifest::writeTo(const fs::path& recordingDir) const
+void Manifest::write(const fs::path& recordingDir) const
 {
-  mConfigStore.writeTo(recordingDir / "config.json");
-
-  auto json = nlohmann::json::object();
-  json.emplace("cmdline", mContext.commandLine());
-  json.emplace("mode", mContext.playback() ? "playback" : "online");
-  if(mContext.playback())
-  {
-    json.emplace("inputLog", mContext.inputLog().string());
-  }
-
-  const auto path = recordingDir / "manifest.json";
-  auto file = std::ofstream(path);
-  if(not file)
-  {
-    common::throwException<std::runtime_error>("Cannot write {}", path.string());
-  }
-  file << json.dump(2) << '\n';
+  mConfigStore.write(recordingDir / "config.json");
+  writeJsonFile(recordingDir / "manifest.json", manifestRecord(mContext));
 }
 
 } // namespace nioc::terminus

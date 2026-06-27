@@ -11,13 +11,13 @@
 namespace nioc::terminus
 {
 
-/// @brief A move-only handle that owns one crate of work and counts itself against a shared in-flight
-/// counter for its whole lifetime.
+/// @brief A move-only handle that owns one crate of work and counts itself against a shared
+/// in-flight counter for its whole lifetime.
 ///
 /// While it lives it adds one to the counter; on destruction it removes one and wakes every waiter
 /// (such as `Port::awaitQuiescence`) when the count reaches zero. Move transfers the count, leaving
-/// the moved-from handle disengaged. Own and destroy each consignment on one thread; the counter may
-/// be shared across threads and must outlive every consignment built from it.
+/// the moved-from handle disengaged. Own and destroy each consignment on one thread; the counter
+/// may be shared across threads and must outlive every consignment built from it.
 ///
 /// @see Port::awaitQuiescence, chronicle::Crate
 class Consignment

@@ -13,11 +13,12 @@
 namespace nioc::terminus
 {
 
-/// @brief A value that bundles one program invocation's run context with its merged configuration,
+/// @brief A value that bundles one program invocation's run context with its merged configuration
 /// and can persist both into a recording directory for later replay and audit.
 ///
-/// A program builds one `Manifest` from its parsed command line at startup, then calls @ref writeTo
-/// to drop the recording's `config.json` and `manifest.json` into the run's output directory.
+/// A program builds one `Manifest` from its parsed command line at startup, then calls @ref
+/// write method to drop the recording's `config.json` and `manifest.json` into the run's output
+/// directory.
 ///
 /// Example:
 ///
@@ -25,7 +26,7 @@ namespace nioc::terminus
 ///     po::store(po::parse_command_line(argc, argv, Manifest::cliOptions()), vm);
 ///     po::notify(vm);
 ///     auto manifest = Manifest{vm, MyConfig::schema};
-///     manifest.writeTo(recordingDir);
+///     manifest.write(recordingDir);
 ///
 /// Non-copyable and not move-assignable (the embedded @ref ConfigStore is move-construct-only);
 /// pass it by value to move it.
@@ -36,7 +37,7 @@ struct Manifest
   /// How this run was invoked: log root, resources, record/playback mode, and command line.
   RunContext mContext;
 
-  /// The layered, optionally schema-decoded configuration for this run.
+  /// The layered, schema-decoded configuration for this run.
   ConfigStore mConfigStore;
 
   /// @brief Return the full set of command-line options the @ref Manifest(const
@@ -58,7 +59,7 @@ struct Manifest
   /// @param variableMap A map parsed against @ref cliOptions(); entries `append-config` and
   /// `config-override` must be present.
   ///
-  /// @param schema The Cap'n Proto struct schema that supplies config defaults and the decode
+  /// @param schema The Cap'n Proto struct schema that supplies config defaults and decode
   /// target.
   ///
   /// @throws std::invalid_argument if the playback path holds no `config.json`, or an override is
@@ -69,14 +70,14 @@ struct Manifest
   /// @throws kj::Exception if the merged JSON does not decode against @p schema.
   Manifest(const boost::program_options::variables_map& variableMap, capnp::StructSchema schema);
 
-  /// @brief Write `config.json` (the merged config) and `manifest.json` (command line plus
+  /// @brief Write `config.json` (the decoded config) and `manifest.json` (command line plus
   /// online/playback mode, and the input log when replaying) into @p recordingDir, overwriting any
   /// existing files.
   ///
   /// @param recordingDir Destination directory; must already exist.
   ///
   /// @throws std::runtime_error if either file cannot be opened for writing.
-  void writeTo(const std::filesystem::path& recordingDir) const;
+  void write(const std::filesystem::path& recordingDir) const;
 };
 
 } // namespace nioc::terminus

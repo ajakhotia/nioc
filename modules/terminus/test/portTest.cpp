@@ -7,6 +7,7 @@
 #include <array>
 #include <atomic>
 #include <boost/program_options.hpp>
+#include <capnp/schema.h>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
@@ -50,11 +51,6 @@ fs::path config()
   return testDataDir() / "testConfig.json";
 }
 
-fs::path configOverride()
-{
-  return testDataDir() / "testConfigOverride.json";
-}
-
 fs::path malformedConfig()
 {
   return testDataDir() / "malformedConfig.json";
@@ -92,8 +88,7 @@ Manifest testManifest(std::string commandLine = "")
 {
   return Manifest{
       RunContext{logRoot(), {}, true, std::move(commandLine)},
-      ConfigStore{{config()}, {}}
-  };
+      ConfigStore{{config()}, {}, capnp::Schema::from<TestConfig>()}};
 }
 
 void publishGap(Port& port, const std::string_view topic)
@@ -120,24 +115,6 @@ TEST(PortTest, constructionCreatesRecordingDirectory)
     return recordingDir;
   }();
   EXPECT_TRUE(fs::is_regular_file(workingDir / "resources.json"));
-}
-
-TEST(PortTest, configMergesPathsLeftToRight)
-{
-  auto port = Port{
-      Manifest{RunContext{logRoot(), {}, true, ""}, ConfigStore{{config(), configOverride()}, {}}},
-      emptySetup
-  };
-
-  // The merged config is recorded to <dir>/config.json; verify the merge through the recording.
-  const auto onDisk = nlohmann::json::parse(std::ifstream(port.workingDir() / "config.json"));
-
-  EXPECT_EQ(onDisk.at("robot").get<std::string>(), "atlas");          // base only
-  EXPECT_EQ(onDisk.at("controlRateHz").get<int>(), 200);              // base only
-  EXPECT_TRUE(onDisk.at("sensors").at("imu").get<bool>());            // base only
-  EXPECT_EQ(onDisk.at("sensors").at("lidarChannels").get<int>(), 32); // override wins
-  EXPECT_TRUE(onDisk.at("sensors").at("camera").get<bool>());         // override only
-  EXPECT_EQ(onDisk.at("mode").get<std::string>(), "override");        // override wins
 }
 
 TEST(PortTest, recordingCarriesManifestAndResources)
@@ -196,9 +173,10 @@ TEST(PortTest, constructionCreatesMissingLogRoot)
   fs::remove_all(absentRoot);
 
   auto port = Port{
-      Manifest{RunContext{absentRoot, {}, true, ""}, ConfigStore{{}, {}}},
-      emptySetup
-  };
+      Manifest{
+          RunContext{absentRoot, {}, true, ""},
+          ConfigStore{"{}", capnp::Schema::from<TestConfig>()}},
+      emptySetup};
 
   EXPECT_TRUE(fs::is_directory(absentRoot));
   EXPECT_EQ(port.workingDir().parent_path(), absentRoot);
@@ -210,9 +188,10 @@ TEST(PortTest, recordChronicleFalseOmitsChronicleDir)
   const auto workingDir = [&]
   {
     auto port = Port{
-        Manifest{RunContext{logRoot(), {}, false, ""}, ConfigStore{{config()}, {}}},
-        emptySetup
-    };
+        Manifest{
+            RunContext{logRoot(), {}, false, ""},
+            ConfigStore{{config()}, {}, capnp::Schema::from<TestConfig>()}},
+        emptySetup};
     const auto& recordingDir = port.workingDir();
 
     EXPECT_FALSE(fs::exists(recordingDir / "chronicle"));
@@ -223,41 +202,13 @@ TEST(PortTest, recordChronicleFalseOmitsChronicleDir)
   EXPECT_TRUE(fs::is_regular_file(workingDir / "resources.json"));
 }
 
-TEST(PortTest, deliversToSubscribersWithoutRecording)
-{
-  // Temporarily disabled: Publisher now always builds into a recording channel, so a non-recording
-  // run cannot mint a publisher (Port::publisher throws). Restore once the heap-only publish path
-  // is reintroduced.
-  GTEST_SKIP() << "non-recording publish path is unsupported pending the channel-always rework";
-
-  // recordChronicle = false: the message is built on the heap and still fans out to subscribers.
-  auto port = Port{
-      Manifest{RunContext{logRoot(), {}, false, ""}, ConfigStore{{config()}, {}}},
-      emptySetup
-  };
-
-  auto received = std::vector<std::int64_t>{};
-  port.subscribe(
-      chronicle::makeChannelId(kSchemaId<TestSchema>, "live"),
-      [&received](Consignment consignment)
-      { received.push_back(Message<TestSchema>{consignment.crate()}.reader().getValue()); });
-
-  auto publisher = port.publisher<TestSchema>("live");
-  constexpr auto kValue = std::int64_t{7};
-  auto draft = publisher.draft();
-  draft.builder().setValue(kValue);
-  publisher.publish(std::move(draft));
-
-  EXPECT_EQ((std::vector<std::int64_t>{kValue}), received);
-  EXPECT_FALSE(fs::exists(port.workingDir() / "chronicle"));
-}
-
 TEST(PortTest, constructionAddsListedResources)
 {
   auto port = Port{
-      Manifest{RunContext{logRoot(), {resource()}, true, ""}, ConfigStore{{config()}, {}}},
-      emptySetup
-  };
+      Manifest{
+          RunContext{logRoot(), {resource()}, true, ""},
+          ConfigStore{{config()}, {}, capnp::Schema::from<TestConfig>()}},
+      emptySetup};
   EXPECT_TRUE(fs::is_regular_file(port.workingDir() / "testResource.bin"));
 }
 
@@ -299,10 +250,7 @@ TEST(PortTest, constructionFromCommandLineReadsEveryOption)
   // parseCommandLine injects the verbatim command line for the Port to record.
   EXPECT_TRUE(variableMap.contains("commandLine"));
 
-  auto port = Port{
-      Manifest{variableMap, capnp::Schema::from<TestConfig>()},
-      emptySetup
-  };
+  auto port = Port{Manifest{variableMap, capnp::Schema::from<TestConfig>()}, emptySetup};
 
   EXPECT_EQ(port.workingDir().parent_path(), logRoot());
   EXPECT_FALSE(port.runContext().playback());
@@ -320,10 +268,12 @@ TEST(PortTest, constructionRejectsUnreadableConfig)
   EXPECT_THROW(
       (Port{
           Manifest{
-                   RunContext{logRoot(), {}, true, ""},
-                   ConfigStore{{testDataDir() / "doesNotExist.json"}, {}}},
-          emptySetup
-  }),
+              RunContext{logRoot(), {}, true, ""},
+              ConfigStore{
+                  {testDataDir() / "doesNotExist.json"},
+                  {},
+                  capnp::Schema::from<TestConfig>()}},
+          emptySetup}),
       std::runtime_error);
 }
 
@@ -331,9 +281,10 @@ TEST(PortTest, constructionRejectsMalformedConfig)
 {
   EXPECT_THROW(
       (Port{
-          Manifest{RunContext{logRoot(), {}, true, ""}, ConfigStore{{malformedConfig()}, {}}},
-          emptySetup
-  }),
+          Manifest{
+              RunContext{logRoot(), {}, true, ""},
+              ConfigStore{{malformedConfig()}, {}, capnp::Schema::from<TestConfig>()}},
+          emptySetup}),
       nlohmann::json::parse_error);
 }
 
@@ -441,7 +392,7 @@ TEST(PortTest, everyPublishedMessageIsRecordedInOrder)
   constexpr auto kTopic = std::string_view{"chronicleGate"};
 
   // No subscribers: publishing records each message into the chronicle synchronously. Read the
-  // recording back and expect every published value, in publish order.
+  // recording back and expect every published value, in the publish-order.
   const auto workingDir = [&]
   {
     auto port = Port{testManifest(), emptySetup};

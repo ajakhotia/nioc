@@ -173,7 +173,7 @@ public:
     return Pose<Scalar>({0, 0, 0, 1, 0, 0, 0});
   }
 
-protected:
+private:
   Se3() noexcept = default;
 
   Se3(const Se3&) noexcept = default;
@@ -186,7 +186,14 @@ protected:
 
   Se3& operator=(Se3&&) noexcept = default;
 
-private:
+  /// @brief Grant the concrete pose access to the otherwise-private special members.
+  ///
+  /// CRTP needs `Derived` to construct, copy, move, and destroy this base. Keeping these members
+  /// private and befriending only `Derived` gives it that access while preventing `Se3` from being
+  /// inherited as an ordinary base by an unrelated class (the misuse `bugprone-crtp-constructor-`
+  /// `accessibility` guards against).
+  friend Derived;
+
   /// @brief Downcast this base to a read-only reference to the concrete `Derived` pose.
   ///
   /// The CRTP contract guarantees that every `Se3` is in fact a `Derived`, so the static cast is
@@ -248,7 +255,7 @@ public:
         sizeof(Scalar) * orientation.coeffs().size());
 
     std::memcpy(
-        parameters().data() + orientation.coeffs().size(),
+        std::next(parameters().data(), orientation.coeffs().size()),
         position.data(),
         sizeof(Scalar) * position.size());
 

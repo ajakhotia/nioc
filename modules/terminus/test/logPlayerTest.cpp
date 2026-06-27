@@ -4,11 +4,13 @@
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#include <capnp/schema.h>
 #include <cstdint>
 #include <filesystem>
 #include <gtest/gtest.h>
 #include <nioc/chronicle/defines.hpp>
 #include <nioc/concurrent/routine.hpp>
+#include <nioc/terminus/config/testConfig.capnp.h>
 #include <nioc/terminus/configStore.hpp>
 #include <nioc/terminus/consignment.hpp>
 #include <nioc/terminus/idl/testSchema.capnp.h>
@@ -42,10 +44,9 @@ Port makePort(const std::string_view name, const bool record)
 {
   return Port{
       Manifest{
-               RunContext{fs::temp_directory_path() / "nioc-logPlayerTest" / name, {}, record, ""},
-               ConfigStore{{}, {}}},
-      [](Port&, Port::Drivers&, Port::Components&, Port::Runners&) {}
-  };
+          RunContext{fs::temp_directory_path() / "nioc-logPlayerTest" / name, {}, record, ""},
+          ConfigStore{"{}", capnp::Schema::from<TestConfig>()}},
+      [](Port&, Port::Drivers&, Port::Components&, Port::Runners&) {}};
 }
 
 void publishValue(Publisher<TestSchema>& publisher, const std::int64_t value)
@@ -77,10 +78,10 @@ TEST(LogPlayer, replaysFramesAcrossChannelsInGlobalRecordOrder)
     auto publisherA = port.publisher<TestSchema>("alpha");
     auto publisherB = port.publisher<TestSchema>("beta");
 
-    publishValue(publisherA, 10);
-    publishValue(publisherB, 20);
+    publishValue(publisherA, 15);
+    publishValue(publisherB, 16);
     publishValue(publisherA, 11);
-    publishValue(publisherB, 21);
+    publishValue(publisherB, 24);
     publishValue(publisherA, 12);
 
     return port.workingDir() / "chronicle";
@@ -104,12 +105,11 @@ TEST(LogPlayer, replaysFramesAcrossChannelsInGlobalRecordOrder)
   replay(port, chronicleDir);
 
   const auto expected = std::vector<std::pair<chronicle::ChannelId, std::int64_t>>{
-      {channelA, 10},
-      {channelB, 20},
+      {channelA, 15},
+      {channelB, 16},
       {channelA, 11},
-      {channelB, 21},
-      {channelA, 12}
-  };
+      {channelB, 24},
+      {channelA, 12}};
   EXPECT_EQ(expected, received);
 }
 
@@ -121,8 +121,8 @@ TEST(LogPlayer, preservesPayloadAndSequenceNumberAcrossReplay)
   {
     auto port = makePort("fidelity", true);
     auto publisher = port.publisher<TestSchema>("telemetry");
-    publishValue(publisher, 100);
-    publishValue(publisher, 200);
+    publishValue(publisher, 25);
+    publishValue(publisher, 35);
     return port.workingDir() / "chronicle";
   }();
 
@@ -140,7 +140,7 @@ TEST(LogPlayer, preservesPayloadAndSequenceNumberAcrossReplay)
 
   replay(port, chronicleDir);
 
-  EXPECT_EQ((std::vector<std::int64_t>{100, 200}), values);
+  EXPECT_EQ((std::vector<std::int64_t>{25, 35}), values);
   EXPECT_EQ((std::vector<std::uint64_t>{1, 2}), sequenceNumbers);
 }
 

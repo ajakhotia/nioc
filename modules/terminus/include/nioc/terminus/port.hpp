@@ -117,14 +117,11 @@ public:
   /// @see RunContext
   [[nodiscard]] const RunContext& runContext() const noexcept;
 
-  /// @brief Return a typed reader over the run's decoded configuration.
-  ///
-  /// The reader borrows from this Port and must not outlive it.
+  /// @brief Return a typed reader over the run's decoded configuration; it borrows from this Port
+  /// and must not outlive it.
   ///
   /// @tparam Schema Must be supplied explicitly and match the schema the config was decoded
   /// against.
-  ///
-  /// @throws std::logic_error if the run's config was built without a schema.
   template<typename Schema>
   [[nodiscard]] Schema::Reader config() const
   {

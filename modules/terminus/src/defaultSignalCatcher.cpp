@@ -32,10 +32,9 @@ common::SignalCatcher defaultSignalCatcher(Port& port)
   const auto abortNow = [&port](const std::int32_t) { port.abort(); };
 
   return common::SignalCatcher{
-      std::pair{ SIGINT, shutdownThenAbort},
+      std::pair{SIGINT, shutdownThenAbort},
       std::pair{SIGTERM, shutdownThenAbort},
-      std::pair{SIGABRT,          abortNow}
-  };
+      std::pair{SIGABRT, abortNow}};
 }
 
 } // namespace nioc::terminus

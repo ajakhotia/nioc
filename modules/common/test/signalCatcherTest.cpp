@@ -22,7 +22,7 @@ using namespace std::chrono_literals;
 
 // The watch thread drains a single-slot atomic cache, so raising a second signal before that
 // slot is consumed would clobber the first. Sleeping after each raise lets the watcher catch up.
-constexpr auto kDrainDelay = 100us;
+constexpr auto kDrainDelay = 500us;
 
 TEST(SignalCatcher, CatchesSigintAndSigabrt)
 {
@@ -31,10 +31,11 @@ TEST(SignalCatcher, CatchesSigintAndSigabrt)
 
   const auto catcher = SignalCatcher{
       std::pair{
-                SIGINT,   SignalCatcher::SignalAction{[&sigintCount](std::int32_t) { ++sigintCount; }} },
+          SIGINT,
+          SignalCatcher::SignalAction{[&sigintCount](std::int32_t) { ++sigintCount; }}},
       std::pair{
-                SIGABRT, SignalCatcher::SignalAction{[&sigabrtCount](std::int32_t) { ++sigabrtCount; }}}
-  };
+          SIGABRT,
+          SignalCatcher::SignalAction{[&sigabrtCount](std::int32_t) { ++sigabrtCount; }}}};
 
   static_cast<void>(std::raise(SIGINT));
   std::this_thread::sleep_for(kDrainDelay);
@@ -50,11 +51,10 @@ TEST(SignalCatcher, ActionReceivesRunningCount)
 {
   auto observedCounts = std::vector<std::int32_t>{};
 
-  const auto catcher = SignalCatcher{
-      std::pair{
-                SIGINT, SignalCatcher::SignalAction{[&observedCounts](const std::int32_t count)
-                                      { observedCounts.push_back(count); }}}
-  };
+  const auto catcher = SignalCatcher{std::pair{
+      SIGINT,
+      SignalCatcher::SignalAction{[&observedCounts](const std::int32_t count)
+                                  { observedCounts.push_back(count); }}}};
 
   static_cast<void>(std::raise(SIGINT));
   std::this_thread::sleep_for(kDrainDelay);
@@ -62,15 +62,14 @@ TEST(SignalCatcher, ActionReceivesRunningCount)
   static_cast<void>(std::raise(SIGINT));
   std::this_thread::sleep_for(kDrainDelay);
 
-  EXPECT_EQ((std::vector<std::int32_t>{1, 2}), observedCounts);
+  EXPECT_EQ((std::vector{1, 2}), observedCounts);
 }
 
 TEST(SignalCatcher, DestructionRestoresDefaultHandlers)
 {
   {
     const auto catcher = SignalCatcher{
-        std::pair{SIGINT, SignalCatcher::SignalAction{[](std::int32_t) {}}}
-    };
+        std::pair{SIGINT, SignalCatcher::SignalAction{[](std::int32_t) {}}}};
   }
 
   // The destructor restored SIG_DFL; std::signal hands back the handler in effect.

@@ -1,9 +1,9 @@
 {
-  "robot": "atlas",
-  "controlRateHz": 200,
-  "sensors": {
-    "imu": true,
-    "lidarChannels": 16
-  },
-  "mode": "base"
+  "name": "atlas",
+  "count": 200,
+  "enabled": true,
+  "leaf": {
+    "value": 5,
+    "tag": "base"
+  }
 }

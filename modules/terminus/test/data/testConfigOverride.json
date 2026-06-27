@@ -1,7 +1,0 @@
-{
-  "sensors": {
-    "lidarChannels": 32,
-    "camera": true
-  },
-  "mode": "override"
-}

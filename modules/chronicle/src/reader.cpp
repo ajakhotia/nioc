@@ -86,10 +86,7 @@ std::optional<Entry> Reader::readNextEntry()
   auto roll = acquireRoll(timelineEntry.mChannelId, timelineEntry.mRollId);
   const auto span = std::span{*roll}.subspan(timelineEntry.mOffset, timelineEntry.mSize);
 
-  return Entry{
-      .mChannelId = timelineEntry.mChannelId,
-      .mCrate = Crate{std::move(roll), span}
-  };
+  return Entry{.mChannelId = timelineEntry.mChannelId, .mCrate = Crate{std::move(roll), span}};
 }
 
 std::shared_ptr<const Reader::Roll> Reader::acquireRoll(

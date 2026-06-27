@@ -259,10 +259,13 @@ public:
   ///
   /// @return Pointer to the constructed element, or nullptr if the tape is full.
   ///
+  /// @throws Propagates any exception thrown by the @p value_type constructor. Not declared
+  /// `noexcept`: `claim` is a throwing function, so the promise could not be honored
+  /// unconditionally.
+  ///
   /// @see claim
   template<typename... Args>
-  [[nodiscard]] pointer emplace(Args&&... args) noexcept(
-      std::is_nothrow_constructible_v<value_type, Args...>)
+  [[nodiscard]] pointer emplace(Args&&... args)
   {
     const auto slot = claim();
     if(slot.empty())
