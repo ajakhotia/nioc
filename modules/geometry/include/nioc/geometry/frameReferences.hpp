@@ -204,7 +204,8 @@ template<typename LhsFrame, typename RhsFrame>
 constexpr void assertFrameEqual() noexcept
   requires(
       common::isSpecialization<LhsFrame, StaticFrame> and
-      common::isSpecialization<RhsFrame, StaticFrame> and LhsFrame::name() == RhsFrame::name())
+      common::isSpecialization<RhsFrame, StaticFrame> and
+      LhsFrame::name() == RhsFrame::name())
 {
 }
 

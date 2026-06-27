@@ -77,11 +77,11 @@ void Manifest::writeTo(const fs::path& recordingDir) const
   mConfigStore.writeTo(recordingDir / "config.json");
 
   auto json = nlohmann::json::object();
-  json["cmdline"] = mContext.commandLine();
-  json["mode"] = mContext.playback() ? "playback" : "online";
+  json.emplace("cmdline", mContext.commandLine());
+  json.emplace("mode", mContext.playback() ? "playback" : "online");
   if(mContext.playback())
   {
-    json["inputLog"] = mContext.inputLog().string();
+    json.emplace("inputLog", mContext.inputLog().string());
   }
 
   const auto path = recordingDir / "manifest.json";

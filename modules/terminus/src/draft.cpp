@@ -40,8 +40,8 @@ chronicle::Crate flattenDraft(ArenaMessageBuilder& builder, chronicle::Reservati
           segments.size());
     }
 
-    reservation.modify(ArenaMessageBuilder::frameSize(segments[0].size()));
-    const auto frame = ArenaMessageBuilder::writeFrame(reservation.span(), segments[0]);
+    reservation.modify(ArenaMessageBuilder::frameSize(segments.front().size()));
+    const auto frame = ArenaMessageBuilder::writeFrame(reservation.span(), segments.front());
     return std::move(reservation).commit(frame.size());
   }
 

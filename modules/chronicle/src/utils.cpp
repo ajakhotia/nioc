@@ -19,7 +19,8 @@ std::string padString(
 
 std::string buildRollName(const std::uint64_t rollId)
 {
-  return kRollFileNamePrefix + padString(std::to_string(rollId), kPaddedNumberLength) +
+  return kRollFileNamePrefix +
+         padString(std::to_string(rollId), kPaddedNumberLength) +
          kFileNameExtension;
 }
 

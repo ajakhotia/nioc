@@ -47,7 +47,8 @@ namespace nioc::containers
 ///
 /// @see claim, emplace, rewind
 template<typename Storage>
-  requires std::ranges::contiguous_range<Storage> and std::ranges::sized_range<Storage> and
+  requires std::ranges::contiguous_range<Storage> and
+           std::ranges::sized_range<Storage> and
            std::is_trivially_copyable_v<std::ranges::range_value_t<Storage>>
 class Tape
 {
@@ -97,6 +98,24 @@ public:
   [[nodiscard]] decltype(auto) operator[](this auto&& self, const size_type index) noexcept
   {
     return self.data()[index]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+  }
+
+  /// @brief Reference to the element at @p index, bounds-checked. Const through a const tape.
+  ///
+  /// @param index Element offset.
+  ///
+  /// @throws std::out_of_range if @p index is not less than `size()`.
+  [[nodiscard]] decltype(auto) at(this auto&& self, const size_type index)
+  {
+    if(index >= self.size())
+    {
+      common::throwException<std::out_of_range>(
+          "Index {} is out of range for a tape of size {}.",
+          index,
+          self.size());
+    }
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
+    return std::forward<decltype(self)>(self)[index];
   }
 
   /// @brief Iterator to the start of the claimed prefix [0, size()). Const through a const tape.

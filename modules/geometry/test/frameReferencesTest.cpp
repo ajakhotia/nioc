@@ -162,8 +162,8 @@ TEST(composeFrameReferences, StaticStaticStaticStatic)
   const auto result = composeFrameReferences(lhs, rhs);
 
   using ResultType = decltype(result);
-  static_assert(std::is_same_v<typename ResultType::ParentFrame, StaticFrame<Sun>>);
-  static_assert(std::is_same_v<typename ResultType::ChildFrame, StaticFrame<Pluto>>);
+  static_assert(std::is_same_v<ResultType::ParentFrame, StaticFrame<Sun>>);
+  static_assert(std::is_same_v<ResultType::ChildFrame, StaticFrame<Pluto>>);
 }
 
 TEST(composeFrameReferences, StaticStaticStaticDynamic)
@@ -178,8 +178,8 @@ TEST(composeFrameReferences, StaticStaticStaticDynamic)
   const auto result = composeFrameReferences(lhs, rhs);
 
   using ResultType = decltype(result);
-  static_assert(std::is_same_v<typename ResultType::ParentFrame, StaticFrame<Sun>>);
-  static_assert(std::is_same_v<typename ResultType::ChildFrame, DynamicFrame>);
+  static_assert(std::is_same_v<ResultType::ParentFrame, StaticFrame<Sun>>);
+  static_assert(std::is_same_v<ResultType::ChildFrame, DynamicFrame>);
   EXPECT_EQ(result.childFrame().name(), "milkyWay");
 }
 
@@ -196,8 +196,8 @@ TEST(composeFrameReferences, StaticStaticDynamicStatic)
     const auto result = composeFrameReferences(lhs, rhs);
 
     using ResultType = decltype(result);
-    static_assert(std::is_same_v<typename ResultType::ParentFrame, StaticFrame<Sun>>);
-    static_assert(std::is_same_v<typename ResultType::ChildFrame, StaticFrame<Pluto>>);
+    static_assert(std::is_same_v<ResultType::ParentFrame, StaticFrame<Sun>>);
+    static_assert(std::is_same_v<ResultType::ChildFrame, StaticFrame<Pluto>>);
   }
 
   {
@@ -221,8 +221,8 @@ TEST(composeFrameReferences, StaticDynamicStaticStatic)
     const auto result = composeFrameReferences(lhs, rhs);
 
     using ResultType = decltype(result);
-    static_assert(std::is_same_v<typename ResultType::ParentFrame, StaticFrame<Sun>>);
-    static_assert(std::is_same_v<typename ResultType::ChildFrame, StaticFrame<Pluto>>);
+    static_assert(std::is_same_v<ResultType::ParentFrame, StaticFrame<Sun>>);
+    static_assert(std::is_same_v<ResultType::ChildFrame, StaticFrame<Pluto>>);
   }
 
   {
@@ -246,8 +246,8 @@ TEST(composeFrameReferences, StaticDynamicDynamicStatic)
     const auto result = composeFrameReferences(lhs, rhs);
 
     using ResultType = decltype(result);
-    static_assert(std::is_same_v<typename ResultType::ParentFrame, StaticFrame<Sun>>);
-    static_assert(std::is_same_v<typename ResultType::ChildFrame, StaticFrame<Pluto>>);
+    static_assert(std::is_same_v<ResultType::ParentFrame, StaticFrame<Sun>>);
+    static_assert(std::is_same_v<ResultType::ChildFrame, StaticFrame<Pluto>>);
   }
 
   {
@@ -271,8 +271,8 @@ TEST(composeFrameReferences, DynamicStaticStaticDynamic)
     const auto result = composeFrameReferences(lhs, rhs);
 
     using ResultType = decltype(result);
-    static_assert(std::is_same_v<typename ResultType::ParentFrame, DynamicFrame>);
-    static_assert(std::is_same_v<typename ResultType::ChildFrame, DynamicFrame>);
+    static_assert(std::is_same_v<ResultType::ParentFrame, DynamicFrame>);
+    static_assert(std::is_same_v<ResultType::ChildFrame, DynamicFrame>);
     EXPECT_EQ(result.parentFrame().name(), "nioc::geometry::Sun");
     EXPECT_EQ(result.childFrame().name(), "nioc::geometry::Pluto");
   }
@@ -290,8 +290,8 @@ TEST(invertFrameReferences, allCases)
     auto result = invertFrameReferences(input);
     using ResultType = decltype(result);
 
-    static_assert(std::is_same_v<typename ResultType::ParentFrame, StaticFrame<Uranus>>);
-    static_assert(std::is_same_v<typename ResultType::ChildFrame, StaticFrame<Sun>>);
+    static_assert(std::is_same_v<ResultType::ParentFrame, StaticFrame<Uranus>>);
+    static_assert(std::is_same_v<ResultType::ChildFrame, StaticFrame<Sun>>);
   }
 
   {
@@ -299,8 +299,8 @@ TEST(invertFrameReferences, allCases)
     auto result = invertFrameReferences(input);
     using ResultType = decltype(result);
 
-    static_assert(std::is_same_v<typename ResultType::ParentFrame, DynamicFrame>);
-    static_assert(std::is_same_v<typename ResultType::ChildFrame, StaticFrame<Uranus>>);
+    static_assert(std::is_same_v<ResultType::ParentFrame, DynamicFrame>);
+    static_assert(std::is_same_v<ResultType::ChildFrame, StaticFrame<Uranus>>);
     EXPECT_EQ(result.parentFrame().name(), "nioc::geometry::Pluto");
   }
 
@@ -309,8 +309,8 @@ TEST(invertFrameReferences, allCases)
     auto result = invertFrameReferences(input);
     using ResultType = decltype(result);
 
-    static_assert(std::is_same_v<typename ResultType::ParentFrame, StaticFrame<Uranus>>);
-    static_assert(std::is_same_v<typename ResultType::ChildFrame, DynamicFrame>);
+    static_assert(std::is_same_v<ResultType::ParentFrame, StaticFrame<Uranus>>);
+    static_assert(std::is_same_v<ResultType::ChildFrame, DynamicFrame>);
     EXPECT_EQ(result.childFrame().name(), "nioc::geometry::Sun");
   }
 
@@ -319,8 +319,8 @@ TEST(invertFrameReferences, allCases)
     auto result = invertFrameReferences(input);
     using ResultType = decltype(result);
 
-    static_assert(std::is_same_v<typename ResultType::ParentFrame, DynamicFrame>);
-    static_assert(std::is_same_v<typename ResultType::ChildFrame, DynamicFrame>);
+    static_assert(std::is_same_v<ResultType::ParentFrame, DynamicFrame>);
+    static_assert(std::is_same_v<ResultType::ChildFrame, DynamicFrame>);
     EXPECT_EQ(result.parentFrame().name(), "nioc::geometry::Uranus");
     EXPECT_EQ(result.childFrame().name(), "nioc::geometry::Sun");
   }

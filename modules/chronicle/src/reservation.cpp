@@ -74,11 +74,12 @@ Crate Reservation::commit(const std::size_t usedSize) &&
     logger::warn("Could not reclaim the reservation's unused tail; a later claim followed it.");
   }
 
-  mChannelPtr->append(TimelineEntry{
-      .mChannelId = mChannelPtr->id(),
-      .mRollId = mRollId,
-      .mOffset = offset,
-      .mSize = usedSize});
+  mChannelPtr->append(
+      TimelineEntry{
+          .mChannelId = mChannelPtr->id(),
+          .mRollId = mRollId,
+          .mOffset = offset,
+          .mSize = usedSize});
 
   return Crate{
       std::shared_ptr<const void>(std::move(mRollPtr)),

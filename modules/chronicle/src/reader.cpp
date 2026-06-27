@@ -80,7 +80,7 @@ std::optional<Entry> Reader::readNextEntry()
     return std::nullopt;
   }
 
-  const auto& timelineEntry = (*mTimelineFile)[mEntryInTimeline];
+  const auto& timelineEntry = mTimelineFile->at(mEntryInTimeline);
   ++mEntryInTimeline;
 
   auto roll = acquireRoll(timelineEntry.mChannelId, timelineEntry.mRollId);

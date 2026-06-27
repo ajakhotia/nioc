@@ -108,6 +108,24 @@ public:
     return data()[index]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
   }
 
+  /// @brief Element at @p index, bounds-checked.
+  ///
+  /// @param index Position to read.
+  ///
+  /// @throws std::out_of_range if @p index is not less than `size()`.
+  [[nodiscard]] const_reference at(const size_type index) const
+  {
+    if(index >= size())
+    {
+      common::throwException<std::out_of_range>(
+          "Index {} is out of range for an array of size {}.",
+          index,
+          size());
+    }
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
+    return (*this)[index];
+  }
+
   /// Iterator to the first element.
   [[nodiscard]] const_iterator begin() const noexcept
   {

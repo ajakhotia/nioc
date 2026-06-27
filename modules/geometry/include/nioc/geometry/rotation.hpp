@@ -144,7 +144,7 @@ public:
   /// @brief Return the rotation angle in radians, in the range `[0, 2*pi)`.
   [[nodiscard]] decltype(auto) angle() const noexcept
   {
-    using Scalar = typename Derived::Scalar;
+    using Scalar = Derived::Scalar;
     return Scalar(4) * std::atan(cDerived().cParameters().norm());
   }
 
@@ -169,7 +169,7 @@ public:
   /// The result applies @p rhsBase first, then `*this`, matching rotation-matrix multiplication.
   decltype(auto) operator*(const Mrp3& rhsBase) const
   {
-    using Scalar = typename Derived::Scalar;
+    using Scalar = Derived::Scalar;
 
     const auto& lhsMrp = this->cDerived().cParameters();
     const auto& rhsMrp = rhsBase.cDerived().cParameters();
@@ -177,7 +177,8 @@ public:
     const auto lhsNorm2 = lhsMrp.squaredNorm();
     const auto rhsNorm2 = rhsMrp.squaredNorm();
 
-    const auto vec = (((Scalar(1) - rhsNorm2) * lhsMrp) + ((Scalar(1) - lhsNorm2) * rhsMrp) +
+    const auto vec = (((Scalar(1) - rhsNorm2) * lhsMrp) +
+                      ((Scalar(1) - lhsNorm2) * rhsMrp) +
                       (Scalar(2) * lhsMrp.cross(rhsMrp)))
                          .eval();
 
@@ -278,16 +279,18 @@ public:
   /// non-negative `w` to stay well-conditioned. A debug-only assert checks that
   /// the normalized quaternion has unit norm.
   explicit Rotation3(const Quaternion& quaternion):
-    Rotation3(std::invoke(
-        [](const Quaternion& normalizedQuaternion)
-        {
-          // Eigen's normalized() is accurate to rounding, not exact; compare with its tolerance.
-          assert(
-              std::abs(normalizedQuaternion.norm() - Scalar(1)) <=
-              Eigen::NumTraits<Scalar>::dummy_precision());
-          return (normalizedQuaternion.vec() / (Scalar(1) + normalizedQuaternion.w())).eval();
-        },
-        quaternion.normalized()))
+    Rotation3(
+        std::invoke(
+            [](const Quaternion& normalizedQuaternion)
+            {
+              // Eigen's normalized() is accurate to rounding, not exact; compare with its
+              // tolerance.
+              assert(
+                  std::abs(normalizedQuaternion.norm() - Scalar(1)) <=
+                  Eigen::NumTraits<Scalar>::dummy_precision());
+              return (normalizedQuaternion.vec() / (Scalar(1) + normalizedQuaternion.w())).eval();
+            },
+            quaternion.normalized()))
   {
   }
 

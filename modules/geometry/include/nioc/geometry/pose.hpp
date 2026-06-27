@@ -48,7 +48,7 @@ public:
   /// Number of trailing scalars holding the position.
   static constexpr auto kNumPositionParams = 3U;
 
-  using Scalar = typename Traits<Derived>::Scalar;
+  using Scalar = Traits<Derived>::Scalar;
 
   using Quaternion = Eigen::Quaternion<Scalar>;
 
@@ -230,11 +230,11 @@ public:
 
   static constexpr auto kNumParams = Base::kNumParams;
 
-  using Scalar = typename Base::Scalar;
+  using Scalar = Base::Scalar;
 
-  using Quaternion = typename Base::Quaternion;
+  using Quaternion = Base::Quaternion;
 
-  using Vector3 = typename Base::Vector3;
+  using Vector3 = Base::Vector3;
 
   /// Inline storage for the seven parameters: orientation (x, y, z, w), then position (x, y, z).
   using Parameters = std::array<Scalar, kNumParams>;
@@ -383,7 +383,7 @@ public:
 
   static constexpr auto kNumParams = Base::kNumParams;
 
-  using Scalar = typename Base::Scalar;
+  using Scalar = Base::Scalar;
 
   /// @brief Bind the view to `parameters` and normalize the orientation in that storage.
   ///
@@ -464,7 +464,7 @@ public:
 
   static constexpr auto kNumParams = Base::kNumParams;
 
-  using Scalar = typename Base::Scalar;
+  using Scalar = Base::Scalar;
 
   /// @brief Bind the read-only view to `parameters`, requiring an already unit-norm orientation.
   ///
