@@ -7,7 +7,6 @@
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include <ostream>
 #include <utility>
 
 namespace nioc::geometry
@@ -405,7 +404,7 @@ public:
 
   /// @brief Convert to an owning `Rotation3` by copying the mapped coordinates.
   ///
-  /// NOLINTNEXTLINE (google-explicit-constructor)
+  /// NOLINTNEXTLINE(google-explicit-constructor)
   operator nioc::geometry::Rotation3<Scalar>() const noexcept
   {
     return nioc::geometry::Rotation3<Scalar>(mParameters);
@@ -472,7 +471,7 @@ public:
 
   /// @brief Convert to an owning `Rotation3` by copying the mapped coordinates.
   ///
-  /// NOLINTNEXTLINE (google-explicit-constructor)
+  /// NOLINTNEXTLINE(google-explicit-constructor)
   operator nioc::geometry::Rotation3<Scalar>() const noexcept
   {
     return nioc::geometry::Rotation3<Scalar>(mParameters);
