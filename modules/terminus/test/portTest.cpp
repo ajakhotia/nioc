@@ -202,36 +202,6 @@ TEST(PortTest, recordChronicleFalseOmitsChronicleDir)
   EXPECT_TRUE(fs::is_regular_file(workingDir / "resources.json"));
 }
 
-TEST(PortTest, deliversToSubscribersWithoutRecording)
-{
-  // Temporarily disabled: Publisher now always builds into a recording channel, so a non-recording
-  // run cannot mint a publisher (Port::publisher throws). Restore once the heap-only publish path
-  // is reintroduced.
-  GTEST_SKIP() << "non-recording publish path is unsupported pending the channel-always rework";
-
-  // recordChronicle = false: the message is built on the heap and still fans out to subscribers.
-  auto port = Port{
-      Manifest{
-          RunContext{logRoot(), {}, false, ""},
-          ConfigStore{{config()}, {}, capnp::Schema::from<TestConfig>()}},
-      emptySetup};
-
-  auto received = std::vector<std::int64_t>{};
-  port.subscribe(
-      chronicle::makeChannelId(kSchemaId<TestSchema>, "live"),
-      [&received](Consignment consignment)
-      { received.push_back(Message<TestSchema>{consignment.crate()}.reader().getValue()); });
-
-  auto publisher = port.publisher<TestSchema>("live");
-  constexpr auto kValue = std::int64_t{7};
-  auto draft = publisher.draft();
-  draft.builder().setValue(kValue);
-  publisher.publish(std::move(draft));
-
-  EXPECT_EQ((std::vector<std::int64_t>{kValue}), received);
-  EXPECT_FALSE(fs::exists(port.workingDir() / "chronicle"));
-}
-
 TEST(PortTest, constructionAddsListedResources)
 {
   auto port = Port{
@@ -422,7 +392,7 @@ TEST(PortTest, everyPublishedMessageIsRecordedInOrder)
   constexpr auto kTopic = std::string_view{"chronicleGate"};
 
   // No subscribers: publishing records each message into the chronicle synchronously. Read the
-  // recording back and expect every published value, in publish order.
+  // recording back and expect every published value, in the publish-order.
   const auto workingDir = [&]
   {
     auto port = Port{testManifest(), emptySetup};
