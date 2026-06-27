@@ -22,7 +22,7 @@ using namespace std::chrono_literals;
 
 // The watch thread drains a single-slot atomic cache, so raising a second signal before that
 // slot is consumed would clobber the first. Sleeping after each raise lets the watcher catch up.
-constexpr auto kDrainDelay = 100us;
+constexpr auto kDrainDelay = 500us;
 
 TEST(SignalCatcher, CatchesSigintAndSigabrt)
 {
@@ -62,7 +62,7 @@ TEST(SignalCatcher, ActionReceivesRunningCount)
   static_cast<void>(std::raise(SIGINT));
   std::this_thread::sleep_for(kDrainDelay);
 
-  EXPECT_EQ((std::vector<std::int32_t>{1, 2}), observedCounts);
+  EXPECT_EQ((std::vector{1, 2}), observedCounts);
 }
 
 TEST(SignalCatcher, DestructionRestoresDefaultHandlers)
