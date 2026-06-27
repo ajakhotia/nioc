@@ -31,7 +31,7 @@ namespace nioc::concurrent
 /// @see OverwritingMpsc, DroppingMpsc, UnboundedMpsc, AnyMpsc
 template<typename Queue>
 concept MpscQueue =
-    requires(Queue queue, const Queue& constQueue, typename Queue::value_type value) {
+    requires(Queue queue, const Queue& constQueue, Queue::value_type value) {
       typename Queue::value_type;
       typename Queue::size_type;
 
