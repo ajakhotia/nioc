@@ -60,7 +60,7 @@ flowchart LR
   classDef builder  fill:#e3f2fd,stroke:#1e88e5,stroke-width:2px,color:#0d47a1;
   classDef output   fill:#fff8e1,stroke:#fb8c00,stroke-width:2px,color:#e65100;
 
-  subgraph P ["🏞️ Producers · Drivers"]
+  subgraph P["🏞️ Producers · Drivers"]
     direction TB
     Hills["🧱 Hills"]:::producer
     Forest["🌲 Forest"]:::producer
@@ -69,7 +69,7 @@ flowchart LR
     Mountains["⛰️ Mountains"]:::producer
   end
 
-  subgraph B ["🏗️ Builders · Components"]
+  subgraph B["🏗️ Builders · Components"]
     direction TB
     RB["Road Builder"]:::builder
     SB["Settlement Builder"]:::builder
@@ -77,22 +77,22 @@ flowchart LR
     DC["Dev-Card Builder"]:::builder
   end
 
-  Hills     -->|brick|  RB
-  Hills     -->|brick|  SB
-  Forest    -->|lumber| RB
-  Forest    -->|lumber| SB
-  Pasture   -->|wool|   SB
-  Pasture   -->|wool|   DC
-  Fields    -->|grain|  SB
-  Fields    -->|grain|  CB
-  Fields    -->|grain|  DC
-  Mountains -->|ore|    CB
-  Mountains -->|ore|    DC
+  Hills -->|brick| RB
+  Hills -->|brick| SB
+  Forest -->|lumber| RB
+  Forest -->|lumber| SB
+  Pasture -->|wool| SB
+  Pasture -->|wool| DC
+  Fields -->|grain| SB
+  Fields -->|grain| CB
+  Fields -->|grain| DC
+  Mountains -->|ore| CB
+  Mountains -->|ore| DC
 
-  RB -->|road|       SB
+  RB -->|road| SB
   SB -->|settlement| CB
   CB ==>|builds| City["🏙️ City"]:::output
-  DC ==>|buys|   Card["🃏 Dev Card"]:::output
+  DC ==>|buys| Card["🃏 Dev Card"]:::output
 ```
 
 > 🟩 producers (**Drivers**) · 🟦 builders (**Components**) · 🟨 finished goods. **Every arrow is a topic.**
