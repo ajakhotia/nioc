@@ -56,46 +56,65 @@ to make roads, settlements, and cities.
 
 ```mermaid
 flowchart LR
-  classDef producer fill:#e8f5e9,stroke:#43a047,stroke-width:2px,color:#1b5e20;
-  classDef builder  fill:#e3f2fd,stroke:#1e88e5,stroke-width:2px,color:#0d47a1;
-  classDef output   fill:#fff8e1,stroke:#fb8c00,stroke-width:2px,color:#e65100;
+  classDef driver    fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d;
+  classDef component fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#1e3a8a;
+  classDef topic     fill:#fef3c7,stroke:#d97706,stroke-width:1.5px,color:#7c2d12;
+  classDef anchor    fill:transparent,stroke:transparent,color:transparent;
 
-  subgraph P["🏞️ Producers · Drivers"]
-    direction TB
-    Hills["🧱 Hills"]:::producer
-    Forest["🌲 Forest"]:::producer
-    Pasture["🐑 Pasture"]:::producer
-    Fields["🌾 Fields"]:::producer
-    Mountains["⛰️ Mountains"]:::producer
-  end
+  %% Hidden anchor pins every producer into the first column.
+  a0(( )):::anchor
+  a0 ~~~ Hills & Forest & Pasture & Fields & Mountains
 
-  subgraph B["🏗️ Builders · Components"]
-    direction TB
-    RB["Road Builder"]:::builder
-    SB["Settlement Builder"]:::builder
-    CB["City Builder"]:::builder
-    DC["Dev-Card Builder"]:::builder
-  end
+  Hills["Hills"]:::driver
+  Forest["Forest"]:::driver
+  Pasture["Pasture"]:::driver
+  Fields["Fields"]:::driver
+  Mountains["Mountains"]:::driver
 
-  Hills -->|brick| RB
-  Hills -->|brick| SB
-  Forest -->|lumber| RB
-  Forest -->|lumber| SB
-  Pasture -->|wool| SB
-  Pasture -->|wool| DC
-  Fields -->|grain| SB
-  Fields -->|grain| CB
-  Fields -->|grain| DC
-  Mountains -->|ore| CB
-  Mountains -->|ore| DC
+  brick[("brick")]:::topic
+  lumber[("lumber")]:::topic
+  wool[("wool")]:::topic
+  grain[("grain")]:::topic
+  ore[("ore")]:::topic
 
-  RB -->|road| SB
-  SB -->|settlement| CB
-  CB ==>|builds| City["🏙️ City"]:::output
-  DC ==>|buys| Card["🃏 Dev Card"]:::output
+  RB["Road Builder"]:::component
+  DC["Dev-Card Builder"]:::component
+  SB["Settlement Builder"]:::component
+  CB["City Builder"]:::component
+
+  road[("road")]:::topic
+  devcard[("dev card")]:::topic
+  settlement[("settlement")]:::topic
+  city[("city")]:::topic
+
+  Hills --> brick
+  Forest --> lumber
+  Pasture --> wool
+  Fields --> grain
+  Mountains --> ore
+
+  brick --> RB
+  lumber --> RB
+  brick --> SB
+  lumber --> SB
+  wool --> SB
+  grain --> SB
+  wool --> DC
+  grain --> DC
+  ore --> DC
+  ore --> CB
+  grain --> CB
+
+  RB --> road
+  DC --> devcard
+  SB --> settlement
+  CB --> city
+
+  road --> SB
+  settlement --> CB
 ```
 
-> 🟩 producers (**Drivers**) · 🟦 builders (**Components**) · 🟨 finished goods. **Every arrow is a topic.**
+> 🟩 **Drivers** (producers) and 🟦 **Components** (consumers) are routines, drawn as boxes; 🟨 **topics** are the cylinders between them. Each arrow is a publish → subscribe link.
 
 `grain` fans out to three builders; the settlement builder fans in five inputs; builders chain into
 builders. No producer knows who consumes its output, and no builder knows where its inputs came from
