@@ -1,0 +1,69 @@
+{
+  "hills": {
+    "driver": { "name": "hills" },
+    "resourceTopic": "brick",
+    "miningTimeMs": 2000
+  },
+  "forest": {
+    "driver": { "name": "forest" },
+    "resourceTopic": "lumber",
+    "miningTimeMs": 2000
+  },
+  "pasture": {
+    "driver": { "name": "pasture" },
+    "resourceTopic": "wool",
+    "miningTimeMs": 2000
+  },
+  "fields": {
+    "driver": { "name": "fields" },
+    "resourceTopic": "grain",
+    "miningTimeMs": 1000
+  },
+  "mountains": {
+    "driver": { "name": "mountains" },
+    "resourceTopic": "ore",
+    "miningTimeMs": 1000
+  },
+  "roadBuilder": {
+    "component": { "name": "roadBuilder", "inboxCapacity": 16, "bufferMode": "unbounded" },
+    "brickTopic": "brick",
+    "lumberTopic": "lumber",
+    "roadTopic": "road",
+    "brickPerRoad": 1,
+    "lumberPerRoad": 1
+  },
+  "settlementBuilder": {
+    "component": { "name": "settlementBuilder", "inboxCapacity": 16, "bufferMode": "unbounded" },
+    "roadTopic": "road",
+    "brickTopic": "brick",
+    "lumberTopic": "lumber",
+    "woolTopic": "wool",
+    "grainTopic": "grain",
+    "settlementTopic": "settlement",
+    "roadPerSettlement": 2,
+    "brickPerSettlement": 1,
+    "lumberPerSettlement": 1,
+    "woolPerSettlement": 1,
+    "grainPerSettlement": 1
+  },
+  "cityBuilder": {
+    "component": { "name": "cityBuilder", "inboxCapacity": 16, "bufferMode": "unbounded" },
+    "settlementTopic": "settlement",
+    "oreTopic": "ore",
+    "grainTopic": "grain",
+    "cityTopic": "city",
+    "settlementPerCity": 1,
+    "orePerCity": 3,
+    "grainPerCity": 2
+  },
+  "developmentCardBuilder": {
+    "component": { "name": "developmentCardBuilder", "inboxCapacity": 16, "bufferMode": "unbounded" },
+    "oreTopic": "ore",
+    "woolTopic": "wool",
+    "grainTopic": "grain",
+    "developmentCardTopic": "developmentCard",
+    "orePerCard": 1,
+    "woolPerCard": 1,
+    "grainPerCard": 1
+  }
+}

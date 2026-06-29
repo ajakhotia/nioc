@@ -13,6 +13,7 @@
 #include <memory>
 #include <nioc/chronicle/writer.hpp>
 #include <nioc/common/exception.hpp>
+#include <nioc/common/sleep.hpp>
 #include <nioc/common/time.hpp>
 #include <nioc/logger/logger.hpp>
 #include <nioc/terminus/driver.hpp>
@@ -22,7 +23,6 @@
 #include <ranges>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <stdexcept>
-#include <thread>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -290,7 +290,9 @@ bool Port::wait(
     return false;
   }
 
-  std::this_thread::sleep_until(deadline);
+  // Wait out the poll period, but wake immediately if a shutdown is requested so the run can wind
+  // down without sitting out the remaining interval.
+  common::sleepUntil(shutdownToken(), deadline);
   return true;
 }
 
