@@ -16,8 +16,8 @@
     },
     {
       "group": "Compilers",
-      "ubuntu:22.04": "clang-22 cuda-toolkit-13 flang-22 g++-15 gcc-15 gfortran-15 libomp-22-dev",
-      "ubuntu:24.04": "clang-22 cuda-toolkit-13 flang-22 g++-15 gcc-15 gfortran-15 libomp-22-dev",
+      "ubuntu:22.04": "clang-22 clang-format-22 clang-tidy-22 cuda-toolkit-13 flang-22 g++-15 gcc-15 gfortran-15 libomp-22-dev",
+      "ubuntu:24.04": "clang-22 clang-format-22 clang-tidy-22 cuda-toolkit-13 flang-22 g++-15 gcc-15 gfortran-15 libomp-22-dev",
       "tag": "all"
     }
   ]
