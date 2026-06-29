@@ -1,8 +1,11 @@
 [![docker-image](https://github.com/ajakhotia/nioc/actions/workflows/docker-image.yaml/badge.svg)](https://github.com/ajakhotia/nioc/actions/workflows/docker-image.yaml)
+![C++23](https://img.shields.io/badge/C%2B%2B-23-00599C?logo=cplusplus&logoColor=white)
+![Platform](https://img.shields.io/badge/platform-Ubuntu%2022.04%20%7C%2024.04-E95420?logo=ubuntu&logoColor=white)
+![Compilers](https://img.shields.io/badge/toolchain-Clang%2022%20%7C%20GCC%2015-informational)
 
-# nioc — Nerve IO Core
+# 🧠 nioc — Nerve IO Core
 
-**A C++ framework for apps where lots of things produce data and lots of things consume it.**
+**A C++ framework for apps where lots of things produce data and lots of things consume it.** 🤖📡
 
 Robots, sensor pipelines, trading stacks, simulations — they're all graphs of producers and
 consumers. The hard part is never the work each piece does; it's the **wiring**: threads, queues,
@@ -13,10 +16,10 @@ routine its own thread, delivers every message to every subscriber, and shuts th
 cleanly on Ctrl-C. Routines never reference each other — only topic names — so you can add, remove,
 or re-tune one without touching the rest.
 
-### The whole model is two kinds of routine
+### 🧬 Two kinds of routine — that's the whole model
 
-- **Driver** — *produces.* Pulls data from a sensor, socket, or clock and publishes it.
-- **Component** — *reacts.* Subscribes to topics, handles each message, and may publish results.
+- 📤 **Driver** — *produces.* Pulls data from a sensor, socket, or clock and publishes it.
+- 🔁 **Component** — *reacts.* Subscribes to topics, handles each message, and may publish results.
   (A consumer that's usually also a producer.)
 
 A routine publishes a message — say a camera frame — to a topic like `"camera"`; everyone subscribed
@@ -24,26 +27,28 @@ to `"camera"` gets it. That's fan-out, fan-in, and chaining, all from one mechan
 plain structs you define in a tiny schema file (via [Cap'n Proto](https://capnproto.org), like
 Protocol Buffers).
 
-### One publish = distribute **and** record, with zero copies
+### ⚡ One publish = distribute **and** record, with zero copies
 
 This is what makes nioc fit **high-volume** data, and it's the heart of the system. You never
 serialize a message and hand it off. You build it **directly into a file-backed, memory-mapped
 region** — and that one region is, at the same instant:
 
-- **handed to every subscriber** as a shared-ownership `const` view — no copy, every consumer reads
+- 👥 **handed to every subscriber** as a shared-ownership `const` view — no copy, every consumer reads
   the *very same bytes*; and
-- **the on-disk recording** of the run — the log *is* that mapped region.
+- 💾 **the on-disk recording** of the run — the log *is* that mapped region.
 
 There is no separate "write to disk" step and no serialization on the hot path: the **OS kernel's
 paging** streams the mapping out to storage in the background. So a single write becomes every
 subscriber's read *and* the durable, replayable log — simultaneously. Throughput is bounded by memory
 bandwidth and your disk, not by per-message copies. That is exactly what you want for camera frames,
-LiDAR, point clouds, and other firehose streams — and it means **every run is recorded and can be
-replayed**, bit-for-bit, for free.
+LiDAR, point clouds, and other firehose streams 🔥 — and it means **every run is recorded and can be
+replayed**, bit-for-bit, for free. ⏪
+
+> 🐧 **Platform:** Linux (tested on Ubuntu 22.04 / 24.04), C++23, built with Clang 22 or GCC 15.
 
 ---
 
-## See it: a Catan supply chain
+## 🎲 See it: a Catan supply chain
 
 The runnable [`modules/example`](modules/example) is a whole nioc app modeled on *Settlers of Catan* —
 a producer/consumer graph you already know. Land tiles **produce** resources; builders **spend** them
@@ -51,30 +56,71 @@ to make roads, settlements, and cities.
 
 ```mermaid
 flowchart LR
-  subgraph P["Producers — Drivers"]
-    direction TB
-    Hills([Hills]); Forest([Forest]); Pasture([Pasture]); Fields([Fields]); Mountains([Mountains])
-  end
-  subgraph B["Builders — Components"]
-    direction TB
-    RB[Road Builder]; SB[Settlement Builder]; CB[City Builder]; DC[Dev-Card Builder]
-  end
-  Hills -- brick --> RB & SB
-  Forest -- lumber --> RB & SB
-  Pasture -- wool --> SB & DC
-  Fields -- grain --> SB & CB & DC
-  Mountains -- ore --> CB & DC
-  RB -- road --> SB
-  SB -- settlement --> CB
-  CB -- city --> City([🏙️])
-  DC -- dev card --> Card([🃏])
+  classDef driver    fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d;
+  classDef component fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#1e3a8a;
+  classDef topic     fill:#fef3c7,stroke:#d97706,stroke-width:1.5px,color:#7c2d12;
+  classDef anchor    fill:transparent,stroke:transparent,color:transparent;
+
+  %% Hidden anchor pins every producer into the first column.
+  a0(( )):::anchor
+  a0 ~~~ Hills & Forest & Pasture & Fields & Mountains
+
+  Hills["Hills"]:::driver
+  Forest["Forest"]:::driver
+  Pasture["Pasture"]:::driver
+  Fields["Fields"]:::driver
+  Mountains["Mountains"]:::driver
+
+  brick[("brick")]:::topic
+  lumber[("lumber")]:::topic
+  wool[("wool")]:::topic
+  grain[("grain")]:::topic
+  ore[("ore")]:::topic
+
+  RB["Road Builder"]:::component
+  DC["Dev-Card Builder"]:::component
+  SB["Settlement Builder"]:::component
+  CB["City Builder"]:::component
+
+  road[("road")]:::topic
+  devcard[("dev card")]:::topic
+  settlement[("settlement")]:::topic
+  city[("city")]:::topic
+
+  Hills --> brick
+  Forest --> lumber
+  Pasture --> wool
+  Fields --> grain
+  Mountains --> ore
+
+  brick --> RB
+  lumber --> RB
+  brick --> SB
+  lumber --> SB
+  wool --> SB
+  grain --> SB
+  wool --> DC
+  grain --> DC
+  ore --> DC
+  ore --> CB
+  grain --> CB
+
+  RB --> road
+  DC --> devcard
+  SB --> settlement
+  CB --> city
+
+  road --> SB
+  settlement --> CB
 ```
 
-Every arrow is a topic. `grain` fans out to three builders; the settlement builder fans in five
-inputs; builders chain into builders. No producer knows who consumes its output, and no builder knows
-where its inputs came from — nioc does the delivery.
+> 🟩 **Drivers** (producers) and 🟦 **Components** (consumers) are routines, drawn as boxes; 🟨 **topics** are the cylinders between them. Each arrow is a publish → subscribe link.
 
-**A whole producer** ([`hills.hpp`](modules/example/include/nioc/example/hills.hpp)):
+`grain` fans out to three builders; the settlement builder fans in five inputs; builders chain into
+builders. No producer knows who consumes its output, and no builder knows where its inputs came from
+— nioc does the delivery. 📬
+
+**📤 A whole producer** ([`hills.hpp`](modules/example/include/nioc/example/hills.hpp)):
 
 ```cpp
 class Hills final: public terminus::Driver
@@ -93,7 +139,7 @@ class Hills final: public terminus::Driver
 };
 ```
 
-**A consumer** subscribes to its inputs and publishes its output
+**🔁 A consumer** subscribes to its inputs and publishes its output
 ([`roadBuilder.cpp`](modules/example/src/roadBuilder.cpp)):
 
 ```cpp
@@ -106,7 +152,8 @@ RoadBuilder::RoadBuilder(terminus::Port& port, RoadBuilderConfig::Reader config)
 
 The whole graph — every routine, every thread — is assembled in one file,
 [`catanMain.cpp`](modules/example/src/catanMain.cpp). Read the
-[example walkthrough](modules/example/README.md), then run it:
+[example walkthrough](modules/example/README.md), then build and run it (`BUILD_TREE` /
+`INSTALL_TREE` are the paths you set up under **🛠️ Build & install nioc** below):
 
 ```shell
 cmake --build <BUILD_TREE> --target catanMain
@@ -114,29 +161,30 @@ cmake --build <BUILD_TREE> --target catanMain
 <INSTALL_TREE>/bin/catanMain --config-override fields.miningTimeMs=250   # retune a producer, live
 ```
 
-Every finished piece prints as it's built. Ctrl-C to stop.
+Every finished piece prints as it's built. 🏗️ Ctrl-C to stop.
 
 ---
 
-## What's in the box
+## 📦 What's in the box
 
 nioc is a modular super-build; depend only on what you use. The two you'll touch first:
 
-- **`nioc::terminus`** — the runtime. `Port` (the pub/sub bus + run lifecycle), `Driver`, `Component`,
-  `Publisher`/`Message`, and config (`Manifest`, layered `defaults → file → key=value`, read live).
-- **`nioc::concurrent`** — the threading underneath. `ThreadedRunner` (one thread per routine) and a
-  family of multi-producer queues.
+- 🚀 **`nioc::terminus`** — the runtime. `Port` (the pub/sub bus + run lifecycle), `Driver`,
+  `Component`, `Publisher`/`Message`, and config (`Manifest`, layered `defaults → file → key=value`,
+  read live).
+- 🧵 **`nioc::concurrent`** — the threading underneath. `ThreadedRunner` (one thread per routine) and
+  a family of multi-producer queues.
 
-Supporting modules: **`chronicle`** (memory-mapped recording & replay of every message),
-**`logger`**, **`common`** (`Locked<T>`, time/sleep, type traits), **`geometry`** (frames &
-transforms on Eigen), **`containers`** (mmap-backed arrays). C++23, GNU & Clang, Ubuntu 22.04+, all
-targets exported under the `nioc::` namespace.
+Supporting modules: **`chronicle`** 💾 (memory-mapped recording & replay of every message),
+**`logger`** 📝, **`common`** 🧰 (`Locked<T>`, time/sleep, type traits), **`geometry`** 📐 (frames &
+transforms on Eigen), **`containers`** 🗃️ (mmap-backed arrays). C++23, GNU & Clang, Ubuntu 22.04+,
+all targets exported under the `nioc::` namespace.
 
 ---
 
-## Using nioc in your project
+## 🔧 Using nioc in your project
 
-### Option A — Vendor it as a submodule (recommended for building *on* nioc)
+### 🅰️ Option A — Vendor it as a submodule (recommended for building *on* nioc)
 
 Add nioc and its build-infra dependency `infraCommons` as submodules; your build configures and builds
 them with your own. nioc keeps its tooling setup behind a `PROJECT_IS_TOP_LEVEL` guard, so as a
@@ -144,8 +192,8 @@ submodule it won't reach out and configure clang-tidy, codegen, etc. — that be
 project's job, which is why you also vendor `infraCommons` (nioc's CMake utilities) and wire it in.
 
 ```shell
-git submodule add git@github.com:ajakhotia/infraCommons.git external/infraCommons
-git submodule add git@github.com:ajakhotia/nioc.git         external/nioc
+git submodule add https://github.com/ajakhotia/infraCommons.git external/infraCommons
+git submodule add https://github.com/ajakhotia/nioc.git         external/nioc
 git submodule update --init
 ```
 
@@ -172,8 +220,9 @@ target_link_libraries(myApp PRIVATE nioc::terminus nioc::concurrent nioc::logger
 target_compile_features(myApp PRIVATE cxx_std_23)
 ```
 
-Configure with an infraCommons toolchain, pointing at your dependency install tree (see
-[External dependencies](#external-dependencies)):
+You'll first need the toolchain and dependencies set up — do the **🧰 Toolchain** and
+**📚 External dependencies** steps below once. Then configure with an infraCommons toolchain, pointing
+at your dependency install tree:
 
 ```shell
 cmake -G Ninja -S . -B build                                                \
@@ -186,7 +235,7 @@ Your `main.cpp` follows the same shape as [`catanMain.cpp`](modules/example/src/
 a `Manifest`, construct a `Port` whose setup hook creates your drivers and components, and park
 `main` until shutdown.
 
-### Option B — Install it, then `find_package`
+### 🅱️ Option B — Install it, then `find_package`
 
 Build and install nioc standalone (below), then from any project:
 
@@ -200,7 +249,7 @@ package config that re-finds its public dependencies for you.
 
 ---
 
-## Build & install nioc
+## 🛠️ Build & install nioc
 
 **Tested on Ubuntu 22.04 / 24.04. See [`docker/ubuntu.dockerfile`](docker) for the exact recipe.**
 Pick three paths you own — `SOURCE_TREE` (clone), `BUILD_TREE` (build), `INSTALL_TREE` (install,
@@ -211,11 +260,11 @@ since this super-build also installs child libraries; prefer an unprivileged pat
 export SOURCE_TREE=${HOME}/sandbox/nioc
 export BUILD_TREE=${SOURCE_TREE}/build
 export INSTALL_TREE=${HOME}/opt/nioc
-git clone git@github.com:ajakhotia/nioc.git ${SOURCE_TREE}
+git clone https://github.com/ajakhotia/nioc.git ${SOURCE_TREE}
 git -C ${SOURCE_TREE} submodule update --init
 ```
 
-### Toolchain
+### 🧰 Toolchain
 
 Requires GNU ≥ 12 **or** Clang ≥ 22 (CUDA ≥ 13 if used). Skip any step your system already
 satisfies. The setup scripts live in the `infraCommons` submodule.
@@ -234,7 +283,11 @@ sudo apt update && sudo apt install -y --no-install-recommends \
   $(sh external/infraCommons/tools/extractDependencies.sh Compilers systemDependencies.json)
 ```
 
-### External dependencies
+> ⚠️ **Heads up:** the `Compilers` group currently includes the **CUDA toolkit (~4.7 GB)** — the bulk
+> of the download and time here is CUDA, not the compilers. If you aren't building CUDA targets you
+> can skip it; see [`systemDependencies.json`](systemDependencies.json).
+
+### 📚 External dependencies
 
 nioc needs Boost (headers, iostreams, program_options), Cap'n Proto, Eigen3, GoogleTest, Nlohmann
 JSON, and Spdlog. The easiest way to get them is
@@ -247,9 +300,11 @@ curl -fsSL https://raw.githubusercontent.com/ajakhotia/robotFarm/refs/heads/main
     --build-list "BoostExternalProject;Eigen3ExternalProject;NlohmannJsonExternalProject;GoogleTestExternalProject;SpdLogExternalProject;CapnprotoExternalProject"
 ```
 
-This compiles the dependencies from source — expect it to run for a while (tens of minutes).
+⏳ This compiles the dependencies from source — expect it to run for a while (tens of minutes).
+robotFarm resolves transitive dependencies too, so you'll see more projects build than the six
+listed above.
 
-### Configure, build, install
+### ⚙️ Configure, build, install
 
 Pass a `--toolchain` file so a C++23-capable compiler is used — the OS-default compiler (e.g. GCC
 11.4 on Ubuntu 22.04) is too old and the build will fail partway. This mirrors the proven recipe in
@@ -270,14 +325,24 @@ Use `CMAKE_BUILD_TYPE=Debug` for debug builds, or `linux-gnu-15.cmake` for the G
 build nioc itself as shared libraries (`-DBUILD_SHARED_LIBS=ON`), your dependencies must also be
 position-independent — keep `CMAKE_POSITION_INDEPENDENT_CODE=ON` above.
 
+### ✅ Verify
+
+Run the test suite (configure with `-DBUILD_TESTING=ON`, the default), then try the example:
+
+```shell
+ctest --test-dir ${BUILD_TREE} --output-on-failure
+${INSTALL_TREE}/bin/catanMain        # Ctrl-C to stop
+```
+
 ---
 
-## Contributing
+## 🤝 Contributing
 
-PRs welcome — follow the conventions: members `mCamelCase`, compile-time constants `kCamelCase`,
-types `PascalCase`, everything else (including filenames) `camelCase`. CMake auto-detects
-`clang-format-22`/`clang-tidy-22` and creates the `clangFormat` / `clangTidy` targets.
+PRs welcome! Follow the conventions: members `mCamelCase`, compile-time constants `kCamelCase`,
+types `PascalCase`, everything else (including filenames) `camelCase`. The toolchain step above
+installs `clang-format-22` / `clang-tidy-22`, which CMake detects to create the `clangFormat` /
+`clangTidy` targets — run them before opening a PR, and make sure `ctest` is green.
 
-## License
+## 📜 License
 
 [MIT](LICENSE) © 2025 Anurag Jakhotia, with restrictions on commercial use.
