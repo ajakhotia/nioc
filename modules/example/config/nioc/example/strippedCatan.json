@@ -1,0 +1,8 @@
+{
+  "fields": {
+    "miningTimeMs": 500
+  },
+  "cityBuilder": {
+    "orePerCity": 2
+  }
+}

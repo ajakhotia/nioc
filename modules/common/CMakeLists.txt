@@ -20,6 +20,7 @@ add_exported_library(
     PUBLIC include/nioc/common/propagateConst.hpp
     PUBLIC include/nioc/common/raiiToken.hpp
     PUBLIC include/nioc/common/signalCatcher.hpp
+    PUBLIC include/nioc/common/sleep.hpp
     PUBLIC include/nioc/common/time.hpp
     PUBLIC include/nioc/common/typeTraits.hpp
     PUBLIC include/nioc/common/utils.hpp
