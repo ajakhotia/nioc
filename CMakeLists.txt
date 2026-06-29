@@ -27,14 +27,23 @@ if(PROJECT_IS_TOP_LEVEL)
   include(external/infraCommons/cmake/utilities/exportedTargets.cmake)
   include(external/infraCommons/cmake/utilities/requireArguments.cmake)
 
-  add_clang_format(TARGET niocClangFormat VERSION 19)
-  add_clang_tidy(TARGET niocClangTidy VERSION 19)
+  add_clang_format(TARGET clangFormat VERSION 22)
+  add_clang_tidy(TARGET clangTidy VERSION 22)
 
   add_subdirectory(external)
   add_subdirectory(docker)
 endif()
 
 add_subdirectory(modules)
+
+
+#[[ Now that every target exists, make them all build dependencies of the clang-tidy target so the
+    tree (including generated headers) is brought up to date before clang-tidy parses it. The target
+    exists only when this is the top-level project and the clang-tidy binary was found, so guard on
+    it directly rather than on PROJECT_IS_TOP_LEVEL. ]]
+if(TARGET clangTidy)
+  add_clang_tidy_build_dependencies(clangTidy)
+endif()
 
 
 #[[ Include cmake-default tools to create export files. ]]

@@ -125,7 +125,7 @@ the default OS-provided compilers / toolchains are new enough. Note the
 following constraints:
 
 * GNU compilers >= version 12
-* LLVM compilers >= version 19
+* LLVM compilers >= version 22
 * Cuda toolkit >= version 13
 
 You are responsible for installing the appropriate compilers / toolchains
@@ -237,7 +237,7 @@ We welcome contributions! Please follow the project conventions when submitting 
 
 ### Clang Format
 
-CMake automatically detects `clang-format-14` and creates the target `niocClangFormat`.
+CMake automatically detects `clang-format-22` and creates the target `clangFormat`.
 Run it to format all C/C++ code in the repository.
 
 ### Clang Tidy
