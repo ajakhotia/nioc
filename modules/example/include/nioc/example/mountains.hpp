@@ -49,9 +49,7 @@ private:
     // A real driver blocks here on a socket, message bus, or device read. Run whatever the wait is
     // through the shutdown token so it yields promptly when the run winds down; here the "read" is
     // just a pause of miningTimeMs.
-    if(common::interruptibleSleepFor(
-           shutdownToken(),
-           std::chrono::milliseconds{mConfig.getMiningTimeMs()}))
+    if(common::sleepFor(shutdownToken(), std::chrono::milliseconds{mConfig.getMiningTimeMs()}))
     {
       return State::Done;
     }

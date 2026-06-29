@@ -26,7 +26,7 @@ namespace nioc::common
 ///
 /// @return true if a stop was requested (the sleep ended early); false if @p deadline was reached.
 template<typename Clock, typename Duration>
-[[nodiscard]] bool interruptibleSleepUntil(
+bool sleepUntil(
     const std::stop_token& stopToken,
     const std::chrono::time_point<Clock, Duration>& deadline)
 {
@@ -37,7 +37,7 @@ template<typename Clock, typename Duration>
 
 /// @brief Sleep for @p duration, returning early if @p stopToken is signalled.
 ///
-/// See @ref interruptibleSleepUntil; this is the same, expressed as a relative duration.
+/// See @ref sleepUntil; this is the same, expressed as a relative duration.
 ///
 /// @param stopToken The cooperative-cancellation token to honour.
 ///
@@ -45,9 +45,7 @@ template<typename Clock, typename Duration>
 ///
 /// @return true if a stop was requested (the sleep ended early); false if @p duration elapsed.
 template<typename Rep, typename Period>
-[[nodiscard]] bool interruptibleSleepFor(
-    const std::stop_token& stopToken,
-    const std::chrono::duration<Rep, Period>& duration)
+bool sleepFor(const std::stop_token& stopToken, const std::chrono::duration<Rep, Period>& duration)
 {
   auto wakeUp = std::binary_semaphore{0};
   const auto onStop = std::stop_callback(stopToken, [&wakeUp] { wakeUp.release(); });
