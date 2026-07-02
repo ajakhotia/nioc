@@ -9,6 +9,11 @@ ENV APT_VAR_CACHE_ID=nioc-apt-var-cache-${OS_BASE}
 ENV APT_LIST_CACHE_ID=nioc-apt-list-cache-${OS_BASE}
 ENV DEBIAN_FRONTEND=noninteractive
 
+# The CUDA toolkit installs outside the default search paths. Put it on PATH so that builds
+# which don't pass a toolchain file (e.g. the robotFarm build below) resolve nvcc by default,
+# mirroring how update-alternatives resolves the host compilers further down.
+ENV PATH=/usr/local/cuda/bin:${PATH}
+
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 RUN printf '%s\n'                                                                                  \
@@ -44,9 +49,6 @@ RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=lock
     apt-get autoremove -y --no-install-recommends &&                                               \
     apt-get autoclean -y --no-install-recommends
 
-# Bootstrap: hardcoded so that systemDependencies.json edits don't invalidate the slow apt-source
-# registration + Kitware CMake fetch below. jq is needed for extractDependencies.sh; the rest are
-# the minimum set the apt-source scripts and installCMake.sh themselves require.
 RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=locked                 \
     --mount=type=cache,target=/var/lib/apt/lists,id=${APT_LIST_CACHE_ID},sharing=locked            \
     apt-get update &&                                                                              \
@@ -69,30 +71,39 @@ RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=lock
     apt-get install -y --no-install-recommends                                                     \
       $(sh /tmp/tools/extractDependencies.sh "Basics Compilers" /tmp/systemDependencies.json)
 
+RUN gnu=$(ls /usr/bin | grep -E '^gcc-[0-9]+$' | sort -V | tail -n 1 | cut -d- -f2) &&             \
+    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${gnu} 100                         \
+      --slave /usr/bin/g++ g++ /usr/bin/g++-${gnu}                                                 \
+      --slave /usr/bin/gfortran gfortran /usr/bin/gfortran-${gnu} &&                               \
+    update-alternatives --install /usr/bin/cc cc /usr/bin/gcc 100 &&                               \
+    update-alternatives --install /usr/bin/c++ c++ /usr/bin/g++ 100
+
+# Register the newest installed LLVM compilers as the defaults for the unversioned clang names.
+RUN llvm=$(ls /usr/bin | grep -E '^clang-[0-9]+$' | sort -V | tail -n 1 | cut -d- -f2) &&          \
+    update-alternatives --install /usr/bin/clang clang /usr/bin/clang-${llvm} 100                  \
+      --slave /usr/bin/clang++ clang++ /usr/bin/clang++-${llvm}                                    \
+      --slave /usr/bin/flang flang /usr/bin/flang-${llvm}
+
 
 # Nothing FROMs this stage as an image base — dev-base only pulls /opt/robotFarm and
 # systemDependencies.txt forward via COPY/bind, so the source and build trees never get committed.
 FROM base AS throw-away-dev-base
 ARG ROBOTFARM_VERSION=v2.2.0
-ARG TOOLCHAIN=linux-gnu-15
 ARG ROBOTFARM_BUILD_LIST="BoostExternalProject;Eigen3ExternalProject;NlohmannJsonExternalProject;GoogleTestExternalProject;SpdLogExternalProject;CapnprotoExternalProject"
-
-# COPY (not bind-mount) so the toolchain path stays valid across RUNs. robotFarm's super-build
-# re-runs cmake during ExternalProject sub-builds, and the path baked into CMakeCache.txt must
-# resolve in the build RUN as well, not just configure.
-COPY external/infraCommons/cmake/toolchains/${TOOLCHAIN}.cmake /tmp/${TOOLCHAIN}.cmake
 
 RUN git clone --depth 1 --branch ${ROBOTFARM_VERSION}                                              \
       https://github.com/ajakhotia/robotFarm.git /tmp/robotFarm-src &&                             \
     git -C /tmp/robotFarm-src submodule update --init --depth 1
 
+# CMAKE_CUDA_ARCHITECTURES is set explicitly because no toolchain file provides it here;
+# robotFarm forwards it to CUDA-using sub-builds (e.g. SuiteSparse).
 RUN cmake -G Ninja                                                                                 \
       -S /tmp/robotFarm-src                                                                        \
       -B /tmp/robotFarm-build                                                                      \
       -DCMAKE_BUILD_TYPE:STRING=Release                                                            \
       -DBUILD_SHARED_LIBS:BOOL=ON                                                                  \
       -DCMAKE_INSTALL_PREFIX:PATH=/opt/robotFarm                                                   \
-      -DCMAKE_TOOLCHAIN_FILE:FILEPATH=/tmp/${TOOLCHAIN}.cmake                                      \
+      -DCMAKE_CUDA_ARCHITECTURES:STRING="75;80"                                                    \
       -DROBOT_FARM_REQUESTED_BUILD_LIST:STRING=${ROBOTFARM_BUILD_LIST}
 
 RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=locked                 \
@@ -104,39 +115,9 @@ RUN cmake --build /tmp/robotFarm-build
 
 
 FROM base AS dev-base
-ARG TOOLCHAIN=linux-gnu-15
-ENV TOOLCHAIN=${TOOLCHAIN}
-
 COPY --from=throw-away-dev-base /opt/robotFarm /opt/robotFarm
 
 RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=locked                 \
     --mount=type=cache,target=/var/lib/apt/lists,id=${APT_LIST_CACHE_ID},sharing=locked            \
     apt-get update &&                                                                              \
     apt-get install -y --no-install-recommends $(cat /opt/robotFarm/systemDependencies.txt)
-
-
-FROM dev-base AS build
-ARG BUILD_TYPE="Release"
-ENV BUILD_TYPE=${BUILD_TYPE}
-
-RUN cmake -E make_directory /opt/nioc
-
-RUN --mount=type=bind,src=.,dst=/tmp/nioc-src,ro                                                   \
-    cmake -G Ninja                                                                                 \
-      -S /tmp/nioc-src                                                                             \
-      -B /tmp/nioc-build                                                                           \
-      -DCMAKE_TOOLCHAIN_FILE:FILEPATH=/tmp/nioc-src/external/infraCommons/cmake/toolchains/${TOOLCHAIN}.cmake \
-      -DCMAKE_BUILD_TYPE:STRING=${BUILD_TYPE}                                                      \
-      -DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON                                                    \
-      -DCMAKE_PREFIX_PATH:STRING=/opt/robotFarm                                                    \
-      -DCMAKE_INSTALL_PREFIX:PATH=/opt/nioc &&                                                     \
-    cmake --build /tmp/nioc-build &&                                                               \
-    cmake --install /tmp/nioc-build
-
-
-FROM build AS test
-RUN ctest --test-dir /tmp/nioc-build --output-on-failure
-
-
-FROM dev-base AS deploy
-COPY --from=build /opt/nioc /opt/nioc
