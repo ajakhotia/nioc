@@ -12,7 +12,24 @@ on:
       - main
 
 jobs:
+  wait-for-dev-base-image:
+    runs-on: ubuntu-latest
+    steps:
+      - name: self-checkout
+        id: self-checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: true
+
+      - name: wait
+        id: wait
+        uses: ./external/infraCommons/.github/actions/wait-for-workflow
+        with:
+          workflow: dev-base-image.yaml
+
+
   build-test-deploy-stages:
+    needs: wait-for-dev-base-image
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
