@@ -1,3 +1,4 @@
+[![dev-base-image](https://github.com/ajakhotia/nioc/actions/workflows/dev-base-image.yaml/badge.svg)](https://github.com/ajakhotia/nioc/actions/workflows/dev-base-image.yaml)
 [![docker-image](https://github.com/ajakhotia/nioc/actions/workflows/docker-image.yaml/badge.svg)](https://github.com/ajakhotia/nioc/actions/workflows/docker-image.yaml)
 ![C++23](https://img.shields.io/badge/C%2B%2B-23-00599C?logo=cplusplus&logoColor=white)
 ![Platform](https://img.shields.io/badge/platform-Ubuntu%2022.04%20%7C%2024.04-E95420?logo=ubuntu&logoColor=white)
@@ -251,7 +252,7 @@ package config that re-finds its public dependencies for you.
 
 ## 🛠️ Build & install nioc
 
-**Tested on Ubuntu 22.04 / 24.04. See [`docker/ubuntu.dockerfile`](docker) for the exact recipe.**
+**Tested on Ubuntu 22.04 / 24.04. See [`docker/ubuntuDevBase.dockerfile`](docker) for the exact recipe.**
 Pick three paths you own — `SOURCE_TREE` (clone), `BUILD_TREE` (build), `INSTALL_TREE` (install,
 keep long-term). Installing to a privileged location (`/opt`, `/usr`) needs `sudo` on the build step,
 since this super-build also installs child libraries; prefer an unprivileged path.
@@ -283,9 +284,9 @@ sudo apt update && sudo apt install -y --no-install-recommends \
   $(sh external/infraCommons/tools/extractDependencies.sh Compilers systemDependencies.json)
 ```
 
-> ⚠️ **Heads up:** the `Compilers` group currently includes the **CUDA toolkit (~4.7 GB)** — the bulk
-> of the download and time here is CUDA, not the compilers. If you aren't building CUDA targets you
-> can skip it; see [`systemDependencies.json`](systemDependencies.json).
+> ⚠️ **Heads up:** the `Compilers` group includes the **CUDA toolkit (~4.7 GB)** — the bulk of the
+> download and time here is CUDA, not the compilers. robotFarm requires CUDA at configure time, so
+> keep it if you build the external dependencies; see [`systemDependencies.json`](systemDependencies.json).
 
 ### 📚 External dependencies
 
@@ -307,8 +308,9 @@ listed above.
 ### ⚙️ Configure, build, install
 
 Pass a `--toolchain` file so a C++23-capable compiler is used — the OS-default compiler (e.g. GCC
-11.4 on Ubuntu 22.04) is too old and the build will fail partway. This mirrors the proven recipe in
-[`docker/ubuntu.dockerfile`](docker).
+11.4 on Ubuntu 22.04) is too old and the build will fail partway. The recipe in
+[`docker/ubuntuDevBase.dockerfile`](docker) achieves the same without a toolchain file by promoting
+the newly installed compilers to the system default via `update-alternatives`.
 
 ```shell
 cmake -G Ninja -S ${SOURCE_TREE} -B ${BUILD_TREE}                                   \

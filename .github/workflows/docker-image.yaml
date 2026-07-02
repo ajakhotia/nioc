@@ -12,91 +12,14 @@ on:
       - main
 
 jobs:
-  base-stage:
+  build-test-deploy-stages:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         os_base:
           - name: ubuntu:22.04
-            image: ghcr.io/ajakhotia/infracommons/weekly/ubuntu:22.04
           - name: ubuntu:24.04
-            image: ghcr.io/ajakhotia/infracommons/weekly/ubuntu:24.04
-
-    steps:
-      - name: self-checkout
-        id: self-checkout
-        uses: actions/checkout@v6
-        with:
-          submodules: true
-
-      - name: setup-login
-        id: setup-login
-        uses: docker/login-action@v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: setup-buildx
-        id: setup-buildx
-        uses: docker/setup-buildx-action@v4
-
-      - name: job-cache-base
-        id: job-cache-base
-        uses: ./external/infraCommons/.github/actions/oci-compliant-image-name
-        with:
-          build-name: job-cache/${{ matrix.os_base.name }}/base
-
-      - name: image-name-base
-        id: image-name-base
-        uses: ./external/infraCommons/.github/actions/oci-compliant-image-name
-        with:
-          build-name: ${{ matrix.os_base.name }}/base
-
-      - name: base
-        id: base
-        uses: ./external/infraCommons/.github/actions/docker-typical-build-push
-        with:
-          dockerfile: docker/ubuntu.dockerfile
-          target-stage: base
-          cache-backend: registry
-          image-name: ${{ steps.image-name-base.outputs.name }}
-          shared-cache-to: ${{ steps.job-cache-base.outputs.name }}:cache
-          build-args: |
-            OS_BASE=${{ matrix.os_base.image }}
-
-
-  aggregate-base-stage:
-    name: aggregate-base-stage
-    if: always()
-    needs: [base-stage]
-    runs-on: ubuntu-latest
-    steps:
-      - name: self-checkout
-        id: self-checkout
-        uses: actions/checkout@v6
-        with:
-          submodules: true
-
-      - name: aggregate
-        id: aggregate
-        uses: ./external/infraCommons/.github/actions/matrix-aggregate
-        with:
-          result: ${{ needs.base-stage.result }}
-
-
-  dev-build-test-deploy-stages:
-    needs: base-stage
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        os_base:
-          - name: ubuntu:22.04
-            image: ghcr.io/ajakhotia/infracommons/weekly/ubuntu:22.04
-          - name: ubuntu:24.04
-            image: ghcr.io/ajakhotia/infracommons/weekly/ubuntu:24.04
         toolchain:
           - linux-clang-22
           - linux-gnu-15
@@ -120,30 +43,11 @@ jobs:
         id: setup-buildx
         uses: docker/setup-buildx-action@v4
 
-      - name: job-cache-base
-        id: job-cache-base
-        uses: ./external/infraCommons/.github/actions/oci-compliant-image-name
-        with:
-          build-name: job-cache/${{ matrix.os_base.name }}/base
-
       - name: image-name-dev-base
         id: image-name-dev-base
         uses: ./external/infraCommons/.github/actions/oci-compliant-image-name
         with:
-          build-name: ${{ matrix.os_base.name }}/${{ matrix.toolchain }}/dev-base
-
-      - name: dev-base
-        id: dev-base
-        uses: ./external/infraCommons/.github/actions/docker-typical-build-push
-        with:
-          dockerfile: docker/ubuntu.dockerfile
-          target-stage: dev-base
-          cache-backend: registry
-          image-name: ${{ steps.image-name-dev-base.outputs.name }}
-          shared-cache-from: ${{ steps.job-cache-base.outputs.name }}:cache
-          build-args: |
-            OS_BASE=${{ matrix.os_base.image }}
-            TOOLCHAIN=${{ matrix.toolchain }}
+          build-name: ${{ matrix.os_base.name }}/dev-base
 
       - name: image-name-build
         id: image-name-build
@@ -155,12 +59,12 @@ jobs:
         id: build
         uses: ./external/infraCommons/.github/actions/docker-typical-build-push
         with:
-          dockerfile: docker/ubuntu.dockerfile
+          dockerfile: docker/ubuntuNioc.dockerfile
           target-stage: build
           cache-backend: registry
           image-name: ${{ steps.image-name-build.outputs.name }}
           build-args: |
-            OS_BASE=${{ matrix.os_base.image }}
+            DEV_BASE_IMAGE=${{ steps.image-name-dev-base.outputs.name }}:latest
             TOOLCHAIN=${{ matrix.toolchain }}
 
       - name: image-name-test
@@ -173,12 +77,12 @@ jobs:
         id: test
         uses: ./external/infraCommons/.github/actions/docker-typical-build-push
         with:
-          dockerfile: docker/ubuntu.dockerfile
+          dockerfile: docker/ubuntuNioc.dockerfile
           target-stage: test
           cache-backend: registry
           image-name: ${{ steps.image-name-test.outputs.name }}
           build-args: |
-            OS_BASE=${{ matrix.os_base.image }}
+            DEV_BASE_IMAGE=${{ steps.image-name-dev-base.outputs.name }}:latest
             TOOLCHAIN=${{ matrix.toolchain }}
 
       - name: image-name-deploy
@@ -191,19 +95,19 @@ jobs:
         id: deploy
         uses: ./external/infraCommons/.github/actions/docker-typical-build-push
         with:
-          dockerfile: docker/ubuntu.dockerfile
+          dockerfile: docker/ubuntuNioc.dockerfile
           target-stage: deploy
           cache-backend: registry
           image-name: ${{ steps.image-name-deploy.outputs.name }}
           build-args: |
-            OS_BASE=${{ matrix.os_base.image }}
+            DEV_BASE_IMAGE=${{ steps.image-name-dev-base.outputs.name }}:latest
             TOOLCHAIN=${{ matrix.toolchain }}
 
 
-  aggregate-dev-build-test-deploy-stages:
-    name: aggregate-dev-build-test-deploy-stages
+  aggregate-build-test-deploy-stages:
+    name: aggregate-build-test-deploy-stages
     if: always()
-    needs: [dev-build-test-deploy-stages]
+    needs: [build-test-deploy-stages]
     runs-on: ubuntu-latest
     steps:
       - name: self-checkout
@@ -216,11 +120,11 @@ jobs:
         id: aggregate
         uses: ./external/infraCommons/.github/actions/matrix-aggregate
         with:
-          result: ${{ needs.dev-build-test-deploy-stages.result }}
+          result: ${{ needs.build-test-deploy-stages.result }}
 
 
   find-package:
-    needs: dev-build-test-deploy-stages
+    needs: build-test-deploy-stages
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
