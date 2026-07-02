@@ -14,6 +14,8 @@ on:
 jobs:
   wait-for-dev-base-image:
     runs-on: ubuntu-latest
+    outputs:
+      dev-base-tag: ${{ steps.wait.outputs.succeeded == 'true' && format('sha-{0}', github.sha) || 'latest' }}
     steps:
       - name: self-checkout
         id: self-checkout
@@ -81,7 +83,7 @@ jobs:
           cache-backend: registry
           image-name: ${{ steps.image-name-build.outputs.name }}
           build-args: |
-            DEV_BASE_IMAGE=${{ steps.image-name-dev-base.outputs.name }}:latest
+            DEV_BASE_IMAGE=${{ steps.image-name-dev-base.outputs.name }}:${{ needs.wait-for-dev-base-image.outputs.dev-base-tag }}
             TOOLCHAIN=${{ matrix.toolchain }}
 
       - name: image-name-test
@@ -99,7 +101,7 @@ jobs:
           cache-backend: registry
           image-name: ${{ steps.image-name-test.outputs.name }}
           build-args: |
-            DEV_BASE_IMAGE=${{ steps.image-name-dev-base.outputs.name }}:latest
+            DEV_BASE_IMAGE=${{ steps.image-name-dev-base.outputs.name }}:${{ needs.wait-for-dev-base-image.outputs.dev-base-tag }}
             TOOLCHAIN=${{ matrix.toolchain }}
 
       - name: image-name-deploy
@@ -117,7 +119,7 @@ jobs:
           cache-backend: registry
           image-name: ${{ steps.image-name-deploy.outputs.name }}
           build-args: |
-            DEV_BASE_IMAGE=${{ steps.image-name-dev-base.outputs.name }}:latest
+            DEV_BASE_IMAGE=${{ steps.image-name-dev-base.outputs.name }}:${{ needs.wait-for-dev-base-image.outputs.dev-base-tag }}
             TOOLCHAIN=${{ matrix.toolchain }}
 
 
