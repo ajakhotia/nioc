@@ -203,13 +203,12 @@ Port, and routines read their settings from that one store.
 ```mermaid
 %%{init: {"themeVariables": {"edgeLabelBackground": "transparent"}}}%%
 flowchart TB
-  classDef input     fill:#f3e8ff,stroke:#9333ea,stroke-width:1.5px,color:#581c87;
+  classDef input     fill:#f3e8ff,stroke:#9333ea,stroke-width:1.5px,color:#581c87,font-size:13px;
   classDef driver    fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d;
   classDef component fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#1e3a8a;
   classDef port      fill:#fef3c7,stroke:#d97706,stroke-width:3px,color:#7c2d12,font-size:28px;
-  classDef anchor    fill:transparent,stroke:transparent,color:transparent;
 
-  CLI["command line<br/>(key=value overrides)"]:::input
+  CLI["command line"]:::input
   FILES["config files"]:::input
   MANIFEST["Manifest"]:::input
 
@@ -217,8 +216,6 @@ flowchart TB
   LASER["3D Laser"]:::driver
 
   PORT(("&nbsp;<br/>&nbsp;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Port&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/>&nbsp;<br/>&nbsp;")):::port
-
-  a1(( )):::anchor
 
   TRK["Tracker"]:::component
   LOC["Localizer"]:::component
@@ -231,7 +228,6 @@ flowchart TB
   CAM -- "Image" --> PORT
   LASER -- "PointCloud" --> PORT
 
-  PORT ~~~ a1
   PORT -- "Image" --> TRK
   TRK -- "Features" --> PORT
   PORT -- "Features" --> LOC
