@@ -208,12 +208,15 @@ flowchart TB
   classDef component fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#1e3a8a;
   classDef port      fill:#fef3c7,stroke:#d97706,stroke-width:3px,color:#7c2d12,font-size:28px;
   classDef artifact  fill:#fffbeb,stroke:#d97706,stroke-width:1.5px,color:#7c2d12,font-size:12px;
+  classDef backing   fill:#fef3c7,stroke:#d97706,stroke-width:1.5px,color:#7c2d12,font-size:12px,stroke-dasharray:4 3;
 
   CLI["command line"]:::input
   FILES["config files"]:::input
   MANIFEST["Manifest"]:::input
 
-  WD["Working Directory<br/><br/>manifest.json<br/>config.json<br/>console.log<br/>topics.txt<br/>resources.json<br/>chronicle/"]:::artifact
+  WD["Working Directory<br/><br/>&lt;utc-timestamp&gt;_&lt;uuid&gt;/&nbsp;&nbsp;&nbsp;<br/>├──&nbsp;manifest.json&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/>├──&nbsp;config.json&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/>├──&nbsp;console.log&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/>├──&nbsp;topics.txt&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/>├──&nbsp;resources.json&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/>└──&nbsp;chronicle/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"]:::artifact
+
+  BACK>"backs"]:::backing
 
   CAM["Camera"]:::driver
   LASER["3D Laser"]:::driver
@@ -228,6 +231,7 @@ flowchart TB
   FILES --> MANIFEST
   MANIFEST --> PORT
   MANIFEST ~~~ WD
+  MANIFEST ~~~ BACK
 
   CAM -- "Image" --> PORT
   LASER -- "PointCloud" --> PORT
