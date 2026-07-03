@@ -1,7 +1,7 @@
 <h1 align="center">nioc: Nerve IO Core</h1>
 
 <p align="center">
-  <strong>An in-process pub/sub runtime for C++<br/>
+  <strong>A zero-copy, in-process pub/sub and logging framework for C++<br/>
   zero-copy message distribution&nbsp;&nbsp;·&nbsp;&nbsp;zero-copy logging</strong>
 </p>
 
@@ -13,8 +13,8 @@
   <img src="https://img.shields.io/badge/toolchain-Clang%2022%20%7C%20GCC%2015-informational" alt="Compilers"/>
 </p>
 
-***nioc*** is a zero-copy, in-process pub/sub + logging framework for building applications in which
-subsystems communicate by exchanging typed messages, often large ones. The subsystems, called
+***nioc*** is a zero-copy, in-process pub/sub and logging framework for building applications in
+which subsystems communicate by exchanging typed messages, often large ones. The subsystems, called
 **routines**, build, publish, and react to messages defined with Cap'n Proto schemas, with each
 topic flowing from one producer to any number of consumers.
 
