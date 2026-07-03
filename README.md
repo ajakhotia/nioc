@@ -234,9 +234,11 @@ flowchart TB
   PORT ~~~ a1
   PORT -- "Image" --> TRK
   TRK -- "Features" --> PORT
-  PORT -- "Features · PointCloud" --> LOC
+  PORT -- "Features" --> LOC
+  PORT -- "PointCloud" --> LOC
   LOC -- "Odometry" --> PORT
-  PORT -- "Odometry · PointCloud" --> PLN
+  PORT -- "Odometry" --> PLN
+  PORT -- "PointCloud" --> PLN
   PLN -- "Plan" --> PORT
 ```
 
