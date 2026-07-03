@@ -205,41 +205,38 @@ flowchart TB
   classDef input     fill:#f3e8ff,stroke:#9333ea,stroke-width:1.5px,color:#581c87;
   classDef driver    fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d;
   classDef component fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#1e3a8a;
-  classDef dock      fill:#fffbeb,stroke:#d97706,stroke-width:2px,color:#7c2d12;
+  classDef port      fill:#fef3c7,stroke:#d97706,stroke-width:3px,color:#7c2d12;
   classDef anchor    fill:transparent,stroke:transparent,color:transparent;
 
   CLI["command line<br/>(key=value overrides)"]:::input
   FILES["config files"]:::input
-  CAM["Camera<br/>out: Image"]:::driver
-  LASER["3D Laser<br/>out: PointCloud"]:::driver
-
   MANIFEST["Manifest"]:::input
 
-  subgraph PORT["Port"]
-    RC["RunContext"]:::dock
-    CS["ConfigStore"]:::dock
-    BUS(("pub/sub bus<br/>chronicle")):::dock
-  end
-  style PORT fill:#fef3c7,stroke:#d97706,stroke-width:3px,color:#7c2d12
+  CAM["Camera"]:::driver
+  LASER["3D Laser"]:::driver
+
+  PORT(("&nbsp;&nbsp;&nbsp;Port&nbsp;&nbsp;&nbsp;")):::port
 
   a1(( )):::anchor
 
-  TRK["Tracker<br/>in: Image · out: Features"]:::component
-  LOC["Localizer<br/>in: Features, PointCloud · out: Odometry"]:::component
-  PLN["Planner<br/>in: Odometry, PointCloud · out: Plan"]:::component
+  TRK["Tracker"]:::component
+  LOC["Localizer"]:::component
+  PLN["Planner"]:::component
 
   CLI --> MANIFEST
   FILES --> MANIFEST
-  MANIFEST -- "moves in" --> RC
-  MANIFEST -- "moves in" --> CS
+  MANIFEST --> PORT
 
-  CAM --> BUS
-  LASER --> BUS
+  CAM -- "Image" --> PORT
+  LASER -- "PointCloud" --> PORT
 
   PORT ~~~ a1
-  BUS --> TRK
-  BUS --> LOC
-  BUS --> PLN
+  PORT -- "Image" --> TRK
+  TRK -- "Features" --> PORT
+  PORT -- "Features · PointCloud" --> LOC
+  LOC -- "Odometry" --> PORT
+  PORT -- "Odometry · PointCloud" --> PLN
+  PLN -- "Plan" --> PORT
 ```
 
 - **⚙️ Schema-driven, layered config.** Define your app's config as a Cap'n Proto schema; values
