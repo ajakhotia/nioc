@@ -201,7 +201,7 @@ the run was launched) plus a `ConfigStore` (the resolved config). The Manifest m
 Port, and routines read their settings from that one store.
 
 ```mermaid
-%%{init: {"themeVariables": {"edgeLabelBackground": "transparent"}}}%%
+%%{init: {"themeVariables": {"edgeLabelBackground": "transparent"}, "themeCSS": ".edgeLabel { font-size: 10px; }"}}%%
 flowchart TB
   classDef input     fill:#f3e8ff,stroke:#9333ea,stroke-width:1.5px,color:#581c87,font-size:13px;
   classDef driver    fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d;
@@ -215,10 +215,11 @@ flowchart TB
   CAM["Camera"]:::driver
   LASER["3D Laser"]:::driver
 
-  PORT(("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Port&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/><span style='font-size:13px;'><br/>working directory<br/><br/>&lt;utc-timestamp&gt;_&lt;uuid&gt;/<br/>manifest.json<br/>config.json<br/>console.log<br/>topics.txt<br/>resources.json<br/>chronicle/</span>")):::port
+  PORT(("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Port&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;")):::port
 
-  TRK["Tracker"]:::component
+
   LOC["Localizer"]:::component
+  TRK["Feature Tracker"]:::component
   PLN["Planner"]:::component
 
   CLI --> MANIFEST
@@ -226,13 +227,16 @@ flowchart TB
   MANIFEST --> PORT
 
   CAM -- "Image" --> PORT
+  CAM -- "Camera Info" --> PORT
   LASER -- "PointCloud" --> PORT
 
-  PORT -- "Image" --> TRK
-  TRK -- "Features" --> PORT
   PORT -- "Features" --> LOC
   PORT -- "PointCloud" --> LOC
   LOC -- "Odometry" --> PORT
+
+  PORT -- "Image" --> TRK
+  TRK -- "Features" --> PORT
+
   PORT -- "Odometry" --> PLN
   PORT -- "PointCloud" --> PLN
   PLN -- "Plan" --> PORT
