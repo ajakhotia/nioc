@@ -207,18 +207,15 @@ flowchart TB
   classDef driver    fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d;
   classDef component fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#1e3a8a;
   classDef port      fill:#fef3c7,stroke:#d97706,stroke-width:3px,color:#7c2d12,font-size:28px;
-  classDef artifact  fill:#fffbeb,stroke:#d97706,stroke-width:1.5px,color:#7c2d12;
 
   CLI["command line"]:::input
   FILES["config files"]:::input
   MANIFEST["Manifest"]:::input
 
-  WD["Working Directory<br/><br/><small><code>&lt;utc-timestamp&gt;_&lt;uuid&gt;/</code></small><br/><small><code>├──&nbsp;manifest.json&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code></small><br/><small><code>├──&nbsp;config.json&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code></small><br/><small><code>├──&nbsp;console.log&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code></small><br/><small><code>├──&nbsp;topics.txt&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code></small><br/><small><code>├──&nbsp;resources.json&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code></small><br/><small><code>└──&nbsp;chronicle/&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</code></small>"]:::artifact
-
   CAM["Camera"]:::driver
   LASER["3D Laser"]:::driver
 
-  PORT(("&nbsp;<br/>&nbsp;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Port&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/>&nbsp;<br/>&nbsp;")):::port
+  PORT(("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Port&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/><span style='font-size:13px;'><br/>working directory<br/><br/>&lt;utc-timestamp&gt;_&lt;uuid&gt;/<br/>manifest.json<br/>config.json<br/>console.log<br/>topics.txt<br/>resources.json<br/>chronicle/</span>")):::port
 
   TRK["Tracker"]:::component
   LOC["Localizer"]:::component
@@ -227,7 +224,6 @@ flowchart TB
   CLI --> MANIFEST
   FILES --> MANIFEST
   MANIFEST --> PORT
-  MANIFEST ~~~ WD
 
   CAM -- "Image" --> PORT
   LASER -- "PointCloud" --> PORT
