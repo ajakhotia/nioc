@@ -191,6 +191,8 @@ Run the program and a directory appears:
 
 ## 📐 Design
 
+### 📡 Comms
+
 Everything meets at the **`Port`**. Drivers and Components connect to it by opening publishers and
 subscriptions on named topics. The Port fans every published message out to the topic's
 subscribers and records it. It also manages the working directory, the config, the
@@ -242,21 +244,65 @@ flowchart TB
   PLN -- "Plan" --> PORT
 ```
 
-- **⚙️ Schema-driven, layered config.** Define your app's config as a Cap'n Proto schema; values
-  resolve as schema defaults → config files → `key=value` overrides, and the result is written into
-  the run directory. On the roadmap: a memory-mapped config store, for real-time tuning.
 - **⏪ Recording and replay.** Every publish is recorded by construction; a `LogPlayer` replays a
   chronicle onto the same topics, in recorded order.
 - **🚦 Backpressure by policy.** A publisher never blocks. Each component's inbox either keeps the
   newest N messages (dropping the oldest) or grows unbounded; the policy decides what a slow
   consumer misses.
 
+### ⚙️ Configuration
+
+The application's configuration is declared in a Cap'n Proto schema, which the Cap'n Proto
+compiler turns into typed structs (`Reader` & `Builder`). Every routine reads its settings
+through the generated `<Schema>::Reader`. In Cap'n Proto, a reader is a highly efficient,
+read-only typed view over a set of bytes. In nioc, those bytes are owned by the `ConfigStore`
+and are guaranteed to stay valid until the `Port` is destroyed.
+
+The generated `Reader` and `Builder` are backward compatible by Cap'n Proto's own design. An
+application knows exactly which configuration values it reads, and any extra or stray values
+are ignored.
+
+At launch, the effective configuration resolves in three layers, each overriding the one before.
+The two override mechanisms are command-line options that every nioc application accepts out of
+the box.
+
+#### Schema defaults
+
+Every configuration value in the schema carries a default. The `ConfigStore`'s bytes are
+default-initialized so that, in the absence of any overrides, the `<Schema>::Reader` returns
+exactly these defaults: the program runs with no config input at all.
+
+#### Command-line config files
+
+A caller may override any part of the schema-default config by supplying one or more JSON files,
+each mirroring the structural layout of the schema and overriding it partially or fully. Pass
+`--append-config </path/to/myOverrides.json>` as many times as needed: the files merge-patch onto
+the schema defaults from left to right, so on collision the later file wins.
+
+#### Command-line overrides
+
+A caller may override individual values with the `--config-override key=value` option, repeated
+as many times as needed. These too merge-patch from left to right, and they apply last, winning
+over the appended config files and the schema defaults alike.
+
+The effective config decodes into the `ConfigStore` as one block of bytes in Cap'n Proto wire
+format, ready for every `<Schema>::Reader` to view. The same values are echoed into the run's
+working directory as a single `config.json`, so a replay of the log runs with the exact
+configuration the original run used.
+
+Since every `Reader` is an efficient read-only view over the `ConfigStore`'s bytes, manipulating
+the right bits of that byte span reconfigures the corresponding subsystem in place. As a result, the system
+can be tuned live. A planned control panel will do exactly that by wrapping a `<Schema>::Builder`
+in a GUI.
+
 ---
 
-## 🎲 See it: a Catan supply chain
+## 🎲 Example: A Settlers of Catan Supply Chain
 
-The runnable [`modules/example`](modules/example) is a whole nioc app modeled on *Settlers of
-Catan*: land tiles produce resources; builders spend them to make roads, settlements, and cities.
+The runnable [`modules/example`](modules/example) is a complete nioc application modeled on
+*Settlers of Catan*: five land tiles produce resources; four builders spend them on roads,
+settlements, cities, and development cards. The graph is small enough to read in one sitting,
+yet it has the shapes a production dataflow is made of:
 
 ```mermaid
 flowchart LR
@@ -322,57 +368,86 @@ flowchart LR
 🟦 **Components**
 🟨 **Topics**
 
-> Each arrow is a publish/subscribe link.
+- **Fan-out:** `grain` feeds three builders.
+- **Fan-in:** the settlement builder consumes five topics.
+- **Pipelines:** builders feed builders: roads into the settlement builder, settlements into the
+  city builder.
 
-`grain` fans out to three builders; the settlement builder fans in five inputs; builders chain into
-builders. No producer knows who consumes its output, and no builder knows where its inputs came
-from. nioc does the delivery.
-
-**A producer**, condensed from [`hills.hpp`](modules/example/include/nioc/example/hills.hpp):
-
-```cpp
-class Hills final: public terminus::Driver
-{
-  State run() final   // ticked repeatedly by its Runner
-  {
-    // A real driver blocks here on a socket or device read. Here it just waits.
-    if(common::sleepFor(shutdownToken(), std::chrono::milliseconds{mConfig.getMiningTimeMs()}))
-      return State::Done;
-
-    auto brick = mBrickPublisher.draft();
-    brick.builder().setId(++mNextBrickId);
-    mBrickPublisher.publish(std::move(brick));   // everyone subscribed to "brick" gets it
-    return State::Continue;
-  }
-};
-```
-
-**A consumer** subscribes to its inputs and publishes its output, condensed from
-[`roadBuilder.cpp`](modules/example/src/roadBuilder.cpp):
+The whole supply chain wires up in one setup hook, verbatim from
+[`catanMain.cpp`](modules/example/src/catanMain.cpp):
 
 ```cpp
-RoadBuilder::RoadBuilder(terminus::Port& port, RoadBuilderConfig::Reader config):
-  Component{port, config.getComponent()}
-{
-  subscribe<Brick>("brick",   [this](const Message<Brick>& m)  { process(m); return State::Continue; });
-  subscribe<Lumber>("lumber", [this](const Message<Lumber>& m) { process(m); return State::Continue; });
-}
+// The Port owns the run. Its constructor calls this hook to build the routine graph, handing
+// each routine only its own config block.
+auto port = nioc::terminus::Port{
+    std::move(manifest),
+    [](nioc::terminus::Port& port,
+       nioc::terminus::Port::Drivers& drivers,
+       nioc::terminus::Port::Components& components,
+       nioc::terminus::Port::Runners& runners)
+    {
+      const auto config = port.config<nioc::example::CatanConfig>();
+
+      // Components (consumers).
+      components.push_back(
+          std::make_shared<nioc::example::RoadBuilder>(port, config.getRoadBuilder()));
+      components.push_back(
+          std::make_shared<nioc::example::SettlementBuilder>(
+              port,
+              config.getSettlementBuilder()));
+      components.push_back(
+          std::make_shared<nioc::example::CityBuilder>(port, config.getCityBuilder()));
+      components.push_back(
+          std::make_shared<nioc::example::DevelopmentCardBuilder>(
+              port,
+              config.getDevelopmentCardBuilder()));
+
+      // Drivers (producers).
+      drivers.push_back(std::make_shared<nioc::example::Hills>(port, config.getHills()));
+      drivers.push_back(std::make_shared<nioc::example::Forest>(port, config.getForest()));
+      drivers.push_back(std::make_shared<nioc::example::Pasture>(port, config.getPasture()));
+      drivers.push_back(std::make_shared<nioc::example::Fields>(port, config.getFields()));
+      drivers.push_back(
+          std::make_shared<nioc::example::Mountains>(port, config.getMountains()));
+
+      // Launch consumers before producers, so no message is published before its subscriber's
+      // runner is up. Each routine gets its own thread.
+      for(const auto& component: components)
+      {
+        auto runner = std::make_shared<nioc::concurrent::ThreadedRunner>();
+        runner->launch(component);
+        runners.push_back(std::move(runner));
+      }
+      for(const auto& driver: drivers)
+      {
+        auto runner = std::make_shared<nioc::concurrent::ThreadedRunner>();
+        runner->launch(driver);
+        runners.push_back(std::move(runner));
+      }
+    }};
 ```
 
-The whole graph, every routine and every runner, is assembled in one file,
-[`catanMain.cpp`](modules/example/src/catanMain.cpp). The
-[example walkthrough](modules/example/README.md) gives the full tour.
-
-Build and run it (`BUILD_TREE` / `INSTALL_TREE` are the paths you set up under
-**Build & install nioc** below):
+Every knob (mining times, recipe costs, topic names) is a field in
+[`catanConfig.capnp`](modules/example/include/nioc/example/config/catanConfig.capnp), one config
+block per routine; the `config.getRoadBuilder()` calls above hand each routine its typed view.
+That makes the example a working demonstration of the three layers from **⚙️ Configuration**
+(`BUILD_TREE` / `INSTALL_TREE` are the paths you set up under **Build & install nioc** below):
 
 ```shell
 cmake --build <BUILD_TREE> && cmake --install <BUILD_TREE>
-<INSTALL_TREE>/bin/catanMain                                            # built-in defaults
-<INSTALL_TREE>/bin/catanMain --config-override fields.miningTimeMs=250  # retune a producer, no recompile
+
+# 1. Schema defaults alone.
+<INSTALL_TREE>/bin/catanMain
+
+# 2. A config file overrides only the settings it names.
+<INSTALL_TREE>/bin/catanMain --append-config <INSTALL_TREE>/config/nioc/example/strippedCatan.json
+
+# 3. A command-line override flips one setting.
+<INSTALL_TREE>/bin/catanMain --config-override fields.miningTimeMs=250
 ```
 
 Every finished piece prints as it is built. Ctrl-C stops the run cleanly; a second Ctrl-C aborts it.
+The [example walkthrough](modules/example/README.md) gives the full tour.
 
 ---
 
