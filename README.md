@@ -1,7 +1,7 @@
 <h1 align="center">nioc: Nerve IO Core</h1>
 
 <p align="center">
-  <strong>An in-process pub/sub runtime for C++<br/>
+  <strong>A zero-copy, in-process pub/sub and logging framework for C++<br/>
   zero-copy message distribution&nbsp;&nbsp;·&nbsp;&nbsp;zero-copy logging</strong>
 </p>
 
@@ -13,22 +13,27 @@
   <img src="https://img.shields.io/badge/toolchain-Clang%2022%20%7C%20GCC%2015-informational" alt="Compilers"/>
 </p>
 
-***nioc*** composes an application from subsystems that communicate through typed messages, built
-on Cap'n Proto, with each topic flowing from one producer to any number of consumers.
+***nioc*** is a zero-copy, in-process pub/sub and logging framework for building applications in
+which subsystems communicate by exchanging typed messages, often large ones. The subsystems, called
+**routines**, build, publish, and react to messages defined with Cap'n Proto schemas, with each
+topic flowing from one producer to any number of consumers.
 
 A message is drafted in place, directly on a memory-mapped file, and distributed as a const view
-of the written bytes. The Linux kernel manages the page sync, leaving behind a replayable log on
-disk. **The data log doubles as the message bus. Publish, subscribe, and record share one
-zero-copy path, built for high-bandwidth applications.**
+of the written bytes. The Linux kernel syncs those pages to disk in the background, so every
+topic leaves behind a replayable log with no separate recording step. **The data log doubles as
+the message bus. Publish, subscribe, and record share one zero-copy path.**
 
-The system consists of two kinds of routine: **Drivers** & **Components**.
+The system consists of two kinds of routine: **Drivers** and **Components**.
 
-- A **Driver** produces: it pulls from a socket, a device, or a clock, and publishes to a topic.
-- A **Component** consumes: it subscribes to topics, reacts, and may publish onward.
+- A **Driver** produces. It pulls from a socket, a device, or a clock, and publishes to a topic.
+- A **Component** consumes. It subscribes to topics, reacts, and may publish onward.
 
-**Runners** are allocated per routine. The choice of Runner sets the execution context: the stock
+**Runners** are allocated per routine and set the routine's execution context. The stock
 `ThreadedRunner` dedicates a thread to its routine, and the abstraction admits others, such as a
 shared thread pool.
+
+The example below defines a `Driver` and a `Component`, then assembles them in an application's
+`main()`:
 
 <table>
 <tr>
@@ -159,7 +164,7 @@ int main(int argc, char** argv)
         runners.push_back(std::move(cameraRunner));
       }};
 
-  // Setup the signal catcher. Ctrl-C once for a graceful shutdown, twice to abort.
+  // Set up the signal catcher. Ctrl-C once for a graceful shutdown, twice to abort.
   const auto signalCatcher = defaultSignalCatcher(port);
 
   // Park main until the run winds down.
@@ -195,8 +200,8 @@ Run the program and a directory appears:
 
 Everything meets at the **`Port`**. Drivers and Components connect to it by opening publishers and
 subscriptions on named topics. The Port fans every published message out to the topic's
-subscribers and records it. It also manages the working directory, the config, the
-recording, and the shutdown process.
+subscribers and records it. It also manages the working directory, the config, and the shutdown
+process.
 
 At construction, the command line and config files decode into a `Manifest`: a `RunContext` (how
 the run was launched) plus a `ConfigStore` (the resolved config). The Manifest moves into the
@@ -253,8 +258,8 @@ flowchart TB
 ### ⚙️ Configuration
 
 An application's configuration is declared in a Cap'n Proto schema, which the Cap'n Proto
-compiler turns into typed structs (`Reader` & `Builder`). Every routine reads its settings
-through the generated `<Schema>::Reader`. In Cap'n Proto, a reader is a highly efficient,
+compiler turns into typed structs (`Reader` and `Builder`). Every routine reads its settings
+through the generated `<Schema>::Reader`. In Cap'n Proto, a reader is an efficient,
 read-only typed view over a set of bytes. In nioc, those bytes are owned by the `ConfigStore`
 and are guaranteed to stay valid until the `Port` is destroyed.
 
@@ -290,10 +295,10 @@ format, ready for every `<Schema>::Reader` to view. The same values are echoed i
 working directory as a single `config.json`, so a replay of the log runs with the exact
 configuration the original run used.
 
-Since every `Reader` is an efficient read-only view over the `ConfigStore`'s bytes, manipulating
-the right bits of that byte span reconfigures the corresponding subsystem in place. As a result, the system
-can be tuned live. A planned control panel will do exactly that by wrapping a `<Schema>::Builder`
-in a GUI.
+Since every `Reader` is a read-only view over the `ConfigStore`'s bytes, manipulating the right
+bits of that byte span reconfigures the corresponding subsystem in place. As a result, the
+system can be tuned live. A planned control panel will do exactly that by wrapping a
+`<Schema>::Builder` in a GUI.
 
 ---
 
@@ -526,8 +531,8 @@ prefix path too.
 
 ## 🛠️ Build & install nioc
 
-**Tested on Ubuntu 22.04 / 24.04. See [`docker/ubuntuDevBase.dockerfile`](docker) for the exact
-recipe.**
+**Tested on Ubuntu 22.04 / 24.04. See
+[`docker/ubuntuDevBase.dockerfile`](docker/ubuntuDevBase.dockerfile) for the exact recipe.**
 
 Pick three paths you own: `SOURCE_TREE` (clone), `BUILD_TREE` (build), and `INSTALL_TREE` (install,
 keep long-term). Installing to a privileged location (`/opt`, `/usr`) needs `sudo` on the install
@@ -543,13 +548,14 @@ git -C ${SOURCE_TREE} submodule update --init
 
 ### 🧰 Toolchain
 
-Requires a C++23-capable toolchain. Toolchain files ship for GNU 14 / 15 and Clang 21 / 22, and
-CI builds with GNU 15 and Clang 22 (CUDA >= 13 if used). Skip any step your system already
-satisfies. The setup scripts live in the `infraCommons` submodule.
+Building nioc requires a C++23-capable toolchain. Toolchain files ship for GNU 14 / 15 and
+Clang 21 / 22, and CI builds with GNU 15 and Clang 22 (CUDA >= 13 if used). Skip any step your
+system already satisfies. The setup scripts live in the `infraCommons` submodule.
 
 ```shell
+cd ${SOURCE_TREE}
 sudo apt install -y --no-install-recommends jq          # to read systemDependencies.json
-sudo bash external/infraCommons/tools/installCMake.sh    # skip if cmake > 3.27
+sudo bash external/infraCommons/tools/installCMake.sh    # skip if cmake >= 3.27
 sudo apt install -y --no-install-recommends \
   $(sh external/infraCommons/tools/extractDependencies.sh Basics systemDependencies.json)
 
@@ -586,7 +592,8 @@ curl -fsSL https://raw.githubusercontent.com/ajakhotia/robotFarm/refs/heads/main
 
 Pass a `--toolchain` file so a C++23-capable compiler is used; the OS-default compiler (e.g. GCC
 11.4 on Ubuntu 22.04) is too old and the build will fail partway. The recipe in
-[`docker/ubuntuDevBase.dockerfile`](docker) achieves the same without a toolchain file by promoting
+[`docker/ubuntuDevBase.dockerfile`](docker/ubuntuDevBase.dockerfile) achieves the same without a
+toolchain file by promoting
 the newly installed compilers to the system default via `update-alternatives`.
 
 ```shell
