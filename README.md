@@ -252,7 +252,7 @@ flowchart TB
 
 ### ⚙️ Configuration
 
-The application's configuration is declared in a Cap'n Proto schema, which the Cap'n Proto
+An application's configuration is declared in a Cap'n Proto schema, which the Cap'n Proto
 compiler turns into typed structs (`Reader` & `Builder`). Every routine reads its settings
 through the generated `<Schema>::Reader`. In Cap'n Proto, a reader is a highly efficient,
 read-only typed view over a set of bytes. In nioc, those bytes are owned by the `ConfigStore`
