@@ -192,9 +192,9 @@ Run the program and a directory appears:
 ## 📐 Design
 
 Everything meets at the **`Port`**. Drivers and Components connect to it by opening publishers and
-subscriptions on named topics: the Port fans every published message out to the topic's
-subscribers and records it. It also owns the run: the working directory, the chronicle, and the
-shutdown tokens.
+subscriptions on named topics. The Port fans every published message out to the topic's
+subscribers and records it. It also manages the working directory, the config, the
+recording, and the shutdown process.
 
 At construction, the command line and config files decode into a `Manifest`: a `RunContext` (how
 the run was launched) plus a `ConfigStore` (the resolved config). The Manifest moves into the
@@ -207,10 +207,13 @@ flowchart TB
   classDef driver    fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d;
   classDef component fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#1e3a8a;
   classDef port      fill:#fef3c7,stroke:#d97706,stroke-width:3px,color:#7c2d12,font-size:28px;
+  classDef artifact  fill:#fffbeb,stroke:#d97706,stroke-width:1.5px,color:#7c2d12,font-size:12px;
 
   CLI["command line"]:::input
   FILES["config files"]:::input
   MANIFEST["Manifest"]:::input
+
+  WD["Working Directory<br/><br/>manifest.json<br/>config.json<br/>console.log<br/>topics.txt<br/>resources.json<br/>chronicle/"]:::artifact
 
   CAM["Camera"]:::driver
   LASER["3D Laser"]:::driver
@@ -224,6 +227,7 @@ flowchart TB
   CLI --> MANIFEST
   FILES --> MANIFEST
   MANIFEST --> PORT
+  MANIFEST ~~~ WD
 
   CAM -- "Image" --> PORT
   LASER -- "PointCloud" --> PORT
