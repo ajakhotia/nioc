@@ -18,7 +18,7 @@ on Cap'n Proto, with each topic flowing from one producer to any number of consu
 
 A message is drafted in place, directly on a memory-mapped file, and distributed as a const view
 of the written bytes. The Linux kernel manages the page sync, leaving behind a replayable log on
-disk. **The data log doubles as the message bus: publish, subscribe, and record share one
+disk. **The data log doubles as the message bus. Publish, subscribe, and record share one
 zero-copy path, built for high-bandwidth applications.**
 
 The system consists of two kinds of routine: **Drivers** & **Components**.
@@ -269,21 +269,21 @@ the box.
 #### Schema defaults
 
 Every configuration value in the schema carries a default. The `ConfigStore`'s bytes are
-default-initialized so that, in the absence of any overrides, the `<Schema>::Reader` returns
-exactly these defaults: the program runs with no config input at all.
+default-initialized so that the `<Schema>::Reader` returns these defaults. When no overrides are
+supplied, the program runs on the default configuration.
 
 #### Command-line config files
 
 A caller may override any part of the schema-default config by supplying one or more JSON files,
 each mirroring the structural layout of the schema and overriding it partially or fully. Pass
-`--append-config </path/to/myOverrides.json>` as many times as needed: the files merge-patch onto
-the schema defaults from left to right, so on collision the later file wins.
+`--append-config </path/to/myOverrides.json>` as many times as needed. The files merge-patch onto
+the schema defaults from left to right, and on collision the later file wins.
 
 #### Command-line overrides
 
 A caller may override individual values with the `--config-override key=value` option, repeated
-as many times as needed. These too merge-patch from left to right, and they apply last, winning
-over the appended config files and the schema defaults alike.
+as many times as needed. These also merge-patch from left to right. They are applied last, so
+they override both the appended config files and the schema defaults.
 
 The effective config decodes into the `ConfigStore` as one block of bytes in Cap'n Proto wire
 format, ready for every `<Schema>::Reader` to view. The same values are echoed into the run's
@@ -300,9 +300,9 @@ in a GUI.
 ## 🎲 Example: A Settlers of Catan Supply Chain
 
 The runnable [`modules/example`](modules/example) is a complete nioc application modeled on
-*Settlers of Catan*: five land tiles produce resources; four builders spend them on roads,
+*Settlers of Catan*. Five land tiles produce resources, and four builders spend them on roads,
 settlements, cities, and development cards. The graph is small enough to read in one sitting,
-yet it has the shapes a production dataflow is made of:
+yet it has the shapes a production dataflow is made of.
 
 ```mermaid
 flowchart LR
@@ -370,8 +370,8 @@ flowchart LR
 
 - **Fan-out:** `grain` feeds three builders.
 - **Fan-in:** the settlement builder consumes five topics.
-- **Pipelines:** builders feed builders: roads into the settlement builder, settlements into the
-  city builder.
+- **Pipelines:** builders feed builders. Roads flow into the settlement builder, and settlements
+  flow into the city builder.
 
 The whole supply chain wires up in one setup hook, verbatim from
 [`catanMain.cpp`](modules/example/src/catanMain.cpp):
@@ -461,9 +461,9 @@ on what you use.
 Add nioc and its build-infra dependency `infraCommons` as submodules; your build configures and
 builds them with your own.
 
-nioc keeps its tooling setup behind a `PROJECT_IS_TOP_LEVEL` guard: as a submodule it won't reach
-out and configure clang-tidy, codegen, etc. Your top-level project owns that, which is why you also
-vendor `infraCommons` (nioc's CMake utilities) and wire it in.
+nioc keeps its tooling setup behind a `PROJECT_IS_TOP_LEVEL` guard, so as a submodule it won't
+reach out and configure clang-tidy, codegen, etc. Your top-level project owns that, which is why
+you also vendor `infraCommons` (nioc's CMake utilities) and wire it in.
 
 ```shell
 git submodule add https://github.com/ajakhotia/infraCommons.git external/infraCommons
@@ -494,7 +494,7 @@ target_link_libraries(myApp PRIVATE nioc::terminus nioc::concurrent nioc::logger
 target_compile_features(myApp PRIVATE cxx_std_23)
 ```
 
-You'll first need the toolchain and dependencies set up: do the **Toolchain** and
+You'll first need the toolchain and dependencies set up, so do the **Toolchain** and
 **External dependencies** steps below once. Then configure with an infraCommons toolchain, pointing
 at your dependency install tree:
 
@@ -543,9 +543,9 @@ git -C ${SOURCE_TREE} submodule update --init
 
 ### 🧰 Toolchain
 
-Requires a C++23-capable toolchain: files ship for GNU 14 / 15 and Clang 21 / 22, and CI builds
-with GNU 15 and Clang 22 (CUDA >= 13 if used). Skip any step your system already satisfies. The
-setup scripts live in the `infraCommons` submodule.
+Requires a C++23-capable toolchain. Toolchain files ship for GNU 14 / 15 and Clang 21 / 22, and
+CI builds with GNU 15 and Clang 22 (CUDA >= 13 if used). Skip any step your system already
+satisfies. The setup scripts live in the `infraCommons` submodule.
 
 ```shell
 sudo apt install -y --no-install-recommends jq          # to read systemDependencies.json
