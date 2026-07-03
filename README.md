@@ -189,7 +189,7 @@ Run the program and a directory appears:
 
 ---
 
-## 📦 What else is in the box
+## 📐 Design
 
 Everything meets at the **`Port`**. Drivers and Components connect to it by opening publishers and
 subscriptions on named topics: the Port fans every published message out to the topic's
@@ -201,28 +201,45 @@ the run was launched) plus a `ConfigStore` (the resolved config). The Manifest m
 Port, and routines read their settings from that one store.
 
 ```mermaid
-flowchart LR
-  classDef port      fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#7c2d12;
+flowchart TB
+  classDef input     fill:#f3e8ff,stroke:#9333ea,stroke-width:1.5px,color:#581c87;
   classDef driver    fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#14532d;
   classDef component fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#1e3a8a;
-  classDef input     fill:#f3e8ff,stroke:#9333ea,stroke-width:1.5px,color:#581c87;
+  classDef dock      fill:#fffbeb,stroke:#d97706,stroke-width:2px,color:#7c2d12;
+  classDef anchor    fill:transparent,stroke:transparent,color:transparent;
 
   CLI["command line<br/>(key=value overrides)"]:::input
   FILES["config files"]:::input
-  MANIFEST["Manifest<br/>RunContext · ConfigStore"]:::input
+  CAM["Camera<br/>out: Image"]:::driver
+  LASER["3D Laser<br/>out: PointCloud"]:::driver
 
-  PORT(("Port")):::port
+  MANIFEST["Manifest"]:::input
 
-  CAM["Camera<br/>(Driver)"]:::driver
-  TRK["Tracker<br/>(Component)"]:::component
+  subgraph PORT["Port"]
+    RC["RunContext"]:::dock
+    CS["ConfigStore"]:::dock
+    BUS(("pub/sub bus<br/>chronicle")):::dock
+  end
+  style PORT fill:#fef3c7,stroke:#d97706,stroke-width:3px,color:#7c2d12
+
+  a1(( )):::anchor
+
+  TRK["Tracker<br/>in: Image · out: Features"]:::component
+  LOC["Localizer<br/>in: Features, PointCloud · out: Odometry"]:::component
+  PLN["Planner<br/>in: Odometry, PointCloud · out: Plan"]:::component
 
   CLI --> MANIFEST
   FILES --> MANIFEST
-  MANIFEST -- "moves into" --> PORT
+  MANIFEST -- "moves in" --> RC
+  MANIFEST -- "moves in" --> CS
 
-  CAM -- "publish /front/rgb" --> PORT
-  PORT -- "deliver /front/rgb" --> TRK
-  TRK -- "publish /front/tracking" --> PORT
+  CAM --> BUS
+  LASER --> BUS
+
+  PORT ~~~ a1
+  BUS --> TRK
+  BUS --> LOC
+  BUS --> PLN
 ```
 
 - **⚙️ Schema-driven, layered config.** Define your app's config as a Cap'n Proto schema; values
@@ -301,9 +318,9 @@ flowchart LR
   settlement --> CB
 ```
 
-> 🟩 **Drivers**
-> 🟦 **Components**
-> 🟨 **Topics**
+🟩 **Drivers**
+🟦 **Components**
+🟨 **Topics**
 
 > Each arrow is a publish/subscribe link.
 
