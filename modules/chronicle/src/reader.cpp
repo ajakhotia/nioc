@@ -29,7 +29,7 @@ const Entry* Reader::Iterator::operator->() const noexcept
   return &*mEntry; // NOLINT(bugprone-unchecked-optional-access)
 }
 
-auto Reader::Iterator::operator++() -> Iterator&
+Reader::Iterator& Reader::Iterator::operator++()
 {
   mEntry = mReader->readNextEntry();
   return *this;
@@ -47,7 +47,7 @@ bool Reader::Iterator::operator==(const std::default_sentinel_t /*end*/) const n
 
 Reader::Iterator::Iterator(Reader& reader): mReader{&reader}, mEntry{mReader->readNextEntry()} {}
 
-auto Reader::begin() -> Iterator
+Reader::Iterator Reader::begin()
 {
   return Iterator{*this};
 }
