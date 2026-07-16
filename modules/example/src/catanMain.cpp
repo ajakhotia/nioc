@@ -77,25 +77,37 @@ int main(const int argC, const char* const* const argV)
 
           // Components (consumers).
           components.push_back(
-              std::make_shared<nioc::example::RoadBuilder>(port, config.getRoadBuilder()));
+              std::make_shared<nioc::example::RoadBuilder>(
+                  "roadBuilder",
+                  port,
+                  config.getRoadBuilder()));
           components.push_back(
               std::make_shared<nioc::example::SettlementBuilder>(
+                  "settlementBuilder",
                   port,
                   config.getSettlementBuilder()));
           components.push_back(
-              std::make_shared<nioc::example::CityBuilder>(port, config.getCityBuilder()));
+              std::make_shared<nioc::example::CityBuilder>(
+                  "cityBuilder",
+                  port,
+                  config.getCityBuilder()));
           components.push_back(
               std::make_shared<nioc::example::DevelopmentCardBuilder>(
+                  "developmentCardBuilder",
                   port,
                   config.getDevelopmentCardBuilder()));
 
           // Drivers (producers).
-          drivers.push_back(std::make_shared<nioc::example::Hills>(port, config.getHills()));
-          drivers.push_back(std::make_shared<nioc::example::Forest>(port, config.getForest()));
-          drivers.push_back(std::make_shared<nioc::example::Pasture>(port, config.getPasture()));
-          drivers.push_back(std::make_shared<nioc::example::Fields>(port, config.getFields()));
           drivers.push_back(
-              std::make_shared<nioc::example::Mountains>(port, config.getMountains()));
+              std::make_shared<nioc::example::Hills>("hills", port, config.getHills()));
+          drivers.push_back(
+              std::make_shared<nioc::example::Forest>("forest", port, config.getForest()));
+          drivers.push_back(
+              std::make_shared<nioc::example::Pasture>("pasture", port, config.getPasture()));
+          drivers.push_back(
+              std::make_shared<nioc::example::Fields>("fields", port, config.getFields()));
+          drivers.push_back(
+              std::make_shared<nioc::example::Mountains>("mountains", port, config.getMountains()));
 
           // Launch consumers before producers, so no message is published before its subscriber's
           // runner is up. Each routine gets its own thread.

@@ -32,7 +32,6 @@ capnproto_generate_library(
     niocTargets
   SCHEMA_FILES
     include/nioc/terminus/config/componentConfig.capnp
-    include/nioc/terminus/config/driverConfig.capnp
     include/nioc/terminus/config/testConfig.capnp
   COMPILE_FEATURES
     PUBLIC cxx_std_23

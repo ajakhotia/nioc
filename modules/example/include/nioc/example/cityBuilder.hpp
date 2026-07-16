@@ -16,6 +16,7 @@
 #include <nioc/terminus/message.hpp>
 #include <nioc/terminus/port.hpp>
 #include <nioc/terminus/publisher.hpp>
+#include <string>
 
 namespace nioc::example
 {
@@ -35,7 +36,7 @@ namespace nioc::example
 class CityBuilder final: public terminus::Component
 {
 public:
-  CityBuilder(terminus::Port& port, CityBuilderConfig::Reader config);
+  CityBuilder(std::string name, terminus::Port& port, CityBuilderConfig::Reader config);
 
 private:
   CityBuilderConfig::Reader mConfig;

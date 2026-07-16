@@ -94,7 +94,7 @@ TEST(ComponentTest, duplicateSubscriptionThrows)
   {
   public:
     explicit DoubleSubscriber(Port& port):
-      Component{port, 1, concurrent::BufferMode::Unbounded, "DoubleSubscriber"}
+      Component{"DoubleSubscriber", port, 1, concurrent::BufferMode::Unbounded}
     {
       const auto handler = [](const Message<TestSchema>&) { return State::Continue; };
       subscribe<TestSchema>("topic", handler);
@@ -114,7 +114,7 @@ TEST(ComponentTest, callbackFailureEndsTheComponentWithoutEscaping)
   {
   public:
     ThrowingComponent(Port& port, const std::string_view& topic):
-      Component{port, 1, concurrent::BufferMode::Unbounded, "ThrowingComponent"}
+      Component{"ThrowingComponent", port, 1, concurrent::BufferMode::Unbounded}
     {
       subscribe<TestSchema>(
           topic,

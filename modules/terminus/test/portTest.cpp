@@ -429,7 +429,7 @@ TEST(PortTest, waitReturnsFalseOnceEveryDriverIsDone)
   class ScriptedDriver final: public Driver
   {
   public:
-    ScriptedDriver(Port& port, const int steps): Driver{port, "ScriptedDriver"}, mRemaining{steps}
+    ScriptedDriver(Port& port, const int steps): Driver{"ScriptedDriver", port}, mRemaining{steps}
     {
     }
 

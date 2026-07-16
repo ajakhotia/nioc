@@ -6,13 +6,17 @@
 
 #include <nioc/example/roadBuilder.hpp>
 #include <nioc/logger/logger.hpp>
+#include <string>
 #include <utility>
 
 namespace nioc::example
 {
 
-RoadBuilder::RoadBuilder(terminus::Port& port, const RoadBuilderConfig::Reader config):
-  Component{port, config.getComponent()},
+RoadBuilder::RoadBuilder(
+    std::string name,
+    terminus::Port& port,
+    const RoadBuilderConfig::Reader config):
+  Component{std::move(name), port, config.getComponent()},
   mConfig{config},
   mRoadPublisher{publisher<Road>(config.getRoadTopic().cStr())}
 {

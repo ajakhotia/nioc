@@ -14,6 +14,7 @@
 #include <nioc/terminus/driver.hpp>
 #include <nioc/terminus/port.hpp>
 #include <nioc/terminus/publisher.hpp>
+#include <string>
 #include <utility>
 
 namespace nioc::example
@@ -32,8 +33,8 @@ namespace nioc::example
 class Mountains final: public terminus::Driver
 {
 public:
-  Mountains(terminus::Port& port, const MinerConfig::Reader config):
-    Driver{port, config.getDriver()},
+  Mountains(std::string name, terminus::Port& port, const MinerConfig::Reader config):
+    Driver{std::move(name), port},
     mConfig{config},
     mOrePublisher{publisher<Ore>(config.getResourceTopic().cStr())}
   {

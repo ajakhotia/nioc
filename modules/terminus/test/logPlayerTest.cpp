@@ -58,7 +58,7 @@ void publishValue(Publisher<TestSchema>& publisher, const std::int64_t value)
 
 void replay(Port& port, const fs::path& chronicleDir)
 {
-  auto player = LogPlayer{port, chronicleDir};
+  auto player = LogPlayer{"logPlayer", port, chronicleDir};
   while(player.tick() == State::Continue)
   {
   }
@@ -183,7 +183,7 @@ TEST(LogPlayer, anEmptyLogDeliversNothingAndFinishesImmediately)
   auto deliveries = 0;
   port.subscribe(channelFor("unused"), [&deliveries](Consignment) { ++deliveries; });
 
-  auto player = LogPlayer{port, chronicleDir};
+  auto player = LogPlayer{"logPlayer", port, chronicleDir};
   EXPECT_EQ(player.tick(), State::Done);
   EXPECT_EQ(deliveries, 0);
 }
@@ -193,7 +193,7 @@ TEST(LogPlayer, constructionRejectsMissingLog)
   auto port = makePort("missing", false);
   const auto absent = fs::temp_directory_path() / "nioc-logPlayerTest" / "absent-chronicle";
   fs::remove_all(absent);
-  EXPECT_THROW((LogPlayer{port, absent}), std::invalid_argument);
+  EXPECT_THROW((LogPlayer{"logPlayer", port, absent}), std::invalid_argument);
 }
 
 } // namespace nioc::terminus

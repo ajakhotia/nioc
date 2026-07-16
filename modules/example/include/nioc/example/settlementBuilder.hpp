@@ -18,6 +18,7 @@
 #include <nioc/terminus/message.hpp>
 #include <nioc/terminus/port.hpp>
 #include <nioc/terminus/publisher.hpp>
+#include <string>
 
 namespace nioc::example
 {
@@ -41,7 +42,7 @@ namespace nioc::example
 class SettlementBuilder final: public terminus::Component
 {
 public:
-  SettlementBuilder(terminus::Port& port, SettlementBuilderConfig::Reader config);
+  SettlementBuilder(std::string name, terminus::Port& port, SettlementBuilderConfig::Reader config);
 
 private:
   SettlementBuilderConfig::Reader mConfig;

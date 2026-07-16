@@ -15,6 +15,7 @@
 #include <nioc/terminus/message.hpp>
 #include <nioc/terminus/port.hpp>
 #include <nioc/terminus/publisher.hpp>
+#include <string>
 
 namespace nioc::example
 {
@@ -33,7 +34,7 @@ namespace nioc::example
 class RoadBuilder final: public terminus::Component
 {
 public:
-  RoadBuilder(terminus::Port& port, RoadBuilderConfig::Reader config);
+  RoadBuilder(std::string name, terminus::Port& port, RoadBuilderConfig::Reader config);
 
 private:
   RoadBuilderConfig::Reader mConfig;

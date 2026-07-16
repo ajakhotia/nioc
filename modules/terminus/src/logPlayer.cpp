@@ -6,13 +6,14 @@
 
 #include <iterator>
 #include <nioc/terminus/logPlayer.hpp>
+#include <string>
 #include <utility>
 
 namespace nioc::terminus
 {
 
-LogPlayer::LogPlayer(Port& port, std::filesystem::path inputLog):
-  Driver{port, "LogPlayer"},
+LogPlayer::LogPlayer(std::string name, Port& port, std::filesystem::path inputLog):
+  Driver{std::move(name), port},
   mReader{std::move(inputLog)},
   mCursor{mReader.begin()}
 {

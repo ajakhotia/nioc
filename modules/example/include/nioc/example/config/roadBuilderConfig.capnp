@@ -8,7 +8,7 @@ $Cxx.namespace("nioc::example");
 # Topics in/out and the recipe sizes for the RoadBuilder.
 struct RoadBuilderConfig
 {
-    component @0 : ComponentConfig = (name = "roadBuilder");
+    component @0 : ComponentConfig;
     brickTopic @1 : Text = "brick";
     lumberTopic @2 : Text = "lumber";
     roadTopic @3 : Text = "road";

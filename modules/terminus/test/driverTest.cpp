@@ -44,7 +44,7 @@ class CountingDriver final: public Driver
 {
 public:
   CountingDriver(Port& port, const int messageCount):
-    Driver{port, "CountingDriver"},
+    Driver{"CountingDriver", port},
     mPublisher{publisher<TestSchema>(kTopic)},
     mRemaining{messageCount}
   {
@@ -78,7 +78,7 @@ private:
 class FailingDriver final: public Driver
 {
 public:
-  explicit FailingDriver(Port& port): Driver{port, "FailingDriver"} {}
+  explicit FailingDriver(Port& port): Driver{"FailingDriver", port} {}
 
 private:
   State run() final

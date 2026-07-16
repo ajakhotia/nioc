@@ -6,13 +6,17 @@
 
 #include <nioc/example/cityBuilder.hpp>
 #include <nioc/logger/logger.hpp>
+#include <string>
 #include <utility>
 
 namespace nioc::example
 {
 
-CityBuilder::CityBuilder(terminus::Port& port, const CityBuilderConfig::Reader config):
-  Component{port, config.getComponent()},
+CityBuilder::CityBuilder(
+    std::string name,
+    terminus::Port& port,
+    const CityBuilderConfig::Reader config):
+  Component{std::move(name), port, config.getComponent()},
   mConfig{config},
   mCityPublisher{publisher<City>(config.getCityTopic().cStr())}
 {

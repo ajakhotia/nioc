@@ -43,7 +43,7 @@ namespace nioc::terminus
 ///     class Echo: public Component
 ///     {
 ///     public:
-///       explicit Echo(Port& port): Component(port, 64, BufferMode::Overwriting, "echo")
+///       explicit Echo(Port& port): Component("echo", port, 64, BufferMode::Overwriting)
 ///       {
 ///         mOut = publisher<MySchema>("out");
 ///         subscribe<MySchema>(
@@ -86,7 +86,9 @@ protected:
   template<typename Schema>
   using MessageCallback = std::function<State(const Message<Schema>&)>;
 
-  /// @brief Construct with an explicit inbox size, overflow policy, and name.
+  /// @brief Construct with the given name, inbox size, and overflow policy.
+  ///
+  /// @param name The routine label used in logs; fixed for the component's life.
   ///
   /// @param port The owning port; it must outlive the component.
   ///
@@ -95,20 +97,23 @@ protected:
   ///
   /// @param bufferMode What to do when the inbox is full: `Overwriting` drops the oldest message,
   /// `Unbounded` grows without limit (ignores `inboxCapacity`).
-  ///
-  /// @param name The routine label used in logs; fixed for the component's life.
   Component(
+      std::string name,
       Port& port,
       std::size_t inboxCapacity,
-      concurrent::BufferMode bufferMode,
-      std::string name);
+      concurrent::BufferMode bufferMode);
 
-  /// @brief Construct from a Cap'n Proto config reader, taking inbox size, buffer mode, and name
-  /// from it.
+  /// @brief Construct with the given name, taking the inbox size and buffer mode from a Cap'n
+  /// Proto config reader.
   ///
-  /// @throws std::invalid_argument If the config's name is empty, or its buffer mode is not a
-  /// recognized value.
-  Component(Port& port, ComponentConfig::Reader config);
+  /// @param name The routine label used in logs; fixed for the component's life.
+  ///
+  /// @param port The owning port; it must outlive the component.
+  ///
+  /// @param config Carries the inbox size and buffer mode.
+  ///
+  /// @throws std::invalid_argument If the config's buffer mode is not a recognized value.
+  Component(std::string name, Port& port, ComponentConfig::Reader config);
 
   /// @brief Open a publisher that sends messages of `Schema` on `topic`, registering the topic with
   /// the run.

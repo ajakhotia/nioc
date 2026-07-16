@@ -8,7 +8,7 @@ $Cxx.namespace("nioc::example");
 # Topics in/out and the recipe sizes for the CityBuilder.
 struct CityBuilderConfig
 {
-    component @0 : ComponentConfig = (name = "cityBuilder");
+    component @0 : ComponentConfig;
     settlementTopic @1 : Text = "settlement";
     oreTopic @2 : Text = "ore";
     grainTopic @3 : Text = "grain";

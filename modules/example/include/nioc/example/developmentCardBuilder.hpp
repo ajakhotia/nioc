@@ -16,6 +16,7 @@
 #include <nioc/terminus/message.hpp>
 #include <nioc/terminus/port.hpp>
 #include <nioc/terminus/publisher.hpp>
+#include <string>
 
 namespace nioc::example
 {
@@ -36,7 +37,10 @@ namespace nioc::example
 class DevelopmentCardBuilder final: public terminus::Component
 {
 public:
-  DevelopmentCardBuilder(terminus::Port& port, DevelopmentCardBuilderConfig::Reader config);
+  DevelopmentCardBuilder(
+      std::string name,
+      terminus::Port& port,
+      DevelopmentCardBuilderConfig::Reader config);
 
 private:
   DevelopmentCardBuilderConfig::Reader mConfig;

@@ -6,15 +6,17 @@
 
 #include <nioc/example/settlementBuilder.hpp>
 #include <nioc/logger/logger.hpp>
+#include <string>
 #include <utility>
 
 namespace nioc::example
 {
 
 SettlementBuilder::SettlementBuilder(
+    std::string name,
     terminus::Port& port,
     const SettlementBuilderConfig::Reader config):
-  Component{port, config.getComponent()},
+  Component{std::move(name), port, config.getComponent()},
   mConfig{config},
   mSettlementPublisher{publisher<Settlement>(config.getSettlementTopic().cStr())}
 {

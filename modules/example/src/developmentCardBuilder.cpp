@@ -6,15 +6,17 @@
 
 #include <nioc/example/developmentCardBuilder.hpp>
 #include <nioc/logger/logger.hpp>
+#include <string>
 #include <utility>
 
 namespace nioc::example
 {
 
 DevelopmentCardBuilder::DevelopmentCardBuilder(
+    std::string name,
     terminus::Port& port,
     const DevelopmentCardBuilderConfig::Reader config):
-  Component{port, config.getComponent()},
+  Component{std::move(name), port, config.getComponent()},
   mConfig{config},
   mDevelopmentCardPublisher{publisher<DevelopmentCard>(config.getDevelopmentCardTopic().cStr())}
 {

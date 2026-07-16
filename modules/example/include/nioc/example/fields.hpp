@@ -14,6 +14,7 @@
 #include <nioc/terminus/driver.hpp>
 #include <nioc/terminus/port.hpp>
 #include <nioc/terminus/publisher.hpp>
+#include <string>
 #include <utility>
 
 namespace nioc::example
@@ -32,8 +33,8 @@ namespace nioc::example
 class Fields final: public terminus::Driver
 {
 public:
-  Fields(terminus::Port& port, const MinerConfig::Reader config):
-    Driver{port, config.getDriver()},
+  Fields(std::string name, terminus::Port& port, const MinerConfig::Reader config):
+    Driver{std::move(name), port},
     mConfig{config},
     mGrainPublisher{publisher<Grain>(config.getResourceTopic().cStr())}
   {
