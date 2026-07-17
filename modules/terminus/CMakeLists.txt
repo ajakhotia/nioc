@@ -53,6 +53,7 @@ add_exported_library(
   SOURCES
     src/arenaMessageBuilder.cpp
     src/component.cpp
+    src/config.cpp
     src/configStore.cpp
     src/consignment.cpp
     src/defaultSignalCatcher.cpp
@@ -67,6 +68,7 @@ add_exported_library(
   HEADERS
     PUBLIC include/nioc/terminus/arenaMessageBuilder.hpp
     PUBLIC include/nioc/terminus/component.hpp
+    PUBLIC include/nioc/terminus/config.hpp
     PUBLIC include/nioc/terminus/configStore.hpp
     PUBLIC include/nioc/terminus/consignment.hpp
     PUBLIC include/nioc/terminus/defaultSignalCatcher.hpp
@@ -92,6 +94,7 @@ add_exported_library(
     PUBLIC nioc::chronicle
     PUBLIC nioc::common
     PUBLIC nioc::concurrent
+    PUBLIC nioc::containers
     PUBLIC nioc::logger
     PUBLIC nioc::terminusConfig
     PUBLIC nioc::terminusIdl
