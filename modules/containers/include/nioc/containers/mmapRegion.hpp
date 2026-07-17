@@ -28,7 +28,9 @@ namespace nioc::containers
 ///     // ... fill bytes ...
 ///     region.resize(usedBytes);  // trim the file before it is unmapped
 ///
-/// Non-copyable and non-movable: a region is pinned to its mapped address.
+/// Non-copyable; move-constructible. The mapped bytes never change address, so a move transfers
+/// the mapping and file descriptor to the new owner while every previously obtained view stays
+/// valid; the moved-from region is empty and fit only for destruction.
 ///
 /// Not thread-safe. Synchronize concurrent access to the mapped bytes externally.
 class MmapRegion
@@ -58,7 +60,9 @@ public:
 
   MmapRegion(const MmapRegion&) = delete;
 
-  MmapRegion(MmapRegion&&) noexcept = delete;
+  /// @brief Take over @p other's mapping and file descriptor, leaving @p other empty and fit only
+  /// for destruction.
+  MmapRegion(MmapRegion&& other) noexcept;
 
   /// @brief Unmap the region and close the backing file descriptor.
   ~MmapRegion();
@@ -104,15 +108,14 @@ public:
 
 private:
   /// Path of the backing file, retained for path() and for diagnostics.
-  const std::filesystem::path mPath;
+  std::filesystem::path mPath;
 
-  /// Descriptor of the open backing file. Held open for the region's lifetime and closed by the
-  /// destructor; resize() truncates the file through it.
-  const int mFileDescriptor;
+  /// Descriptor of the open backing file, or -1 in a moved-from region. Held open for the region's
+  /// lifetime and closed by the destructor; resize() truncates the file through it.
+  int mFileDescriptor;
 
-  /// The mapped bytes. Its length is the mapping size and never changes after construction; the
-  /// destructor unmaps this range.
-  const std::span<std::byte> mBytes;
+  /// The mapped bytes; empty in a moved-from region. The destructor unmaps this range.
+  std::span<std::byte> mBytes;
 };
 
 /// @brief Reinterpret a span of bytes as a pointer to @p ValueType, preserving const-ness.
