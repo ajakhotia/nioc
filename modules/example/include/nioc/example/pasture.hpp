@@ -8,7 +8,7 @@
 #include <chrono>
 #include <cstdint>
 #include <nioc/common/sleep.hpp>
-#include <nioc/example/config/minerConfig.capnp.h>
+#include <nioc/example/config/pastureConfig.capnp.h>
 #include <nioc/example/idl/wool.capnp.h>
 #include <nioc/logger/logger.hpp>
 #include <nioc/terminus/driver.hpp>
@@ -33,15 +33,20 @@ namespace nioc::example
 class Pasture final: public terminus::Driver
 {
 public:
-  Pasture(std::string name, terminus::Port& port, const MinerConfig::Reader config):
+  Pasture(const std::string& name, terminus::Port& port):
+    Pasture{name, port, makeConfig<PastureConfig>(port, name)}
+  {
+  }
+
+  Pasture(std::string name, terminus::Port& port, terminus::Config<PastureConfig> config):
     Driver{std::move(name), port},
-    mConfig{config},
-    mWoolPublisher{publisher<Wool>(config.getResourceTopic().cStr())}
+    mConfig{std::move(config)},
+    mWoolPublisher{publisher<Wool>(mConfig.reader().getResourceTopic().cStr())}
   {
   }
 
 private:
-  MinerConfig::Reader mConfig;
+  terminus::Config<PastureConfig> mConfig;
   terminus::Publisher<Wool> mWoolPublisher;
   std::uint64_t mNextWoolId{0};
 
@@ -50,7 +55,9 @@ private:
     // A real driver blocks here on a socket, message bus, or device read. Run whatever the wait is
     // through the shutdown token so it yields promptly when the run winds down; here the "read" is
     // just a pause of miningTimeMs.
-    if(common::sleepFor(shutdownToken(), std::chrono::milliseconds{mConfig.getMiningTimeMs()}))
+    if(common::sleepFor(
+           shutdownToken(),
+           std::chrono::milliseconds{mConfig.reader().getMiningTimeMs()}))
     {
       return State::Done;
     }

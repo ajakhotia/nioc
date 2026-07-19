@@ -37,13 +37,15 @@ namespace nioc::example
 class DevelopmentCardBuilder final: public terminus::Component
 {
 public:
+  DevelopmentCardBuilder(const std::string& name, terminus::Port& port);
+
   DevelopmentCardBuilder(
       std::string name,
       terminus::Port& port,
-      DevelopmentCardBuilderConfig::Reader config);
+      terminus::Config<DevelopmentCardBuilderConfig> config);
 
 private:
-  DevelopmentCardBuilderConfig::Reader mConfig;
+  terminus::Config<DevelopmentCardBuilderConfig> mConfig;
   terminus::Publisher<DevelopmentCard> mDevelopmentCardPublisher;
   std::size_t mOreAvailable{0};
   std::size_t mWoolAvailable{0};

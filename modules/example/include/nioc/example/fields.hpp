@@ -8,7 +8,7 @@
 #include <chrono>
 #include <cstdint>
 #include <nioc/common/sleep.hpp>
-#include <nioc/example/config/minerConfig.capnp.h>
+#include <nioc/example/config/fieldsConfig.capnp.h>
 #include <nioc/example/idl/grain.capnp.h>
 #include <nioc/logger/logger.hpp>
 #include <nioc/terminus/driver.hpp>
@@ -33,15 +33,20 @@ namespace nioc::example
 class Fields final: public terminus::Driver
 {
 public:
-  Fields(std::string name, terminus::Port& port, const MinerConfig::Reader config):
+  Fields(const std::string& name, terminus::Port& port):
+    Fields{name, port, makeConfig<FieldsConfig>(port, name)}
+  {
+  }
+
+  Fields(std::string name, terminus::Port& port, terminus::Config<FieldsConfig> config):
     Driver{std::move(name), port},
-    mConfig{config},
-    mGrainPublisher{publisher<Grain>(config.getResourceTopic().cStr())}
+    mConfig{std::move(config)},
+    mGrainPublisher{publisher<Grain>(mConfig.reader().getResourceTopic().cStr())}
   {
   }
 
 private:
-  MinerConfig::Reader mConfig;
+  terminus::Config<FieldsConfig> mConfig;
   terminus::Publisher<Grain> mGrainPublisher;
   std::uint64_t mNextGrainId{0};
 
@@ -50,7 +55,9 @@ private:
     // A real driver blocks here on a socket, message bus, or device read. Run whatever the wait is
     // through the shutdown token so it yields promptly when the run winds down; here the "read" is
     // just a pause of miningTimeMs.
-    if(common::sleepFor(shutdownToken(), std::chrono::milliseconds{mConfig.getMiningTimeMs()}))
+    if(common::sleepFor(
+           shutdownToken(),
+           std::chrono::milliseconds{mConfig.reader().getMiningTimeMs()}))
     {
       return State::Done;
     }

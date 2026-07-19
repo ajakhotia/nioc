@@ -36,10 +36,12 @@ namespace nioc::example
 class CityBuilder final: public terminus::Component
 {
 public:
-  CityBuilder(std::string name, terminus::Port& port, CityBuilderConfig::Reader config);
+  CityBuilder(const std::string& name, terminus::Port& port);
+
+  CityBuilder(std::string name, terminus::Port& port, terminus::Config<CityBuilderConfig> config);
 
 private:
-  CityBuilderConfig::Reader mConfig;
+  terminus::Config<CityBuilderConfig> mConfig;
   terminus::Publisher<City> mCityPublisher;
   std::size_t mSettlementsAvailable{0};
   std::size_t mOreAvailable{0};

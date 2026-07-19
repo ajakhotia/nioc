@@ -12,16 +12,22 @@
 namespace nioc::example
 {
 
+DevelopmentCardBuilder::DevelopmentCardBuilder(const std::string& name, terminus::Port& port):
+  DevelopmentCardBuilder{name, port, makeConfig<DevelopmentCardBuilderConfig>(port, name)}
+{
+}
+
 DevelopmentCardBuilder::DevelopmentCardBuilder(
     std::string name,
     terminus::Port& port,
-    const DevelopmentCardBuilderConfig::Reader config):
-  Component{std::move(name), port, config.getComponent()},
-  mConfig{config},
-  mDevelopmentCardPublisher{publisher<DevelopmentCard>(config.getDevelopmentCardTopic().cStr())}
+    terminus::Config<DevelopmentCardBuilderConfig> config):
+  Component{std::move(name), port, config.reader().getComponent()},
+  mConfig{std::move(config)},
+  mDevelopmentCardPublisher{
+      publisher<DevelopmentCard>(mConfig.reader().getDevelopmentCardTopic().cStr())}
 {
   subscribe<Ore>(
-      config.getOreTopic().cStr(),
+      mConfig.reader().getOreTopic().cStr(),
       [this](const terminus::Message<Ore>& ore)
       {
         process(ore);
@@ -29,7 +35,7 @@ DevelopmentCardBuilder::DevelopmentCardBuilder(
       });
 
   subscribe<Wool>(
-      config.getWoolTopic().cStr(),
+      mConfig.reader().getWoolTopic().cStr(),
       [this](const terminus::Message<Wool>& wool)
       {
         process(wool);
@@ -37,7 +43,7 @@ DevelopmentCardBuilder::DevelopmentCardBuilder(
       });
 
   subscribe<Grain>(
-      config.getGrainTopic().cStr(),
+      mConfig.reader().getGrainTopic().cStr(),
       [this](const terminus::Message<Grain>& grain)
       {
         process(grain);
@@ -68,9 +74,9 @@ void DevelopmentCardBuilder::process(const terminus::Message<Grain>& grain)
 
 void DevelopmentCardBuilder::build()
 {
-  const auto oreNeededPerDevelopmentCard = mConfig.getOrePerCard();
-  const auto woolNeededPerDevelopmentCard = mConfig.getWoolPerCard();
-  const auto grainNeededPerDevelopmentCard = mConfig.getGrainPerCard();
+  const auto oreNeededPerDevelopmentCard = mConfig.reader().getOrePerCard();
+  const auto woolNeededPerDevelopmentCard = mConfig.reader().getWoolPerCard();
+  const auto grainNeededPerDevelopmentCard = mConfig.reader().getGrainPerCard();
   while(mOreAvailable >= oreNeededPerDevelopmentCard and
         mWoolAvailable >= woolNeededPerDevelopmentCard and
         mGrainAvailable >= grainNeededPerDevelopmentCard)

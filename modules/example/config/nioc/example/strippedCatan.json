@@ -1,8 +1,14 @@
 {
-  "fields": {
-    "miningTimeMs": 500
-  },
-  "cityBuilder": {
-    "orePerCity": 2
+  "routines": {
+    "drivers": {
+      "feiFields": {
+        "miningTimeMs": 500
+      }
+    },
+    "components": {
+      "cindyTheCityMaker": {
+        "orePerCity": 2
+      }
+    }
   }
 }

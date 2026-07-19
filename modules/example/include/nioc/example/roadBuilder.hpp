@@ -34,10 +34,12 @@ namespace nioc::example
 class RoadBuilder final: public terminus::Component
 {
 public:
-  RoadBuilder(std::string name, terminus::Port& port, RoadBuilderConfig::Reader config);
+  RoadBuilder(const std::string& name, terminus::Port& port);
+
+  RoadBuilder(std::string name, terminus::Port& port, terminus::Config<RoadBuilderConfig> config);
 
 private:
-  RoadBuilderConfig::Reader mConfig;
+  terminus::Config<RoadBuilderConfig> mConfig;
   terminus::Publisher<Road> mRoadPublisher;
   std::size_t mBricksAvailable{0};
   std::size_t mLumberAvailable{0};

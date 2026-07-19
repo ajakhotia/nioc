@@ -42,10 +42,15 @@ namespace nioc::example
 class SettlementBuilder final: public terminus::Component
 {
 public:
-  SettlementBuilder(std::string name, terminus::Port& port, SettlementBuilderConfig::Reader config);
+  SettlementBuilder(const std::string& name, terminus::Port& port);
+
+  SettlementBuilder(
+      std::string name,
+      terminus::Port& port,
+      terminus::Config<SettlementBuilderConfig> config);
 
 private:
-  SettlementBuilderConfig::Reader mConfig;
+  terminus::Config<SettlementBuilderConfig> mConfig;
   terminus::Publisher<Settlement> mSettlementPublisher;
   std::size_t mRoadsAvailable{0};
   std::size_t mBricksAvailable{0};

@@ -12,16 +12,21 @@
 namespace nioc::example
 {
 
+CityBuilder::CityBuilder(const std::string& name, terminus::Port& port):
+  CityBuilder{name, port, makeConfig<CityBuilderConfig>(port, name)}
+{
+}
+
 CityBuilder::CityBuilder(
     std::string name,
     terminus::Port& port,
-    const CityBuilderConfig::Reader config):
-  Component{std::move(name), port, config.getComponent()},
-  mConfig{config},
-  mCityPublisher{publisher<City>(config.getCityTopic().cStr())}
+    terminus::Config<CityBuilderConfig> config):
+  Component{std::move(name), port, config.reader().getComponent()},
+  mConfig{std::move(config)},
+  mCityPublisher{publisher<City>(mConfig.reader().getCityTopic().cStr())}
 {
   subscribe<Settlement>(
-      config.getSettlementTopic().cStr(),
+      mConfig.reader().getSettlementTopic().cStr(),
       [this](const terminus::Message<Settlement>& settlement)
       {
         process(settlement);
@@ -29,7 +34,7 @@ CityBuilder::CityBuilder(
       });
 
   subscribe<Ore>(
-      config.getOreTopic().cStr(),
+      mConfig.reader().getOreTopic().cStr(),
       [this](const terminus::Message<Ore>& ore)
       {
         process(ore);
@@ -37,7 +42,7 @@ CityBuilder::CityBuilder(
       });
 
   subscribe<Grain>(
-      config.getGrainTopic().cStr(),
+      mConfig.reader().getGrainTopic().cStr(),
       [this](const terminus::Message<Grain>& grain)
       {
         process(grain);
@@ -68,9 +73,9 @@ void CityBuilder::process(const terminus::Message<Grain>& grain)
 
 void CityBuilder::build()
 {
-  const auto settlementNeededPerCity = mConfig.getSettlementPerCity();
-  const auto oreNeededPerCity = mConfig.getOrePerCity();
-  const auto grainNeededPerCity = mConfig.getGrainPerCity();
+  const auto settlementNeededPerCity = mConfig.reader().getSettlementPerCity();
+  const auto oreNeededPerCity = mConfig.reader().getOrePerCity();
+  const auto grainNeededPerCity = mConfig.reader().getGrainPerCity();
   while(mSettlementsAvailable >= settlementNeededPerCity and
         mOreAvailable >= oreNeededPerCity and
         mGrainAvailable >= grainNeededPerCity)

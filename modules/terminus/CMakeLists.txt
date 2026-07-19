@@ -54,13 +54,11 @@ add_exported_library(
     src/arenaMessageBuilder.cpp
     src/component.cpp
     src/config.cpp
-    src/configStore.cpp
     src/consignment.cpp
     src/defaultSignalCatcher.cpp
     src/draft.cpp
     src/driver.cpp
     src/logPlayer.cpp
-    src/manifest.cpp
     src/port.cpp
     src/programOption.cpp
     src/runContext.cpp
@@ -69,13 +67,11 @@ add_exported_library(
     PUBLIC include/nioc/terminus/arenaMessageBuilder.hpp
     PUBLIC include/nioc/terminus/component.hpp
     PUBLIC include/nioc/terminus/config.hpp
-    PUBLIC include/nioc/terminus/configStore.hpp
     PUBLIC include/nioc/terminus/consignment.hpp
     PUBLIC include/nioc/terminus/defaultSignalCatcher.hpp
     PUBLIC include/nioc/terminus/draft.hpp
     PUBLIC include/nioc/terminus/driver.hpp
     PUBLIC include/nioc/terminus/logPlayer.hpp
-    PUBLIC include/nioc/terminus/manifest.hpp
     PUBLIC include/nioc/terminus/message.hpp
     PUBLIC include/nioc/terminus/port.hpp
     PUBLIC include/nioc/terminus/programOption.hpp
