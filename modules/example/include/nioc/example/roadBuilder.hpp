@@ -12,6 +12,7 @@
 #include <nioc/example/idl/lumber.capnp.h>
 #include <nioc/example/idl/road.capnp.h>
 #include <nioc/terminus/component.hpp>
+#include <nioc/terminus/config.hpp>
 #include <nioc/terminus/message.hpp>
 #include <nioc/terminus/port.hpp>
 #include <nioc/terminus/publisher.hpp>

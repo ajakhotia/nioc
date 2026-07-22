@@ -5,9 +5,8 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include "configStore.hpp"
+#include "config.hpp"
 #include "consignment.hpp"
-#include "manifest.hpp"
 #include "runContext.hpp"
 #include "schemaId.hpp"
 #include <atomic>
@@ -52,7 +51,7 @@ class Publisher;
 /// `publisher` and `subscribe` are wiring-time operations and are not safe against concurrent
 /// delivery.
 ///
-/// @see Publisher, Consignment, Manifest
+/// @see Publisher, Consignment, RunContext
 class Port
 {
 public:
@@ -78,20 +77,23 @@ public:
   /// is later torn down in order: drivers, then components, then runners.
   using Setup = std::function<void(Port&, Drivers&, Components&, Runners&)>;
 
-  /// @brief Create the run: build its working directory, attach logging and the chronicle writer,
-  /// copy in the manifest's resources, then call @p setup to wire the routine graph.
+  /// @brief Create the run: attach logging and the chronicle writer, copy in the run's resources,
+  /// then call @p setup to wire the routine graph.
   ///
-  /// Writes the manifest and a `resources.json` into the working directory. @p setup runs against
-  /// the fully constructed Port.
+  /// The working directory is the one @p runContext owns and has already established (its
+  /// `configOverlay.json` and `manifest.json` are written by then). Port writes `resources.json`
+  /// into it. @p setup runs against the fully constructed Port.
   ///
-  /// @param manifest Defines the log root, whether to record a chronicle, and the resource files
-  /// to copy in.
+  /// @param runContext Owns the working directory and carries the config layers, resource files,
+  /// record/playback mode, and command line. Consumed (moved in).
   ///
   /// @param setup Wiring hook run against the fully constructed Port to build the routine graph.
   ///
   /// @throws std::invalid_argument if a resource file is missing, is not a regular file, or
   /// collides with another resource by full path or by filename.
-  explicit Port(Manifest manifest, const Setup& setup);
+  ///
+  /// @throws std::runtime_error if a config file cannot be opened.
+  Port(RunContext runContext, const Setup& setup);
 
   Port(const Port&) = delete;
 
@@ -111,21 +113,34 @@ public:
   /// Root directory holding this run's chronicle, console log, and copied resources.
   [[nodiscard]] const std::filesystem::path& workingDir() const noexcept;
 
-  /// Read-only view of how this run was launched: log root, resources, record/playback mode, and
-  /// command line. For the decoded config, use @ref config.
+  /// Read-only view of how this run was launched: working directory, resources, config layers,
+  /// record/playback mode, and command line.
   ///
   /// @see RunContext
   [[nodiscard]] const RunContext& runContext() const noexcept;
 
-  /// @brief Return a typed reader over the run's decoded configuration; it borrows from this Port
-  /// and must not outlive it.
+  /// @brief Materialize the typed @ref Config for the routine named @p name: read its overrides
+  /// from this run's @ref ConfigOverlay, merge them onto @p Schema's defaults, and write and map
+  /// the config artifacts under the run's `config` directory.
   ///
-  /// @tparam Schema Must be supplied explicitly and match the schema the config was decoded
-  /// against.
+  /// A routine's `(name, port)` constructor delegates through this to its `(name, port, config)`
+  /// constructor. The routine names only itself; where its overrides live in the config document is
+  /// the ConfigOverlay's concern, not the routine's.
+  ///
+  /// @tparam Schema The routine's Cap'n Proto config schema.
+  ///
+  /// @param name The routine name; keys its overrides and names its artifacts.
+  ///
+  /// @throws std::invalid_argument if the overrides are not a JSON object.
+  ///
+  /// @throws std::runtime_error if an artifact cannot be written or mapped.
   template<typename Schema>
-  [[nodiscard]] Schema::Reader config() const
+  [[nodiscard]] Config<Schema> materializeConfig(const std::string& name)
   {
-    return mManifest.mConfigStore.get<Schema>();
+    return Config<Schema>{
+        mRunContext.configOverlay().acquireOverrides(name),
+        mRunContext.workingDir() / "config",
+        name};
   }
 
   /// @brief Copy @p source into the working directory and register it as a run resource.
@@ -243,11 +258,10 @@ private:
   /// The set of channels already recorded to `topics.txt`.
   using ChannelIdSet = std::unordered_set<ChannelId>;
 
-  /// How this run was launched: log root, resources, record/playback mode, and config.
-  const Manifest mManifest;
-
-  /// Root directory holding this run's chronicle, console log, and copied resources.
-  const std::filesystem::path mWorkingDir;
+  /// How this run was launched: working directory, resources, config layers, mode, and the
+  /// assembled config overlay. Owns the working directory; declared first so it is built before the
+  /// members that read from it.
+  const RunContext mRunContext;
 
   /// The console log sink attached at construction and detached during teardown.
   const std::shared_ptr<spdlog::sinks::sink> mConsoleLogSink;

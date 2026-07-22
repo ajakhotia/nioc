@@ -5,6 +5,7 @@ add_executable(terminusTest
   testComponent.cpp
   componentTest.cpp
   configTest.cpp
+  configOverlayTest.cpp
   consignmentTest.cpp
   driverTest.cpp
   logPlayerTest.cpp

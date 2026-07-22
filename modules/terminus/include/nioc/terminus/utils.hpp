@@ -7,6 +7,7 @@
 
 #include <capnp/message.h>
 #include <capnp/schema.h>
+#include <filesystem>
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <string>
@@ -14,12 +15,34 @@
 namespace nioc::terminus
 {
 
-/// @brief Render a Cap'n Proto struct schema's default values as a JSON tree mirroring its shape.
+/// @brief Parse the JSON file at @p path.
 ///
-/// Every field appears explicitly with its schema default; nested structs become nested objects.
-/// 64-bit integers are emitted as quoted strings.
+/// @param path The JSON file to read.
 ///
-/// Example — given the following capnp schema:
+/// @return The parsed document.
+///
+/// @throws std::runtime_error if @p path cannot be opened.
+///
+/// @throws nlohmann::json::parse_error if the file is not valid JSON.
+[[nodiscard]] nlohmann::json readJsonFile(const std::filesystem::path& path);
+
+/// @brief Write @p json to @p path as pretty-printed text with a trailing newline, overwriting any
+/// existing file.
+///
+/// @param path The destination file.
+///
+/// @param json The document to write.
+///
+/// @throws std::runtime_error if @p path cannot be opened for writing.
+void writeJsonFile(const std::filesystem::path& path, const nlohmann::json& json);
+
+/// @brief Encode a Cap'n Proto struct as a JSON tree mirroring its shape: every field explicit,
+/// nested structs as nested objects, 64-bit integers as quoted strings.
+///
+/// This overload encodes @p schema's defaults, materializing every field with its schema default.
+/// (The sibling overload encodes a supplied message's values instead.)
+///
+/// Example, given the following capnp schema:
 ///
 ///     struct Inner {
 ///         value @0 :Int64 = 3;
@@ -31,7 +54,7 @@ namespace nioc::terminus
 ///         inner @2 :Inner  = (value = 11);   # struct-literal default; tag left unset
 ///     }
 ///
-/// `makeDefaultJson(capnp::Schema::from<Outer>())` returns:
+/// `encodeAsJson(capnp::Schema::from<Outer>())` returns:
 ///
 ///     {
 ///       "name": "",
@@ -39,13 +62,27 @@ namespace nioc::terminus
 ///       "inner": { "value": "11", "tag": "leaf" }
 ///     }
 ///
-/// @param schema The Cap'n Proto struct schema to materialize.
+/// @param schema The Cap'n Proto struct schema whose defaults to encode.
 ///
 /// @return A JSON object mirroring @p schema, every field populated with its default value.
-[[nodiscard]] nlohmann::json makeDefaultJson(capnp::StructSchema schema);
+[[nodiscard]] nlohmann::json encodeAsJson(capnp::StructSchema schema);
 
-/// @brief Decode JSON text into a typed Cap'n Proto message conforming to @p schema — the inverse
-/// direction to @ref makeDefaultJson.
+/// @brief Encode @p builder's struct against @p schema as a JSON tree, every field explicit.
+///
+/// The value counterpart to the defaults overload above: it encodes the values actually held in
+/// @p builder rather than the schema defaults.
+///
+/// @param builder Holds the struct to encode; read through @p schema.
+///
+/// @param schema The Cap'n Proto struct schema to encode against.
+///
+/// @return A JSON object of @p builder's values.
+[[nodiscard]] nlohmann::json encodeAsJson(
+    capnp::MessageBuilder& builder,
+    capnp::StructSchema schema);
+
+/// @brief Decode JSON text into a typed Cap'n Proto message conforming to @p schema, the inverse
+/// direction of @ref encodeAsJson.
 ///
 /// Fields present in @p jsonText but outside @p schema are ignored rather than rejected, so the
 /// same text decodes across schema versions. The returned message owns the decoded data; read it
@@ -56,33 +93,8 @@ namespace nioc::terminus
 /// @param schema The Cap'n Proto struct schema to decode against.
 ///
 /// @return A message owning the struct decoded from @p jsonText.
-[[nodiscard]] std::unique_ptr<capnp::MallocMessageBuilder> decodeMessage(
+[[nodiscard]] std::unique_ptr<capnp::MallocMessageBuilder> decodeFromJson(
     const std::string& jsonText,
     capnp::StructSchema schema);
-
-/// @brief Override an existing field, at an arbitrarily deep path, in a JSON tree.
-///
-/// @p value is applied as a JSON merge-patch, so a `null` value deletes the field. The field must
-/// already be present: this throws rather than creating it, catching typos and stale keys.
-///
-/// Example — for `tree`:
-///
-///     { "log": { "level": "info", "file": "out.txt" } }
-///
-///     overrideField(tree, "/log/level"_json_pointer, "debug");  // log.level becomes "debug"
-///     overrideField(tree, "/log/file"_json_pointer,  nullptr);  // log.file is removed
-///     overrideField(tree, "/log/rate"_json_pointer,  5);        // throws: /log/rate is absent
-///
-/// @param tree The JSON object to modify in place.
-///
-/// @param fieldPath JSON Pointer to the field to override.
-///
-/// @param value The new value, applied as a merge-patch; a `null` deletes the field.
-///
-/// @throws std::out_of_range if @p fieldPath is not already present in the @p tree.
-void overrideField(
-    nlohmann::json& tree,
-    const nlohmann::json::json_pointer& fieldPath,
-    nlohmann::json value);
 
 } // namespace nioc::terminus

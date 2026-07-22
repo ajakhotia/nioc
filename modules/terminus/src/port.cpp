@@ -5,8 +5,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include <algorithm>
-#include <boost/uuid/uuid_generators.hpp>
-#include <boost/uuid/uuid_io.hpp>
 #include <chrono>
 #include <fstream>
 #include <functional>
@@ -14,10 +12,10 @@
 #include <nioc/chronicle/writer.hpp>
 #include <nioc/common/exception.hpp>
 #include <nioc/common/sleep.hpp>
-#include <nioc/common/time.hpp>
 #include <nioc/logger/logger.hpp>
 #include <nioc/terminus/driver.hpp>
 #include <nioc/terminus/port.hpp>
+#include <nioc/terminus/utils.hpp>
 #include <nlohmann/json.hpp>
 #include <optional>
 #include <ranges>
@@ -33,20 +31,6 @@ namespace fs = std::filesystem;
 
 namespace
 {
-
-fs::path createWorkingDir(const fs::path& logRoot)
-{
-  fs::create_directories(logRoot);
-
-  const auto name = common::iso8601UtcFormat(std::chrono::system_clock::now()) +
-                    "_" +
-                    boost::uuids::to_string(boost::uuids::random_generator_pure()());
-
-  const auto dir = logRoot / name;
-  fs::create_directories(dir);
-
-  return dir;
-}
 
 std::unique_ptr<chronicle::Writer> makeWriter(const fs::path& workingDir, const bool record)
 {
@@ -125,29 +109,21 @@ void writeResources(
     const std::unordered_map<std::string, std::string>& resourceMap,
     const fs::path& workingDir)
 {
-  const auto path = workingDir / "resources.json";
-  auto file = std::ofstream(path);
-  if(not file)
-  {
-    common::throwException<std::runtime_error>("Cannot write {}", path.string());
-  }
-  file << nlohmann::json(resourceMap).dump(2) << '\n';
+  writeJsonFile(workingDir / "resources.json", nlohmann::json(resourceMap));
 }
 
 } // namespace
 
-Port::Port(Manifest manifest, const Setup& setup):
-  mManifest{std::move(manifest)},
-  mWorkingDir{createWorkingDir(mManifest.mContext.logRoot())},
-  mConsoleLogSink{attachLogFileSink(mWorkingDir / "console.log")},
-  mWriter{makeWriter(mWorkingDir, mManifest.mContext.recordChronicle())},
-  mLockedResourceMap{copyResources(mManifest.mContext.resourcePaths(), mWorkingDir)}
+Port::Port(RunContext runContext, const Setup& setup):
+  mRunContext{std::move(runContext)},
+  mConsoleLogSink{attachLogFileSink(mRunContext.workingDir() / "console.log")},
+  mWriter{makeWriter(mRunContext.workingDir(), mRunContext.recordChronicle())},
+  mLockedResourceMap{copyResources(mRunContext.resourcePaths(), mRunContext.workingDir())}
 {
-  mManifest.write(mWorkingDir);
   mLockedResourceMap.cExecute([this](const auto& resourceMap)
-                              { writeResources(resourceMap, mWorkingDir); });
+                              { writeResources(resourceMap, mRunContext.workingDir()); });
 
-  logger::debug("recording run to working directory {}", mWorkingDir);
+  logger::debug("recording run to working directory {}", mRunContext.workingDir());
 
   // Build the routine graph last, so the routines bind to a fully initialized Port.
   std::invoke(setup, *this, mDrivers, mComponents, mRunners);
@@ -169,7 +145,7 @@ Port::~Port()
   try
   {
     mLockedResourceMap.cExecute([this](const auto& resourceMap)
-                                { writeResources(resourceMap, mWorkingDir); });
+                                { writeResources(resourceMap, mRunContext.workingDir()); });
   }
   catch(const std::exception& error)
   {
@@ -182,18 +158,18 @@ Port::~Port()
 
 const fs::path& Port::workingDir() const noexcept
 {
-  return mWorkingDir;
+  return mRunContext.workingDir();
 }
 
 const RunContext& Port::runContext() const noexcept
 {
-  return mManifest.mContext;
+  return mRunContext;
 }
 
 void Port::addResource(const fs::path& source)
 {
   mLockedResourceMap.execute([this, &source](auto& resourceMap)
-                             { copyResource(source, mWorkingDir, resourceMap); });
+                             { copyResource(source, mRunContext.workingDir(), resourceMap); });
 }
 
 fs::path Port::acquireResource(const fs::path& source)
@@ -205,7 +181,7 @@ fs::path Port::acquireResource(const fs::path& source)
          {
            if(const auto entry = resourceMap.find(sourceKey); entry != resourceMap.end())
            {
-             return mWorkingDir / entry->second;
+             return mRunContext.workingDir() / entry->second;
            }
            return std::nullopt;
          }))
@@ -218,17 +194,18 @@ fs::path Port::acquireResource(const fs::path& source)
       {
         if(not resourceMap.contains(sourceKey))
         {
-          copyResource(source, mWorkingDir, resourceMap);
+          copyResource(source, mRunContext.workingDir(), resourceMap);
         }
 
-        return mWorkingDir / resourceMap.at(sourceKey);
+        return mRunContext.workingDir() / resourceMap.at(sourceKey);
       });
 }
 
 fs::path Port::acquireResource(const fs::path& source) const
 {
-  return mLockedResourceMap.cExecute([this, &source](const auto& resourceMap)
-                                     { return mWorkingDir / resourceMap.at(source.string()); });
+  return mLockedResourceMap.cExecute(
+      [this, &source](const auto& resourceMap)
+      { return mRunContext.workingDir() / resourceMap.at(source.string()); });
 }
 
 void Port::subscribe(const ChannelId channelId, ConsignmentCallback callback)
@@ -320,7 +297,7 @@ void Port::recordTopic(
     return;
   }
 
-  const auto topicsFilePath = mWorkingDir / "topics.txt";
+  const auto topicsFilePath = mRunContext.workingDir() / "topics.txt";
   auto topicsFile = std::ofstream(topicsFilePath, std::ios::app);
   if(not topicsFile)
   {

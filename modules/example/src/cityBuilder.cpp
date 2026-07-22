@@ -13,7 +13,7 @@ namespace nioc::example
 {
 
 CityBuilder::CityBuilder(const std::string& name, terminus::Port& port):
-  CityBuilder{name, port, makeConfig<CityBuilderConfig>(port, name)}
+  CityBuilder{name, port, port.materializeConfig<CityBuilderConfig>(name)}
 {
 }
 

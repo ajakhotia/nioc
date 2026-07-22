@@ -32,9 +32,10 @@ fs::path testDirectory()
   return fs::temp_directory_path() / "niocConfigTest";
 }
 
-nlohmann::json readArtifact(const std::string& name, const std::string& extension)
+/// Read a routine's `<name>.json`: the effective config, every field resolved.
+nlohmann::json readEffective(const std::string& name)
 {
-  return nlohmann::json::parse(std::ifstream(testDirectory() / (name + extension)));
+  return nlohmann::json::parse(std::ifstream(testDirectory() / (name + ".json")));
 }
 
 } // namespace
@@ -81,22 +82,33 @@ TEST(ConfigTest, offSchemaKeysAreToleratedButNotRecorded)
 
   EXPECT_EQ(config.reader().getCount(), 5U);
 
-  const auto onDisk = readArtifact("offSchema", ".json");
-  EXPECT_EQ(onDisk.at("count").get<int>(), 5);
-  EXPECT_FALSE(onDisk.contains("futureField"));
+  const auto effective = readEffective("offSchema");
+  EXPECT_EQ(effective.at("count").get<int>(), 5);
+  EXPECT_FALSE(effective.contains("futureField"));
 }
 
-TEST(ConfigTest, effectiveJsonMaterializesEveryDefault)
+TEST(ConfigTest, effectiveConfigIsWrittenFlat)
+{
+  const auto config = Config<TestConfig>{nlohmann::json::object(), testDirectory(), "flat"};
+
+  // The `<name>.json` is the bare effective config for this instance, not wrapped in any document
+  // structure: the fields sit at the top level.
+  const auto onDisk = nlohmann::json::parse(std::ifstream(testDirectory() / "flat.json"));
+  EXPECT_FALSE(onDisk.contains("routines"));
+  EXPECT_EQ(onDisk.at("count").get<int>(), 7);
+}
+
+TEST(ConfigTest, effectiveConfigMaterializesEveryDefault)
 {
   const auto config = Config<TestConfig>{nlohmann::json::object(), testDirectory(), "materialized"};
 
-  const auto onDisk = readArtifact("materialized", ".json");
+  const auto effective = readEffective("materialized");
 
   // Every parameter is recorded explicitly, struct-literal and field defaults alike. JsonCodec
   // renders 64-bit integers as quoted strings to dodge json's double-precision limit.
-  EXPECT_EQ(onDisk.at("count").get<int>(), 7);
-  EXPECT_EQ(onDisk.at("leaf").at("value").get<std::string>(), "11");
-  EXPECT_EQ(onDisk.at("leaf").at("tag").get<std::string>(), "lit");
+  EXPECT_EQ(effective.at("count").get<int>(), 7);
+  EXPECT_EQ(effective.at("leaf").at("value").get<std::string>(), "11");
+  EXPECT_EQ(effective.at("leaf").at("tag").get<std::string>(), "lit");
 }
 
 TEST(ConfigTest, binaryArtifactLoadsIndependently)
@@ -105,7 +117,7 @@ TEST(ConfigTest, binaryArtifactLoadsIndependently)
   const auto config = Config<TestConfig>{overrides, testDirectory(), "standalone"};
 
   // Reopen the artifact through a fresh mapping and reader, independent of the Config that wrote
-  // it.
+  // it. Unlike the json overlay, the binary frame is bare: the message roots directly.
   const auto mapping = containers::MmapConstArray<std::byte>{testDirectory() / "standalone.bin"};
   auto message = capnp::FlatArrayMessageReader{
       asWords(std::span<const std::byte>{mapping.data(), mapping.size()})};

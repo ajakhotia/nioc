@@ -7,7 +7,6 @@
 #include <array>
 #include <atomic>
 #include <boost/program_options.hpp>
-#include <capnp/schema.h>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
@@ -16,11 +15,8 @@
 #include <nioc/chronicle/defines.hpp>
 #include <nioc/chronicle/reader.hpp>
 #include <nioc/concurrent/threadedRunner.hpp>
-#include <nioc/terminus/config/testConfig.capnp.h>
-#include <nioc/terminus/configStore.hpp>
 #include <nioc/terminus/driver.hpp>
 #include <nioc/terminus/idl/testSchema.capnp.h>
-#include <nioc/terminus/manifest.hpp>
 #include <nioc/terminus/message.hpp>
 #include <nioc/terminus/port.hpp>
 #include <nioc/terminus/programOption.hpp>
@@ -46,11 +42,6 @@ fs::path testDataDir()
   return fs::path{"data"};
 }
 
-fs::path config()
-{
-  return testDataDir() / "testConfig.json";
-}
-
 fs::path malformedConfig()
 {
   return testDataDir() / "malformedConfig.json";
@@ -71,9 +62,36 @@ fs::path logRoot()
   return fs::temp_directory_path() / "niocLogs";
 }
 
+/// A fresh, unique working directory for the running test, cleared of any prior run.
+fs::path testWorkingDir()
+{
+  const auto* const info = ::testing::UnitTest::GetInstance()->current_test_info();
+  const auto dir = fs::temp_directory_path() /
+                   "niocPortTest" /
+                   info->test_suite_name() /
+                   info->name();
+  fs::remove_all(dir);
+  return dir;
+}
+
 std::string sampleCommandLine()
 {
   return "myRobot --config /etc/foo.json";
+}
+
+RunContext testRunContext(
+    std::string commandLine = "",
+    const bool recordChronicle = true,
+    std::vector<fs::path> resourcePaths = {},
+    std::vector<fs::path> appendConfigPaths = {})
+{
+  return RunContext{
+      testWorkingDir(),
+      std::move(resourcePaths),
+      recordChronicle,
+      std::move(commandLine),
+      {},
+      std::move(appendConfigPaths)};
 }
 
 void emptySetup(
@@ -82,13 +100,6 @@ void emptySetup(
     Port::Components& /*unused*/,
     Port::Runners& /*unused*/)
 {
-}
-
-Manifest testManifest(std::string commandLine = "")
-{
-  return Manifest{
-      RunContext{logRoot(), {}, true, std::move(commandLine)},
-      ConfigStore{{config()}, {}, capnp::Schema::from<TestConfig>()}};
 }
 
 void publishGap(Port& port, const std::string_view topic)
@@ -103,13 +114,12 @@ TEST(PortTest, constructionCreatesRecordingDirectory)
 {
   const auto workingDir = [&]
   {
-    auto port = Port{testManifest(sampleCommandLine()), emptySetup};
+    auto port = Port{testRunContext(sampleCommandLine()), emptySetup};
     const auto& recordingDir = port.workingDir();
 
     EXPECT_TRUE(fs::is_directory(recordingDir));
-    EXPECT_EQ(recordingDir.parent_path(), logRoot());
     EXPECT_TRUE(fs::is_directory(recordingDir / "chronicle"));
-    EXPECT_TRUE(fs::is_regular_file(recordingDir / "config.json"));
+    EXPECT_TRUE(fs::is_regular_file(recordingDir / "configOverlay.json"));
     EXPECT_TRUE(fs::is_regular_file(recordingDir / "manifest.json"));
     EXPECT_TRUE(fs::is_regular_file(recordingDir / "console.log"));
     return recordingDir;
@@ -121,7 +131,7 @@ TEST(PortTest, recordingCarriesManifestAndResources)
 {
   const auto workingDir = [&]
   {
-    auto port = Port{testManifest(sampleCommandLine()), emptySetup};
+    auto port = Port{testRunContext(sampleCommandLine()), emptySetup};
     const auto recordingDir = port.workingDir();
     port.addResource(resource());
 
@@ -140,7 +150,7 @@ TEST(PortTest, recordingCarriesManifestAndResources)
 
 TEST(PortTest, acquireResourceRemapsToWorkingDirCopy)
 {
-  auto port = Port{testManifest(), emptySetup};
+  auto port = Port{testRunContext(), emptySetup};
   port.addResource(resource());
 
   const auto acquired = port.acquireResource(resource());
@@ -150,36 +160,32 @@ TEST(PortTest, acquireResourceRemapsToWorkingDirCopy)
 
 TEST(PortTest, acquireResourceRejectsUnaddedResource)
 {
-  auto port = Port{testManifest(), emptySetup};
+  auto port = Port{testRunContext(), emptySetup};
   EXPECT_THROW((void)port.acquireResource(testDataDir() / "never.bin"), std::invalid_argument);
 }
 
 TEST(PortTest, addResourceRejectsBasenameCollision)
 {
-  auto port = Port{testManifest(), emptySetup};
+  auto port = Port{testRunContext(), emptySetup};
   port.addResource(resource());
   EXPECT_THROW(port.addResource(resourceDuplicate()), std::invalid_argument);
 }
 
 TEST(PortTest, addResourceRejectsMissingFile)
 {
-  auto port = Port{testManifest(), emptySetup};
+  auto port = Port{testRunContext(), emptySetup};
   EXPECT_THROW(port.addResource(testDataDir() / "doesNotExist"), std::invalid_argument);
 }
 
-TEST(PortTest, constructionCreatesMissingLogRoot)
+TEST(PortTest, constructionCreatesTheWorkingDirectory)
 {
-  const auto absentRoot = fs::temp_directory_path() / "niocPortTestAbsentRoot";
-  fs::remove_all(absentRoot);
+  const auto expectedDir = testWorkingDir();
+  ASSERT_FALSE(fs::exists(expectedDir));
 
-  auto port = Port{
-      Manifest{
-          RunContext{absentRoot, {}, true, ""},
-          ConfigStore{"{}", capnp::Schema::from<TestConfig>()}},
-      emptySetup};
+  auto port = Port{testRunContext(), emptySetup};
 
-  EXPECT_TRUE(fs::is_directory(absentRoot));
-  EXPECT_EQ(port.workingDir().parent_path(), absentRoot);
+  EXPECT_EQ(port.workingDir(), expectedDir);
+  EXPECT_TRUE(fs::is_directory(expectedDir));
 }
 
 TEST(PortTest, recordChronicleFalseOmitsChronicleDir)
@@ -187,15 +193,11 @@ TEST(PortTest, recordChronicleFalseOmitsChronicleDir)
   // Without recording there is no chronicle writer; producers build messages on the heap instead.
   const auto workingDir = [&]
   {
-    auto port = Port{
-        Manifest{
-            RunContext{logRoot(), {}, false, ""},
-            ConfigStore{{config()}, {}, capnp::Schema::from<TestConfig>()}},
-        emptySetup};
+    auto port = Port{testRunContext("", false), emptySetup};
     const auto& recordingDir = port.workingDir();
 
     EXPECT_FALSE(fs::exists(recordingDir / "chronicle"));
-    EXPECT_TRUE(fs::is_regular_file(recordingDir / "config.json"));
+    EXPECT_TRUE(fs::is_regular_file(recordingDir / "configOverlay.json"));
     return recordingDir;
   }();
   // The recording is still finalized even with the chronicle disabled.
@@ -204,18 +206,14 @@ TEST(PortTest, recordChronicleFalseOmitsChronicleDir)
 
 TEST(PortTest, constructionAddsListedResources)
 {
-  auto port = Port{
-      Manifest{
-          RunContext{logRoot(), {resource()}, true, ""},
-          ConfigStore{{config()}, {}, capnp::Schema::from<TestConfig>()}},
-      emptySetup};
+  auto port = Port{testRunContext("", true, {resource()}), emptySetup};
   EXPECT_TRUE(fs::is_regular_file(port.workingDir() / "testResource.bin"));
 }
 
 TEST(PortTest, constructionFromCommandLineReadsEveryOption)
 {
-  // Stage config files compatible with TestConfig, then build an argv that exercises every
-  // manifest option, mirroring a real command line.
+  // Stage two config layers, then build an argv that exercises every run-context option, mirroring
+  // a real command line.
   const auto stagingDir = fs::temp_directory_path() / "niocPortTestCli";
   fs::create_directories(stagingDir);
   const auto base = stagingDir / "base.json";
@@ -244,21 +242,22 @@ TEST(PortTest, constructionFromCommandLineReadsEveryOption)
   constexpr auto argc = static_cast<int>(argv.size());
 
   auto options = programOptions("myRobot");
-  options.add(Manifest::cliOptions());
+  options.add(RunContext::cliOptions());
   const auto variableMap = parseCommandLine(argc, argv.data(), options);
 
   // parseCommandLine injects the verbatim command line for the Port to record.
   EXPECT_TRUE(variableMap.contains("commandLine"));
 
-  auto port = Port{Manifest{variableMap, capnp::Schema::from<TestConfig>()}, emptySetup};
+  auto port = Port{RunContext{variableMap}, emptySetup};
 
-  EXPECT_EQ(port.workingDir().parent_path(), logRoot());
+  EXPECT_EQ(port.workingDir().parent_path(), logRoot()); // minted under the log root
   EXPECT_FALSE(port.runContext().playback());
   EXPECT_TRUE(fs::is_regular_file(port.workingDir() / "testResource.bin"));
   EXPECT_FALSE(fs::exists(port.workingDir() / "chronicle")); // --record-chronicle false
 
-  // The recorded config.json carries the file merge with the cli override applied on top.
-  const auto onDisk = nlohmann::json::parse(std::ifstream(port.workingDir() / "config.json"));
+  // The recorded overrides carry the file merge with the cli override applied on top.
+  const auto onDisk = nlohmann::json::parse(
+      std::ifstream(port.workingDir() / "configOverlay.json"));
   EXPECT_EQ(onDisk.at("count").get<int>(), 2);            // later file wins
   EXPECT_EQ(onDisk.at("name").get<std::string>(), "cli"); // --config-override wins over files
 }
@@ -266,31 +265,20 @@ TEST(PortTest, constructionFromCommandLineReadsEveryOption)
 TEST(PortTest, constructionRejectsUnreadableConfig)
 {
   EXPECT_THROW(
-      (Port{
-          Manifest{
-              RunContext{logRoot(), {}, true, ""},
-              ConfigStore{
-                  {testDataDir() / "doesNotExist.json"},
-                  {},
-                  capnp::Schema::from<TestConfig>()}},
-          emptySetup}),
+      (Port{testRunContext("", true, {}, {testDataDir() / "doesNotExist.json"}), emptySetup}),
       std::runtime_error);
 }
 
 TEST(PortTest, constructionRejectsMalformedConfig)
 {
   EXPECT_THROW(
-      (Port{
-          Manifest{
-              RunContext{logRoot(), {}, true, ""},
-              ConfigStore{{malformedConfig()}, {}, capnp::Schema::from<TestConfig>()}},
-          emptySetup}),
+      (Port{testRunContext("", true, {}, {malformedConfig()}), emptySetup}),
       nlohmann::json::parse_error);
 }
 
 TEST(PortTest, publishFansOutToEverySubscriberOnTheChannel)
 {
-  auto port = Port{testManifest(), emptySetup};
+  auto port = Port{testRunContext(), emptySetup};
 
   const auto channelId = chronicle::makeChannelId(kSchemaId<TestSchema>, "fanOut");
   auto firstCount = 0;
@@ -313,7 +301,7 @@ TEST(PortTest, publishFansOutToEverySubscriberOnTheChannel)
 
 TEST(PortTest, shutdownAndAbortTripTheirTokensIndependently)
 {
-  const auto port = Port{testManifest(), emptySetup};
+  const auto port = Port{testRunContext(), emptySetup};
 
   EXPECT_FALSE(port.shutdownToken().stop_requested());
   EXPECT_FALSE(port.abortToken().stop_requested());
@@ -328,7 +316,7 @@ TEST(PortTest, shutdownAndAbortTripTheirTokensIndependently)
 
 TEST(PortTest, awaitQuiescenceBlocksUntilDeliveredConsignmentsDie)
 {
-  auto port = Port{testManifest(), emptySetup};
+  auto port = Port{testRunContext(), emptySetup};
 
   const auto channelId = chronicle::makeChannelId(kSchemaId<TestSchema>, "quiescence");
   auto held = std::vector<Consignment>{};
@@ -357,7 +345,7 @@ TEST(PortTest, awaitQuiescenceBlocksUntilDeliveredConsignmentsDie)
 
 TEST(PortTest, abortUnblocksAwaitQuiescenceWithConsignmentsStillHeld)
 {
-  auto port = Port{testManifest(), emptySetup};
+  auto port = Port{testRunContext(), emptySetup};
 
   const auto channelId = chronicle::makeChannelId(kSchemaId<TestSchema>, "abortQuiescence");
   auto held = std::vector<Consignment>{};
@@ -395,7 +383,7 @@ TEST(PortTest, everyPublishedMessageIsRecordedInOrder)
   // recording back and expect every published value, in the publish-order.
   const auto workingDir = [&]
   {
-    auto port = Port{testManifest(), emptySetup};
+    auto port = Port{testRunContext(), emptySetup};
     auto publisher = port.publisher<TestSchema>(kTopic);
     for(auto value = std::int64_t{0}; value < kMessageCount; ++value)
     {
@@ -443,7 +431,7 @@ TEST(PortTest, waitReturnsFalseOnceEveryDriverIsDone)
   };
 
   auto port = Port{
-      testManifest(),
+      testRunContext(),
       [](Port& port, Port::Drivers& drivers, Port::Components&, Port::Runners& runners)
       {
         constexpr auto kSteps = 5;

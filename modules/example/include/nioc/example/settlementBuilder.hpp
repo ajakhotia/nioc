@@ -15,6 +15,7 @@
 #include <nioc/example/idl/settlement.capnp.h>
 #include <nioc/example/idl/wool.capnp.h>
 #include <nioc/terminus/component.hpp>
+#include <nioc/terminus/config.hpp>
 #include <nioc/terminus/message.hpp>
 #include <nioc/terminus/port.hpp>
 #include <nioc/terminus/publisher.hpp>

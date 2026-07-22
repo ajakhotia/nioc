@@ -13,7 +13,7 @@ namespace nioc::example
 {
 
 SettlementBuilder::SettlementBuilder(const std::string& name, terminus::Port& port):
-  SettlementBuilder{name, port, makeConfig<SettlementBuilderConfig>(port, name)}
+  SettlementBuilder{name, port, port.materializeConfig<SettlementBuilderConfig>(name)}
 {
 }
 

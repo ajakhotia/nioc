@@ -23,11 +23,16 @@ namespace detail
 /// @brief One instance's config, materialized on disk and memory-mapped, held untyped.
 ///
 /// Carries the non-template machinery behind @ref Config: it merges the instance overrides onto a
-/// schema's defaults, decodes the result, writes `<directory>/<name>.json` (the effective config
-/// as the schema projection) and `<directory>/<name>.bin` (the same message as a single-segment
-/// flat-array frame), and maps the binary read-only. The schema arrives as a runtime
-/// `capnp::StructSchema` so none of this depends on the config type; @ref Config supplies the type
-/// at the @ref getRoot call.
+/// schema's defaults, decodes the result, and writes two artifacts named for @p name:
+///
+///   - `<name>.json`: the effective config, every field resolved to its final value; a readable
+///     record of what this instance actually ran with.
+///
+///   - `<name>.bin`: the same message as a bare single-segment flat-array frame, mapped read-only
+///     for typed access.
+///
+/// The schema arrives as a runtime `capnp::StructSchema` so none of this depends on the config
+/// type; @ref Config supplies the type at the @ref reader call.
 ///
 /// Not copyable; move-construction transfers the mapping and re-roots over its (address-stable)
 /// bytes, leaving the source fit only for destruction. This is an implementation detail of
@@ -43,7 +48,7 @@ public:
   /// @param directory Directory the `<name>.json` and `<name>.bin` artifacts are written to;
   /// created if absent.
   ///
-  /// @param name Basename of the artifacts, without extension.
+  /// @param name The instance name; names the two artifacts.
   ///
   /// @param schema Supplies the defaults and the decode target.
   ///
@@ -76,7 +81,7 @@ public:
   ///
   /// @tparam Schema The generated Cap'n Proto struct type the config was materialized against.
   template<typename Schema>
-  [[nodiscard]] Schema::Reader getRoot()
+  [[nodiscard]] Schema::Reader reader()
   {
     return mFlatMessageReader.getRoot<Schema>();
   }
@@ -101,10 +106,10 @@ private:
 /// JSON overrides, decoded, persisted beside the run, and read through a memory-mapped view.
 ///
 /// Construction does all the work: it merges @p overrides onto the schema defaults, decodes the
-/// result, writes the effective config as `<directory>/<name>.json` (human-readable record) and
-/// `<directory>/<name>.bin` (single-segment flat-array frame), maps the binary read-only, and
-/// roots a reader in the mapping, so the values read at runtime and the artifact on disk are the
-/// same bytes.
+/// result, writes the effective config as `<name>.json` and a bare frame `<name>.bin`, maps the
+/// binary read-only, and roots a reader in the mapping, so the values read at runtime and the
+/// artifact on disk are the same bytes. Both artifacts are named for @p name (see
+/// @ref detail::MappedConfig).
 ///
 /// Example:
 ///
@@ -127,16 +132,15 @@ class Config
 public:
   using Schema = Schema_;
 
-  /// @brief Materialize the effective config from @p overrides into @p directory under @p name,
-  /// and root a reader in the mapped binary.
+  /// @brief Materialize the effective config from @p overrides into @p directory, and root a
+  /// reader in the mapped binary.
   ///
   /// @param overrides Instance overrides, merge-patched onto the schema defaults. Must be a JSON
   /// object; pass an empty object for a defaults-only config.
   ///
-  /// @param directory Directory the `<name>.json` and `<name>.bin` artifacts are written to;
-  /// created if absent.
+  /// @param directory Directory the artifacts are written to; created if absent.
   ///
-  /// @param name Basename of the artifacts, without extension.
+  /// @param name The instance name; names the artifacts.
   ///
   /// @throws std::invalid_argument if @p overrides is not a JSON object.
   ///
@@ -146,7 +150,7 @@ public:
       const std::filesystem::path& directory,
       const std::string& name):
     mMappedConfig{overrides, directory, name, capnp::Schema::from<Schema>()},
-    mReader{mMappedConfig.getRoot<Schema>()}
+    mReader{mMappedConfig.reader<Schema>()}
   {
   }
 

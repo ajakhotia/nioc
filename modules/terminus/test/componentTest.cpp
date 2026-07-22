@@ -5,15 +5,11 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "testComponent.hpp"
-#include <capnp/schema.h>
 #include <filesystem>
 #include <gtest/gtest.h>
 #include <nioc/concurrent/routine.hpp>
 #include <nioc/terminus/component.hpp>
-#include <nioc/terminus/config/testConfig.capnp.h>
-#include <nioc/terminus/configStore.hpp>
 #include <nioc/terminus/idl/testSchema.capnp.h>
-#include <nioc/terminus/manifest.hpp>
 #include <nioc/terminus/message.hpp>
 #include <nioc/terminus/port.hpp>
 #include <nioc/terminus/publisher.hpp>
@@ -34,10 +30,10 @@ void publishOne(Port& port, const std::string_view topic)
 
 Port makePort()
 {
+  auto workingDir = std::filesystem::temp_directory_path() / "niocComponentTest";
+  std::filesystem::remove_all(workingDir);
   return Port{
-      Manifest{
-          RunContext{std::filesystem::temp_directory_path() / "niocLogs", {}, true, ""},
-          ConfigStore{"{}", capnp::Schema::from<TestConfig>()}},
+      RunContext{std::move(workingDir), {}, true, ""},
       [](Port&, Port::Drivers&, Port::Components&, Port::Runners&) {}};
 }
 

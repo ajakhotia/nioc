@@ -11,6 +11,7 @@
 #include <nioc/example/config/pastureConfig.capnp.h>
 #include <nioc/example/idl/wool.capnp.h>
 #include <nioc/logger/logger.hpp>
+#include <nioc/terminus/config.hpp>
 #include <nioc/terminus/driver.hpp>
 #include <nioc/terminus/port.hpp>
 #include <nioc/terminus/publisher.hpp>
@@ -34,7 +35,7 @@ class Pasture final: public terminus::Driver
 {
 public:
   Pasture(const std::string& name, terminus::Port& port):
-    Pasture{name, port, makeConfig<PastureConfig>(port, name)}
+    Pasture{name, port, port.materializeConfig<PastureConfig>(name)}
   {
   }
 

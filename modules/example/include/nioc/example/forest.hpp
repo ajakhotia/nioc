@@ -11,6 +11,7 @@
 #include <nioc/example/config/forestConfig.capnp.h>
 #include <nioc/example/idl/lumber.capnp.h>
 #include <nioc/logger/logger.hpp>
+#include <nioc/terminus/config.hpp>
 #include <nioc/terminus/driver.hpp>
 #include <nioc/terminus/port.hpp>
 #include <nioc/terminus/publisher.hpp>
@@ -34,7 +35,7 @@ class Forest final: public terminus::Driver
 {
 public:
   Forest(const std::string& name, terminus::Port& port):
-    Forest{name, port, makeConfig<ForestConfig>(port, name)}
+    Forest{name, port, port.materializeConfig<ForestConfig>(name)}
   {
   }
 

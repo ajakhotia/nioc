@@ -54,6 +54,7 @@ add_exported_library(
     src/arenaMessageBuilder.cpp
     src/component.cpp
     src/config.cpp
+    src/configOverlay.cpp
     src/consignment.cpp
     src/defaultSignalCatcher.cpp
     src/draft.cpp
@@ -67,6 +68,7 @@ add_exported_library(
     PUBLIC include/nioc/terminus/arenaMessageBuilder.hpp
     PUBLIC include/nioc/terminus/component.hpp
     PUBLIC include/nioc/terminus/config.hpp
+    PUBLIC include/nioc/terminus/configOverlay.hpp
     PUBLIC include/nioc/terminus/consignment.hpp
     PUBLIC include/nioc/terminus/defaultSignalCatcher.hpp
     PUBLIC include/nioc/terminus/draft.hpp

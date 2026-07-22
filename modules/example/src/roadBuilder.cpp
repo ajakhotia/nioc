@@ -13,7 +13,7 @@ namespace nioc::example
 {
 
 RoadBuilder::RoadBuilder(const std::string& name, terminus::Port& port):
-  RoadBuilder{name, port, makeConfig<RoadBuilderConfig>(port, name)}
+  RoadBuilder{name, port, port.materializeConfig<RoadBuilderConfig>(name)}
 {
 }
 

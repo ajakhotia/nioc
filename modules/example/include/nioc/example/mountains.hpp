@@ -11,6 +11,7 @@
 #include <nioc/example/config/mountainsConfig.capnp.h>
 #include <nioc/example/idl/ore.capnp.h>
 #include <nioc/logger/logger.hpp>
+#include <nioc/terminus/config.hpp>
 #include <nioc/terminus/driver.hpp>
 #include <nioc/terminus/port.hpp>
 #include <nioc/terminus/publisher.hpp>
@@ -34,7 +35,7 @@ class Mountains final: public terminus::Driver
 {
 public:
   Mountains(const std::string& name, terminus::Port& port):
-    Mountains{name, port, makeConfig<MountainsConfig>(port, name)}
+    Mountains{name, port, port.materializeConfig<MountainsConfig>(name)}
   {
   }
 

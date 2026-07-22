@@ -41,7 +41,8 @@ bus delivering one message to many subscribers.
 - `hills.hpp` — a producer (driver). The smallest routine: wait, then publish.
 - `roadBuilder.hpp` / `.cpp` — a consumer (component): subscribe to inputs, publish an output.
 - `catanMain.cpp` — how every producer and consumer is created and connected.
-- `config/catanConfig.capnp` — the settings: topic names, produce times, recipe sizes.
+- `config/*.capnp` — one config schema per routine (e.g. `hillsConfig.capnp`,
+  `roadBuilderConfig.capnp`): topic names, produce times, recipe sizes.
 
 ## Settings you can change at runtime
 
@@ -56,7 +57,7 @@ built-in defaults → `--append-config <file>` → `--config-override key=value`
 cmake --build <BUILD_DIR> --target catanMain
 <INSTALL_DIR>/bin/catanMain                                  # built-in defaults
 <INSTALL_DIR>/bin/catanMain --append-config <INSTALL_DIR>/config/nioc/example/strippedCatan.json
-<INSTALL_DIR>/bin/catanMain --config-override fields.miningTimeMs=250
+<INSTALL_DIR>/bin/catanMain --config-override routines.drivers.feiFields.miningTimeMs=250
 ```
 
 `config/nioc/example/defaultCatan.json` is the whole config written out (a reference you can copy and

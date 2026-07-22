@@ -11,6 +11,7 @@
 #include <nioc/example/config/fieldsConfig.capnp.h>
 #include <nioc/example/idl/grain.capnp.h>
 #include <nioc/logger/logger.hpp>
+#include <nioc/terminus/config.hpp>
 #include <nioc/terminus/driver.hpp>
 #include <nioc/terminus/port.hpp>
 #include <nioc/terminus/publisher.hpp>
@@ -34,7 +35,7 @@ class Fields final: public terminus::Driver
 {
 public:
   Fields(const std::string& name, terminus::Port& port):
-    Fields{name, port, makeConfig<FieldsConfig>(port, name)}
+    Fields{name, port, port.materializeConfig<FieldsConfig>(name)}
   {
   }
 

@@ -13,7 +13,7 @@ namespace nioc::example
 {
 
 DevelopmentCardBuilder::DevelopmentCardBuilder(const std::string& name, terminus::Port& port):
-  DevelopmentCardBuilder{name, port, makeConfig<DevelopmentCardBuilderConfig>(port, name)}
+  DevelopmentCardBuilder{name, port, port.materializeConfig<DevelopmentCardBuilderConfig>(name)}
 {
 }
 

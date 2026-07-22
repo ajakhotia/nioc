@@ -11,6 +11,7 @@
 #include <nioc/example/config/hillsConfig.capnp.h>
 #include <nioc/example/idl/brick.capnp.h>
 #include <nioc/logger/logger.hpp>
+#include <nioc/terminus/config.hpp>
 #include <nioc/terminus/driver.hpp>
 #include <nioc/terminus/port.hpp>
 #include <nioc/terminus/publisher.hpp>
@@ -34,7 +35,7 @@ class Hills final: public terminus::Driver
 {
 public:
   Hills(const std::string& name, terminus::Port& port):
-    Hills{name, port, makeConfig<HillsConfig>(port, name)}
+    Hills{name, port, port.materializeConfig<HillsConfig>(name)}
   {
   }
 

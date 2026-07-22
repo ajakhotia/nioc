@@ -5,14 +5,11 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include <capnp/any.h>
-#include <capnp/compat/json.h>
-#include <capnp/dynamic.h>
 #include <capnp/message.h>
 #include <capnp/schema.h>
 #include <capnp/serialize.h>
 #include <cstddef>
 #include <filesystem>
-#include <fstream>
 #include <nioc/common/exception.hpp>
 #include <nioc/containers/mmapArray.hpp>
 #include <nioc/containers/mmapConstArray.hpp>
@@ -32,9 +29,34 @@ namespace fs = std::filesystem;
 namespace
 {
 
-/// Materialize @p overrides against @p schema into `<directory>/<name>.json` (the effective config
-/// as the schema projection) and `<directory>/<name>.bin` (a single-segment flat-array frame), and
-/// return the binary mapped read-only.
+/// Flatten @p builder into a single segment and write it to @p binPath as a bare flat-array frame.
+void flattenAndWrite(capnp::MessageBuilder& builder, const fs::path& binPath)
+{
+  // Re-root the builder into a single segment so the on-disk frame maps as one contiguous arena.
+  // The serialized size bounds the collapsed size, so sizing the rebuild's first segment to it
+  // lands the re-root in one segment.
+  auto singleSegmentMessage = capnp::MallocMessageBuilder{
+      static_cast<unsigned int>(capnp::computeSerializedSizeInWords(builder))};
+  singleSegmentMessage.setRoot(builder.getRoot<capnp::AnyPointer>().asReader());
+
+  const auto segments = singleSegmentMessage.getSegmentsForOutput();
+  if(segments.size() != 1)
+  {
+    common::throwException<std::logic_error>(
+        "Re-rooted config has {} segments; expected a single segment.",
+        segments.size());
+  }
+
+  const auto segment = segments.front();
+  auto binFile = containers::MmapArray<std::byte>{
+      binPath,
+      ArenaMessageBuilder::frameSize(segment.size())};
+  ArenaMessageBuilder::writeFrame(std::span<std::byte>{binFile.data(), binFile.size()}, segment);
+}
+
+/// Materialize @p overrides against @p schema into `<directory>/<name>.json` (the effective config)
+/// and `<directory>/<name>.bin` (a bare single-segment flat-array frame), and return the binary
+/// mapped read-only. @p name names both artifacts.
 containers::MmapConstArray<std::byte> materialize(
     const nlohmann::json& overrides,
     const fs::path& directory,
@@ -48,51 +70,18 @@ containers::MmapConstArray<std::byte> materialize(
         overrides.dump());
   }
 
-  auto merged = makeDefaultJson(schema);
-  merged.merge_patch(overrides);
-  const auto decoded = decodeMessage(merged.dump(), schema);
+  auto configJson = encodeAsJson(schema);
+  configJson.merge_patch(overrides);
+  const auto materializedConfig = decodeFromJson(configJson.dump(), schema);
 
   fs::create_directories(directory);
 
-  // The effective JSON record is the schema projection of the decoded message (every field
-  // materialized, nothing off-schema), so it cannot disagree with the binary frame.
-  const auto jsonPath = directory / (name + ".json");
-  {
-    auto jsonFile = std::ofstream(jsonPath);
-    if(not jsonFile)
-    {
-      common::throwException<std::runtime_error>("Cannot write {}", jsonPath.string());
-    }
-
-    auto codec = capnp::JsonCodec{};
-    codec.setPrettyPrint(true);
-    jsonFile << codec.encode(decoded->getRoot<capnp::DynamicStruct>(schema).asReader()).cStr()
-             << '\n';
-  }
-
-  // Re-root the message into a single segment so the on-disk frame maps as one contiguous arena.
-  // The serialized size bounds the collapsed size, so sizing the rebuild's first segment to it
-  // lands the re-root in one segment.
-  auto singleSegmentMessage = capnp::MallocMessageBuilder{
-      static_cast<unsigned int>(capnp::computeSerializedSizeInWords(*decoded))};
-  singleSegmentMessage.setRoot(decoded->getRoot<capnp::AnyPointer>().asReader());
-
-  const auto segments = singleSegmentMessage.getSegmentsForOutput();
-  if(segments.size() != 1)
-  {
-    common::throwException<std::logic_error>(
-        "Re-rooted config has {} segments; expected a single segment.",
-        segments.size());
-  }
+  // The effective config: every field resolved to its final value, a readable record of what this
+  // instance ran with.
+  writeJsonFile(directory / (name + ".json"), encodeAsJson(*materializedConfig, schema));
 
   const auto binPath = directory / (name + ".bin");
-  {
-    const auto segment = segments.front();
-    auto binFile = containers::MmapArray<std::byte>{
-        binPath,
-        ArenaMessageBuilder::frameSize(segment.size())};
-    ArenaMessageBuilder::writeFrame(std::span<std::byte>{binFile.data(), binFile.size()}, segment);
-  }
+  flattenAndWrite(*materializedConfig, binPath);
 
   // The write mapping is closed above; the finished frame reopens read-only for the config's
   // lifetime view.
