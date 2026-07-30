@@ -14,6 +14,7 @@
 #include <memory>
 #include <nioc/chronicle/defines.hpp>
 #include <nioc/chronicle/reader.hpp>
+#include <nioc/common/typeTraits.hpp>
 #include <nioc/concurrent/threadedRunner.hpp>
 #include <nioc/terminus/driver.hpp>
 #include <nioc/terminus/idl/testSchema.capnp.h>
@@ -23,6 +24,7 @@
 #include <nioc/terminus/publisher.hpp>
 #include <nioc/terminus/runContext.hpp>
 #include <nioc/terminus/schemaId.hpp>
+#include <nioc/terminus/topicRegistry.hpp>
 #include <nlohmann/json.hpp>
 #include <stdexcept>
 #include <string>
@@ -146,6 +148,63 @@ TEST(PortTest, recordingCarriesManifestAndResources)
   // resources.json is rewritten at teardown, so it carries the resource added mid-run.
   const auto resources = nlohmann::json::parse(std::ifstream(workingDir / "resources.json"));
   EXPECT_EQ(resources.at(resource().string()).get<std::string>(), "testResource.bin");
+}
+
+TEST(PortTest, recordingWritesItsTopicRegistry)
+{
+  const auto workingDir = [&]
+  {
+    auto port = Port{
+        testRunContext(sampleCommandLine()),
+        [](Port& port, Port::Drivers&, Port::Components&, Port::Runners&)
+        {
+          static_cast<void>(port.publisher<TestSchema>("alpha"));
+          static_cast<void>(port.publisher<TestSchema>("beta"));
+        }};
+    EXPECT_TRUE(fs::is_regular_file(port.workingDir() / "topics.json"));
+    return port.workingDir();
+  }();
+
+  // The written registry reads back with both topics and their full schema identity. Membership is
+  // by whole Topic, so a match confirms every field round-tripped.
+  const auto registry = TopicRegistry{workingDir};
+  ASSERT_EQ(2U, registry.size());
+
+  const auto alpha = Topic{
+      .mChannelId = chronicle::makeChannelId(kSchemaId<TestSchema>, "alpha"),
+      .mName = "alpha",
+      .mSchemaId = kSchemaId<TestSchema>,
+      .mSchemaName = std::string{common::prettyName<TestSchema>()}};
+  EXPECT_TRUE(registry.contains(alpha));
+}
+
+TEST(PortTest, playbackAdoptsTheReplayedRecordingsTopics)
+{
+  const auto base = testWorkingDir();
+
+  const auto recordingDir = [&]
+  {
+    auto port = Port{
+        RunContext{base / "recording", {}, true, sampleCommandLine()},
+        [](Port& port, Port::Drivers&, Port::Components&, Port::Runners&)
+        { static_cast<void>(port.publisher<TestSchema>("alpha")); }};
+    return port.workingDir();
+  }();
+
+  auto port = Port{RunContext{base / "playback", {}, false, "", recordingDir}, emptySetup};
+
+  const auto alpha = Topic{
+      .mChannelId = chronicle::makeChannelId(kSchemaId<TestSchema>, "alpha"),
+      .mName = "alpha",
+      .mSchemaId = kSchemaId<TestSchema>,
+      .mSchemaName = std::string{common::prettyName<TestSchema>()}};
+  EXPECT_TRUE(port.playbackTopics().contains(alpha));
+}
+
+TEST(PortTest, aLiveRunReplaysNothingSoItsPlaybackRegistryIsEmpty)
+{
+  auto port = Port{testRunContext(sampleCommandLine()), emptySetup};
+  EXPECT_TRUE(port.playbackTopics().empty());
 }
 
 TEST(PortTest, acquireResourceRemapsToWorkingDirCopy)

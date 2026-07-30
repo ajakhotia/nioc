@@ -42,6 +42,7 @@ add_exported_library(
   INCLUDE_DIRECTORIES
     ${CMAKE_CURRENT_SOURCE_DIR}/include
   LINK_LIBRARIES
+    PUBLIC nioc::common
     PUBLIC nioc::sensorsIdl
   COMPILE_FEATURES
     PUBLIC cxx_std_23

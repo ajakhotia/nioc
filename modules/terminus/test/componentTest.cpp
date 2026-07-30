@@ -28,6 +28,17 @@ void publishOne(Port& port, const std::string_view topic)
   publisher.publish(publisher.draft());
 }
 
+// A channel takes one publisher, so many messages on a topic go through a single publisher, the way
+// a real producer holds one and publishes through it repeatedly.
+void publishSeveral(Port& port, const std::string_view topic, const int count)
+{
+  auto publisher = port.publisher<TestSchema>(topic);
+  for(auto sent = 0; sent < count; ++sent)
+  {
+    publisher.publish(publisher.draft());
+  }
+}
+
 Port makePort()
 {
   auto workingDir = std::filesystem::temp_directory_path() / "niocComponentTest";
@@ -58,8 +69,7 @@ TEST(ComponentTest, drainsOneMessagePerRun)
 {
   auto port = makePort();
   auto component = EarthComponent{port, 4, concurrent::BufferMode::Overwriting};
-  publishOne(port, EarthComponent::kTopic);
-  publishOne(port, EarthComponent::kTopic);
+  publishSeveral(port, EarthComponent::kTopic, 2);
 
   EXPECT_EQ(component.tick(), concurrent::Routine::State::Continue);
   EXPECT_EQ(component.tick(), concurrent::Routine::State::Continue);
@@ -71,10 +81,7 @@ TEST(ComponentTest, overwriteDropsOldestWhenFull)
   auto port = makePort();
   auto component = EarthComponent{port, 2, concurrent::BufferMode::Overwriting};
   constexpr auto kPublishCount = 5;
-  for(auto count = 0; count < kPublishCount; ++count)
-  {
-    publishOne(port, EarthComponent::kTopic);
-  }
+  publishSeveral(port, EarthComponent::kTopic, kPublishCount);
 
   // Two slots keep the newest two; the other three were overwritten.
   EXPECT_EQ(component.tick(), concurrent::Routine::State::Continue);
@@ -131,10 +138,7 @@ TEST(ComponentTest, unboundedRetainsEveryMessage)
   auto port = makePort();
   auto component = EarthComponent{port, 1, concurrent::BufferMode::Unbounded};
   constexpr auto kPublishCount = 5;
-  for(auto count = 0; count < kPublishCount; ++count)
-  {
-    publishOne(port, EarthComponent::kTopic);
-  }
+  publishSeveral(port, EarthComponent::kTopic, kPublishCount);
 
   // Unbounded keeps all five despite a nominal capacity of 1.
   for(auto count = 0; count < kPublishCount; ++count)

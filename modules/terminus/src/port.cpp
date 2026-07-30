@@ -6,7 +6,7 @@
 
 #include <algorithm>
 #include <chrono>
-#include <fstream>
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <nioc/chronicle/writer.hpp>
@@ -21,6 +21,7 @@
 #include <ranges>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <stdexcept>
+#include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -118,22 +119,24 @@ Port::Port(RunContext runContext, const Setup& setup):
   mRunContext{std::move(runContext)},
   mConsoleLogSink{attachLogFileSink(mRunContext.workingDir() / "console.log")},
   mWriter{makeWriter(mRunContext.workingDir(), mRunContext.recordChronicle())},
-  mLockedResourceMap{copyResources(mRunContext.resourcePaths(), mRunContext.workingDir())}
+  mLockedResourceMap{copyResources(mRunContext.resourcePaths(), mRunContext.workingDir())},
+  mPlaybackTopicRegistry{mRunContext.inputLog()}
 {
   mLockedResourceMap.cExecute([this](const auto& resourceMap)
                               { writeResources(resourceMap, mRunContext.workingDir()); });
 
   logger::debug("recording run to working directory {}", mRunContext.workingDir());
 
-  // Build the routine graph last, so the routines bind to a fully initialized Port.
+  // Call user provided setup lamda to wire components, drivers, and runners.
   std::invoke(setup, *this, mDrivers, mComponents, mRunners);
+
+  // With wiring completed, the active topics should all be in port's context. Serialise it
+  // to the working directory.
+  mActiveTopicRegistry.write(mRunContext.workingDir());
 }
 
-Port::~Port()
+Port::~Port() noexcept
 {
-  // Wind the run down before finalizing the recording: stop the producers, drain the in-flight
-  // consignments, then release the routine graph in dependency order. The chronicle writer is
-  // released last (by member destruction), after every crate that views its rolls is gone.
   shutdown();
   awaitQuiescence();
   mDrivers.clear();
@@ -164,6 +167,11 @@ const fs::path& Port::workingDir() const noexcept
 const RunContext& Port::runContext() const noexcept
 {
   return mRunContext;
+}
+
+const TopicRegistry& Port::playbackTopics() const noexcept
+{
+  return mPlaybackTopicRegistry;
 }
 
 void Port::addResource(const fs::path& source)
@@ -285,26 +293,6 @@ void Port::deliver(const ChannelId channelId, const chronicle::Crate& crate) con
   {
     std::invoke(callback, Consignment{crate, mPendingConsignments});
   }
-}
-
-void Port::recordTopic(
-    const ChannelId channelId,
-    const std::string_view& topic,
-    const std::string_view& schemaName)
-{
-  if(not mRecordedTopics.insert(channelId).second)
-  {
-    return;
-  }
-
-  const auto topicsFilePath = mRunContext.workingDir() / "topics.txt";
-  auto topicsFile = std::ofstream(topicsFilePath, std::ios::app);
-  if(not topicsFile)
-  {
-    logger::error("Failed to record topic to {}", topicsFilePath.string());
-    return;
-  }
-  topicsFile << topic << '\t' << schemaName << '\n';
 }
 
 } // namespace nioc::terminus

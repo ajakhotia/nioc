@@ -9,8 +9,10 @@
 #include "consignment.hpp"
 #include "runContext.hpp"
 #include "schemaId.hpp"
+#include "topicRegistry.hpp"
 #include <atomic>
 #include <chrono>
+#include <cstdint>
 #include <filesystem>
 #include <functional>
 #include <memory>
@@ -25,7 +27,6 @@
 #include <string>
 #include <string_view>
 #include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 namespace nioc::terminus
@@ -99,12 +100,8 @@ public:
 
   Port(Port&&) noexcept = delete;
 
-  /// @brief Wind the run down: request shutdown, drain in-flight consignments, release the routine
-  /// graph in dependency order, rewrite `resources.json`, then detach logging.
-  ///
-  /// The chronicle writer is finalized last, after every crate viewing its rolls is gone. Does not
-  /// throw.
-  ~Port();
+  /// @brief Destructor. Request shutdown, let the system wind down and terminate cleanly.
+  ~Port() noexcept;
 
   Port& operator=(const Port&) = delete;
 
@@ -118,6 +115,13 @@ public:
   ///
   /// @see RunContext
   [[nodiscard]] const RunContext& runContext() const noexcept;
+
+  /// @brief The topics of the recording this run replays.
+  ///
+  /// Adopted before the @ref Setup hook runs, so a routine may consult it while wiring its
+  /// subscriptions. Empty on a run that is not a replay. To read a recording's topics without
+  /// standing up a run, construct a @ref TopicRegistry from its directory directly.
+  [[nodiscard]] const TopicRegistry& playbackTopics() const noexcept;
 
   /// @brief Materialize the typed @ref Config for the routine named @p name: read its overrides
   /// from this run's @ref ConfigOverlay, merge them onto @p Schema's defaults, and write and map
@@ -170,14 +174,17 @@ public:
   [[nodiscard]] std::filesystem::path acquireResource(const std::filesystem::path& source) const;
 
   /// @brief Open a publisher for @p topic carrying messages of @p Schema, recording the topic to
-  /// the run's `topics.txt`.
+  /// the run's `topics.json`.
   ///
-  /// Each distinct `(Schema, topic)` pair is one channel; calling again with the same pair yields
-  /// an independent publisher onto the same channel. Call at wiring time.
+  /// A `(Schema, topic)` pair is one channel, and a channel takes a single publisher: chronicle
+  /// channels are single-producer, so opening a second publisher for a channel already opened on
+  /// this run is refused. Call at wiring time.
   ///
   /// @tparam Schema The Cap'n Proto payload schema. Must be supplied explicitly.
   ///
   /// @throws std::logic_error if this run does not record a chronicle.
+  ///
+  /// @throws std::runtime_error if a publisher is already open for this channel.
   template<typename Schema>
   [[nodiscard]] Publisher<Schema> publisher(const std::string_view& topic)
   {
@@ -188,7 +195,11 @@ public:
     }
 
     const auto channelId = chronicle::makeChannelId(kSchemaId<Schema>, topic);
-    recordTopic(channelId, topic, common::prettyName<Schema>());
+    mActiveTopicRegistry.record(
+        channelId,
+        std::string{topic},
+        kSchemaId<Schema>,
+        std::string{common::prettyName<Schema>()});
     return Publisher<Schema>{*this, mWriter->channel(channelId)};
   }
 
@@ -255,9 +266,6 @@ private:
   /// Maps each subscribed channel to its list of subscribers.
   using SubscriptionMap = std::unordered_map<ChannelId, SubscriptionList>;
 
-  /// The set of channels already recorded to `topics.txt`.
-  using ChannelIdSet = std::unordered_set<ChannelId>;
-
   /// How this run was launched: working directory, resources, config layers, mode, and the
   /// assembled config overlay. Owns the working directory; declared first so it is built before the
   /// members that read from it.
@@ -272,8 +280,14 @@ private:
   /// The added resources, guarded for concurrent @ref addResource and @ref acquireResource.
   common::Locked<ResourceMap> mLockedResourceMap;
 
-  /// The channels already written to `topics.txt`, used to record each topic only once.
-  ChannelIdSet mRecordedTopics;
+  /// The topics of the recording this run replays. Adopted in the initializer list from the input
+  /// log, so it is ready before the graph is wired; empty on a run that is not a replay. Never
+  /// written back out, since it belongs to the recording being read, not this run.
+  const TopicRegistry mPlaybackTopicRegistry;
+
+  /// The topics this run itself records, filled as its publishers open and written out once as
+  /// `topics.json` when the graph is wired.
+  TopicRegistry mActiveTopicRegistry;
 
   /// The subscribers registered per channel, consulted by @ref deliver.
   SubscriptionMap mSubscriptionMap;
@@ -292,23 +306,6 @@ private:
   Runners mRunners;
   Components mComponents;
   Drivers mDrivers;
-
-  /// @brief Append @p topic and @p schemaName to the run's `topics.txt`, but only the first time
-  /// @p channelId is seen.
-  ///
-  /// Called by @ref publisher while opening a channel. Subsequent calls for the same @p channelId
-  /// are ignored, so a topic is listed exactly once.
-  ///
-  /// @param channelId Identifies the channel; the first sighting drives whether the topic is
-  /// appended.
-  ///
-  /// @param topic The topic name to append.
-  ///
-  /// @param schemaName The human-readable name of the channel's payload schema.
-  void recordTopic(
-      ChannelId channelId,
-      const std::string_view& topic,
-      const std::string_view& schemaName);
 };
 
 } // namespace nioc::terminus
