@@ -6,12 +6,35 @@
 #pragma once
 
 #include <chrono>
+#include <cstdint>
 #include <format>
+#include <ratio>
 #include <string>
 #include <string_view>
 
 namespace nioc::common
 {
+
+/// @brief The clock an instant read from a record is expressed against.
+///
+/// A tag type only: the time base is identified by whatever names it alongside the instant (UTC,
+/// GPS, system, a sensor's own counter), and this asserts no relation to the host's clocks, so it
+/// deliberately offers no now(). Its purpose is to keep a recorded instant from being mistaken for
+/// one sampled here, which is exactly what a bare duration would fail to do.
+///
+/// Example:
+///
+///     const auto instant = NamedClock::time_point{std::chrono::nanoseconds{count}};
+struct NamedClock
+{
+  using rep = std::int64_t;
+  using period = std::nano;
+  using duration = std::chrono::nanoseconds;
+  using time_point = std::chrono::time_point<NamedClock>;
+
+  /// Named time is read from records, not sampled from the host, so it never counts as steady.
+  static constexpr bool is_steady = false;
+};
 
 /// @brief A `std::format` format string that renders a single time-point argument as an ISO 8601
 /// UTC timestamp, e.g. `2026-06-24T13:45:07Z`.

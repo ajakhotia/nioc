@@ -6,7 +6,6 @@
 #pragma once
 
 #include <cstdint>
-#include <format>
 #include <string>
 
 namespace nioc::chronicle
@@ -20,8 +19,6 @@ static constexpr auto kPaddedNumberLength = 20UL;
 
 static constexpr auto kTimelineFileName = "timeline.nioc";
 
-static constexpr auto kHexPrefix = "0x";
-
 constexpr std::uint64_t roundUpToWord(const std::uint64_t value) noexcept
 {
   constexpr auto kWord = std::uint64_t{8ULL};
@@ -31,11 +28,5 @@ constexpr std::uint64_t roundUpToWord(const std::uint64_t value) noexcept
 std::string padString(const std::string& input, std::uint64_t paddedLength, char paddingChar = '0');
 
 std::string buildRollName(std::uint64_t rollId);
-
-template<typename Integer>
-std::string hexString(const Integer integer)
-{
-  return std::format("{}{:x}", kHexPrefix, integer);
-}
 
 } // namespace nioc::chronicle

@@ -63,6 +63,8 @@ add_exported_library(
     src/port.cpp
     src/programOption.cpp
     src/runContext.cpp
+    src/tally.cpp
+    src/topicRegistry.cpp
     src/utils.cpp
   HEADERS
     PUBLIC include/nioc/terminus/arenaMessageBuilder.hpp
@@ -80,6 +82,8 @@ add_exported_library(
     PUBLIC include/nioc/terminus/publisher.hpp
     PUBLIC include/nioc/terminus/runContext.hpp
     PUBLIC include/nioc/terminus/schemaId.hpp
+    PUBLIC include/nioc/terminus/tally.hpp
+    PUBLIC include/nioc/terminus/topicRegistry.hpp
     PUBLIC include/nioc/terminus/utils.hpp
   INCLUDE_DIRECTORIES
     ${CMAKE_CURRENT_SOURCE_DIR}/include

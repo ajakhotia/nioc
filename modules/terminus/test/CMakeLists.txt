@@ -13,6 +13,8 @@ add_executable(terminusTest
   portTest.cpp
   runContextTest.cpp
   schemaIdTest.cpp
+  tallyTest.cpp
+  topicRegistryTest.cpp
   utilsTest.cpp)
 
 target_link_libraries(terminusTest
