@@ -17,18 +17,14 @@ namespace nioc::terminus
 {
 namespace po = boost::program_options;
 
-po::options_description programOptions(const std::string& programName)
-{
-  auto options = po::options_description(programName + " options");
-  options.add_options()("help,h", "Print this help message");
-  return options;
-}
-
 po::variables_map parseCommandLine(
     const int argC,
     const char* const* const argV,
-    const po::options_description& options)
+    po::options_description options)
 {
+  // Add -h, --help option as a standard default.
+  options.add_options()("help,h", "Print this help message");
+
   try
   {
     auto variableMap = po::variables_map();

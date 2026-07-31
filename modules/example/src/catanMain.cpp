@@ -52,9 +52,8 @@ int main(const int argC, const char* const* const argV)
     const auto programName = nioc::common::programName(argC, argV);
     nioc::logger::setupDefaultLogger(programName);
 
-    auto options = nioc::terminus::programOptions(programName);
-    options.add(nioc::terminus::RunContext::cliOptions());
-    const auto variableMap = nioc::terminus::parseCommandLine(argC, argV, options);
+    const auto variableMap =
+        nioc::terminus::parseCommandLine(argC, argV, nioc::terminus::RunContext::cliOptions());
 
     // The Port owns the run. Its constructor calls this hook to build the routine graph; each
     // routine reads its own config section (keyed by its name) from the run's config document.

@@ -24,8 +24,8 @@ boost::program_options::variables_map parse(std::vector<const char*> arguments)
 {
   arguments.insert(arguments.begin(), "runContextTest");
 
-  auto options = RunContext::cliOptions();
-  return parseCommandLine(static_cast<int>(arguments.size()), arguments.data(), options);
+  return parseCommandLine(
+      static_cast<int>(arguments.size()), arguments.data(), RunContext::cliOptions());
 }
 
 fs::path testDirectory(const fs::path& name)

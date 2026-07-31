@@ -300,9 +300,7 @@ TEST(PortTest, constructionFromCommandLineReadsEveryOption)
       "false"};
   constexpr auto argc = static_cast<int>(argv.size());
 
-  auto options = programOptions("myRobot");
-  options.add(RunContext::cliOptions());
-  const auto variableMap = parseCommandLine(argc, argv.data(), options);
+  const auto variableMap = parseCommandLine(argc, argv.data(), RunContext::cliOptions());
 
   // parseCommandLine injects the verbatim command line for the Port to record.
   EXPECT_TRUE(variableMap.contains("commandLine"));

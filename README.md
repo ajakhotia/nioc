@@ -134,9 +134,8 @@ int main(int argc, char** argv)
   const auto programName = nioc::common::programName(argc, argv);
   nioc::logger::setupDefaultLogger(programName);
 
-  auto options = nioc::terminus::programOptions(programName);
-  options.add(nioc::terminus::RunContext::cliOptions());
-  const auto variableMap = nioc::terminus::parseCommandLine(argc, argv, options);
+  const auto variableMap =
+      nioc::terminus::parseCommandLine(argc, argv, nioc::terminus::RunContext::cliOptions());
 
   // The RunContext assembles the run's config from the command line and files. Each routine reads
   // its own section from it, keyed by the name it is constructed with.
