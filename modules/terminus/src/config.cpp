@@ -11,7 +11,6 @@
 #include <cstddef>
 #include <filesystem>
 #include <nioc/common/exception.hpp>
-#include <nioc/containers/mmapArray.hpp>
 #include <nioc/containers/mmapConstArray.hpp>
 #include <nioc/terminus/arenaMessageBuilder.hpp>
 #include <nioc/terminus/config.hpp>
@@ -28,31 +27,6 @@ namespace fs = std::filesystem;
 
 namespace
 {
-
-/// Flatten @p builder into a single segment and write it to @p binPath as a bare flat-array frame.
-void flattenAndWrite(capnp::MessageBuilder& builder, const fs::path& binPath)
-{
-  // Re-root the builder into a single segment so the on-disk frame maps as one contiguous arena.
-  // The serialized size bounds the collapsed size, so sizing the rebuild's first segment to it
-  // lands the re-root in one segment.
-  auto singleSegmentMessage = capnp::MallocMessageBuilder{
-      static_cast<unsigned int>(capnp::computeSerializedSizeInWords(builder))};
-  singleSegmentMessage.setRoot(builder.getRoot<capnp::AnyPointer>().asReader());
-
-  const auto segments = singleSegmentMessage.getSegmentsForOutput();
-  if(segments.size() != 1)
-  {
-    common::throwException<std::logic_error>(
-        "Re-rooted config has {} segments; expected a single segment.",
-        segments.size());
-  }
-
-  const auto segment = segments.front();
-  auto binFile = containers::MmapArray<std::byte>{
-      binPath,
-      ArenaMessageBuilder::frameSize(segment.size())};
-  ArenaMessageBuilder::writeFrame(std::span<std::byte>{binFile.data(), binFile.size()}, segment);
-}
 
 /// Materialize @p overrides against @p schema into `<directory>/<name>.json` (the effective config)
 /// and `<directory>/<name>.bin` (a bare single-segment flat-array frame), and return the binary

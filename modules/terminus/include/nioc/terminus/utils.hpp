@@ -81,6 +81,37 @@ void writeJsonFile(const std::filesystem::path& path, const nlohmann::json& json
     capnp::MessageBuilder& builder,
     capnp::StructSchema schema);
 
+/// @brief Re-root @p builder's message into a single contiguous segment.
+///
+/// The serialized size of the message bounds its collapsed size, so the rebuild's first segment is
+/// sized to land the whole re-root in one segment. The segment lives in the returned builder's
+/// memory and is reachable through its `getSegmentsForOutput()`; keep the builder alive for as
+/// long as the segment is in use.
+///
+/// @param builder The message to collapse; read through its root and left unchanged.
+///
+/// @return The rebuilt message, holding the whole re-root as its one segment.
+///
+/// @throws std::logic_error If the re-root does not collapse to a single segment.
+[[nodiscard]] std::unique_ptr<capnp::MallocMessageBuilder> collapseToSingleSegment(
+    capnp::MessageBuilder& builder);
+
+/// @brief Flatten @p builder into a single segment and write it to @p binPath as a bare flat-array
+/// frame, overwriting any existing file.
+///
+/// The frame on disk is word-aligned and self-contained, so it reads back by mapping the file and
+/// rooting a `capnp::FlatArrayMessageReader` over its words (see @ref asWords). The config
+/// artifacts and the schema registry both persist through this.
+///
+/// @param builder The message to write; read through its root and left unchanged.
+///
+/// @param binPath The destination file.
+///
+/// @throws std::logic_error If the message does not collapse to a single segment.
+///
+/// @throws std::runtime_error If the file cannot be created or sized.
+void flattenAndWrite(capnp::MessageBuilder& builder, const std::filesystem::path& binPath);
+
 /// @brief Decode JSON text into a typed Cap'n Proto message conforming to @p schema, the inverse
 /// direction of @ref encodeAsJson.
 ///

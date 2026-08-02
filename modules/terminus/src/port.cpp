@@ -120,19 +120,16 @@ Port::Port(RunContext runContext, const Setup& setup):
   mConsoleLogSink{attachLogFileSink(mRunContext.workingDir() / "console.log")},
   mWriter{makeWriter(mRunContext.workingDir(), mRunContext.recordChronicle())},
   mLockedResourceMap{copyResources(mRunContext.resourcePaths(), mRunContext.workingDir())},
-  mPlaybackTopicRegistry{mRunContext.inputLog()}
+  mPlaybackTopicRegistry{mRunContext.inputLog()},
+  mPlaybackSchemaRegistry{mRunContext.inputLog()}
 {
   mLockedResourceMap.cExecute([this](const auto& resourceMap)
                               { writeResources(resourceMap, mRunContext.workingDir()); });
 
   logger::debug("recording run to working directory {}", mRunContext.workingDir());
-
-  // Call user provided setup lamda to wire components, drivers, and runners.
   std::invoke(setup, *this, mDrivers, mComponents, mRunners);
-
-  // With wiring completed, the active topics should all be in port's context. Serialise it
-  // to the working directory.
   mActiveTopicRegistry.write(mRunContext.workingDir());
+  mActiveSchemaRegistry.write(mRunContext.workingDir());
 }
 
 Port::~Port() noexcept
@@ -172,6 +169,11 @@ const RunContext& Port::runContext() const noexcept
 const TopicRegistry& Port::playbackTopics() const noexcept
 {
   return mPlaybackTopicRegistry;
+}
+
+const SchemaRegistry& Port::playbackSchemas() const noexcept
+{
+  return mPlaybackSchemaRegistry;
 }
 
 void Port::addResource(const fs::path& source)

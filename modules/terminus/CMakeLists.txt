@@ -12,6 +12,7 @@ capnproto_generate_library(
     niocTargets
   SCHEMA_FILES
     include/nioc/terminus/idl/envelope.capnp
+    include/nioc/terminus/idl/schemaClosure.capnp
     include/nioc/terminus/idl/testSchema.capnp
   COMPILE_FEATURES
     PUBLIC cxx_std_23
@@ -63,6 +64,7 @@ add_exported_library(
     src/port.cpp
     src/programOption.cpp
     src/runContext.cpp
+    src/schemaRegistry.cpp
     src/tally.cpp
     src/topicRegistry.cpp
     src/utils.cpp
@@ -82,6 +84,7 @@ add_exported_library(
     PUBLIC include/nioc/terminus/publisher.hpp
     PUBLIC include/nioc/terminus/runContext.hpp
     PUBLIC include/nioc/terminus/schemaId.hpp
+    PUBLIC include/nioc/terminus/schemaRegistry.hpp
     PUBLIC include/nioc/terminus/tally.hpp
     PUBLIC include/nioc/terminus/topicRegistry.hpp
     PUBLIC include/nioc/terminus/utils.hpp

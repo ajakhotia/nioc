@@ -9,6 +9,7 @@
 #include "consignment.hpp"
 #include "runContext.hpp"
 #include "schemaId.hpp"
+#include "schemaRegistry.hpp"
 #include "topicRegistry.hpp"
 #include <atomic>
 #include <chrono>
@@ -123,6 +124,13 @@ public:
   /// standing up a run, construct a @ref TopicRegistry from its directory directly.
   [[nodiscard]] const TopicRegistry& playbackTopics() const noexcept;
 
+  /// @brief The schemas of the recording this run replays, as live schemas for dynamic reading.
+  ///
+  /// Adopted before the @ref Setup hook runs, so a routine may consult it while wiring its
+  /// subscriptions; join it to channels through the schema ids in @ref playbackTopics. Empty on a
+  /// run that is not a replay.
+  [[nodiscard]] const SchemaRegistry& playbackSchemas() const noexcept;
+
   /// @brief Materialize the typed @ref Config for the routine named @p name: read its overrides
   /// from this run's @ref ConfigOverlay, merge them onto @p Schema's defaults, and write and map
   /// the config artifacts under the run's `config` directory.
@@ -174,7 +182,7 @@ public:
   [[nodiscard]] std::filesystem::path acquireResource(const std::filesystem::path& source) const;
 
   /// @brief Open a publisher for @p topic carrying messages of @p Schema, recording the topic to
-  /// the run's `topics.json`.
+  /// the run's `topics.json` and the schema's closure to its `schemas.bin`.
   ///
   /// A `(Schema, topic)` pair is one channel, and a channel takes a single publisher: chronicle
   /// channels are single-producer, so opening a second publisher for a channel already opened on
@@ -200,6 +208,7 @@ public:
         std::string{topic},
         kSchemaId<Schema>,
         std::string{common::prettyName<Schema>()});
+    mActiveSchemaRegistry.record<Schema>();
     return Publisher<Schema>{*this, mWriter->channel(channelId)};
   }
 
@@ -285,9 +294,17 @@ private:
   /// written back out, since it belongs to the recording being read, not this run.
   const TopicRegistry mPlaybackTopicRegistry;
 
+  /// The schemas of the recording this run replays. Adopted in the initializer list from the input
+  /// log, like @ref mPlaybackTopicRegistry, and never written back out.
+  const SchemaRegistry mPlaybackSchemaRegistry;
+
   /// The topics this run itself records, filled as its publishers open and written out once as
   /// `topics.json` when the graph is wired.
   TopicRegistry mActiveTopicRegistry;
+
+  /// The schema closures of the topics this run records, filled beside @ref mActiveTopicRegistry
+  /// and written out once as `schemas.bin` when the graph is wired.
+  SchemaRegistry mActiveSchemaRegistry;
 
   /// The subscribers registered per channel, consulted by @ref deliver.
   SubscriptionMap mSubscriptionMap;

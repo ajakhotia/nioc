@@ -14,6 +14,7 @@
 #include <nioc/chronicle/defines.hpp>
 #include <nioc/common/exception.hpp>
 #include <nioc/common/typeTraits.hpp>
+#include <nioc/common/utils.hpp>
 #include <nioc/concurrent/anyMpsc.hpp>
 #include <nioc/concurrent/notifyingInbox.hpp>
 #include <nioc/concurrent/routine.hpp>
@@ -150,16 +151,48 @@ protected:
   void subscribe(const std::string_view& topic, MessageCallback<Schema> messageCallback)
   {
     const auto channelId = chronicle::makeChannelId(kSchemaId<Schema>, topic);
+    logger::info(
+        "[{}] subscribing to topic '{}' (schema {}, channel {}).",
+        name(),
+        topic,
+        common::prettyName<Schema>(),
+        common::hexString(channelId.mValue));
 
+    subscribe<Schema>(channelId, std::move(messageCallback));
+    logger::info("[{}] subscribed to topic '{}'.", name(), topic);
+  }
+
+  /// @brief Register `messageCallback` on @p channelId verbatim, viewing its messages as `Schema`.
+  ///
+  /// The general form of `subscribe`: the channel is taken as given rather than derived from
+  /// `Schema`, decoupling the channel subscribed to from the type its messages are viewed as. This
+  /// is what lets a component observe channels whose true schema it never compiled against, by
+  /// taking the channel from a @ref TopicRegistry and viewing the payload as `capnp::AnyPointer`
+  /// for dynamic reading.
+  ///
+  /// @tparam Schema The schema to view delivered messages as; must be supplied explicitly. For a
+  /// channel not compiled into this binary, use `capnp::AnyPointer` and read the
+  /// payload dynamically.
+  ///
+  /// @param channelId The channel to subscribe to, verbatim.
+  ///
+  /// @param messageCallback Invoked once per delivered message; its returned `State` drives the
+  /// component.
+  ///
+  /// @throws std::logic_error If a callback is already subscribed to @p channelId. At most one
+  /// subscription per channel is allowed; fan-out to several consumers
+  /// is the callback's responsibility.
+  template<typename Schema>
+  void subscribe(const ChannelId channelId, MessageCallback<Schema> messageCallback)
+  {
     // No duplicate subscriptions. Fan-out is the user's callback's job.
     if(mHandlers.contains(channelId))
     {
       common::throwException<std::logic_error>(
-          "[{}] Subscription already exists. Topic: {}, Schema: {}, ChannelId: {}",
+          "[{}] Callback already exists. Schema: {}, ChannelId: {}.",
           name(),
-          topic,
           common::prettyName<Schema>(),
-          channelId.mValue);
+          common::hexString(channelId.mValue));
     }
 
     // Inbox-to-callback step. The handler lives at a stable address (an unordered_map never moves
@@ -179,13 +212,6 @@ protected:
         channelId,
         [this, handlerPtr = &handler](Consignment consignment)
         { mInbox.push({handlerPtr, std::move(consignment)}); });
-
-    logger::info(
-        "[{}] subscribed to topic '{}' (schema {}, channel id {}).",
-        name(),
-        topic,
-        common::prettyName<Schema>(),
-        channelId.mValue);
   }
 
 private:

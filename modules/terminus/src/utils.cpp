@@ -4,16 +4,22 @@
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#include <capnp/any.h>
 #include <capnp/compat/json.h>
 #include <capnp/dynamic.h>
 #include <capnp/message.h>
 #include <capnp/schema.h>
+#include <capnp/serialize.h>
+#include <cstddef>
 #include <filesystem>
 #include <fstream>
 #include <memory>
 #include <nioc/common/exception.hpp>
+#include <nioc/containers/mmapArray.hpp>
+#include <nioc/terminus/arenaMessageBuilder.hpp>
 #include <nioc/terminus/utils.hpp>
 #include <nlohmann/json.hpp>
+#include <span>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -102,6 +108,33 @@ nlohmann::json encodeAsJson(capnp::MessageBuilder& builder, const capnp::StructS
   const auto codec = capnp::JsonCodec{};
   return nlohmann::json::parse(
       codec.encode(builder.getRoot<capnp::DynamicStruct>(schema).asReader()).cStr());
+}
+
+std::unique_ptr<capnp::MallocMessageBuilder> collapseToSingleSegment(capnp::MessageBuilder& builder)
+{
+  auto collapsed = std::make_unique<capnp::MallocMessageBuilder>(
+      static_cast<unsigned int>(capnp::computeSerializedSizeInWords(builder)));
+  collapsed->setRoot(builder.getRoot<capnp::AnyPointer>().asReader());
+
+  const auto segments = collapsed->getSegmentsForOutput();
+  if(segments.size() != 1)
+  {
+    common::throwException<std::logic_error>(
+        "Re-rooting the message produced {} segments; expected a single segment.",
+        segments.size());
+  }
+
+  return collapsed;
+}
+
+void flattenAndWrite(capnp::MessageBuilder& builder, const std::filesystem::path& binPath)
+{
+  const auto collapsed = collapseToSingleSegment(builder);
+  const auto segment = collapsed->getSegmentsForOutput().front();
+  auto binFile = containers::MmapArray<std::byte>{
+      binPath,
+      ArenaMessageBuilder::frameSize(segment.size())};
+  ArenaMessageBuilder::writeFrame(std::span<std::byte>{binFile.data(), binFile.size()}, segment);
 }
 
 std::unique_ptr<capnp::MallocMessageBuilder> decodeFromJson(

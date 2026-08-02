@@ -13,6 +13,7 @@ add_executable(terminusTest
   portTest.cpp
   runContextTest.cpp
   schemaIdTest.cpp
+  schemaRegistryTest.cpp
   tallyTest.cpp
   topicRegistryTest.cpp
   utilsTest.cpp)
