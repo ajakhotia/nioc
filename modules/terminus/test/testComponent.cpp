@@ -15,7 +15,7 @@ EarthComponent::EarthComponent(
     Port& port,
     const std::size_t inboxCapacity,
     const concurrent::BufferMode bufferMode):
-  Component{port, inboxCapacity, bufferMode, "EarthComponent"}
+  Component{"EarthComponent", port, inboxCapacity, bufferMode}
 {
   subscribe<TestSchema>(
       kTopic,
@@ -35,7 +35,7 @@ MarsComponent::MarsComponent(
     Port& port,
     const std::size_t inboxCapacity,
     const concurrent::BufferMode bufferMode):
-  Component{port, inboxCapacity, bufferMode, "MarsComponent"}
+  Component{"MarsComponent", port, inboxCapacity, bufferMode}
 {
   subscribe<TestSchema>(
       kTopic,

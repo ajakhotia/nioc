@@ -8,8 +8,10 @@
 #include <filesystem>
 #include <gtest/gtest.h>
 #include <nioc/containers/mmapRegion.hpp>
+#include <optional>
 #include <stdexcept>
 #include <string_view>
+#include <utility>
 
 namespace nioc::containers
 {
@@ -62,6 +64,24 @@ TEST(MmapRegion, resizeShrinksBackingFile)
 TEST(MmapRegion, openingAMissingFileThrows)
 {
   EXPECT_THROW((MmapRegion{freshPath("missingRegion")}), std::runtime_error);
+}
+
+TEST(MmapRegion, moveTransfersOwnershipOfTheMapping)
+{
+  const auto path = freshPath("movedRegion");
+
+  constexpr auto kMarker = std::byte{0xEF}; // survives the move, proving the same bytes are read
+  auto source = std::optional<MmapRegion>{std::in_place, path, std::size_t{64}};
+  source->bytes().front() = kMarker;
+  const auto* const data = source->data();
+
+  const auto region = MmapRegion{std::move(*source)};
+  // Destroying the moved-from source must release nothing: the mapping now belongs to region.
+  source.reset();
+
+  EXPECT_EQ(region.data(), data);
+  EXPECT_EQ(region.size(), 64);
+  EXPECT_EQ(region.bytes().front(), kMarker);
 }
 
 } // namespace nioc::containers

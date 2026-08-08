@@ -8,7 +8,6 @@
 #include "port.hpp"
 #include "publisher.hpp"
 #include <nioc/concurrent/routine.hpp>
-#include <nioc/terminus/config/driverConfig.capnp.h>
 #include <stop_token>
 #include <string>
 #include <string_view>
@@ -28,7 +27,7 @@ namespace nioc::terminus
 ///     class ClockDriver : public Driver
 ///     {
 ///     public:
-///       ClockDriver(Port& port) : Driver(port, "clock"), mPub(publisher<TickSchema>("tick")) {}
+///       ClockDriver(Port& port) : Driver("clock", port), mPub(publisher<TickSchema>("tick")) {}
 ///     private:
 ///       State run() override
 ///       {
@@ -55,21 +54,12 @@ public:
   ~Driver() noexcept override = default;
 
 protected:
-  /// @brief Construct bound to @p port and labeled @p name.
-  ///
-  /// @param port The Port this driver publishes onto. Must outlive the driver; held by reference.
+  /// @brief Construct labeled @p name and bound to @p port.
   ///
   /// @param name Identifying label, fixed for the driver's lifetime.
-  Driver(Port& port, std::string name);
-
-  /// @brief Construct bound to @p port, taking the driver's name from @p config.
   ///
   /// @param port The Port this driver publishes onto. Must outlive the driver; held by reference.
-  ///
-  /// @param config Driver configuration; its `name` field becomes the driver's name.
-  ///
-  /// @throws std::invalid_argument If the config's name is empty.
-  Driver(Port& port, DriverConfig::Reader config);
+  Driver(std::string name, Port& port);
 
   /// @brief The run's cooperative shutdown token; becomes stopped when the run begins winding down.
   ///

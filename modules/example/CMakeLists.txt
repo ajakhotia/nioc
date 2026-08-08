@@ -35,12 +35,15 @@ capnproto_generate_library(
   EXPORT
     niocTargets
   SCHEMA_FILES
-    include/nioc/example/config/minerConfig.capnp
+    include/nioc/example/config/hillsConfig.capnp
+    include/nioc/example/config/forestConfig.capnp
+    include/nioc/example/config/pastureConfig.capnp
+    include/nioc/example/config/fieldsConfig.capnp
+    include/nioc/example/config/mountainsConfig.capnp
     include/nioc/example/config/roadBuilderConfig.capnp
     include/nioc/example/config/settlementBuilderConfig.capnp
     include/nioc/example/config/cityBuilderConfig.capnp
     include/nioc/example/config/developmentCardBuilderConfig.capnp
-    include/nioc/example/config/catanConfig.capnp
   LINK_LIBRARIES
     nioc::terminusConfig
   COMPILE_FEATURES

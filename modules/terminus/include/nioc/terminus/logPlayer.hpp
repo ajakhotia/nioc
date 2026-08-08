@@ -22,7 +22,7 @@ namespace nioc::terminus
 ///
 /// Example:
 ///
-///     LogPlayer player{port, "/path/to/chronicleLog"};
+///     LogPlayer player{"logPlayer", port, "/path/to/chronicleLog"};
 ///     // The Runner now ticks `player` until it reports State::Done.
 ///
 /// Single use: the underlying reader cannot rewind. Construct a fresh instance to replay again.
@@ -34,13 +34,15 @@ public:
   /// @brief Open a chronicle log for replay, seating the cursor on its first entry without
   /// delivering anything yet.
   ///
+  /// @param name Identifying label, fixed for the player's lifetime.
+  ///
   /// @param port Borrowed; must outlive this player.
   ///
   /// @param inputLog Path to an existing chronicle log directory. An empty log is valid and the
   /// player completes on its first tick.
   ///
   /// @throws std::invalid_argument If @p inputLog does not name an existing directory.
-  LogPlayer(Port& port, std::filesystem::path inputLog);
+  LogPlayer(std::string name, Port& port, std::filesystem::path inputLog);
 
 private:
   /// The opened chronicle log being replayed. Declared before mCursor because the cursor reads the

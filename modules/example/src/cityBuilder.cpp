@@ -6,18 +6,27 @@
 
 #include <nioc/example/cityBuilder.hpp>
 #include <nioc/logger/logger.hpp>
+#include <string>
 #include <utility>
 
 namespace nioc::example
 {
 
-CityBuilder::CityBuilder(terminus::Port& port, const CityBuilderConfig::Reader config):
-  Component{port, config.getComponent()},
-  mConfig{config},
-  mCityPublisher{publisher<City>(config.getCityTopic().cStr())}
+CityBuilder::CityBuilder(const std::string& name, terminus::Port& port):
+  CityBuilder{name, port, port.materializeConfig<CityBuilderConfig>(name)}
+{
+}
+
+CityBuilder::CityBuilder(
+    std::string name,
+    terminus::Port& port,
+    terminus::Config<CityBuilderConfig> config):
+  Component{std::move(name), port, config.reader().getComponent()},
+  mConfig{std::move(config)},
+  mCityPublisher{publisher<City>(mConfig.reader().getCityTopic().cStr())}
 {
   subscribe<Settlement>(
-      config.getSettlementTopic().cStr(),
+      mConfig.reader().getSettlementTopic().cStr(),
       [this](const terminus::Message<Settlement>& settlement)
       {
         process(settlement);
@@ -25,7 +34,7 @@ CityBuilder::CityBuilder(terminus::Port& port, const CityBuilderConfig::Reader c
       });
 
   subscribe<Ore>(
-      config.getOreTopic().cStr(),
+      mConfig.reader().getOreTopic().cStr(),
       [this](const terminus::Message<Ore>& ore)
       {
         process(ore);
@@ -33,7 +42,7 @@ CityBuilder::CityBuilder(terminus::Port& port, const CityBuilderConfig::Reader c
       });
 
   subscribe<Grain>(
-      config.getGrainTopic().cStr(),
+      mConfig.reader().getGrainTopic().cStr(),
       [this](const terminus::Message<Grain>& grain)
       {
         process(grain);
@@ -64,9 +73,9 @@ void CityBuilder::process(const terminus::Message<Grain>& grain)
 
 void CityBuilder::build()
 {
-  const auto settlementNeededPerCity = mConfig.getSettlementPerCity();
-  const auto oreNeededPerCity = mConfig.getOrePerCity();
-  const auto grainNeededPerCity = mConfig.getGrainPerCity();
+  const auto settlementNeededPerCity = mConfig.reader().getSettlementPerCity();
+  const auto oreNeededPerCity = mConfig.reader().getOrePerCity();
+  const auto grainNeededPerCity = mConfig.reader().getGrainPerCity();
   while(mSettlementsAvailable >= settlementNeededPerCity and
         mOreAvailable >= oreNeededPerCity and
         mGrainAvailable >= grainNeededPerCity)

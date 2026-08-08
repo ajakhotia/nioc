@@ -34,9 +34,10 @@ namespace nioc::containers
 ///       total += value;
 ///     }
 ///
-/// Non-copyable and non-movable. Every pointer, reference, and iterator it returns stays valid
-/// until the container is destroyed. Concurrent reads are safe; behaviour is unspecified if the
-/// file is changed through another handle while it is mapped.
+/// Non-copyable; move-constructible. The mapped bytes never change address, so a move transfers
+/// the mapping while every pointer, reference, and iterator stays valid until the owning
+/// container is destroyed; the moved-from view is empty. Concurrent reads are safe; behaviour is
+/// unspecified if the file is changed through another handle while it is mapped.
 ///
 /// @tparam ValueType The element type the file's bytes are reinterpreted as. Must be trivially
 /// copyable and have no top-level cv-qualifiers; elements are mapped, never constructed.
@@ -83,7 +84,8 @@ public:
 
   MmapConstArray(const MmapConstArray&) = delete;
 
-  MmapConstArray(MmapConstArray&&) noexcept = delete;
+  /// @brief Take over @p other's mapping, leaving @p other empty and fit only for destruction.
+  MmapConstArray(MmapConstArray&&) noexcept = default;
 
   ~MmapConstArray() = default;
 
@@ -168,7 +170,7 @@ private:
   /// The read-only memory mapping of the file. Owns the lifetime of the bytes that every element
   /// pointer, reference, and iterator refers to, and supplies the byte length divided to compute
   /// size().
-  const MmapRegion mRegion;
+  MmapRegion mRegion;
 };
 
 } // namespace nioc::containers

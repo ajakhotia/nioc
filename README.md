@@ -134,25 +134,24 @@ int main(int argc, char** argv)
   const auto programName = nioc::common::programName(argc, argv);
   nioc::logger::setupDefaultLogger(programName);
 
-  auto options = nioc::terminus::programOptions(programName);
-  options.add(nioc::terminus::Manifest::cliOptions());
-  const auto variableMap = nioc::terminus::parseCommandLine(argc, argv, options);
+  const auto variableMap =
+      nioc::terminus::parseCommandLine(argc, argv, nioc::terminus::RunContext::cliOptions());
 
-  auto manifest = nioc::terminus::Manifest{
-      variableMap,
-      capnp::Schema::from<AppConfig>()}; // AppConfig is defined as a Cap'n Proto schema.
+  // The RunContext assembles the run's config from the command line and files. Each routine reads
+  // its own section from it, keyed by the name it is constructed with.
+  auto runContext = nioc::terminus::RunContext{variableMap};
 
   // The Port owns the run; its setup hook wires the graph.
   auto port = Port{
-      std::move(manifest),
+      std::move(runContext),
       [](Port& port, Drivers& drivers, Components& components, Runners& runners)
       {
         // One runner per routine; the consumer launches before the producer.
-        auto tracker = std::make_shared<Tracker>(port);
+        auto tracker = std::make_shared<Tracker>("tracker", port);
         auto trackerRunner = std::make_shared<ThreadedRunner>();
         trackerRunner->launch(tracker);
 
-        auto camera = std::make_shared<Camera>(port);
+        auto camera = std::make_shared<Camera>("camera", port);
         auto cameraRunner = std::make_shared<ThreadedRunner>();
         cameraRunner->launch(camera);
 
@@ -182,12 +181,13 @@ Run the program and a directory appears:
 
 ```
 <log-root>/<utc-timestamp>_<uuid>/
-    manifest.json    the command line that launched this run
-    config.json      the fully resolved configuration
-    console.log      everything the run logged
-    topics.txt       every topic published, with its schema
-    resources.json   the input files the run copied in, kept beside it
-    chronicle/       every message, byte for byte, in write order
+    manifest.json       the command line that launched this run
+    configOverlay.json  the resolved config overrides for this run
+    config/             each routine's resolved config: <name>.json and mapped <name>.bin
+    console.log         everything the run logged
+    topics.txt          every topic published, with its schema
+    resources.json      the input files the run copied in, kept beside it
+    chronicle/          every message, byte for byte, in write order
 ```
 
 > 🐧 **Platform:** Linux (tested on Ubuntu 22.04 / 24.04), C++23, built with Clang 22 or GCC 15.
@@ -203,9 +203,10 @@ subscriptions on named topics. The Port fans every published message out to the 
 subscribers and records it. It also manages the working directory, the config, and the shutdown
 process.
 
-At construction, the command line and config files decode into a `Manifest`: a `RunContext` (how
-the run was launched) plus a `ConfigStore` (the resolved config). The Manifest moves into the
-Port, and routines read their settings from that one store.
+At construction, the command line and config files are assembled into a `RunContext`: it owns the
+run's working directory and its `ConfigOverlay`, the resolved set of per-routine overrides. The
+`RunContext` moves into the Port, and each routine materializes its own typed config from its named
+slice of that overlay.
 
 ```mermaid
 %%{init: {"themeVariables": {"edgeLabelBackground": "transparent"}, "themeCSS": ".edgeLabel { font-size: 10px; }"}}%%
@@ -217,7 +218,7 @@ flowchart TB
 
   CLI["command line"]:::input
   FILES["config files"]:::input
-  MANIFEST["Manifest"]:::input
+  RUNCTX["RunContext"]:::input
 
   CAM["Camera"]:::driver
   LASER["3D Laser"]:::driver
@@ -229,9 +230,9 @@ flowchart TB
   TRK["Feature Tracker"]:::component
   PLN["Planner"]:::component
 
-  CLI --> MANIFEST
-  FILES --> MANIFEST
-  MANIFEST --> PORT
+  CLI --> RUNCTX
+  FILES --> RUNCTX
+  RUNCTX --> PORT
 
   CAM -- "Image" --> PORT
   CAM -- "Camera Info" --> PORT
@@ -257,47 +258,48 @@ flowchart TB
 
 ### ⚙️ Configuration
 
-An application's configuration is declared in a Cap'n Proto schema, which the Cap'n Proto
-compiler turns into typed structs (`Reader` and `Builder`). Every routine reads its settings
-through the generated `<Schema>::Reader`. In Cap'n Proto, a reader is an efficient,
-read-only typed view over a set of bytes. In nioc, those bytes are owned by the `ConfigStore`
-and are guaranteed to stay valid until the `Port` is destroyed.
+Each routine declares its own configuration in a Cap'n Proto schema, which the Cap'n Proto compiler
+turns into typed structs (`Reader` and `Builder`). A routine reads its settings through the
+generated `<Schema>::Reader`, an efficient read-only view over a set of bytes. In nioc, those bytes
+are the routine's own memory-mapped config, owned by its `Config` and guaranteed valid for the
+routine's lifetime.
 
-The generated `Reader` and `Builder` are backward compatible by Cap'n Proto's own design. An
-application knows exactly which configuration values it reads, and any extra or stray values
-are ignored.
+The generated `Reader` and `Builder` are backward compatible by Cap'n Proto's own design. A routine
+knows exactly which configuration values it reads, and any extra or stray values are ignored.
 
-At launch, the effective configuration resolves in three layers, each overriding the one before.
-The two override mechanisms are command-line options that every nioc application accepts out of
-the box.
+The run's configuration is one document, sectioned by routine name: each component sits at
+`routines.components.<name>` and each driver at `routines.drivers.<name>`, where `<name>` is the
+instance name the routine is constructed with. A routine draws only its own slice and merges it onto
+its schema defaults. The effective values resolve in three layers, each overriding the one before.
+The two override mechanisms are command-line options every nioc application accepts out of the box.
 
 #### Schema defaults
 
-Every configuration value in the schema carries a default. The `ConfigStore`'s bytes are
-default-initialized so that the `<Schema>::Reader` returns these defaults. When no overrides are
-supplied, the program runs on the default configuration.
+Every value in a routine's schema carries a default. With no overrides for a routine, its bytes are
+default-initialized and the `<Schema>::Reader` returns those defaults, so the routine runs on its
+default configuration.
 
 #### Command-line config files
 
-A caller may override any part of the schema-default config by supplying one or more JSON files,
-each mirroring the structural layout of the schema and overriding it partially or fully. Pass
-`--append-config </path/to/myOverrides.json>` as many times as needed. The files merge-patch onto
-the schema defaults from left to right, and on collision the later file wins.
+A caller may override any part of the document by supplying one or more JSON files, each mirroring
+its structural layout (`{routines: {drivers: {feiFields: {miningTimeMs: 250}}}}`) and overriding it
+partially or fully. Pass `--append-config </path/to/myOverrides.json>` as many times as needed. The
+files merge-patch from left to right, and on collision the later file wins.
 
 #### Command-line overrides
 
-A caller may override individual values with the `--config-override key=value` option, repeated
-as many times as needed. These also merge-patch from left to right. They are applied last, so
-they override both the appended config files and the schema defaults.
+A caller may override an individual value with `--config-override path.to.key=value`, repeated as
+many times as needed (for example `--config-override routines.drivers.feiFields.miningTimeMs=250`).
+These apply last, so they override both the appended files and the schema defaults.
 
-The effective config decodes into the `ConfigStore` as one block of bytes in Cap'n Proto wire
-format, ready for every `<Schema>::Reader` to view. The same values are echoed into the run's
-working directory as a single `config.json`, so a replay of the log runs with the exact
-configuration the original run used.
+Each routine's effective config decodes into its own block of bytes in Cap'n Proto wire format,
+memory-mapped read-only for its `<Schema>::Reader` to view. The assembled overrides are echoed into
+the run's working directory as `configOverlay.json`, so a replay of the log runs with the exact
+configuration the original run used, and each routine also gets a readable `<name>.json` of its
+resolved values.
 
-Since every `Reader` is a read-only view over the `ConfigStore`'s bytes, manipulating the right
-bits of that byte span reconfigures the corresponding subsystem in place. As a result, the
-system can be tuned live. A planned control panel will do exactly that by wrapping a
+Because each routine reads through a view over its mapped bytes and reads them afresh as it runs,
+the system can be tuned live. A planned control panel will do exactly that by wrapping a
 `<Schema>::Builder` in a GUI.
 
 ---
@@ -382,38 +384,31 @@ The whole supply chain wires up in one setup hook, verbatim from
 [`catanMain.cpp`](modules/example/src/catanMain.cpp):
 
 ```cpp
-// The Port owns the run. Its constructor calls this hook to build the routine graph, handing
-// each routine only its own config block.
+// The Port owns the run. Its constructor calls this hook to build the routine graph; each
+// routine reads its own config section (keyed by its name) from the run's config document.
 auto port = nioc::terminus::Port{
-    std::move(manifest),
+    nioc::terminus::RunContext{variableMap},
     [](nioc::terminus::Port& port,
        nioc::terminus::Port::Drivers& drivers,
        nioc::terminus::Port::Components& components,
        nioc::terminus::Port::Runners& runners)
     {
-      const auto config = port.config<nioc::example::CatanConfig>();
-
       // Components (consumers).
       components.push_back(
-          std::make_shared<nioc::example::RoadBuilder>(port, config.getRoadBuilder()));
+          std::make_shared<nioc::example::RoadBuilder>("rohanTheRoadBuilder", port));
       components.push_back(
-          std::make_shared<nioc::example::SettlementBuilder>(
-              port,
-              config.getSettlementBuilder()));
+          std::make_shared<nioc::example::SettlementBuilder>("sakuraTheSettler", port));
       components.push_back(
-          std::make_shared<nioc::example::CityBuilder>(port, config.getCityBuilder()));
+          std::make_shared<nioc::example::CityBuilder>("cindyTheCityMaker", port));
       components.push_back(
-          std::make_shared<nioc::example::DevelopmentCardBuilder>(
-              port,
-              config.getDevelopmentCardBuilder()));
+          std::make_shared<nioc::example::DevelopmentCardBuilder>("deviTheDeveloper", port));
 
       // Drivers (producers).
-      drivers.push_back(std::make_shared<nioc::example::Hills>(port, config.getHills()));
-      drivers.push_back(std::make_shared<nioc::example::Forest>(port, config.getForest()));
-      drivers.push_back(std::make_shared<nioc::example::Pasture>(port, config.getPasture()));
-      drivers.push_back(std::make_shared<nioc::example::Fields>(port, config.getFields()));
-      drivers.push_back(
-          std::make_shared<nioc::example::Mountains>(port, config.getMountains()));
+      drivers.push_back(std::make_shared<nioc::example::Hills>("hiroHills", port));
+      drivers.push_back(std::make_shared<nioc::example::Forest>("finnyForests", port));
+      drivers.push_back(std::make_shared<nioc::example::Pasture>("peekyPastures", port));
+      drivers.push_back(std::make_shared<nioc::example::Fields>("feiFields", port));
+      drivers.push_back(std::make_shared<nioc::example::Mountains>("meiMountains", port));
 
       // Launch consumers before producers, so no message is published before its subscriber's
       // runner is up. Each routine gets its own thread.
@@ -432,9 +427,12 @@ auto port = nioc::terminus::Port{
     }};
 ```
 
-Every knob (mining times, recipe costs, topic names) is a field in
-[`catanConfig.capnp`](modules/example/include/nioc/example/config/catanConfig.capnp), one config
-block per routine; the `config.getRoadBuilder()` calls above hand each routine its typed view.
+Each routine is constructed with just its instance name and the `Port`; from the name it materializes
+its own typed config through `port.materializeConfig<Schema>(name)`, reading its section of the
+document. Every knob (mining times, recipe costs, topic names) is a field in that routine's schema,
+one schema per routine (for example
+[`hillsConfig.capnp`](modules/example/include/nioc/example/config/hillsConfig.capnp) and
+[`roadBuilderConfig.capnp`](modules/example/include/nioc/example/config/roadBuilderConfig.capnp)).
 That makes the example a working demonstration of the three layers from **⚙️ Configuration**
 (`BUILD_TREE` / `INSTALL_TREE` are the paths you set up under **Build & install nioc** below):
 
@@ -448,7 +446,7 @@ cmake --build <BUILD_TREE> && cmake --install <BUILD_TREE>
 <INSTALL_TREE>/bin/catanMain --append-config <INSTALL_TREE>/config/nioc/example/strippedCatan.json
 
 # 3. A command-line override flips one setting.
-<INSTALL_TREE>/bin/catanMain --config-override fields.miningTimeMs=250
+<INSTALL_TREE>/bin/catanMain --config-override routines.drivers.feiFields.miningTimeMs=250
 ```
 
 Every finished piece prints as it is built. Ctrl-C stops the run cleanly; a second Ctrl-C aborts it.
@@ -511,7 +509,7 @@ cmake --build build
 ```
 
 Your `main.cpp` follows the same shape as [`catanMain.cpp`](modules/example/src/catanMain.cpp):
-build a `Manifest`, construct a `Port` whose setup hook creates your drivers and components, and
+build a `RunContext`, construct a `Port` whose setup hook creates your drivers and components, and
 park `main` until shutdown.
 
 ### 🅱️ Option B: install it, then `find_package`

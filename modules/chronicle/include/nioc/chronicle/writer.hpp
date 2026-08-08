@@ -42,7 +42,7 @@ class Writer
 public:
   /// Default byte size of each data roll. A channel seals the active roll and opens a fresh one
   /// once it fills; a single record larger than this grows its roll to fit.
-  static constexpr auto kDefaultRollCapacity = 1024ULL * 1024ULL * 1024ULL;
+  static constexpr auto kDefaultRollCapacity = 10ULL * 1024ULL * 1024ULL * 1024ULL;
 
   /// @brief Default byte size of the timeline file.
   ///

@@ -14,6 +14,7 @@
 #include <nioc/chronicle/crate.hpp>
 #include <nioc/chronicle/reader.hpp>
 #include <nioc/chronicle/writer.hpp>
+#include <nioc/common/utils.hpp>
 #include <span>
 #include <thread>
 #include <utility>
@@ -56,7 +57,7 @@ fs::path makeFreshEmptyDir(std::string_view name)
 
 fs::path rollPath(const fs::path& logRoot, const ChannelId channelId, const std::uint64_t rollId)
 {
-  return logRoot / hexString(channelId.mValue) / buildRollName(rollId);
+  return logRoot / common::hexString(channelId.mValue) / buildRollName(rollId);
 }
 
 void expectBytesEqual(std::span<const std::byte> lhs, std::span<const std::byte> rhs)

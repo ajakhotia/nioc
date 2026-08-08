@@ -4,24 +4,37 @@
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#include <capnp/any.h>
 #include <capnp/dynamic.h>
 #include <capnp/message.h>
 #include <capnp/schema.h>
+#include <cstdint>
+#include <filesystem>
+#include <fstream>
 #include <gtest/gtest.h>
 #include <nioc/terminus/config/testConfig.capnp.h>
 #include <nioc/terminus/utils.hpp>
 #include <nlohmann/json.hpp>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 
 namespace nioc::terminus
 {
 namespace
 {
+namespace fs = std::filesystem;
 
-TEST(UtilsTest, makeDefaultJsonMirrorsSchemaShapeWithDefaults)
+fs::path testDirectory()
 {
-  const auto defaults = makeDefaultJson(capnp::Schema::from<TestConfig>());
+  const auto directory = fs::temp_directory_path() / "niocUtilsTest";
+  fs::create_directories(directory);
+  return directory;
+}
+
+TEST(UtilsTest, encodeAsJsonRendersSchemaDefaults)
+{
+  const auto defaults = encodeAsJson(capnp::Schema::from<TestConfig>());
 
   EXPECT_EQ(defaults.at("name").get<std::string>(), ""); // Text with no default -> empty
   EXPECT_EQ(defaults.at("count").get<int>(), 7);
@@ -31,9 +44,9 @@ TEST(UtilsTest, makeDefaultJsonMirrorsSchemaShapeWithDefaults)
   EXPECT_TRUE(defaults.at("leaf").is_object()); // nested struct -> nested object
 }
 
-TEST(UtilsTest, makeDefaultJsonSurfacesStructLiteralDefaultsAndQuotes64BitIntegers)
+TEST(UtilsTest, encodeAsJsonSurfacesStructLiteralDefaultsAndQuotes64BitIntegers)
 {
-  const auto defaults = makeDefaultJson(capnp::Schema::from<TestConfig>());
+  const auto defaults = encodeAsJson(capnp::Schema::from<TestConfig>());
 
   // leaf carries a struct-literal default (value = 11, tag = "lit"), which wins over
   // TestLeafConfig's own field defaults (value = 3, tag = "leaf"). The 64-bit value is a string.
@@ -41,70 +54,112 @@ TEST(UtilsTest, makeDefaultJsonSurfacesStructLiteralDefaultsAndQuotes64BitIntege
   EXPECT_EQ(defaults.at("leaf").at("tag").get<std::string>(), "lit");
 }
 
-TEST(UtilsTest, decodeMessageDecodesFieldsFromJson)
+TEST(UtilsTest, decodeFromJsonDecodesFields)
 {
   const auto schema = capnp::Schema::from<TestConfig>();
-  const auto message = decodeMessage(R"({"count": 5})", schema);
+  const auto message = decodeFromJson(R"({"count": 5})", schema);
 
   const auto config = message->getRoot<capnp::DynamicStruct>(schema).asReader().as<TestConfig>();
   EXPECT_EQ(config.getCount(), 5U);
 }
 
-TEST(UtilsTest, decodeMessageIgnoresFieldsOutsideSchema)
+TEST(UtilsTest, decodeFromJsonIgnoresFieldsOutsideSchema)
 {
   const auto schema = capnp::Schema::from<TestConfig>();
 
   // The stray field must not make the decode throw; the known field still decodes.
-  const auto message = decodeMessage(R"({"count": 5, "futureField": 9})", schema);
+  const auto message = decodeFromJson(R"({"count": 5, "futureField": 9})", schema);
 
   const auto config = message->getRoot<capnp::DynamicStruct>(schema).asReader().as<TestConfig>();
   EXPECT_EQ(config.getCount(), 5U);
 }
 
-TEST(UtilsTest, overrideFieldReplacesExistingField)
+TEST(UtilsTest, writeJsonFileThenReadJsonFileRoundTrips)
 {
-  auto tree = nlohmann::json::parse(R"({"name": "before", "count": 1})");
+  const auto path = testDirectory() / "roundTrip.json";
+  const auto original = nlohmann::json{{"name", "value"}, {"nested", {{"count", 3}}}};
 
-  overrideField(tree, nlohmann::json::json_pointer{"/name"}, "after");
+  writeJsonFile(path, original);
 
-  EXPECT_EQ(tree.at("name").get<std::string>(), "after");
-  EXPECT_EQ(tree.at("count").get<int>(), 1); // sibling untouched
+  EXPECT_EQ(readJsonFile(path), original);
 }
 
-TEST(UtilsTest, overrideFieldReplacesNestedFieldKeepingSiblings)
+TEST(UtilsTest, readJsonFileThrowsWhenFileMissing)
 {
-  auto tree = nlohmann::json::parse(R"({"leaf": {"value": 1, "tag": "keep"}})");
-
-  overrideField(tree, nlohmann::json::json_pointer{"/leaf/value"}, 9);
-
-  EXPECT_EQ(tree.at("leaf").at("value").get<int>(), 9);
-  EXPECT_EQ(tree.at("leaf").at("tag").get<std::string>(), "keep");
-}
-
-TEST(UtilsTest, overrideFieldWithNullDeletesField)
-{
-  auto tree = nlohmann::json::parse(R"({"name": "present", "count": 1})");
-
-  overrideField(tree, nlohmann::json::json_pointer{"/name"}, nullptr);
-
-  EXPECT_FALSE(tree.contains("name"));
-  EXPECT_TRUE(tree.contains("count"));
-}
-
-TEST(UtilsTest, overrideFieldThrowsWhenFieldAbsent)
-{
-  auto tree = nlohmann::json::parse(R"({"name": "present"})");
-
-  EXPECT_THROW(overrideField(tree, nlohmann::json::json_pointer{"/missing"}, 1), std::out_of_range);
-}
-
-TEST(UtilsTest, overrideFieldThrowsWhenNestedFieldAbsent)
-{
-  auto tree = nlohmann::json::parse(R"({"leaf": {"value": 1}})");
-
   EXPECT_THROW(
-      overrideField(tree, nlohmann::json::json_pointer{"/leaf/missing"}, 1),
-      std::out_of_range);
+      static_cast<void>(readJsonFile(testDirectory() / "doesNotExist.json")),
+      std::runtime_error);
+}
+
+TEST(UtilsTest, readJsonFileThrowsOnMalformedJson)
+{
+  const auto path = testDirectory() / "malformed.json";
+  std::ofstream(path) << "{ not valid json";
+
+  EXPECT_THROW(static_cast<void>(readJsonFile(path)), nlohmann::json::parse_error);
+}
+
+TEST(UtilsTest, buildFieldNodeChainResolvesOneHandlePerSegment)
+{
+  const auto chain = buildFieldNodeChain(capnp::Schema::from<TestConfig>(), "leaf.value");
+  if(not chain.has_value())
+  {
+    FAIL() << "The path did not resolve.";
+  }
+
+  ASSERT_EQ(chain->size(), 2U);
+  EXPECT_EQ(std::string_view{chain->front().getProto().getName().cStr()}, "leaf");
+  EXPECT_EQ(std::string_view{chain->back().getProto().getName().cStr()}, "value");
+}
+
+TEST(UtilsTest, dynamicFieldExtractorReadsNestedLeaf)
+{
+  constexpr auto kLeafValue = std::int64_t{42};
+
+  const auto extractor = dynamicFieldExtractor<std::int64_t>(
+      capnp::Schema::from<TestConfig>(),
+      "leaf.value");
+  if(not extractor.has_value())
+  {
+    FAIL() << "The path did not resolve.";
+  }
+
+  auto builder = capnp::MallocMessageBuilder{};
+  builder.initRoot<TestConfig>().initLeaf().setValue(kLeafValue);
+
+  EXPECT_EQ((*extractor)(builder.getRoot<capnp::AnyPointer>().asReader()), kLeafValue);
+}
+
+TEST(UtilsTest, dynamicFieldExtractorReadsTopLevelField)
+{
+  const auto extractor = dynamicFieldExtractor<std::uint32_t>(
+      capnp::Schema::from<TestConfig>(),
+      "count");
+  if(not extractor.has_value())
+  {
+    FAIL() << "The path did not resolve.";
+  }
+
+  auto builder = capnp::MallocMessageBuilder{};
+  builder.initRoot<TestConfig>().setCount(9U);
+
+  EXPECT_EQ((*extractor)(builder.getRoot<capnp::AnyPointer>().asReader()), 9U);
+}
+
+TEST(UtilsTest, dynamicFieldExtractorRejectsMissingField)
+{
+  const auto schema = capnp::Schema::from<TestConfig>();
+
+  EXPECT_FALSE(dynamicFieldExtractor<std::int64_t>(schema, "absent").has_value());
+  EXPECT_FALSE(dynamicFieldExtractor<std::int64_t>(schema, "leaf.absent").has_value());
+}
+
+TEST(UtilsTest, dynamicFieldExtractorRejectsNonStructIntermediate)
+{
+  // `count` is a UInt32, so no path can descend through it.
+  EXPECT_FALSE(
+      dynamicFieldExtractor<std::int64_t>(capnp::Schema::from<TestConfig>(), "count.value")
+          .has_value());
 }
 
 } // namespace

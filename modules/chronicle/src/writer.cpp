@@ -9,6 +9,7 @@
 #include <nioc/chronicle/channel.hpp>
 #include <nioc/chronicle/writer.hpp>
 #include <nioc/common/filesystem.hpp>
+#include <nioc/common/utils.hpp>
 #include <nioc/logger/logger.hpp>
 #include <utility>
 
@@ -41,7 +42,7 @@ Channel& Writer::channel(const ChannelId channelId)
         {
           channelPtr = std::make_unique<Channel>(
               channelId,
-              mLogRoot / hexString(channelId.mValue),
+              mLogRoot / common::hexString(channelId.mValue),
               mRollCapacity,
               mTimeline);
         }

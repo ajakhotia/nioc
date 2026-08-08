@@ -12,6 +12,7 @@
 #include <nioc/containers/mmapArray.hpp>
 #include <nioc/containers/mmapConstArray.hpp>
 #include <numeric>
+#include <optional>
 #include <ranges>
 #include <stdexcept>
 #include <string_view>
@@ -102,6 +103,23 @@ TEST(MmapConstArray, atReadsElementsAndThrowsOutOfRange)
 
   EXPECT_NO_THROW(static_cast<void>(array.at(kCount - 1)));
   EXPECT_THROW(static_cast<void>(array.at(kCount)), std::out_of_range);
+}
+
+TEST(MmapConstArray, moveTransfersOwnershipOfTheMapping)
+{
+  constexpr auto kCount = std::size_t{6};
+  const auto path = writeRamp("movedConstArray", kCount);
+
+  auto source = std::optional<MmapConstArray<std::int32_t>>{std::in_place, path};
+  const auto* const data = source->data();
+
+  const auto array = MmapConstArray<std::int32_t>{std::move(*source)};
+  // Destroying the moved-from source must release nothing: the mapping now belongs to array.
+  source.reset();
+
+  EXPECT_EQ(array.data(), data);
+  ASSERT_EQ(array.size(), kCount);
+  EXPECT_EQ(array.at(5), 5);
 }
 
 } // namespace nioc::containers

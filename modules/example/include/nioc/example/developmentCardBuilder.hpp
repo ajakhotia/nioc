@@ -13,9 +13,11 @@
 #include <nioc/example/idl/ore.capnp.h>
 #include <nioc/example/idl/wool.capnp.h>
 #include <nioc/terminus/component.hpp>
+#include <nioc/terminus/config.hpp>
 #include <nioc/terminus/message.hpp>
 #include <nioc/terminus/port.hpp>
 #include <nioc/terminus/publisher.hpp>
+#include <string>
 
 namespace nioc::example
 {
@@ -36,10 +38,15 @@ namespace nioc::example
 class DevelopmentCardBuilder final: public terminus::Component
 {
 public:
-  DevelopmentCardBuilder(terminus::Port& port, DevelopmentCardBuilderConfig::Reader config);
+  DevelopmentCardBuilder(const std::string& name, terminus::Port& port);
+
+  DevelopmentCardBuilder(
+      std::string name,
+      terminus::Port& port,
+      terminus::Config<DevelopmentCardBuilderConfig> config);
 
 private:
-  DevelopmentCardBuilderConfig::Reader mConfig;
+  terminus::Config<DevelopmentCardBuilderConfig> mConfig;
   terminus::Publisher<DevelopmentCard> mDevelopmentCardPublisher;
   std::size_t mOreAvailable{0};
   std::size_t mWoolAvailable{0};

@@ -9,6 +9,7 @@
 #include <iterator>
 #include <nioc/chronicle/reader.hpp>
 #include <nioc/common/filesystem.hpp>
+#include <nioc/common/utils.hpp>
 #include <optional>
 #include <span>
 #include <system_error>
@@ -101,7 +102,7 @@ std::shared_ptr<const Reader::Roll> Reader::acquireRoll(
   }
 
   auto roll = std::make_shared<const Roll>(
-      mLogRoot / hexString(channelId.mValue) / buildRollName(rollId));
+      mLogRoot / common::hexString(channelId.mValue) / buildRollName(rollId));
   cached = roll;
   return roll;
 }

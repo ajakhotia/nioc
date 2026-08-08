@@ -6,18 +6,27 @@
 
 #include <nioc/example/roadBuilder.hpp>
 #include <nioc/logger/logger.hpp>
+#include <string>
 #include <utility>
 
 namespace nioc::example
 {
 
-RoadBuilder::RoadBuilder(terminus::Port& port, const RoadBuilderConfig::Reader config):
-  Component{port, config.getComponent()},
-  mConfig{config},
-  mRoadPublisher{publisher<Road>(config.getRoadTopic().cStr())}
+RoadBuilder::RoadBuilder(const std::string& name, terminus::Port& port):
+  RoadBuilder{name, port, port.materializeConfig<RoadBuilderConfig>(name)}
+{
+}
+
+RoadBuilder::RoadBuilder(
+    std::string name,
+    terminus::Port& port,
+    terminus::Config<RoadBuilderConfig> config):
+  Component{std::move(name), port, config.reader().getComponent()},
+  mConfig{std::move(config)},
+  mRoadPublisher{publisher<Road>(mConfig.reader().getRoadTopic().cStr())}
 {
   subscribe<Brick>(
-      config.getBrickTopic().cStr(),
+      mConfig.reader().getBrickTopic().cStr(),
       [this](const terminus::Message<Brick>& brick)
       {
         process(brick);
@@ -25,7 +34,7 @@ RoadBuilder::RoadBuilder(terminus::Port& port, const RoadBuilderConfig::Reader c
       });
 
   subscribe<Lumber>(
-      config.getLumberTopic().cStr(),
+      mConfig.reader().getLumberTopic().cStr(),
       [this](const terminus::Message<Lumber>& lumber)
       {
         process(lumber);
@@ -49,8 +58,8 @@ void RoadBuilder::process(const terminus::Message<Lumber>& lumber)
 
 void RoadBuilder::build()
 {
-  const auto brickNeededPerRoad = mConfig.getBrickPerRoad();
-  const auto lumberNeededPerRoad = mConfig.getLumberPerRoad();
+  const auto brickNeededPerRoad = mConfig.reader().getBrickPerRoad();
+  const auto lumberNeededPerRoad = mConfig.reader().getLumberPerRoad();
   while(mBricksAvailable >= brickNeededPerRoad and mLumberAvailable >= lumberNeededPerRoad)
   {
     mBricksAvailable -= brickNeededPerRoad;

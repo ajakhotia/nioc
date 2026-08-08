@@ -31,10 +31,11 @@ namespace nioc::containers
 ///     a[0] = 3.14; // persisted to the file
 ///     for (auto x : a) { ... }
 ///
-/// The array is pinned to its mapped address: it is neither copyable nor movable, since it owns the
-/// mapping and the file descriptor. Destruction unmaps the region and closes the file. It is not
-/// thread-safe; synchronize concurrent access externally. Other processes mapping the same file
-/// share the same bytes.
+/// Non-copyable; move-constructible. The mapped bytes never change address, so a move transfers
+/// the mapping and file descriptor while every element reference stays valid; the moved-from
+/// array is empty. Destruction unmaps the region and closes the file. It is not thread-safe;
+/// synchronize concurrent access externally. Other processes mapping the same file share the same
+/// bytes.
 ///
 /// @tparam ValueType Element type. Must be trivially copyable and have no top-level cv-qualifiers.
 ///
@@ -72,7 +73,9 @@ public:
 
   MmapArray(const MmapArray&) = delete;
 
-  MmapArray(MmapArray&&) noexcept = delete;
+  /// @brief Take over @p other's mapping and file descriptor, leaving @p other empty and fit only
+  /// for destruction.
+  MmapArray(MmapArray&&) noexcept = default;
 
   ~MmapArray() = default;
 

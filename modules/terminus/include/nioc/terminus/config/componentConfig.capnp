@@ -13,7 +13,6 @@ enum BufferMode @0xb39984dfa6e66fc2
 # Settings of the terminus::Component base.
 struct ComponentConfig @0xda482b1add5914a9
 {
-    name @0 : Text;
-    inboxCapacity @1 : UInt32 = 16;
-    bufferMode @2 : BufferMode = unbounded;
+    inboxCapacity @0 : UInt32 = 16;
+    bufferMode @1 : BufferMode = unbounded;
 }

@@ -121,10 +121,24 @@ MmapRegion::MmapRegion(std::filesystem::path path):
 {
 }
 
+MmapRegion::MmapRegion(MmapRegion&& other) noexcept:
+  mPath{std::move(other.mPath)},
+  mFileDescriptor{std::exchange(other.mFileDescriptor, -1)},
+  mBytes{std::exchange(other.mBytes, {})}
+{
+}
+
 MmapRegion::~MmapRegion()
 {
-  static_cast<void>(::munmap(mBytes.data(), mBytes.size()));
-  static_cast<void>(::close(mFileDescriptor));
+  if(not mBytes.empty())
+  {
+    static_cast<void>(::munmap(mBytes.data(), mBytes.size()));
+  }
+
+  if(mFileDescriptor >= 0)
+  {
+    static_cast<void>(::close(mFileDescriptor));
+  }
 }
 
 std::span<std::byte> MmapRegion::bytes() noexcept

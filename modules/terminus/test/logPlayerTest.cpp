@@ -4,18 +4,14 @@
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include <capnp/schema.h>
 #include <cstdint>
 #include <filesystem>
 #include <gtest/gtest.h>
 #include <nioc/chronicle/defines.hpp>
 #include <nioc/concurrent/routine.hpp>
-#include <nioc/terminus/config/testConfig.capnp.h>
-#include <nioc/terminus/configStore.hpp>
 #include <nioc/terminus/consignment.hpp>
 #include <nioc/terminus/idl/testSchema.capnp.h>
 #include <nioc/terminus/logPlayer.hpp>
-#include <nioc/terminus/manifest.hpp>
 #include <nioc/terminus/message.hpp>
 #include <nioc/terminus/port.hpp>
 #include <nioc/terminus/publisher.hpp>
@@ -42,10 +38,10 @@ chronicle::ChannelId channelFor(const std::string_view topic)
 
 Port makePort(const std::string_view name, const bool record)
 {
+  auto workingDir = fs::temp_directory_path() / "nioc-logPlayerTest" / name;
+  fs::remove_all(workingDir);
   return Port{
-      Manifest{
-          RunContext{fs::temp_directory_path() / "nioc-logPlayerTest" / name, {}, record, ""},
-          ConfigStore{"{}", capnp::Schema::from<TestConfig>()}},
+      RunContext{std::move(workingDir), {}, record, ""},
       [](Port&, Port::Drivers&, Port::Components&, Port::Runners&) {}};
 }
 
@@ -58,7 +54,7 @@ void publishValue(Publisher<TestSchema>& publisher, const std::int64_t value)
 
 void replay(Port& port, const fs::path& chronicleDir)
 {
-  auto player = LogPlayer{port, chronicleDir};
+  auto player = LogPlayer{"logPlayer", port, chronicleDir};
   while(player.tick() == State::Continue)
   {
   }
@@ -183,7 +179,7 @@ TEST(LogPlayer, anEmptyLogDeliversNothingAndFinishesImmediately)
   auto deliveries = 0;
   port.subscribe(channelFor("unused"), [&deliveries](Consignment) { ++deliveries; });
 
-  auto player = LogPlayer{port, chronicleDir};
+  auto player = LogPlayer{"logPlayer", port, chronicleDir};
   EXPECT_EQ(player.tick(), State::Done);
   EXPECT_EQ(deliveries, 0);
 }
@@ -193,7 +189,7 @@ TEST(LogPlayer, constructionRejectsMissingLog)
   auto port = makePort("missing", false);
   const auto absent = fs::temp_directory_path() / "nioc-logPlayerTest" / "absent-chronicle";
   fs::remove_all(absent);
-  EXPECT_THROW((LogPlayer{port, absent}), std::invalid_argument);
+  EXPECT_THROW((LogPlayer{"logPlayer", port, absent}), std::invalid_argument);
 }
 
 } // namespace nioc::terminus
