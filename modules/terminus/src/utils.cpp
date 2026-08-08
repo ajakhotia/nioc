@@ -4,6 +4,7 @@
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#include <algorithm>
 #include <capnp/any.h>
 #include <capnp/compat/json.h>
 #include <capnp/dynamic.h>
@@ -19,9 +20,11 @@
 #include <nioc/terminus/arenaMessageBuilder.hpp>
 #include <nioc/terminus/utils.hpp>
 #include <nlohmann/json.hpp>
+#include <optional>
 #include <span>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace nioc::terminus
@@ -152,6 +155,50 @@ std::unique_ptr<capnp::MallocMessageBuilder> decodeFromJson(
       kj::ArrayPtr<const char>{jsonText.data(), jsonText.size()},
       builder->initRoot<capnp::DynamicStruct>(schema));
   return builder;
+}
+
+std::optional<std::vector<capnp::StructSchema::Field>> buildFieldNodeChain(
+    const capnp::StructSchema schema,
+    const std::string_view fieldPath)
+{
+  auto chain = std::vector<capnp::StructSchema::Field>{};
+  auto node = schema;
+  auto remaining = fieldPath;
+
+  while(true)
+  {
+    const auto dot = remaining.find('.');
+    const auto segment = remaining.substr(0, dot);
+
+    const auto fields = node.getFields();
+
+    // The classic algorithm, not the ranges form: capnp's IndexingIterator predates the C++20
+    // iterator concepts (it carries no value_type), so the ranges algorithms reject it.
+    const auto field = std::find_if( // NOLINT(modernize-use-ranges,llvm-use-ranges)
+        fields.begin(),
+        fields.end(),
+        [segment](const capnp::StructSchema::Field& candidate)
+        { return candidate.getProto().getName().cStr() == segment; });
+    if(field == fields.end())
+    {
+      return std::nullopt;
+    }
+
+    chain.push_back(*field);
+
+    if(dot == std::string_view::npos)
+    {
+      return chain;
+    }
+
+    if(not field->getType().isStruct())
+    {
+      return std::nullopt;
+    }
+
+    node = field->getType().asStruct();
+    remaining = remaining.substr(dot + 1U);
+  }
 }
 
 } // namespace nioc::terminus

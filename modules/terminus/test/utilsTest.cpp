@@ -4,9 +4,11 @@
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#include <capnp/any.h>
 #include <capnp/dynamic.h>
 #include <capnp/message.h>
 #include <capnp/schema.h>
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <gtest/gtest.h>
@@ -15,6 +17,7 @@
 #include <nlohmann/json.hpp>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 
 namespace nioc::terminus
 {
@@ -94,6 +97,69 @@ TEST(UtilsTest, readJsonFileThrowsOnMalformedJson)
   std::ofstream(path) << "{ not valid json";
 
   EXPECT_THROW(static_cast<void>(readJsonFile(path)), nlohmann::json::parse_error);
+}
+
+TEST(UtilsTest, buildFieldNodeChainResolvesOneHandlePerSegment)
+{
+  const auto chain = buildFieldNodeChain(capnp::Schema::from<TestConfig>(), "leaf.value");
+  if(not chain.has_value())
+  {
+    FAIL() << "The path did not resolve.";
+  }
+
+  ASSERT_EQ(chain->size(), 2U);
+  EXPECT_EQ(std::string_view{chain->front().getProto().getName().cStr()}, "leaf");
+  EXPECT_EQ(std::string_view{chain->back().getProto().getName().cStr()}, "value");
+}
+
+TEST(UtilsTest, dynamicFieldExtractorReadsNestedLeaf)
+{
+  constexpr auto kLeafValue = std::int64_t{42};
+
+  const auto extractor = dynamicFieldExtractor<std::int64_t>(
+      capnp::Schema::from<TestConfig>(),
+      "leaf.value");
+  if(not extractor.has_value())
+  {
+    FAIL() << "The path did not resolve.";
+  }
+
+  auto builder = capnp::MallocMessageBuilder{};
+  builder.initRoot<TestConfig>().initLeaf().setValue(kLeafValue);
+
+  EXPECT_EQ((*extractor)(builder.getRoot<capnp::AnyPointer>().asReader()), kLeafValue);
+}
+
+TEST(UtilsTest, dynamicFieldExtractorReadsTopLevelField)
+{
+  const auto extractor = dynamicFieldExtractor<std::uint32_t>(
+      capnp::Schema::from<TestConfig>(),
+      "count");
+  if(not extractor.has_value())
+  {
+    FAIL() << "The path did not resolve.";
+  }
+
+  auto builder = capnp::MallocMessageBuilder{};
+  builder.initRoot<TestConfig>().setCount(9U);
+
+  EXPECT_EQ((*extractor)(builder.getRoot<capnp::AnyPointer>().asReader()), 9U);
+}
+
+TEST(UtilsTest, dynamicFieldExtractorRejectsMissingField)
+{
+  const auto schema = capnp::Schema::from<TestConfig>();
+
+  EXPECT_FALSE(dynamicFieldExtractor<std::int64_t>(schema, "absent").has_value());
+  EXPECT_FALSE(dynamicFieldExtractor<std::int64_t>(schema, "leaf.absent").has_value());
+}
+
+TEST(UtilsTest, dynamicFieldExtractorRejectsNonStructIntermediate)
+{
+  // `count` is a UInt32, so no path can descend through it.
+  EXPECT_FALSE(
+      dynamicFieldExtractor<std::int64_t>(capnp::Schema::from<TestConfig>(), "count.value")
+          .has_value());
 }
 
 } // namespace

@@ -5,12 +5,20 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
+#include <algorithm>
+#include <capnp/any.h>
+#include <capnp/dynamic.h>
 #include <capnp/message.h>
 #include <capnp/schema.h>
 #include <filesystem>
+#include <functional>
+#include <iterator>
 #include <memory>
 #include <nlohmann/json.hpp>
+#include <optional>
 #include <string>
+#include <string_view>
+#include <vector>
 
 namespace nioc::terminus
 {
@@ -127,5 +135,59 @@ void flattenAndWrite(capnp::MessageBuilder& builder, const std::filesystem::path
 [[nodiscard]] std::unique_ptr<capnp::MallocMessageBuilder> decodeFromJson(
     const std::string& jsonText,
     capnp::StructSchema schema);
+
+/// @brief Resolve the dotted @p fieldPath through @p schema into the chain of field handles that
+/// reaches the nested field, or nothing if a segment is missing or a non-terminal segment is not
+/// a struct.
+///
+/// Resolution walks the schema's metadata alone; no message is needed. Each handle in the chain
+/// descends one level, so a reader holding the chain reaches the leaf with index lookups rather
+/// than name lookups. @ref dynamicFieldExtractor packages exactly that walk into a callable.
+///
+/// @param schema The struct schema the path descends from.
+///
+/// @param fieldPath Dot-separated field names, e.g. "header.timestamp.nanosecondSinceEpoch".
+[[nodiscard]] std::optional<std::vector<capnp::StructSchema::Field>> buildFieldNodeChain(
+    capnp::StructSchema schema,
+    std::string_view fieldPath);
+
+/// @brief Reflect over @p schema for the dotted @p fieldPath and produce the extractor that reads
+/// that field out of a message of that schema, or nothing if the schema does not carry the path.
+///
+/// Resolution happens here, once per schema, by walking the schema's own metadata; no message is
+/// needed. The returned extractor holds the resolved field handles, so each per-message read is a
+/// chain of index lookups rather than name lookups. The leaf is read as @p Value through Cap'n
+/// Proto's dynamic conversion, which throws on a type mismatch at read time.
+///
+/// @tparam Value The type to read the leaf field as, e.g. `std::int64_t`.
+///
+/// @param schema The struct schema describing the message payload.
+///
+/// @param fieldPath Dot-separated field names from the payload root to the leaf, e.g.
+/// "header.timestamp.nanosecondSinceEpoch". Every non-terminal segment must be a struct field.
+template<typename Value>
+[[nodiscard]] std::optional<std::function<Value(capnp::AnyPointer::Reader)>> dynamicFieldExtractor(
+    const capnp::StructSchema schema,
+    const std::string_view fieldPath)
+{
+  auto chain = buildFieldNodeChain(schema, fieldPath);
+  if(not chain.has_value())
+  {
+    return std::nullopt;
+  }
+
+  return std::function<Value(capnp::AnyPointer::Reader)>{
+      [schema, chain = std::move(*chain)](const capnp::AnyPointer::Reader reader)
+      {
+        auto node = reader.getAs<capnp::DynamicStruct>(schema);
+        std::for_each(
+            chain.cbegin(),
+            std::prev(chain.cend()),
+            [&node](const capnp::StructSchema::Field& field)
+            { node = node.get(field).as<capnp::DynamicStruct>(); });
+
+        return node.get(chain.back()).as<Value>();
+      }};
+}
 
 } // namespace nioc::terminus
