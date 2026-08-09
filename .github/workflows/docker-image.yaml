@@ -39,6 +39,7 @@ jobs:
         os_base:
           - name: ubuntu:22.04
           - name: ubuntu:24.04
+          - name: ubuntu:26.04
         toolchain:
           - linux-clang-22
           - linux-gnu-15
@@ -151,6 +152,7 @@ jobs:
         os_base:
           - name: ubuntu:22.04
           - name: ubuntu:24.04
+          - name: ubuntu:26.04
         toolchain:
           - linux-clang-22
           - linux-gnu-15

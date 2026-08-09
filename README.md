@@ -9,7 +9,7 @@
   <a href="https://github.com/ajakhotia/nioc/actions/workflows/dev-base-image.yaml"><img src="https://github.com/ajakhotia/nioc/actions/workflows/dev-base-image.yaml/badge.svg" alt="dev-base-image"/></a>
   <a href="https://github.com/ajakhotia/nioc/actions/workflows/docker-image.yaml"><img src="https://github.com/ajakhotia/nioc/actions/workflows/docker-image.yaml/badge.svg" alt="docker-image"/></a>
   <img src="https://img.shields.io/badge/C%2B%2B-23-00599C?logo=cplusplus&logoColor=white" alt="C++23"/>
-  <img src="https://img.shields.io/badge/platform-Ubuntu%2022.04%20%7C%2024.04-E95420?logo=ubuntu&logoColor=white" alt="Platform"/>
+  <img src="https://img.shields.io/badge/platform-Ubuntu%2022.04%20%7C%2024.04%20%7C%2026.04-E95420?logo=ubuntu&logoColor=white" alt="Platform"/>
   <img src="https://img.shields.io/badge/toolchain-Clang%2022%20%7C%20GCC%2015-informational" alt="Compilers"/>
 </p>
 
@@ -190,7 +190,7 @@ Run the program and a directory appears:
     chronicle/          every message, byte for byte, in write order
 ```
 
-> 🐧 **Platform:** Linux (tested on Ubuntu 22.04 / 24.04), C++23, built with Clang 22 or GCC 15.
+> 🐧 **Platform:** Linux (tested on Ubuntu 22.04 / 24.04 / 26.04), C++23, built with Clang 22 or GCC 15.
 
 ---
 
@@ -529,7 +529,7 @@ prefix path too.
 
 ## 🛠️ Build & install nioc
 
-**Tested on Ubuntu 22.04 / 24.04. See
+**Tested on Ubuntu 22.04 / 24.04 / 26.04. See
 [`docker/ubuntuDevBase.dockerfile`](docker/ubuntuDevBase.dockerfile) for the exact recipe.**
 
 Pick three paths you own: `SOURCE_TREE` (clone), `BUILD_TREE` (build), and `INSTALL_TREE` (install,
@@ -553,16 +553,12 @@ system already satisfies. The setup scripts live in the `infraCommons` submodule
 ```shell
 cd ${SOURCE_TREE}
 sudo apt install -y --no-install-recommends jq          # to read systemDependencies.json
-sudo bash external/infraCommons/tools/installCMake.sh    # skip if cmake >= 3.27
-sudo apt install -y --no-install-recommends \
-  $(sh external/infraCommons/tools/extractDependencies.sh Basics systemDependencies.json)
 
-# Newer toolchains (skip if your OS compilers are new enough):
-sudo bash external/infraCommons/tools/apt/addGNUSources.sh    -y
-sudo bash external/infraCommons/tools/apt/addLLVMSources.sh   -y
-sudo bash external/infraCommons/tools/apt/addNvidiaSources.sh -y
+# Register the gnu, llvm, nvidia, and kitware apt sources (skip if your OS packages are new enough):
+sudo bash external/infraCommons/tools/apt/addAptSources.sh -y
 sudo apt update && sudo apt install -y --no-install-recommends \
-  $(sh external/infraCommons/tools/extractDependencies.sh Compilers systemDependencies.json)
+  $(sh external/infraCommons/tools/extractDependencies.sh \
+      "Basics Compilers RobotFarmDependencies" systemDependencies.json)
 ```
 
 > ⚠️ **Heads up:** the `Compilers` group includes the **CUDA toolkit (~4.7 GB)**; the bulk of the
