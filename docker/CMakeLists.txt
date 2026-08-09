@@ -3,7 +3,7 @@ add_custom_target(niocDockerDevBaseUbuntu2204
       bash -c "docker buildx build --progress=plain                                                 \
           --force-rm                                                                                \
           --tag ghcr.io/ajakhotia/nioc/ubuntu-22-04/dev-base:latest                                 \
-          --build-arg OS_BASE=ubuntu:22.04                                                          \
+          --build-arg OS_BASE=ghcr.io/ajakhotia/infracommons/weekly-base/ubuntu-22-04:latest        \
           --file ${CMAKE_CURRENT_LIST_DIR}/ubuntuDevBase.dockerfile                                 \
           ${nioc_SOURCE_DIR}"
     WORKING_DIRECTORY
@@ -18,7 +18,7 @@ add_custom_target(niocDockerDevBaseUbuntu2404
       bash -c "docker buildx build --progress=plain                                                 \
           --force-rm                                                                                \
           --tag ghcr.io/ajakhotia/nioc/ubuntu-24-04/dev-base:latest                                 \
-          --build-arg OS_BASE=ubuntu:24.04                                                          \
+          --build-arg OS_BASE=ghcr.io/ajakhotia/infracommons/weekly-base/ubuntu-24-04:latest        \
           --file ${CMAKE_CURRENT_LIST_DIR}/ubuntuDevBase.dockerfile                                 \
           ${nioc_SOURCE_DIR}"
     WORKING_DIRECTORY
@@ -91,3 +91,4 @@ add_custom_target(niocDockerBuildUbuntu2404LinuxClang22
       "Building nioc docker image for ubuntu 24.04 with linux-clang-22"
     VERBATIM
     USES_TERMINAL)
+
