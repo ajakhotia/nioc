@@ -69,7 +69,9 @@ RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=lock
     --mount=type=bind,src=systemDependencies.json,dst=/tmp/systemDependencies.json                 \
     apt-get update &&                                                                              \
     apt-get install -y --no-install-recommends                                                     \
-      $(sh /tmp/extractDependencies.sh "Basics Compilers" /tmp/systemDependencies.json)
+      $(sh /tmp/extractDependencies.sh                                                             \
+          "Basics Compilers RobotFarmDependencies"                                                 \
+          /tmp/systemDependencies.json)
 
 RUN gnu=$(ls /usr/bin | grep -E '^gcc-[0-9]+$' | sort -V | tail -n 1 | cut -d- -f2) &&             \
     update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${gnu} 100                         \
@@ -85,8 +87,8 @@ RUN llvm=$(ls /usr/bin | grep -E '^clang-[0-9]+$' | sort -V | tail -n 1 | cut -d
       --slave /usr/bin/flang flang /usr/bin/flang-${llvm}
 
 
-# Nothing FROMs this stage as an image base — dev-base only pulls /opt/robotFarm and
-# systemDependencies.txt forward via COPY/bind, so the source and build trees never get committed.
+# Nothing FROMs this stage as an image base; dev-base only pulls /opt/robotFarm forward via
+# COPY, so the source and build trees never get committed.
 FROM base AS throw-away-dev-base
 ARG ROBOTFARM_VERSION=v2.2.0
 ARG ROBOTFARM_BUILD_LIST="BoostExternalProject;Eigen3ExternalProject;NlohmannJsonExternalProject;GoogleTestExternalProject;SpdLogExternalProject;CapnprotoExternalProject"
@@ -106,18 +108,8 @@ RUN cmake -G Ninja                                                              
       -DCMAKE_CUDA_ARCHITECTURES:STRING="75;80"                                                    \
       -DROBOT_FARM_REQUESTED_BUILD_LIST:STRING=${ROBOTFARM_BUILD_LIST}
 
-RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=locked                 \
-    --mount=type=cache,target=/var/lib/apt/lists,id=${APT_LIST_CACHE_ID},sharing=locked            \
-    apt-get update &&                                                                              \
-    apt-get install -y --no-install-recommends $(cat /tmp/robotFarm-build/systemDependencies.txt)
-
 RUN cmake --build /tmp/robotFarm-build
 
 
 FROM base AS dev-base
 COPY --from=throw-away-dev-base /opt/robotFarm /opt/robotFarm
-
-RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=locked                 \
-    --mount=type=cache,target=/var/lib/apt/lists,id=${APT_LIST_CACHE_ID},sharing=locked            \
-    apt-get update &&                                                                              \
-    apt-get install -y --no-install-recommends $(cat /opt/robotFarm/systemDependencies.txt)

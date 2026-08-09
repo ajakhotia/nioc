@@ -560,7 +560,7 @@ sudo apt install -y --no-install-recommends jq          # to read systemDependen
 sudo bash external/infraCommons/tools/apt/addAptSources.sh -y
 sudo apt update && sudo apt install -y --no-install-recommends \
   $(sh external/infraCommons/tools/extractDependencies.sh \
-      "Basics Compilers" systemDependencies.json)
+      "Basics Compilers RobotFarmDependencies" systemDependencies.json)
 ```
 
 > ⚠️ **Heads up:** the `Compilers` group includes the **CUDA toolkit (~4.7 GB)**; the bulk of the
