@@ -8,7 +8,7 @@ $Cxx.namespace("nioc::example");
 # Topics in/out and the recipe sizes for the DevelopmentCardBuilder.
 struct DevelopmentCardBuilderConfig
 {
-    component @0 : ComponentConfig = (name = "developmentCardBuilder");
+    component @0 : ComponentConfig;
     oreTopic @1 : Text = "ore";
     woolTopic @2 : Text = "wool";
     grainTopic @3 : Text = "grain";

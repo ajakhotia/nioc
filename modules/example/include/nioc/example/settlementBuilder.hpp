@@ -15,9 +15,11 @@
 #include <nioc/example/idl/settlement.capnp.h>
 #include <nioc/example/idl/wool.capnp.h>
 #include <nioc/terminus/component.hpp>
+#include <nioc/terminus/config.hpp>
 #include <nioc/terminus/message.hpp>
 #include <nioc/terminus/port.hpp>
 #include <nioc/terminus/publisher.hpp>
+#include <string>
 
 namespace nioc::example
 {
@@ -41,10 +43,15 @@ namespace nioc::example
 class SettlementBuilder final: public terminus::Component
 {
 public:
-  SettlementBuilder(terminus::Port& port, SettlementBuilderConfig::Reader config);
+  SettlementBuilder(const std::string& name, terminus::Port& port);
+
+  SettlementBuilder(
+      std::string name,
+      terminus::Port& port,
+      terminus::Config<SettlementBuilderConfig> config);
 
 private:
-  SettlementBuilderConfig::Reader mConfig;
+  terminus::Config<SettlementBuilderConfig> mConfig;
   terminus::Publisher<Settlement> mSettlementPublisher;
   std::size_t mRoadsAvailable{0};
   std::size_t mBricksAvailable{0};

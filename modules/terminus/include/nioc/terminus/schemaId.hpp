@@ -26,7 +26,6 @@ namespace nioc::terminus
 ///
 /// @see chronicle::makeChannelId
 template<typename Schema>
-inline constexpr std::uint64_t kSchemaId = static_cast<std::uint64_t>(
-    Schema::_capnpPrivate::typeId);
+constexpr auto kSchemaId = static_cast<std::uint64_t>(Schema::_capnpPrivate::typeId);
 
 } // namespace nioc::terminus

@@ -4,7 +4,6 @@
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include <capnp/blob.h>
 #include <cstddef>
 #include <cstdint>
 #include <exception>
@@ -36,34 +35,25 @@ concurrent::BufferMode toConcurrentBufferMode(const BufferMode bufferMode)
       static_cast<std::uint16_t>(bufferMode));
 }
 
-std::string requiredName(const capnp::Text::Reader name)
-{
-  if(name.size() == 0)
-  {
-    common::throwException<std::invalid_argument>("Component config must provide a non-empty name");
-  }
-  return {name.begin(), name.end()};
-}
-
 } // namespace
 
 Component::Component(
+    std::string name,
     Port& port,
     const std::size_t inboxCapacity,
-    const concurrent::BufferMode bufferMode,
-    std::string name):
+    const concurrent::BufferMode bufferMode):
   Routine(std::move(name)),
   mPort(port),
   mInbox([this] { triggerRunner(); }, bufferMode, inboxCapacity)
 {
 }
 
-Component::Component(Port& port, const ComponentConfig::Reader config):
+Component::Component(std::string name, Port& port, const ComponentConfig::Reader config):
   Component{
+      std::move(name),
       port,
       config.getInboxCapacity(),
-      toConcurrentBufferMode(config.getBufferMode()),
-      requiredName(config.getName())}
+      toConcurrentBufferMode(config.getBufferMode())}
 {
 }
 

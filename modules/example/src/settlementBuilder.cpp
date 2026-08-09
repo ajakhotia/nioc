@@ -6,20 +6,27 @@
 
 #include <nioc/example/settlementBuilder.hpp>
 #include <nioc/logger/logger.hpp>
+#include <string>
 #include <utility>
 
 namespace nioc::example
 {
 
+SettlementBuilder::SettlementBuilder(const std::string& name, terminus::Port& port):
+  SettlementBuilder{name, port, port.materializeConfig<SettlementBuilderConfig>(name)}
+{
+}
+
 SettlementBuilder::SettlementBuilder(
+    std::string name,
     terminus::Port& port,
-    const SettlementBuilderConfig::Reader config):
-  Component{port, config.getComponent()},
-  mConfig{config},
-  mSettlementPublisher{publisher<Settlement>(config.getSettlementTopic().cStr())}
+    terminus::Config<SettlementBuilderConfig> config):
+  Component{std::move(name), port, config.reader().getComponent()},
+  mConfig{std::move(config)},
+  mSettlementPublisher{publisher<Settlement>(mConfig.reader().getSettlementTopic().cStr())}
 {
   subscribe<Road>(
-      config.getRoadTopic().cStr(),
+      mConfig.reader().getRoadTopic().cStr(),
       [this](const terminus::Message<Road>& road)
       {
         process(road);
@@ -27,7 +34,7 @@ SettlementBuilder::SettlementBuilder(
       });
 
   subscribe<Brick>(
-      config.getBrickTopic().cStr(),
+      mConfig.reader().getBrickTopic().cStr(),
       [this](const terminus::Message<Brick>& brick)
       {
         process(brick);
@@ -35,7 +42,7 @@ SettlementBuilder::SettlementBuilder(
       });
 
   subscribe<Lumber>(
-      config.getLumberTopic().cStr(),
+      mConfig.reader().getLumberTopic().cStr(),
       [this](const terminus::Message<Lumber>& lumber)
       {
         process(lumber);
@@ -43,7 +50,7 @@ SettlementBuilder::SettlementBuilder(
       });
 
   subscribe<Wool>(
-      config.getWoolTopic().cStr(),
+      mConfig.reader().getWoolTopic().cStr(),
       [this](const terminus::Message<Wool>& wool)
       {
         process(wool);
@@ -51,7 +58,7 @@ SettlementBuilder::SettlementBuilder(
       });
 
   subscribe<Grain>(
-      config.getGrainTopic().cStr(),
+      mConfig.reader().getGrainTopic().cStr(),
       [this](const terminus::Message<Grain>& grain)
       {
         process(grain);
@@ -96,11 +103,11 @@ void SettlementBuilder::process(const terminus::Message<Grain>& grain)
 
 void SettlementBuilder::build()
 {
-  const auto roadNeededPerSettlement = mConfig.getRoadPerSettlement();
-  const auto brickNeededPerSettlement = mConfig.getBrickPerSettlement();
-  const auto lumberNeededPerSettlement = mConfig.getLumberPerSettlement();
-  const auto woolNeededPerSettlement = mConfig.getWoolPerSettlement();
-  const auto grainNeededPerSettlement = mConfig.getGrainPerSettlement();
+  const auto roadNeededPerSettlement = mConfig.reader().getRoadPerSettlement();
+  const auto brickNeededPerSettlement = mConfig.reader().getBrickPerSettlement();
+  const auto lumberNeededPerSettlement = mConfig.reader().getLumberPerSettlement();
+  const auto woolNeededPerSettlement = mConfig.reader().getWoolPerSettlement();
+  const auto grainNeededPerSettlement = mConfig.reader().getGrainPerSettlement();
   while(mRoadsAvailable >= roadNeededPerSettlement and
         mBricksAvailable >= brickNeededPerSettlement and
         mLumberAvailable >= lumberNeededPerSettlement and

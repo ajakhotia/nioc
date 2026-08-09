@@ -4,14 +4,18 @@ include(GoogleTest)
 add_executable(terminusTest
   testComponent.cpp
   componentTest.cpp
-  configStoreTest.cpp
+  configTest.cpp
+  configOverlayTest.cpp
   consignmentTest.cpp
   driverTest.cpp
   logPlayerTest.cpp
-  manifestTest.cpp
   messageTest.cpp
   portTest.cpp
+  runContextTest.cpp
   schemaIdTest.cpp
+  schemaRegistryTest.cpp
+  tallyTest.cpp
+  topicRegistryTest.cpp
   utilsTest.cpp)
 
 target_link_libraries(terminusTest

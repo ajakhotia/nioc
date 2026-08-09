@@ -12,6 +12,7 @@ capnproto_generate_library(
     niocTargets
   SCHEMA_FILES
     include/nioc/terminus/idl/envelope.capnp
+    include/nioc/terminus/idl/schemaClosure.capnp
     include/nioc/terminus/idl/testSchema.capnp
   COMPILE_FEATURES
     PUBLIC cxx_std_23
@@ -32,7 +33,6 @@ capnproto_generate_library(
     niocTargets
   SCHEMA_FILES
     include/nioc/terminus/config/componentConfig.capnp
-    include/nioc/terminus/config/driverConfig.capnp
     include/nioc/terminus/config/testConfig.capnp
   COMPILE_FEATURES
     PUBLIC cxx_std_23
@@ -54,33 +54,39 @@ add_exported_library(
   SOURCES
     src/arenaMessageBuilder.cpp
     src/component.cpp
-    src/configStore.cpp
+    src/config.cpp
+    src/configOverlay.cpp
     src/consignment.cpp
     src/defaultSignalCatcher.cpp
     src/draft.cpp
     src/driver.cpp
     src/logPlayer.cpp
-    src/manifest.cpp
     src/port.cpp
     src/programOption.cpp
     src/runContext.cpp
+    src/schemaRegistry.cpp
+    src/tally.cpp
+    src/topicRegistry.cpp
     src/utils.cpp
   HEADERS
     PUBLIC include/nioc/terminus/arenaMessageBuilder.hpp
     PUBLIC include/nioc/terminus/component.hpp
-    PUBLIC include/nioc/terminus/configStore.hpp
+    PUBLIC include/nioc/terminus/config.hpp
+    PUBLIC include/nioc/terminus/configOverlay.hpp
     PUBLIC include/nioc/terminus/consignment.hpp
     PUBLIC include/nioc/terminus/defaultSignalCatcher.hpp
     PUBLIC include/nioc/terminus/draft.hpp
     PUBLIC include/nioc/terminus/driver.hpp
     PUBLIC include/nioc/terminus/logPlayer.hpp
-    PUBLIC include/nioc/terminus/manifest.hpp
     PUBLIC include/nioc/terminus/message.hpp
     PUBLIC include/nioc/terminus/port.hpp
     PUBLIC include/nioc/terminus/programOption.hpp
     PUBLIC include/nioc/terminus/publisher.hpp
     PUBLIC include/nioc/terminus/runContext.hpp
     PUBLIC include/nioc/terminus/schemaId.hpp
+    PUBLIC include/nioc/terminus/schemaRegistry.hpp
+    PUBLIC include/nioc/terminus/tally.hpp
+    PUBLIC include/nioc/terminus/topicRegistry.hpp
     PUBLIC include/nioc/terminus/utils.hpp
   INCLUDE_DIRECTORIES
     ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -93,6 +99,7 @@ add_exported_library(
     PUBLIC nioc::chronicle
     PUBLIC nioc::common
     PUBLIC nioc::concurrent
+    PUBLIC nioc::containers
     PUBLIC nioc::logger
     PUBLIC nioc::terminusConfig
     PUBLIC nioc::terminusIdl

@@ -4,15 +4,11 @@
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include <capnp/any.h>
-#include <capnp/message.h>
-#include <capnp/serialize.h>
 #include <nioc/chronicle/crate.hpp>
 #include <nioc/chronicle/reservation.hpp>
-#include <nioc/common/exception.hpp>
 #include <nioc/terminus/arenaMessageBuilder.hpp>
 #include <nioc/terminus/draft.hpp>
-#include <stdexcept>
+#include <nioc/terminus/utils.hpp>
 #include <utility>
 
 namespace nioc::terminus
@@ -23,25 +19,15 @@ chronicle::Crate flattenDraft(ArenaMessageBuilder& builder, chronicle::Reservati
   if(builder.overflowed()) [[unlikely]]
   {
     // The message outgrew its arena onto the heap. Re-root it into a single segment so the recorded
-    // frame keeps the fast path's single-segment shape. The busted length bounds the collapsed
-    // size, so sizing the rebuild's first segment to it lands the re-root in one segment.
-    auto singleSegmentBuilder = capnp::MallocMessageBuilder{
-        static_cast<unsigned int>(capnp::computeSerializedSizeInWords(builder))};
-    singleSegmentBuilder.setRoot(builder.getRoot<capnp::AnyPointer>().asReader());
+    // frame keeps the fast path's single-segment shape.
+    const auto collapsed = collapseToSingleSegment(builder);
 
     // Frame that single segment straight into the reservation - no intermediate serialization. The
     // segment lives in the rebuild's own memory, so it survives resizing the reservation (which
     // reuses the reservation's bytes).
-    const auto segments = singleSegmentBuilder.getSegmentsForOutput();
-    if(segments.size() != 1)
-    {
-      common::throwException<std::logic_error>(
-          "Re-rooted message has {} segments; expected a single segment.",
-          segments.size());
-    }
-
-    reservation.modify(ArenaMessageBuilder::frameSize(segments.front().size()));
-    const auto frame = ArenaMessageBuilder::writeFrame(reservation.span(), segments.front());
+    const auto segment = collapsed->getSegmentsForOutput().front();
+    reservation.modify(ArenaMessageBuilder::frameSize(segment.size()));
+    const auto frame = ArenaMessageBuilder::writeFrame(reservation.span(), segment);
     return std::move(reservation).commit(frame.size());
   }
 

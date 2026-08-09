@@ -13,9 +13,11 @@
 #include <nioc/example/idl/ore.capnp.h>
 #include <nioc/example/idl/settlement.capnp.h>
 #include <nioc/terminus/component.hpp>
+#include <nioc/terminus/config.hpp>
 #include <nioc/terminus/message.hpp>
 #include <nioc/terminus/port.hpp>
 #include <nioc/terminus/publisher.hpp>
+#include <string>
 
 namespace nioc::example
 {
@@ -35,10 +37,12 @@ namespace nioc::example
 class CityBuilder final: public terminus::Component
 {
 public:
-  CityBuilder(terminus::Port& port, CityBuilderConfig::Reader config);
+  CityBuilder(const std::string& name, terminus::Port& port);
+
+  CityBuilder(std::string name, terminus::Port& port, terminus::Config<CityBuilderConfig> config);
 
 private:
-  CityBuilderConfig::Reader mConfig;
+  terminus::Config<CityBuilderConfig> mConfig;
   terminus::Publisher<City> mCityPublisher;
   std::size_t mSettlementsAvailable{0};
   std::size_t mOreAvailable{0};

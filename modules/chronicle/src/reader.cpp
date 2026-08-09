@@ -9,6 +9,7 @@
 #include <iterator>
 #include <nioc/chronicle/reader.hpp>
 #include <nioc/common/filesystem.hpp>
+#include <nioc/common/utils.hpp>
 #include <optional>
 #include <span>
 #include <system_error>
@@ -29,7 +30,7 @@ const Entry* Reader::Iterator::operator->() const noexcept
   return &*mEntry; // NOLINT(bugprone-unchecked-optional-access)
 }
 
-auto Reader::Iterator::operator++() -> Iterator&
+Reader::Iterator& Reader::Iterator::operator++()
 {
   mEntry = mReader->readNextEntry();
   return *this;
@@ -47,7 +48,7 @@ bool Reader::Iterator::operator==(const std::default_sentinel_t /*end*/) const n
 
 Reader::Iterator::Iterator(Reader& reader): mReader{&reader}, mEntry{mReader->readNextEntry()} {}
 
-auto Reader::begin() -> Iterator
+Reader::Iterator Reader::begin()
 {
   return Iterator{*this};
 }
@@ -101,7 +102,7 @@ std::shared_ptr<const Reader::Roll> Reader::acquireRoll(
   }
 
   auto roll = std::make_shared<const Roll>(
-      mLogRoot / hexString(channelId.mValue) / buildRollName(rollId));
+      mLogRoot / common::hexString(channelId.mValue) / buildRollName(rollId));
   cached = roll;
   return roll;
 }

@@ -5,13 +5,15 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include "configStore.hpp"
+#include "config.hpp"
 #include "consignment.hpp"
-#include "manifest.hpp"
 #include "runContext.hpp"
 #include "schemaId.hpp"
+#include "schemaRegistry.hpp"
+#include "topicRegistry.hpp"
 #include <atomic>
 #include <chrono>
+#include <cstdint>
 #include <filesystem>
 #include <functional>
 #include <memory>
@@ -26,7 +28,6 @@
 #include <string>
 #include <string_view>
 #include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 namespace nioc::terminus
@@ -52,7 +53,7 @@ class Publisher;
 /// `publisher` and `subscribe` are wiring-time operations and are not safe against concurrent
 /// delivery.
 ///
-/// @see Publisher, Consignment, Manifest
+/// @see Publisher, Consignment, RunContext
 class Port
 {
 public:
@@ -78,31 +79,30 @@ public:
   /// is later torn down in order: drivers, then components, then runners.
   using Setup = std::function<void(Port&, Drivers&, Components&, Runners&)>;
 
-  /// @brief Create the run: build its working directory, attach logging and the chronicle writer,
-  /// copy in the manifest's resources, then call @p setup to wire the routine graph.
+  /// @brief Create the run: attach logging and the chronicle writer, copy in the run's resources,
+  /// then call @p setup to wire the routine graph.
   ///
-  /// Writes the manifest and a `resources.json` into the working directory. @p setup runs against
-  /// the fully constructed Port.
+  /// The working directory is the one @p runContext owns and has already established (its
+  /// `configOverlay.json` and `manifest.json` are written by then). Port writes `resources.json`
+  /// into it. @p setup runs against the fully constructed Port.
   ///
-  /// @param manifest Defines the log root, whether to record a chronicle, and the resource files
-  /// to copy in.
+  /// @param runContext Owns the working directory and carries the config layers, resource files,
+  /// record/playback mode, and command line. Consumed (moved in).
   ///
   /// @param setup Wiring hook run against the fully constructed Port to build the routine graph.
   ///
   /// @throws std::invalid_argument if a resource file is missing, is not a regular file, or
   /// collides with another resource by full path or by filename.
-  explicit Port(Manifest manifest, const Setup& setup);
+  ///
+  /// @throws std::runtime_error if a config file cannot be opened.
+  Port(RunContext runContext, const Setup& setup);
 
   Port(const Port&) = delete;
 
   Port(Port&&) noexcept = delete;
 
-  /// @brief Wind the run down: request shutdown, drain in-flight consignments, release the routine
-  /// graph in dependency order, rewrite `resources.json`, then detach logging.
-  ///
-  /// The chronicle writer is finalized last, after every crate viewing its rolls is gone. Does not
-  /// throw.
-  ~Port();
+  /// @brief Destructor. Request shutdown, let the system wind down and terminate cleanly.
+  ~Port() noexcept;
 
   Port& operator=(const Port&) = delete;
 
@@ -111,21 +111,48 @@ public:
   /// Root directory holding this run's chronicle, console log, and copied resources.
   [[nodiscard]] const std::filesystem::path& workingDir() const noexcept;
 
-  /// Read-only view of how this run was launched: log root, resources, record/playback mode, and
-  /// command line. For the decoded config, use @ref config.
+  /// Read-only view of how this run was launched: working directory, resources, config layers,
+  /// record/playback mode, and command line.
   ///
   /// @see RunContext
   [[nodiscard]] const RunContext& runContext() const noexcept;
 
-  /// @brief Return a typed reader over the run's decoded configuration; it borrows from this Port
-  /// and must not outlive it.
+  /// @brief The topics of the recording this run replays.
   ///
-  /// @tparam Schema Must be supplied explicitly and match the schema the config was decoded
-  /// against.
+  /// Adopted before the @ref Setup hook runs, so a routine may consult it while wiring its
+  /// subscriptions. Empty on a run that is not a replay. To read a recording's topics without
+  /// standing up a run, construct a @ref TopicRegistry from its directory directly.
+  [[nodiscard]] const TopicRegistry& playbackTopics() const noexcept;
+
+  /// @brief The schemas of the recording this run replays, as live schemas for dynamic reading.
+  ///
+  /// Adopted before the @ref Setup hook runs, so a routine may consult it while wiring its
+  /// subscriptions; join it to channels through the schema ids in @ref playbackTopics. Empty on a
+  /// run that is not a replay.
+  [[nodiscard]] const SchemaRegistry& playbackSchemas() const noexcept;
+
+  /// @brief Materialize the typed @ref Config for the routine named @p name: read its overrides
+  /// from this run's @ref ConfigOverlay, merge them onto @p Schema's defaults, and write and map
+  /// the config artifacts under the run's `config` directory.
+  ///
+  /// A routine's `(name, port)` constructor delegates through this to its `(name, port, config)`
+  /// constructor. The routine names only itself; where its overrides live in the config document is
+  /// the ConfigOverlay's concern, not the routine's.
+  ///
+  /// @tparam Schema The routine's Cap'n Proto config schema.
+  ///
+  /// @param name The routine name; keys its overrides and names its artifacts.
+  ///
+  /// @throws std::invalid_argument if the overrides are not a JSON object.
+  ///
+  /// @throws std::runtime_error if an artifact cannot be written or mapped.
   template<typename Schema>
-  [[nodiscard]] Schema::Reader config() const
+  [[nodiscard]] Config<Schema> materializeConfig(const std::string& name)
   {
-    return mManifest.mConfigStore.get<Schema>();
+    return Config<Schema>{
+        mRunContext.configOverlay().acquireOverrides(name),
+        mRunContext.workingDir() / "config",
+        name};
   }
 
   /// @brief Copy @p source into the working directory and register it as a run resource.
@@ -155,14 +182,17 @@ public:
   [[nodiscard]] std::filesystem::path acquireResource(const std::filesystem::path& source) const;
 
   /// @brief Open a publisher for @p topic carrying messages of @p Schema, recording the topic to
-  /// the run's `topics.txt`.
+  /// the run's `topics.json` and the schema's closure to its `schemas.bin`.
   ///
-  /// Each distinct `(Schema, topic)` pair is one channel; calling again with the same pair yields
-  /// an independent publisher onto the same channel. Call at wiring time.
+  /// A `(Schema, topic)` pair is one channel, and a channel takes a single publisher: chronicle
+  /// channels are single-producer, so opening a second publisher for a channel already opened on
+  /// this run is refused. Call at wiring time.
   ///
   /// @tparam Schema The Cap'n Proto payload schema. Must be supplied explicitly.
   ///
   /// @throws std::logic_error if this run does not record a chronicle.
+  ///
+  /// @throws std::runtime_error if a publisher is already open for this channel.
   template<typename Schema>
   [[nodiscard]] Publisher<Schema> publisher(const std::string_view& topic)
   {
@@ -173,7 +203,12 @@ public:
     }
 
     const auto channelId = chronicle::makeChannelId(kSchemaId<Schema>, topic);
-    recordTopic(channelId, topic, common::prettyName<Schema>());
+    mActiveTopicRegistry.record(
+        channelId,
+        std::string{topic},
+        kSchemaId<Schema>,
+        std::string{common::prettyName<Schema>()});
+    mActiveSchemaRegistry.record<Schema>();
     return Publisher<Schema>{*this, mWriter->channel(channelId)};
   }
 
@@ -240,14 +275,10 @@ private:
   /// Maps each subscribed channel to its list of subscribers.
   using SubscriptionMap = std::unordered_map<ChannelId, SubscriptionList>;
 
-  /// The set of channels already recorded to `topics.txt`.
-  using ChannelIdSet = std::unordered_set<ChannelId>;
-
-  /// How this run was launched: log root, resources, record/playback mode, and config.
-  const Manifest mManifest;
-
-  /// Root directory holding this run's chronicle, console log, and copied resources.
-  const std::filesystem::path mWorkingDir;
+  /// How this run was launched: working directory, resources, config layers, mode, and the
+  /// assembled config overlay. Owns the working directory; declared first so it is built before the
+  /// members that read from it.
+  const RunContext mRunContext;
 
   /// The console log sink attached at construction and detached during teardown.
   const std::shared_ptr<spdlog::sinks::sink> mConsoleLogSink;
@@ -258,8 +289,22 @@ private:
   /// The added resources, guarded for concurrent @ref addResource and @ref acquireResource.
   common::Locked<ResourceMap> mLockedResourceMap;
 
-  /// The channels already written to `topics.txt`, used to record each topic only once.
-  ChannelIdSet mRecordedTopics;
+  /// The topics of the recording this run replays. Adopted in the initializer list from the input
+  /// log, so it is ready before the graph is wired; empty on a run that is not a replay. Never
+  /// written back out, since it belongs to the recording being read, not this run.
+  const TopicRegistry mPlaybackTopicRegistry;
+
+  /// The schemas of the recording this run replays. Adopted in the initializer list from the input
+  /// log, like @ref mPlaybackTopicRegistry, and never written back out.
+  const SchemaRegistry mPlaybackSchemaRegistry;
+
+  /// The topics this run itself records, filled as its publishers open and written out once as
+  /// `topics.json` when the graph is wired.
+  TopicRegistry mActiveTopicRegistry;
+
+  /// The schema closures of the topics this run records, filled beside @ref mActiveTopicRegistry
+  /// and written out once as `schemas.bin` when the graph is wired.
+  SchemaRegistry mActiveSchemaRegistry;
 
   /// The subscribers registered per channel, consulted by @ref deliver.
   SubscriptionMap mSubscriptionMap;
@@ -278,23 +323,6 @@ private:
   Runners mRunners;
   Components mComponents;
   Drivers mDrivers;
-
-  /// @brief Append @p topic and @p schemaName to the run's `topics.txt`, but only the first time
-  /// @p channelId is seen.
-  ///
-  /// Called by @ref publisher while opening a channel. Subsequent calls for the same @p channelId
-  /// are ignored, so a topic is listed exactly once.
-  ///
-  /// @param channelId Identifies the channel; the first sighting drives whether the topic is
-  /// appended.
-  ///
-  /// @param topic The topic name to append.
-  ///
-  /// @param schemaName The human-readable name of the channel's payload schema.
-  void recordTopic(
-      ChannelId channelId,
-      const std::string_view& topic,
-      const std::string_view& schemaName);
 };
 
 } // namespace nioc::terminus

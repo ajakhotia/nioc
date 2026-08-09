@@ -23,7 +23,6 @@
 //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include <capnp/schema.h>
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
@@ -31,7 +30,6 @@
 #include <nioc/common/utils.hpp>
 #include <nioc/concurrent/threadedRunner.hpp>
 #include <nioc/example/cityBuilder.hpp>
-#include <nioc/example/config/catanConfig.capnp.h>
 #include <nioc/example/developmentCardBuilder.hpp>
 #include <nioc/example/fields.hpp>
 #include <nioc/example/forest.hpp>
@@ -42,9 +40,9 @@
 #include <nioc/example/settlementBuilder.hpp>
 #include <nioc/logger/logger.hpp>
 #include <nioc/terminus/defaultSignalCatcher.hpp>
-#include <nioc/terminus/manifest.hpp>
 #include <nioc/terminus/port.hpp>
 #include <nioc/terminus/programOption.hpp>
+#include <nioc/terminus/runContext.hpp>
 #include <utility>
 
 int main(const int argC, const char* const* const argV)
@@ -54,48 +52,34 @@ int main(const int argC, const char* const* const argV)
     const auto programName = nioc::common::programName(argC, argV);
     nioc::logger::setupDefaultLogger(programName);
 
-    auto options = nioc::terminus::programOptions(programName);
-    options.add(nioc::terminus::Manifest::cliOptions());
-    const auto variableMap = nioc::terminus::parseCommandLine(argC, argV, options);
+    const auto variableMap =
+        nioc::terminus::parseCommandLine(argC, argV, nioc::terminus::RunContext::cliOptions());
 
-    // Decode the run's config against CatanConfig: schema defaults, then any --append-config file,
-    // then any --config-override entries.
-    auto manifest = nioc::terminus::Manifest{
-        variableMap,
-        capnp::Schema::from<nioc::example::CatanConfig>()};
-
-    // The Port owns the run. Its constructor calls this hook to build the routine graph, handing
-    // each routine only its own config block.
+    // The Port owns the run. Its constructor calls this hook to build the routine graph; each
+    // routine reads its own config section (keyed by its name) from the run's config document.
     auto port = nioc::terminus::Port{
-        std::move(manifest),
+        nioc::terminus::RunContext{variableMap},
         [](nioc::terminus::Port& port,
            nioc::terminus::Port::Drivers& drivers,
            nioc::terminus::Port::Components& components,
            nioc::terminus::Port::Runners& runners)
         {
-          const auto config = port.config<nioc::example::CatanConfig>();
-
           // Components (consumers).
           components.push_back(
-              std::make_shared<nioc::example::RoadBuilder>(port, config.getRoadBuilder()));
+              std::make_shared<nioc::example::RoadBuilder>("rohanTheRoadBuilder", port));
           components.push_back(
-              std::make_shared<nioc::example::SettlementBuilder>(
-                  port,
-                  config.getSettlementBuilder()));
+              std::make_shared<nioc::example::SettlementBuilder>("sakuraTheSettler", port));
           components.push_back(
-              std::make_shared<nioc::example::CityBuilder>(port, config.getCityBuilder()));
+              std::make_shared<nioc::example::CityBuilder>("cindyTheCityMaker", port));
           components.push_back(
-              std::make_shared<nioc::example::DevelopmentCardBuilder>(
-                  port,
-                  config.getDevelopmentCardBuilder()));
+              std::make_shared<nioc::example::DevelopmentCardBuilder>("deviTheDeveloper", port));
 
           // Drivers (producers).
-          drivers.push_back(std::make_shared<nioc::example::Hills>(port, config.getHills()));
-          drivers.push_back(std::make_shared<nioc::example::Forest>(port, config.getForest()));
-          drivers.push_back(std::make_shared<nioc::example::Pasture>(port, config.getPasture()));
-          drivers.push_back(std::make_shared<nioc::example::Fields>(port, config.getFields()));
-          drivers.push_back(
-              std::make_shared<nioc::example::Mountains>(port, config.getMountains()));
+          drivers.push_back(std::make_shared<nioc::example::Hills>("hiroHills", port));
+          drivers.push_back(std::make_shared<nioc::example::Forest>("finnyForests", port));
+          drivers.push_back(std::make_shared<nioc::example::Pasture>("peekyPastures", port));
+          drivers.push_back(std::make_shared<nioc::example::Fields>("feiFields", port));
+          drivers.push_back(std::make_shared<nioc::example::Mountains>("meiMountains", port));
 
           // Launch consumers before producers, so no message is published before its subscriber's
           // runner is up. Each routine gets its own thread.

@@ -24,9 +24,4 @@ TEST(ChronicleUtils, buildRollName)
   EXPECT_EQ("roll00000003519894239162.nioc", buildRollName(3519894239162U));
 }
 
-TEST(ChronicleUtils, hexString)
-{
-  EXPECT_EQ("0xff", hexString(255U));
-}
-
 } // namespace nioc::chronicle

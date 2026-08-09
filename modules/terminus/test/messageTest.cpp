@@ -4,18 +4,14 @@
 // Author   : Anurag Jakhotia
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include <capnp/schema.h>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <gtest/gtest.h>
 #include <nioc/chronicle/defines.hpp>
 #include <nioc/chronicle/reader.hpp>
-#include <nioc/terminus/config/testConfig.capnp.h>
-#include <nioc/terminus/configStore.hpp>
 #include <nioc/terminus/draft.hpp>
 #include <nioc/terminus/idl/testSchema.capnp.h>
-#include <nioc/terminus/manifest.hpp>
 #include <nioc/terminus/message.hpp>
 #include <nioc/terminus/port.hpp>
 #include <nioc/terminus/publisher.hpp>
@@ -40,10 +36,10 @@ chronicle::ChannelId channelFor(const std::string_view topic)
 
 Port makePort(const std::string_view name)
 {
+  auto workingDir = fs::temp_directory_path() / "nioc-messageTest" / name;
+  fs::remove_all(workingDir);
   return Port{
-      Manifest{
-          RunContext{fs::temp_directory_path() / "nioc-messageTest" / name, {}, true, ""},
-          ConfigStore{"{}", capnp::Schema::from<TestConfig>()}},
+      RunContext{std::move(workingDir), {}, true, ""},
       [](Port&, Port::Drivers&, Port::Components&, Port::Runners&) {}};
 }
 
