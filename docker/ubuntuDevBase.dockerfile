@@ -49,6 +49,9 @@ RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=lock
     apt-get autoremove -y --no-install-recommends &&                                               \
     apt-get autoclean -y --no-install-recommends
 
+# Bootstrap: hardcoded so that systemDependencies.json edits don't invalidate the slow apt-source
+# registration below. jq is needed by extractDependencies.sh; the rest are the minimum set
+# addAptSources.sh itself requires.
 RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=locked                 \
     --mount=type=cache,target=/var/lib/apt/lists,id=${APT_LIST_CACHE_ID},sharing=locked            \
     apt-get update &&                                                                              \
@@ -57,19 +60,16 @@ RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=lock
 
 RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=locked                 \
     --mount=type=cache,target=/var/lib/apt/lists,id=${APT_LIST_CACHE_ID},sharing=locked            \
-    --mount=type=bind,src=external/infraCommons/tools,dst=/tmp/tools                               \
-    bash /tmp/tools/apt/addGNUSources.sh    -y &&                                                  \
-    bash /tmp/tools/apt/addLLVMSources.sh   -y &&                                                  \
-    bash /tmp/tools/apt/addNvidiaSources.sh -y &&                                                  \
-    bash /tmp/tools/installCMake.sh
+    --mount=type=bind,src=external/infraCommons/tools/apt/addAptSources.sh,dst=/tmp/addAptSources.sh \
+    bash /tmp/addAptSources.sh -y
 
 RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=locked                 \
     --mount=type=cache,target=/var/lib/apt/lists,id=${APT_LIST_CACHE_ID},sharing=locked            \
-    --mount=type=bind,src=external/infraCommons/tools,dst=/tmp/tools                               \
+    --mount=type=bind,src=external/infraCommons/tools/extractDependencies.sh,dst=/tmp/extractDependencies.sh \
     --mount=type=bind,src=systemDependencies.json,dst=/tmp/systemDependencies.json                 \
     apt-get update &&                                                                              \
     apt-get install -y --no-install-recommends                                                     \
-      $(sh /tmp/tools/extractDependencies.sh "Basics Compilers" /tmp/systemDependencies.json)
+      $(sh /tmp/extractDependencies.sh "Basics Compilers" /tmp/systemDependencies.json)
 
 RUN gnu=$(ls /usr/bin | grep -E '^gcc-[0-9]+$' | sort -V | tail -n 1 | cut -d- -f2) &&             \
     update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${gnu} 100                         \

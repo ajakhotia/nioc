@@ -555,16 +555,12 @@ system already satisfies. The setup scripts live in the `infraCommons` submodule
 ```shell
 cd ${SOURCE_TREE}
 sudo apt install -y --no-install-recommends jq          # to read systemDependencies.json
-sudo bash external/infraCommons/tools/installCMake.sh    # skip if cmake >= 3.27
-sudo apt install -y --no-install-recommends \
-  $(sh external/infraCommons/tools/extractDependencies.sh Basics systemDependencies.json)
 
-# Newer toolchains (skip if your OS compilers are new enough):
-sudo bash external/infraCommons/tools/apt/addGNUSources.sh    -y
-sudo bash external/infraCommons/tools/apt/addLLVMSources.sh   -y
-sudo bash external/infraCommons/tools/apt/addNvidiaSources.sh -y
+# Register the gnu, llvm, nvidia, and kitware apt sources (skip if your OS packages are new enough):
+sudo bash external/infraCommons/tools/apt/addAptSources.sh -y
 sudo apt update && sudo apt install -y --no-install-recommends \
-  $(sh external/infraCommons/tools/extractDependencies.sh Compilers systemDependencies.json)
+  $(sh external/infraCommons/tools/extractDependencies.sh \
+      "Basics Compilers" systemDependencies.json)
 ```
 
 > ⚠️ **Heads up:** the `Compilers` group includes the **CUDA toolkit (~4.7 GB)**; the bulk of the
