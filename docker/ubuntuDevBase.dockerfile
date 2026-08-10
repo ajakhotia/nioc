@@ -52,7 +52,7 @@ RUN llvm=$(ls /usr/bin | grep -E '^clang-[0-9]+$' | sort -V | tail -n 1 | cut -d
 # Nothing FROMs this stage as an image base; dev-base only pulls /opt/robotFarm forward via
 # COPY, so the source and build trees never get committed.
 FROM base AS throw-away-dev-base
-ARG ROBOTFARM_VERSION=v2.2.0
+ARG ROBOTFARM_VERSION=v2.3.0
 ARG ROBOTFARM_BUILD_LIST="BoostExternalProject;Eigen3ExternalProject;NlohmannJsonExternalProject;GoogleTestExternalProject;SpdLogExternalProject;CapnprotoExternalProject"
 
 RUN git clone --depth 1 --branch ${ROBOTFARM_VERSION}                                              \
