@@ -572,11 +572,23 @@ nioc needs Boost (headers, iostreams, program_options), Cap'n Proto, Eigen3, Goo
 JSON, and Spdlog. The easiest way to get them is
 [robotFarm](https://github.com/ajakhotia/robotFarm):
 
+Download, configure, build. The system packages robotFarm needs were already installed by the
+[Toolchain](#-toolchain) step through the `RobotFarmDependencies` group:
+
 ```shell
-export ROBOT_FARM_INSTALL_TREE=/opt/robotFarm
-curl -fsSL https://raw.githubusercontent.com/ajakhotia/robotFarm/refs/heads/main/tools/quickBuild.sh | \
-  sudo bash -s -- --version v2.2.0 --toolchain linux-clang-22 --prefix ${ROBOT_FARM_INSTALL_TREE} \
-    --build-list "BoostExternalProject;Eigen3ExternalProject;NlohmannJsonExternalProject;GoogleTestExternalProject;SpdLogExternalProject;CapnprotoExternalProject"
+export ROBOT_FARM_INSTALL_TREE=${HOME}/opt/robotFarm
+
+git clone --depth 1 --branch v2.3.0 https://github.com/ajakhotia/robotFarm.git /tmp/robotFarm-src
+git -C /tmp/robotFarm-src submodule update --init
+
+cmake -G Ninja -S /tmp/robotFarm-src -B /tmp/robotFarm-build                                          \
+  --toolchain /tmp/robotFarm-src/external/infraCommons/cmake/toolchains/linux-clang-22.cmake          \
+  -DCMAKE_BUILD_TYPE=Release                                                                          \
+  -DBUILD_SHARED_LIBS=ON                                                                              \
+  -DCMAKE_INSTALL_PREFIX=${ROBOT_FARM_INSTALL_TREE}                                                   \
+  -DROBOT_FARM_REQUESTED_BUILD_LIST="BoostExternalProject;Eigen3ExternalProject;NlohmannJsonExternalProject;GoogleTestExternalProject;SpdLogExternalProject;CapnprotoExternalProject"
+
+cmake --build /tmp/robotFarm-build
 ```
 
 > ⏳ This compiles from source and runs for tens of minutes. robotFarm resolves transitive
