@@ -16,14 +16,14 @@ ENV PATH=/usr/local/cuda/bin:${PATH}
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# The base image already ships the vendor apt sources and the bootstrap package set. jq is the
-# one extra tool needed here because extractDependencies.sh uses it to read
-# systemDependencies.json.
+# The base image already ships the vendor apt sources and the bootstrap package set. jq and
+# gettext-base are the two extra tools extractDependencies.sh needs: jq parses
+# systemDependencies.json, and envsubst from gettext-base expands --expand variables.
 RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=locked                 \
     --mount=type=cache,target=/var/lib/apt/lists,id=${APT_LIST_CACHE_ID},sharing=locked            \
     apt-get update &&                                                                              \
     apt-get install -y --no-install-recommends                                                     \
-      jq
+      gettext-base jq
 
 RUN --mount=type=cache,target=/var/cache/apt,id=${APT_VAR_CACHE_ID},sharing=locked                 \
     --mount=type=cache,target=/var/lib/apt/lists,id=${APT_LIST_CACHE_ID},sharing=locked            \
