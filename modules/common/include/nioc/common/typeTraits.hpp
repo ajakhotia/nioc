@@ -54,15 +54,13 @@ inline constexpr bool isSpecialization = IsSpecialization<InstanceType, Template
 ///
 /// @tparam Type The type to name. Must be supplied explicitly; it cannot be deduced.
 ///
-/// @return A view of the compiler's textual type name, with the trailing end-of-signature
-/// character (e.g. `]` on GCC/Clang) removed. The view refers to static storage that lives for the
-/// whole program. The exact spelling is compiler-dependent; use it for diagnostics, not as a
-/// stable identifier or map key.
+/// @return A view of the compiler's textual type name. The view refers to static storage that
+/// lives for the whole program. The exact spelling is compiler-dependent; use it for diagnostics,
+/// not as a stable identifier or map key.
 template<typename Type>
 consteval std::string_view prettyName() noexcept
 {
-  const auto name = std::string_view(boost::typeindex::ctti_type_index::type_id<Type>().name());
-  return name.substr(0, name.size() - 1);
+  return std::string_view(boost::typeindex::ctti_type_index::type_id<Type>().name());
 }
 
 } // namespace nioc::common

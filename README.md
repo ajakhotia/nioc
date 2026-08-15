@@ -578,7 +578,7 @@ Download, configure, build. The system packages robotFarm needs were already ins
 ```shell
 export ROBOT_FARM_INSTALL_TREE=${HOME}/opt/robotFarm
 
-git clone --depth 1 --branch v2.3.0 https://github.com/ajakhotia/robotFarm.git /tmp/robotFarm-src
+git clone --depth 1 --branch v2.3.1 https://github.com/ajakhotia/robotFarm.git /tmp/robotFarm-src
 git -C /tmp/robotFarm-src submodule update --init
 
 cmake -G Ninja -S /tmp/robotFarm-src -B /tmp/robotFarm-build                                          \
