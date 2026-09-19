@@ -5,14 +5,12 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include "utils.hpp"
+#include "workingSet.hpp"
 #include <cassert>
 #include <iterator>
 #include <nioc/chronicle/reader.hpp>
 #include <nioc/common/filesystem.hpp>
-#include <nioc/common/utils.hpp>
 #include <optional>
-#include <span>
-#include <system_error>
 #include <utility>
 
 namespace nioc::chronicle
@@ -58,53 +56,33 @@ std::default_sentinel_t Reader::end() noexcept
   return {};
 }
 
-Reader::Reader(std::filesystem::path logRoot):
-  mLogRoot{common::requireExistingDirectory(std::move(logRoot))}
+Reader::Reader(
+    std::filesystem::path logRoot,
+    const std::uint64_t readAheadBytes,
+    const std::uint64_t trailBehindBytes):
+  mLogRoot{common::requireExistingDirectory(std::move(logRoot))},
+  mTimelineFile{common::requireExistingFile(mLogRoot / kTimelineFileName)},
+  mWorkingSet{std::make_unique<WorkingSet>(
+      mLogRoot,
+      mTimelineFile,
+      WorkingSet::Budget{.mReadAheadBytes = readAheadBytes, .mTrailBehindBytes = trailBehindBytes})}
 {
-  // Map the single timeline file if the chronicle recorded anything. A missing or empty (trimmed,
-  // never-written) file is a chronicle that recorded nothing - replay nothing.
-  const auto timelinePath = mLogRoot / kTimelineFileName;
-  auto errorCode = std::error_code{};
-  if(const auto byteCount = std::filesystem::file_size(timelinePath, errorCode);
-     not errorCode and byteCount > 0)
-  {
-    mTimelineFile = std::make_unique<const TimelineFile>(timelinePath);
-  }
 }
 
 Reader::~Reader() = default;
 
 std::optional<Entry> Reader::readNextEntry()
 {
-  if(not mTimelineFile or mEntryInTimeline >= mTimelineFile->size())
+  if(mTimelineCursor == mTimelineFile.end())
   {
     return std::nullopt;
   }
 
-  const auto& timelineEntry = mTimelineFile->at(mEntryInTimeline);
-  ++mEntryInTimeline;
+  const auto channelId = mTimelineCursor->mChannelId;
+  auto crate = mWorkingSet->acquire(mTimelineCursor);
+  ++mTimelineCursor;
 
-  auto roll = acquireRoll(timelineEntry.mChannelId, timelineEntry.mRollId);
-  const auto span = std::span{*roll}.subspan(timelineEntry.mOffset, timelineEntry.mSize);
-
-  return Entry{.mChannelId = timelineEntry.mChannelId, .mCrate = Crate{std::move(roll), span}};
-}
-
-std::shared_ptr<const Reader::Roll> Reader::acquireRoll(
-    const ChannelId channelId,
-    const std::uint64_t rollId)
-{
-  auto& cached = mRollCache[channelId][rollId];
-
-  if(auto roll = cached.lock())
-  {
-    return roll;
-  }
-
-  auto roll = std::make_shared<const Roll>(
-      mLogRoot / common::hexString(channelId.mValue) / buildRollName(rollId));
-  cached = roll;
-  return roll;
+  return Entry{.mChannelId = channelId, .mCrate = std::move(crate)};
 }
 
 } // namespace nioc::chronicle
