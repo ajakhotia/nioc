@@ -6,7 +6,9 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <filesystem>
+#include <nioc/common/typeTraits.hpp>
 #include <span>
 #include <type_traits>
 
@@ -17,9 +19,10 @@ namespace nioc::containers
 ///
 /// Writes through the mapping reach the backing file and any other mapping of it. Choose a mode at
 /// construction: the two-argument constructor creates a writable region of a fixed size; the
-/// one-argument constructor maps an existing file read-only. Access the bytes through bytes() or
-/// data(); they stay valid until the region is destroyed, which unmaps the memory and closes the
-/// file.
+/// one-argument constructor maps an existing file read-only. The region is a contiguous range of
+/// bytes: iterate it, index it through bytes(), or view it as a typed sequence through
+/// elements<T>(). Every view stays valid until the region is destroyed, which unmaps the memory
+/// and closes the file.
 ///
 /// Example:
 ///
@@ -36,6 +39,14 @@ namespace nioc::containers
 class MmapRegion
 {
 public:
+  using value_type = std::byte;
+  using size_type = std::size_t;
+  using difference_type = std::ptrdiff_t;
+
+  /// Contiguous, random-access iterators over the mapped bytes.
+  using iterator = std::span<std::byte>::iterator;
+  using const_iterator = std::span<const std::byte>::iterator;
+
   /// @brief Create or truncate the file at @p path to @p size bytes and map it writable.
   ///
   /// Missing parent directories are created. The mapped bytes are zero-filled.
@@ -79,12 +90,50 @@ public:
   /// @brief View the mapped region as const bytes; valid until the region is destroyed.
   [[nodiscard]] std::span<const std::byte> bytes() const noexcept;
 
-  /// @brief Pointer to the first mapped byte; `const`-qualified to match @p self.
+  /// @brief View the mapped bytes as a contiguous sequence of @p ValueType; `const`-qualified to
+  /// match @p self.
   ///
-  /// Returns `std::byte*` on a non-const region, `const std::byte*` on a const one.
+  /// The sequence holds size() / sizeof(ValueType) elements; trailing bytes that do not fill an
+  /// element are excluded. Does no alignment or lifetime checking; the caller guarantees the
+  /// bytes hold valid @p ValueType objects.
+  ///
+  /// @tparam ValueType Implicit-lifetime element type without top-level cv-qualifiers.
+  template<typename ValueType>
+    requires common::isImplicitLifetime<ValueType> and
+             std::is_same_v<ValueType, std::remove_cv_t<ValueType>>
+  [[nodiscard]] auto elements(this auto&& self) noexcept
+  {
+    return common::startLifetimeAsArray<ValueType>(self.bytes());
+  }
+
+  /// @brief Pointer to the first mapped byte; `const`-qualified to match @p self.
   [[nodiscard]] auto data(this auto&& self) noexcept
   {
     return self.bytes().data();
+  }
+
+  /// @brief Iterator to the first mapped byte; `const`-qualified to match @p self.
+  [[nodiscard]] auto begin(this auto&& self) noexcept
+  {
+    return self.bytes().begin();
+  }
+
+  /// @brief Iterator one past the last mapped byte; `const`-qualified to match @p self.
+  [[nodiscard]] auto end(this auto&& self) noexcept
+  {
+    return self.bytes().end();
+  }
+
+  /// @brief Const iterator to the first mapped byte.
+  [[nodiscard]] const_iterator cbegin() const noexcept
+  {
+    return bytes().begin();
+  }
+
+  /// @brief Const iterator one past the last mapped byte.
+  [[nodiscard]] const_iterator cend() const noexcept
+  {
+    return bytes().end();
   }
 
   /// @brief Path of the backing file.
@@ -130,34 +179,5 @@ private:
   /// The mapped bytes; empty in a moved-from region. The destructor unmaps this range.
   std::span<std::byte> mBytes;
 };
-
-/// @brief Reinterpret a span of bytes as a pointer to @p ValueType, preserving const-ness.
-///
-/// Returns the span's data address typed as `ValueType*`, or `const ValueType*` when the bytes are
-/// const. Does no alignment, size, or lifetime checking; the caller guarantees the bytes hold a
-/// valid @p ValueType.
-///
-/// Example:
-///
-///     auto* header = asElementPointer<Header>(region.bytes());
-///
-/// @tparam ValueType Element type to view the bytes as. Name it explicitly.
-///
-/// @tparam Byte Deduced from @p bytes; `std::byte` or `const std::byte`. Its const-ness selects
-/// the result's const-ness.
-///
-/// @param bytes Bytes to reinterpret. Must hold a valid @p ValueType; not checked.
-template<typename ValueType, typename Byte>
-  requires std::is_same_v<std::remove_const_t<Byte>, std::byte>
-[[nodiscard]] auto* asElementPointer(std::span<Byte> bytes) noexcept
-{
-  using Element = std::conditional_t<std::is_const_v<Byte>, const ValueType, ValueType>;
-  using VoidPointer = std::conditional_t<std::is_const_v<Byte>, const void*, void*>;
-  // Cast through void* (not reinterpret_cast) to view the mapped bytes as ValueType without a
-  // cast-align warning. TODO(ajakhotia): switch to std::start_lifetime_as_array<ValueType> once
-  // libstdc++ defines __cpp_lib_start_lifetime_as.
-  // NOLINTNEXTLINE(bugprone-casting-through-void)
-  return static_cast<Element*>(static_cast<VoidPointer>(bytes.data()));
-}
 
 } // namespace nioc::containers
