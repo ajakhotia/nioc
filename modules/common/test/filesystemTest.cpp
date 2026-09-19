@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 #include <nioc/common/filesystem.hpp>
 #include <stdexcept>
+#include <string>
 #include <string_view>
 #include <utility>
 
@@ -19,13 +20,34 @@ namespace fs = std::filesystem;
 namespace
 {
 
-fs::path makeFreshEmptyDir(std::string_view name)
+/// @brief This test's own directory beneath @p base: `niocUnitTest/<Suite>.<test>`.
+std::filesystem::path unitTestDirectory(
+    const std::filesystem::path& base = std::filesystem::temp_directory_path())
 {
-  const auto path = fs::temp_directory_path() / "nioc-filesystemTest" / name;
-  fs::remove_all(path);
-  fs::create_directories(path);
-  return path;
+  const auto* const info = ::testing::UnitTest::GetInstance()->current_test_info();
+  return base / "niocUnitTest" / (std::string{info->test_suite_name()} + "." + info->name());
 }
+
+// NOLINTNEXTLINE(misc-multiple-inheritance): the fixture is the test and its directory.
+class RequireExistingDirectory: public common::ScratchDirectory, public ::testing::Test
+{
+public:
+  RequireExistingDirectory(): ScratchDirectory{unitTestDirectory()} {}
+};
+
+// NOLINTNEXTLINE(misc-multiple-inheritance): the fixture is the test and its directory.
+class RequireExistingFile: public common::ScratchDirectory, public ::testing::Test
+{
+public:
+  RequireExistingFile(): ScratchDirectory{unitTestDirectory()} {}
+};
+
+// NOLINTNEXTLINE(misc-multiple-inheritance): the fixture is the test and its directory.
+class RequireEmptyDirectory: public common::ScratchDirectory, public ::testing::Test
+{
+public:
+  RequireEmptyDirectory(): ScratchDirectory{unitTestDirectory()} {}
+};
 
 void writeFile(const fs::path& path, std::string_view contents)
 {
@@ -51,200 +73,231 @@ void expectInvalidArgumentErrorWithSubStr(Call&& call, const std::string_view su
 
 } // namespace
 
-TEST(RequireExistingDirectory, acceptsExistingDirectory)
+TEST_F(RequireExistingDirectory, acceptsExistingDirectory)
 {
-  const auto dir = makeFreshEmptyDir("existing-accepts");
+  const auto& dir = path();
   EXPECT_EQ(requireExistingDirectory(dir), dir);
 }
 
-TEST(RequireExistingDirectory, acceptsNonEmptyDirectory)
+TEST_F(RequireExistingDirectory, acceptsNonEmptyDirectory)
 {
-  const auto dir = makeFreshEmptyDir("existing-nonempty");
+  const auto& dir = path();
   writeFile(dir / "file.txt", "hello");
   EXPECT_EQ(requireExistingDirectory(dir), dir);
 }
 
-TEST(RequireExistingDirectory, returnsRelativePathUnchanged)
+TEST_F(RequireExistingDirectory, returnsRelativePathUnchanged)
 {
-  const auto dir = makeFreshEmptyDir("existing-relative");
+  const auto& dir = path();
   const auto relative = fs::relative(dir);
   EXPECT_EQ(requireExistingDirectory(relative), relative);
 }
 
-TEST(RequireExistingDirectory, acceptsSymlinkToDirectory)
+TEST_F(RequireExistingDirectory, acceptsSymlinkToDirectory)
 {
-  const auto dir = makeFreshEmptyDir("existing-symlink-target");
-  const auto link = fs::temp_directory_path() / "nioc-filesystemTest" / "existing-symlink";
-  fs::remove(link);
-  fs::create_directory_symlink(dir, link);
+  const auto target = path() / "target";
+  fs::create_directories(target);
+  const auto link = path() / "link";
+  fs::create_directory_symlink(target, link);
   EXPECT_EQ(requireExistingDirectory(link), link);
 }
 
-TEST(RequireExistingDirectory, rejectsEmptyPath)
+TEST_F(RequireExistingDirectory, rejectsEmptyPath)
 {
   EXPECT_THROW(requireExistingDirectory(fs::path{}), std::invalid_argument);
 }
 
-TEST(RequireExistingDirectory, rejectsDanglingSymlink)
+TEST_F(RequireExistingDirectory, rejectsDanglingSymlink)
 {
-  const auto dir = makeFreshEmptyDir("existing-dangling");
-  const auto link = dir / "dangling";
-  fs::create_symlink(dir / "gone", link);
+  const auto link = path() / "dangling";
+  fs::create_symlink(path() / "gone", link);
   EXPECT_THROW(requireExistingDirectory(link), std::invalid_argument);
 }
 
-TEST(RequireExistingDirectory, diagnosticNamesThePath)
+TEST_F(RequireExistingDirectory, diagnosticNamesThePath)
 {
-  const auto missing = fs::temp_directory_path() / "nioc-filesystemTest" / "existing-named";
-  fs::remove_all(missing);
+  const auto missing = path() / "absent";
   expectInvalidArgumentErrorWithSubStr(
       [&] { requireExistingDirectory(missing); },
       missing.string());
 }
 
-TEST(RequireExistingDirectory, rejectsMissingPath)
+TEST_F(RequireExistingDirectory, rejectsMissingPath)
 {
-  const auto missing = fs::temp_directory_path() / "nioc-filesystemTest" / "absent";
-  fs::remove_all(missing);
+  const auto missing = path() / "absent";
   EXPECT_THROW(requireExistingDirectory(missing), std::invalid_argument);
 }
 
-TEST(RequireExistingDirectory, rejectsRegularFile)
+TEST_F(RequireExistingDirectory, rejectsRegularFile)
 {
-  const auto dir = makeFreshEmptyDir("existing-rejects-file");
-  const auto file = dir / "file.txt";
+  const auto file = path() / "file.txt";
   writeFile(file, "hello");
   EXPECT_THROW(requireExistingDirectory(file), std::invalid_argument);
 }
 
-TEST(RequireExistingFile, acceptsRegularFile)
+TEST_F(RequireExistingFile, acceptsRegularFile)
 {
-  const auto dir = makeFreshEmptyDir("file-accepts");
-  const auto file = dir / "file.txt";
+  const auto file = path() / "file.txt";
   writeFile(file, "hello");
   EXPECT_EQ(requireExistingFile(file), file);
 }
 
-TEST(RequireExistingFile, acceptsEmptyFile)
+TEST_F(RequireExistingFile, acceptsEmptyFile)
 {
-  const auto dir = makeFreshEmptyDir("file-accepts-empty");
-  const auto file = dir / "empty.txt";
+  const auto file = path() / "empty.txt";
   writeFile(file, "");
   EXPECT_EQ(requireExistingFile(file), file);
 }
 
-TEST(RequireExistingFile, returnsRelativePathUnchanged)
+TEST_F(RequireExistingFile, returnsRelativePathUnchanged)
 {
-  const auto dir = makeFreshEmptyDir("file-relative");
-  const auto file = dir / "file.txt";
+  const auto file = path() / "file.txt";
   writeFile(file, "hello");
   const auto relative = fs::relative(file);
   EXPECT_EQ(requireExistingFile(relative), relative);
 }
 
-TEST(RequireExistingFile, acceptsSymlinkToFile)
+TEST_F(RequireExistingFile, acceptsSymlinkToFile)
 {
-  const auto dir = makeFreshEmptyDir("file-symlink");
-  const auto file = dir / "file.txt";
+  const auto file = path() / "file.txt";
   writeFile(file, "hello");
-  const auto link = dir / "link.txt";
+  const auto link = path() / "link.txt";
   fs::create_symlink(file, link);
   EXPECT_EQ(requireExistingFile(link), link);
 }
 
-TEST(RequireExistingFile, rejectsEmptyPath)
+TEST_F(RequireExistingFile, rejectsEmptyPath)
 {
   EXPECT_THROW(requireExistingFile(fs::path{}), std::invalid_argument);
 }
 
-TEST(RequireExistingFile, rejectsDanglingSymlink)
+TEST_F(RequireExistingFile, rejectsDanglingSymlink)
 {
-  const auto dir = makeFreshEmptyDir("file-dangling");
-  const auto link = dir / "dangling.txt";
-  fs::create_symlink(dir / "gone.txt", link);
+  const auto link = path() / "dangling.txt";
+  fs::create_symlink(path() / "gone.txt", link);
   EXPECT_THROW(requireExistingFile(link), std::invalid_argument);
 }
 
-TEST(RequireExistingFile, rejectsMissingPath)
+TEST_F(RequireExistingFile, rejectsMissingPath)
 {
-  const auto missing = fs::temp_directory_path() / "nioc-filesystemTest" / "file-absent";
-  fs::remove_all(missing);
+  const auto missing = path() / "absent";
   EXPECT_THROW(requireExistingFile(missing), std::invalid_argument);
 }
 
-TEST(RequireExistingFile, rejectsDirectory)
+TEST_F(RequireExistingFile, rejectsDirectory)
 {
-  const auto dir = makeFreshEmptyDir("file-rejects-dir");
+  const auto& dir = path();
   EXPECT_THROW(requireExistingFile(dir), std::invalid_argument);
 }
 
-TEST(RequireExistingFile, diagnosticNamesThePath)
+TEST_F(RequireExistingFile, diagnosticNamesThePath)
 {
-  const auto dir = makeFreshEmptyDir("file-named");
+  const auto& dir = path();
   expectInvalidArgumentErrorWithSubStr([&] { requireExistingFile(dir); }, dir.string());
 }
 
-TEST(RequireEmptyDirectory, acceptsEmptyDirectory)
+TEST_F(RequireEmptyDirectory, acceptsEmptyDirectory)
 {
-  const auto dir = makeFreshEmptyDir("empty-accepts");
+  const auto& dir = path();
   EXPECT_EQ(requireEmptyDirectory(dir), dir);
 }
 
-TEST(RequireEmptyDirectory, rejectsNonEmptyDirectory)
+TEST_F(RequireEmptyDirectory, rejectsNonEmptyDirectory)
 {
-  const auto dir = makeFreshEmptyDir("empty-rejects-nonempty");
+  const auto& dir = path();
   writeFile(dir / "file.txt", "hello");
   EXPECT_THROW(requireEmptyDirectory(dir), std::invalid_argument);
 }
 
-TEST(RequireEmptyDirectory, rejectsDirectoryHoldingOnlyASubdirectory)
+TEST_F(RequireEmptyDirectory, rejectsDirectoryHoldingOnlyASubdirectory)
 {
-  const auto dir = makeFreshEmptyDir("empty-rejects-subdir");
+  const auto& dir = path();
   fs::create_directory(dir / "child");
   EXPECT_THROW(requireEmptyDirectory(dir), std::invalid_argument);
 }
 
-TEST(RequireEmptyDirectory, rejectsDirectoryHoldingOnlyAHiddenFile)
+TEST_F(RequireEmptyDirectory, rejectsDirectoryHoldingOnlyAHiddenFile)
 {
-  const auto dir = makeFreshEmptyDir("empty-rejects-hidden");
+  const auto& dir = path();
   writeFile(dir / ".hidden", "");
   EXPECT_THROW(requireEmptyDirectory(dir), std::invalid_argument);
 }
 
-TEST(RequireEmptyDirectory, acceptsSymlinkToEmptyDirectory)
+TEST_F(RequireEmptyDirectory, acceptsSymlinkToEmptyDirectory)
 {
-  const auto dir = makeFreshEmptyDir("empty-symlink-target");
-  const auto link = fs::temp_directory_path() / "nioc-filesystemTest" / "empty-symlink";
-  fs::remove(link);
-  fs::create_directory_symlink(dir, link);
+  const auto target = path() / "target";
+  fs::create_directories(target);
+  const auto link = path() / "link";
+  fs::create_directory_symlink(target, link);
   EXPECT_EQ(requireEmptyDirectory(link), link);
 }
 
-TEST(RequireEmptyDirectory, rejectsEmptyPath)
+TEST_F(RequireEmptyDirectory, rejectsEmptyPath)
 {
   EXPECT_THROW(requireEmptyDirectory(fs::path{}), std::invalid_argument);
 }
 
-TEST(RequireEmptyDirectory, rejectsMissingPath)
+TEST_F(RequireEmptyDirectory, rejectsMissingPath)
 {
-  const auto missing = fs::temp_directory_path() / "nioc-filesystemTest" / "empty-absent";
-  fs::remove_all(missing);
+  const auto missing = path() / "absent";
   EXPECT_THROW(requireEmptyDirectory(missing), std::invalid_argument);
 }
 
-TEST(RequireEmptyDirectory, rejectsRegularFile)
+TEST_F(RequireEmptyDirectory, rejectsRegularFile)
 {
-  const auto dir = makeFreshEmptyDir("empty-rejects-file");
-  const auto file = dir / "file.txt";
+  const auto file = path() / "file.txt";
   writeFile(file, "hello");
   EXPECT_THROW(requireEmptyDirectory(file), std::invalid_argument);
 }
 
-TEST(RequireEmptyDirectory, diagnosticNamesThePath)
+TEST_F(RequireEmptyDirectory, diagnosticNamesThePath)
 {
-  const auto dir = makeFreshEmptyDir("empty-named");
+  const auto& dir = path();
   writeFile(dir / "file.txt", "hello");
   expectInvalidArgumentErrorWithSubStr([&] { requireEmptyDirectory(dir); }, dir.string());
+}
+
+namespace
+{
+
+// NOLINTNEXTLINE(misc-multiple-inheritance): the fixture is the test and its directory.
+class ScratchDirectoryTest: public common::ScratchDirectory, public ::testing::Test
+{
+public:
+  ScratchDirectoryTest(): ScratchDirectory{unitTestDirectory()} {}
+};
+
+} // namespace
+
+TEST_F(ScratchDirectoryTest, constructionClearsAndCreatesTheDirectory)
+{
+  const auto target = path() / "owned";
+  fs::create_directories(target / "stale");
+  writeFile(target / "stale" / "leftover.txt", "old");
+
+  const auto scratch = ScratchDirectory{target};
+
+  EXPECT_EQ(scratch.path(), target);
+  EXPECT_TRUE(fs::is_directory(target));
+  EXPECT_TRUE(fs::is_empty(target));
+}
+
+TEST_F(ScratchDirectoryTest, constructionCreatesMissingParents)
+{
+  const auto target = path() / "a" / "b" / "c";
+  const auto scratch = ScratchDirectory{target};
+  EXPECT_TRUE(fs::is_directory(target));
+}
+
+TEST_F(ScratchDirectoryTest, destructionRemovesTheDirectoryAndItsContents)
+{
+  const auto target = path() / "owned";
+  {
+    const auto scratch = ScratchDirectory{target};
+    writeFile(target / "nested" / "file.txt", "contents");
+    ASSERT_TRUE(fs::exists(target / "nested" / "file.txt"));
+  }
+  EXPECT_FALSE(fs::exists(target));
 }
 
 } // namespace nioc::common

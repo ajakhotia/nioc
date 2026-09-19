@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <gtest/gtest.h>
 #include <nioc/chronicle/defines.hpp>
+#include <nioc/common/filesystem.hpp>
 #include <nioc/concurrent/routine.hpp>
 #include <nioc/terminus/consignment.hpp>
 #include <nioc/terminus/idl/testSchema.capnp.h>
@@ -18,6 +19,7 @@
 #include <nioc/terminus/runContext.hpp>
 #include <nioc/terminus/schemaId.hpp>
 #include <stdexcept>
+#include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -36,15 +38,6 @@ chronicle::ChannelId channelFor(const std::string_view topic)
   return chronicle::makeChannelId(kSchemaId<TestSchema>, topic);
 }
 
-Port makePort(const std::string_view name, const bool record)
-{
-  auto workingDir = fs::temp_directory_path() / "nioc-logPlayerTest" / name;
-  fs::remove_all(workingDir);
-  return Port{
-      RunContext{std::move(workingDir), {}, record, ""},
-      [](Port&, Port::Drivers&, Port::Components&, Port::Runners&) {}};
-}
-
 void publishValue(Publisher<TestSchema>& publisher, const std::int64_t value)
 {
   auto draft = publisher.draft();
@@ -60,9 +53,34 @@ void replay(Port& port, const fs::path& chronicleDir)
   }
 }
 
+/// @brief This test's own directory beneath @p base: `niocUnitTest/<Suite>.<test>`.
+std::filesystem::path unitTestDirectory(
+    const std::filesystem::path& base = std::filesystem::temp_directory_path())
+{
+  const auto* const info = ::testing::UnitTest::GetInstance()->current_test_info();
+  return base / "niocUnitTest" / (std::string{info->test_suite_name()} + "." + info->name());
+}
+
+// NOLINTNEXTLINE(misc-multiple-inheritance): the fixture is the test and its directory.
+class LogPlayerTest: public common::ScratchDirectory, public ::testing::Test
+{
+public:
+  LogPlayerTest(): ScratchDirectory{unitTestDirectory()} {}
+
+protected:
+  [[nodiscard]] Port makePort(const std::string_view name, const bool record) const
+  {
+    auto workingDir = path() / name;
+    fs::remove_all(workingDir);
+    return Port{
+        RunContext{std::move(workingDir), {}, record, ""},
+        [](Port&, Port::Drivers&, Port::Components&, Port::Runners&) {}};
+  }
+};
+
 } // namespace
 
-TEST(LogPlayer, replaysFramesAcrossChannelsInGlobalRecordOrder)
+TEST_F(LogPlayerTest, replaysFramesAcrossChannelsInGlobalRecordOrder)
 {
   const auto channelA = channelFor("alpha");
   const auto channelB = channelFor("beta");
@@ -109,7 +127,7 @@ TEST(LogPlayer, replaysFramesAcrossChannelsInGlobalRecordOrder)
   EXPECT_EQ(expected, received);
 }
 
-TEST(LogPlayer, preservesPayloadAndSequenceNumberAcrossReplay)
+TEST_F(LogPlayerTest, preservesPayloadAndSequenceNumberAcrossReplay)
 {
   const auto channel = channelFor("telemetry");
 
@@ -140,7 +158,7 @@ TEST(LogPlayer, preservesPayloadAndSequenceNumberAcrossReplay)
   EXPECT_EQ((std::vector<std::uint64_t>{1, 2}), sequenceNumbers);
 }
 
-TEST(LogPlayer, replaysAGapAsAGap)
+TEST_F(LogPlayerTest, replaysAGapAsAGap)
 {
   const auto channel = channelFor("gappy");
 
@@ -167,7 +185,7 @@ TEST(LogPlayer, replaysAGapAsAGap)
   EXPECT_EQ((std::vector<bool>{true}), gaps);
 }
 
-TEST(LogPlayer, anEmptyLogDeliversNothingAndFinishesImmediately)
+TEST_F(LogPlayerTest, anEmptyLogDeliversNothingAndFinishesImmediately)
 {
   const auto chronicleDir = [&]
   {
@@ -184,11 +202,10 @@ TEST(LogPlayer, anEmptyLogDeliversNothingAndFinishesImmediately)
   EXPECT_EQ(deliveries, 0);
 }
 
-TEST(LogPlayer, constructionRejectsMissingLog)
+TEST_F(LogPlayerTest, constructionRejectsMissingLog)
 {
   auto port = makePort("missing", false);
-  const auto absent = fs::temp_directory_path() / "nioc-logPlayerTest" / "absent-chronicle";
-  fs::remove_all(absent);
+  const auto absent = path() / "absent-chronicle";
   EXPECT_THROW((LogPlayer{"logPlayer", port, absent}), std::invalid_argument);
 }
 

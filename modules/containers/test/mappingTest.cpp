@@ -14,11 +14,12 @@
 #include <gtest/gtest.h>
 #include <iterator>
 #include <memory>
+#include <nioc/common/filesystem.hpp>
 #include <nioc/containers/file.hpp>
 #include <nioc/containers/mapping.hpp>
 #include <span>
 #include <stdexcept>
-#include <string_view>
+#include <string>
 #include <sys/types.h>
 #include <type_traits>
 #include <unistd.h>
@@ -29,16 +30,6 @@ namespace nioc::containers
 {
 namespace
 {
-namespace fs = std::filesystem;
-
-fs::path freshPath(const std::string_view name)
-{
-  const auto directory = fs::temp_directory_path() / "nioc-containersTest";
-  fs::create_directories(directory);
-  const auto path = directory / name;
-  fs::remove(path);
-  return path;
-}
 
 /// @brief Whether each page of @p region is mapped into this process's page tables, read from
 /// /proc/self/pagemap (one 64-bit entry per virtual page; bit 63 is the present bit).
@@ -71,13 +62,28 @@ std::vector<bool> mappedPages(const Mapping& mapping)
   return mapped;
 }
 
+/// @brief This test's own directory beneath @p base: `niocUnitTest/<Suite>.<test>`.
+std::filesystem::path unitTestDirectory(
+    const std::filesystem::path& base = std::filesystem::temp_directory_path())
+{
+  const auto* const info = ::testing::UnitTest::GetInstance()->current_test_info();
+  return base / "niocUnitTest" / (std::string{info->test_suite_name()} + "." + info->name());
+}
+
+// NOLINTNEXTLINE(misc-multiple-inheritance): the fixture is the test and its directory.
+class MappingTest: public common::ScratchDirectory, public ::testing::Test
+{
+public:
+  MappingTest(): ScratchDirectory{unitTestDirectory()} {}
+};
+
 } // namespace
 
-TEST(Mapping, readWriteReachesTheFileAndAReadOnlyMapping)
+TEST_F(MappingTest, readWriteReachesTheFileAndAReadOnlyMapping)
 {
   constexpr auto kBytes = std::size_t{4096};
   constexpr auto kMarker = std::byte{0x3C};
-  const auto file = File::create(freshPath("mappingShared"), kBytes);
+  const auto file = File::create(path() / "mappingShared", kBytes);
 
   auto writable = Mapping::readWrite(file, kBytes);
   const auto readable = Mapping::readOnly(file, kBytes);
@@ -88,11 +94,11 @@ TEST(Mapping, readWriteReachesTheFileAndAReadOnlyMapping)
   EXPECT_TRUE(std::ranges::all_of(readable, [](const auto byte) { return byte == kMarker; }));
 }
 
-TEST(Mapping, offsetMapsATailOfTheFile)
+TEST_F(MappingTest, offsetMapsATailOfTheFile)
 {
   constexpr auto kMarker = std::byte{0x7E};
   const auto pageBytes = static_cast<std::size_t>(::sysconf(_SC_PAGESIZE));
-  const auto file = File::create(freshPath("mappingOffset"), 3 * pageBytes);
+  const auto file = File::create(path() / "mappingOffset", 3 * pageBytes);
   auto whole = Mapping::readWrite(file, 3 * pageBytes);
   whole.bytes().back() = kMarker;
 
@@ -101,10 +107,10 @@ TEST(Mapping, offsetMapsATailOfTheFile)
   EXPECT_EQ(tail.bytes().back(), kMarker);
 }
 
-TEST(Mapping, iteratesAsAByteRange)
+TEST_F(MappingTest, iteratesAsAByteRange)
 {
   constexpr auto kBytes = std::size_t{64};
-  const auto file = File::create(freshPath("mappingIterate"), kBytes);
+  const auto file = File::create(path() / "mappingIterate", kBytes);
   auto mapping = Mapping::readWrite(file, kBytes);
 
   static_assert(std::is_same_v<decltype(mapping.begin()), Mapping::iterator>);
@@ -114,27 +120,27 @@ TEST(Mapping, iteratesAsAByteRange)
   EXPECT_TRUE(std::ranges::all_of(mapping, [](const auto byte) { return byte == std::byte{1}; }));
 }
 
-TEST(Mapping, zeroLengthIsEmpty)
+TEST_F(MappingTest, zeroLengthIsEmpty)
 {
-  const auto file = File::create(freshPath("mappingEmpty"), 0);
+  const auto file = File::create(path() / "mappingEmpty", 0);
   const auto mapping = Mapping::readOnly(file, 0);
   EXPECT_TRUE(mapping.empty());
   EXPECT_EQ(mapping.size(), 0);
   EXPECT_TRUE(mapping.bytes().empty());
 }
 
-TEST(Mapping, mappingBeyondTheFileThrows)
+TEST_F(MappingTest, mappingBeyondTheFileThrows)
 {
-  const auto file = File::create(freshPath("mappingBeyond"), 16);
+  const auto file = File::create(path() / "mappingBeyond", 16);
   const auto pageBytes = static_cast<std::int64_t>(::sysconf(_SC_PAGESIZE));
   // An offset past the end is accepted by mmap; an unaligned one is not, which is what is tested.
   EXPECT_THROW(static_cast<void>(Mapping::readOnly(file, 16, pageBytes + 1)), std::runtime_error);
 }
 
-TEST(Mapping, moveTransfersOwnership)
+TEST_F(MappingTest, moveTransfersOwnership)
 {
   constexpr auto kBytes = std::size_t{4096};
-  const auto file = File::create(freshPath("mappingMove"), kBytes);
+  const auto file = File::create(path() / "mappingMove", kBytes);
   auto source = Mapping::readWrite(file, kBytes);
   const auto* const data = source.data();
 
@@ -143,13 +149,13 @@ TEST(Mapping, moveTransfersOwnership)
   EXPECT_EQ(moved.size(), kBytes);
 }
 
-TEST(Mapping, evictDropsOnlyThePagesInsideTheRange)
+TEST_F(MappingTest, evictDropsOnlyThePagesInsideTheRange)
 {
   constexpr auto kPageCount = std::size_t{8};
   constexpr auto kMarker = std::byte{0x5A};
   const auto pageBytes = static_cast<std::size_t>(::sysconf(_SC_PAGESIZE));
 
-  const auto file = File::create(freshPath("evictedMapping"), kPageCount * pageBytes);
+  const auto file = File::create(path() / "evictedMapping", kPageCount * pageBytes);
   auto writable = Mapping::readWrite(file, file.size());
   std::ranges::fill(writable.bytes(), kMarker);
   const auto& region = writable;
@@ -172,12 +178,12 @@ TEST(Mapping, evictDropsOnlyThePagesInsideTheRange)
   EXPECT_TRUE(std::ranges::all_of(region.bytes(), [](const auto byte) { return byte == kMarker; }));
 }
 
-TEST(Mapping, evictIgnoresRangesOutsideTheMapping)
+TEST_F(MappingTest, evictIgnoresRangesOutsideTheMapping)
 {
   constexpr auto kRegionBytes = std::size_t{4096};
   constexpr auto kMarker = std::byte{0xA5};
 
-  const auto file = File::create(freshPath("evictForeign"), kRegionBytes);
+  const auto file = File::create(path() / "evictForeign", kRegionBytes);
   auto region = Mapping::readWrite(file, kRegionBytes);
   std::ranges::fill(region.bytes(), kMarker);
 
@@ -185,7 +191,7 @@ TEST(Mapping, evictIgnoresRangesOutsideTheMapping)
   region.evict(std::span<const std::byte>{foreign});
   region.evict(std::span<const std::byte>{});
 
-  const auto emptyFile = File::create(freshPath("evictEmpty"), 0);
+  const auto emptyFile = File::create(path() / "evictEmpty", 0);
   const auto empty = Mapping::readOnly(emptyFile, 0);
   empty.evict(empty.bytes());
 

@@ -17,10 +17,11 @@
 #include <memory>
 #include <nioc/chronicle/reader.hpp>
 #include <nioc/chronicle/writer.hpp>
+#include <nioc/common/filesystem.hpp>
 #include <nioc/common/utils.hpp>
 #include <ranges>
 #include <span>
-#include <string_view>
+#include <string>
 #include <sys/mman.h>
 #include <thread>
 #include <unistd.h>
@@ -49,25 +50,6 @@ std::vector<std::byte> makeBytes(const std::size_t size, const std::byte start =
         static_cast<unsigned char>(std::to_integer<unsigned char>(start) + index));
   }
   return bytes;
-}
-
-fs::path makeFreshEmptyDir(std::string_view name)
-{
-  const auto path = fs::temp_directory_path() / "nioc-chronicleTest" / name;
-  fs::remove_all(path);
-  fs::create_directories(path);
-  return path;
-}
-
-/// @brief A fresh directory on the filesystem the test binary runs from, for tests that observe
-/// the page cache: the temp directory is commonly tmpfs, where file pages have no backing store
-/// and page-cache release is a no-op.
-fs::path makeFreshDiskBackedDir(std::string_view name)
-{
-  const auto path = fs::current_path() / "nioc-chronicleTest" / name;
-  fs::remove_all(path);
-  fs::create_directories(path);
-  return path;
 }
 
 /// @brief Pages of @p file present in the page cache, from mincore(2) over a private mapping,
@@ -156,18 +138,18 @@ struct WrittenChronicle
 /// @brief Write a chronicle whose records each carry distinct, index-derived bytes, so any
 /// cross-record aliasing in replay fails the byte comparison.
 ///
-/// @param name Directory name for the fresh chronicle.
+/// @param logDir Fresh, empty directory for the chronicle.
 ///
 /// @param rollCapacity Roll size passed to the Writer; small values force many rolls.
 ///
 /// @param recordSizes Per-record byte counts, written round-robin over channelA and channelB.
 WrittenChronicle writeDistinctRecords(
-    const std::string_view name,
+    const fs::path& logDir,
     const std::size_t rollCapacity,
     const std::vector<std::size_t>& recordSizes)
 {
   auto expected = std::vector<ExpectedRecord>{};
-  auto writer = Writer{makeFreshEmptyDir(name), rollCapacity};
+  auto writer = Writer{logDir, rollCapacity};
   for(auto index = std::size_t{0}; index < recordSizes.size(); ++index)
   {
     const auto channelId = (index % 2 == 0) ? channelA : channelB;
@@ -207,32 +189,45 @@ std::size_t residentSetBytes()
   return residentPages * static_cast<std::size_t>(::sysconf(_SC_PAGESIZE));
 }
 
+/// @brief Gives every ReaderTest case its own scratch directory, reached through path().
+/// @brief This test's own directory beneath @p base: `niocUnitTest/<Suite>.<test>`.
+std::filesystem::path unitTestDirectory(
+    const std::filesystem::path& base = std::filesystem::temp_directory_path())
+{
+  const auto* const info = ::testing::UnitTest::GetInstance()->current_test_info();
+  return base / "niocUnitTest" / (std::string{info->test_suite_name()} + "." + info->name());
+}
+
+// NOLINTNEXTLINE(misc-multiple-inheritance): the fixture is the test and its directory.
+class ReaderTest: public common::ScratchDirectory, public ::testing::Test
+{
+public:
+  ReaderTest(): ScratchDirectory{unitTestDirectory()} {}
+};
+
 } // namespace
 
-TEST(Reader, replaysRecordsInRecordedOrder)
+TEST_F(ReaderTest, replaysRecordsInRecordedOrder)
 {
-  const auto written =
-      writeDistinctRecords("reader-recordOrder", 256, std::vector<std::size_t>{20, 34, 20, 34});
+  const auto written = writeDistinctRecords(path(), 256, std::vector<std::size_t>{20, 34, 20, 34});
 
   expectReplayMatches(written);
 }
 
-TEST(Reader, constructionRejectsMissingDirectory)
+TEST_F(ReaderTest, constructionRejectsMissingDirectory)
 {
-  const auto missing = fs::temp_directory_path() / "nioc-chronicleTest" / "absent";
-  fs::remove_all(missing);
+  const auto missing = path() / "absent";
   EXPECT_THROW(Reader{missing}, std::invalid_argument);
 }
 
-TEST(Reader, constructionRejectsDirectoryWithoutTimeline)
+TEST_F(ReaderTest, constructionRejectsDirectoryWithoutTimeline)
 {
-  const auto bare = fs::temp_directory_path() / "nioc-chronicleTest" / "noTimeline";
-  fs::remove_all(bare);
+  const auto bare = path() / "noTimeline";
   fs::create_directories(bare);
   EXPECT_THROW(Reader{bare}, std::invalid_argument);
 }
 
-TEST(Reader, everyBudgetShapeReplaysManyRollsByteForByte)
+TEST_F(ReaderTest, everyBudgetShapeReplaysManyRollsByteForByte)
 {
   // 64-byte rolls force a roll per record or two; the oversized record exceeds every window
   // below, and the tiny budgets march the window across several rolls per channel.
@@ -240,7 +235,7 @@ TEST(Reader, everyBudgetShapeReplaysManyRollsByteForByte)
   constexpr auto kOversizedBytes = std::size_t{4096};
   auto sizes = std::vector<std::size_t>(kRecordCount, 48);
   sizes.at(kRecordCount / 2) = kOversizedBytes;
-  const auto written = writeDistinctRecords("reader-budgetShapes", 64, sizes);
+  const auto written = writeDistinctRecords(path(), 64, sizes);
 
   // Windows a few rolls wide, with and without a trail-behind distance.
   constexpr auto kNarrowReadAheadBytes = std::uint64_t{256};
@@ -252,18 +247,16 @@ TEST(Reader, everyBudgetShapeReplaysManyRollsByteForByte)
   expectReplayMatches(written, kWideReadAheadBytes, 0);
 }
 
-TEST(Reader, singleRecordChronicleReplaysUnderMinimalBudget)
+TEST_F(ReaderTest, singleRecordChronicleReplaysUnderMinimalBudget)
 {
-  const auto written =
-      writeDistinctRecords("reader-singleRecord", 64, std::vector<std::size_t>{32});
+  const auto written = writeDistinctRecords(path(), 64, std::vector<std::size_t>{32});
 
   expectReplayMatches(written, 64, 0);
 }
 
-TEST(Reader, beginResumesWhereIterationLeftOff)
+TEST_F(ReaderTest, beginResumesWhereIterationLeftOff)
 {
-  const auto written =
-      writeDistinctRecords("reader-beginResumes", 256, std::vector<std::size_t>(6, 40));
+  const auto written = writeDistinctRecords(path(), 256, std::vector<std::size_t>(6, 40));
 
   auto reader = Reader{written.mLogPath};
   auto first = reader.begin();
@@ -277,12 +270,11 @@ TEST(Reader, beginResumesWhereIterationLeftOff)
   expectBytesEqual(makeBytes(record.mSize, record.mSeed), resumed->mCrate.span());
 }
 
-TEST(Reader, cratesStayValidAfterRollRetirementAndReaderDestruction)
+TEST_F(ReaderTest, cratesStayValidAfterRollRetirementAndReaderDestruction)
 {
   // Rolls retire mid-replay under the tiny budget; every Crate must stay byte-perfect through
   // retirement and past the Reader's own destruction.
-  const auto written =
-      writeDistinctRecords("reader-crateLifetime", 64, std::vector<std::size_t>(30, 56));
+  const auto written = writeDistinctRecords(path(), 64, std::vector<std::size_t>(30, 56));
 
   auto crates = std::vector<Crate>{};
   {
@@ -301,25 +293,23 @@ TEST(Reader, cratesStayValidAfterRollRetirementAndReaderDestruction)
   }
 }
 
-TEST(Reader, emptyChronicleHasNoEntries)
+TEST_F(ReaderTest, emptyChronicleHasNoEntries)
 {
-  const auto written = writeDistinctRecords("reader-empty", 64, {});
+  const auto written = writeDistinctRecords(path(), 64, {});
 
   auto reader = Reader{written.mLogPath};
   EXPECT_TRUE(reader.begin() == reader.end());
   expectReplayMatches(written);
 }
 
-TEST(Reader, workingSetBudgetBoundsResidentMemory)
+TEST_F(ReaderTest, workingSetBudgetBoundsResidentMemory)
 {
   // 32 MiB of payload replayed under a 3 MiB window: without the trailing trim the touched pages
   // alone would grow the resident set by the full payload size.
   constexpr auto kMebibyte = std::uint64_t{1024ULL * 1024ULL};
   constexpr auto kPageBytes = std::size_t{4096};
-  const auto written = writeDistinctRecords(
-      "reader-residentBound",
-      4 * kMebibyte,
-      std::vector<std::size_t>(512, 64ULL * 1024ULL));
+  const auto written =
+      writeDistinctRecords(path(), 4 * kMebibyte, std::vector<std::size_t>(512, 64ULL * 1024ULL));
 
   const auto baseline = residentSetBytes();
   auto peak = std::size_t{0};
@@ -342,7 +332,7 @@ TEST(Reader, workingSetBudgetBoundsResidentMemory)
       << "Resident set grew by " << (peak - baseline) << " bytes";
 }
 
-TEST(Reader, releasedStridesLeaveThePageCache)
+TEST_F(ReaderTest, releasedStridesLeaveThePageCache)
 {
   // 40 MiB over two channels in 4 MiB rolls: 5 rolls per channel, 8 MiB strides, so the first
   // four strides (rolls 0 to 3 of each channel) are released during replay while the fifth stays
@@ -353,7 +343,10 @@ TEST(Reader, releasedStridesLeaveThePageCache)
   constexpr auto kRecordCount = std::size_t{640};
   constexpr auto kReleasedRollsPerChannel = std::size_t{4};
 
-  const auto logPath = makeFreshDiskBackedDir("reader-pageCacheRelease");
+  // A disk-backed directory rather than the default path(): /tmp is commonly tmpfs, where file
+  // pages have no backing store and page-cache release is unobservable.
+  const auto diskScratch = common::ScratchDirectory{unitTestDirectory(fs::current_path())};
+  const auto& logPath = diskScratch.path();
   {
     auto writer = Writer{logPath, kRollBytes};
     const auto payload = makeBytes(kRecordBytes, std::byte{1});
@@ -388,7 +381,6 @@ TEST(Reader, releasedStridesLeaveThePageCache)
     }
     EXPECT_GT(cachedPageCount(channelRolls.back()), 0U) << channelRolls.back();
   }
-  fs::remove_all(logPath.parent_path());
 }
 
 } // namespace nioc::chronicle

@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <gtest/gtest.h>
 #include <nioc/chronicle/defines.hpp>
+#include <nioc/common/filesystem.hpp>
 #include <nioc/terminus/consignment.hpp>
 #include <nioc/terminus/driver.hpp>
 #include <nioc/terminus/idl/testSchema.capnp.h>
@@ -16,6 +17,7 @@
 #include <nioc/terminus/runContext.hpp>
 #include <nioc/terminus/schemaId.hpp>
 #include <stdexcept>
+#include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -26,15 +28,6 @@ namespace
 {
 
 constexpr auto kTopic = std::string_view{"driverTopic"};
-
-Port makePort()
-{
-  auto workingDir = std::filesystem::temp_directory_path() / "niocDriverTest";
-  std::filesystem::remove_all(workingDir);
-  return Port{
-      RunContext{std::move(workingDir), {}, true, ""},
-      [](Port&, Port::Drivers&, Port::Components&, Port::Runners&) {}};
-}
 
 class CountingDriver final: public Driver
 {
@@ -83,9 +76,33 @@ private:
   }
 };
 
+/// @brief This test's own directory beneath @p base: `niocUnitTest/<Suite>.<test>`.
+std::filesystem::path unitTestDirectory(
+    const std::filesystem::path& base = std::filesystem::temp_directory_path())
+{
+  const auto* const info = ::testing::UnitTest::GetInstance()->current_test_info();
+  return base / "niocUnitTest" / (std::string{info->test_suite_name()} + "." + info->name());
+}
+
+// NOLINTNEXTLINE(misc-multiple-inheritance): the fixture is the test and its directory.
+class DriverTest: public common::ScratchDirectory, public ::testing::Test
+{
+public:
+  DriverTest(): ScratchDirectory{unitTestDirectory()} {}
+
+protected:
+  /// @brief A Port recording into this test's own directory, with nothing wired to it.
+  [[nodiscard]] Port makePort() const
+  {
+    return Port{
+        RunContext{path(), {}, true, ""},
+        [](Port&, Port::Drivers&, Port::Components&, Port::Runners&) {}};
+  }
+};
+
 } // namespace
 
-TEST(DriverTest, publishesOntoThePortUntilDone)
+TEST_F(DriverTest, publishesOntoThePortUntilDone)
 {
   auto port = makePort();
 
@@ -105,7 +122,7 @@ TEST(DriverTest, publishesOntoThePortUntilDone)
   EXPECT_EQ((std::vector<std::int64_t>{2, 1}), received);
 }
 
-TEST(DriverTest, shutdownTokenTripsWhenThePortShutsDown)
+TEST_F(DriverTest, shutdownTokenTripsWhenThePortShutsDown)
 {
   auto port = makePort();
   auto driver = CountingDriver{port, 1};
@@ -116,7 +133,7 @@ TEST(DriverTest, shutdownTokenTripsWhenThePortShutsDown)
   EXPECT_TRUE(driver.shutdownRequested());
 }
 
-TEST(DriverTest, runFailureEndsTheDriverWithoutEscaping)
+TEST_F(DriverTest, runFailureEndsTheDriverWithoutEscaping)
 {
   auto port = makePort();
   auto driver = FailingDriver{port};

@@ -13,11 +13,12 @@
 #include <nioc/chronicle/channel.hpp>
 #include <nioc/chronicle/crate.hpp>
 #include <nioc/chronicle/defines.hpp>
+#include <nioc/common/filesystem.hpp>
 #include <nioc/containers/mmapArray.hpp>
 #include <nioc/containers/mmapConstArray.hpp>
 #include <nioc/containers/tape.hpp>
 #include <span>
-#include <string_view>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -33,13 +34,20 @@ constexpr auto channelA = ChannelId{16983ULL};
 constexpr auto kRollCapacity = std::size_t{4096};
 constexpr auto kTimelineEntries = std::size_t{64}; // far more than any test below records
 
-fs::path freshDir(const std::string_view name)
+/// @brief This test's own directory beneath @p base: `niocUnitTest/<Suite>.<test>`.
+std::filesystem::path unitTestDirectory(
+    const std::filesystem::path& base = std::filesystem::temp_directory_path())
 {
-  const auto path = fs::temp_directory_path() / "nioc-chronicleTest" / name;
-  fs::remove_all(path);
-  fs::create_directories(path);
-  return path;
+  const auto* const info = ::testing::UnitTest::GetInstance()->current_test_info();
+  return base / "niocUnitTest" / (std::string{info->test_suite_name()} + "." + info->name());
 }
+
+// NOLINTNEXTLINE(misc-multiple-inheritance): the fixture is the test and its directory.
+class ChannelTest: public common::ScratchDirectory, public ::testing::Test
+{
+public:
+  ChannelTest(): ScratchDirectory{unitTestDirectory()} {}
+};
 
 std::vector<std::byte> makeBytes(const std::size_t size, const std::byte start = std::byte{0})
 {
@@ -65,9 +73,9 @@ std::vector<TimelineEntry> readEntries(const fs::path& file)
 
 } // namespace
 
-TEST(Channel, recordedFrameLandsInRollAndTimeline)
+TEST_F(ChannelTest, recordedFrameLandsInRollAndTimeline)
 {
-  const auto dir = freshDir("chRecord");
+  const auto dir = path();
   const auto data = makeBytes(20, std::byte{1});
 
   auto crate = Crate{};
@@ -94,9 +102,9 @@ TEST(Channel, recordedFrameLandsInRollAndTimeline)
       std::ranges::equal(std::span{roll}.first(data.size()), std::as_bytes(std::span{data})));
 }
 
-TEST(Channel, anAbandonedReservationRecordsNothing)
+TEST_F(ChannelTest, anAbandonedReservationRecordsNothing)
 {
-  const auto dir = freshDir("chAbandon");
+  const auto dir = path();
 
   {
     auto timeline = TimelineTape{dir / kTimelineFileName, kTimelineEntries};
@@ -110,9 +118,9 @@ TEST(Channel, anAbandonedReservationRecordsNothing)
   EXPECT_TRUE(readEntries(dir / kTimelineFileName).empty());
 }
 
-TEST(Channel, anAbandonedReservationRewindsSoItsSpaceIsReused)
+TEST_F(ChannelTest, anAbandonedReservationRewindsSoItsSpaceIsReused)
 {
-  const auto dir = freshDir("chAbandonRewind");
+  const auto dir = path();
   auto timeline = TimelineTape{dir / kTimelineFileName, kTimelineEntries};
   auto channel = Channel{channelA, dir / "chanA", kRollCapacity, timeline};
 
@@ -126,9 +134,9 @@ TEST(Channel, anAbandonedReservationRewindsSoItsSpaceIsReused)
   EXPECT_EQ(reused.span().data(), start); // reused the rewound space rather than starting after it
 }
 
-TEST(Channel, rollsOverToANewRollWhenFull)
+TEST_F(ChannelTest, rollsOverToANewRollWhenFull)
 {
-  const auto dir = freshDir("chRollover");
+  const auto dir = path();
   constexpr auto kTinyRoll = std::size_t{128};
   const auto frame = makeBytes(
       100,
@@ -151,9 +159,9 @@ TEST(Channel, rollsOverToANewRollWhenFull)
   EXPECT_EQ(entries.at(1).mRollId, 1U);
 }
 
-TEST(Channel, aFrameLargerThanTheRollCapacityGetsItsOwnRoll)
+TEST_F(ChannelTest, aFrameLargerThanTheRollCapacityGetsItsOwnRoll)
 {
-  const auto dir = freshDir("chBig");
+  const auto dir = path();
   constexpr auto kTinyRoll = std::size_t{128};
   const auto big = makeBytes(300, std::byte{3});
 
@@ -168,9 +176,9 @@ TEST(Channel, aFrameLargerThanTheRollCapacityGetsItsOwnRoll)
   EXPECT_TRUE(std::ranges::equal(std::span{roll}.first(big.size()), std::as_bytes(std::span{big})));
 }
 
-TEST(Channel, reclaimsTheUnusedTailOfAnOverReservation)
+TEST_F(ChannelTest, reclaimsTheUnusedTailOfAnOverReservation)
 {
-  const auto dir = freshDir("chReclaim");
+  const auto dir = path();
   constexpr auto kTinyRoll = std::size_t{64};
   const auto frame = makeBytes(8, std::byte{1});
 
@@ -201,9 +209,9 @@ TEST(Channel, reclaimsTheUnusedTailOfAnOverReservation)
   EXPECT_FALSE(fs::exists(dir / "chanA" / buildRollName(1)));
 }
 
-TEST(Channel, modifyGrowsAReservationInTheSameRollWhenItFits)
+TEST_F(ChannelTest, modifyGrowsAReservationInTheSameRollWhenItFits)
 {
-  const auto dir = freshDir("chModifyFit");
+  const auto dir = path();
   const auto frame = makeBytes(80, std::byte{5});
 
   auto crate = Crate{};
@@ -228,9 +236,9 @@ TEST(Channel, modifyGrowsAReservationInTheSameRollWhenItFits)
   EXPECT_EQ(entries.at(0).mSize, frame.size());
 }
 
-TEST(Channel, modifyRollsOverWhenTheNewSizeNoLongerFits)
+TEST_F(ChannelTest, modifyRollsOverWhenTheNewSizeNoLongerFits)
 {
-  const auto dir = freshDir("chModifyRoll");
+  const auto dir = path();
   constexpr auto kTinyRoll = std::size_t{128};
   const auto big = makeBytes(300, std::byte{9}); // larger than the 128-byte roll
 
@@ -256,9 +264,9 @@ TEST(Channel, modifyRollsOverWhenTheNewSizeNoLongerFits)
   EXPECT_TRUE(fs::exists(dir / "chanA" / buildRollName(1)));
 }
 
-TEST(Channel, aCrateStaysReadableAfterTheChannelRollsToANewRoll)
+TEST_F(ChannelTest, aCrateStaysReadableAfterTheChannelRollsToANewRoll)
 {
-  const auto dir = freshDir("chWeak");
+  const auto dir = path();
   constexpr auto kTinyRoll = std::size_t{128};
   const auto first = makeBytes(100, std::byte{1});
   const auto second = makeBytes(100, std::byte{200});

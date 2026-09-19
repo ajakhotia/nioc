@@ -61,4 +61,41 @@ std::filesystem::path requireExistingFile(std::filesystem::path path);
 /// @see requireExistingDirectory, requireExistingFile
 std::filesystem::path requireEmptyDirectory(std::filesystem::path path);
 
+/// @brief A directory owned for a scope: created fresh and empty on construction (any prior
+/// contents are removed), deleted with everything in it on destruction.
+///
+/// Example:
+///
+///     const auto scratch = ScratchDirectory{std::filesystem::temp_directory_path() / "stage"};
+///     writeFile(scratch.path() / "input.bin");
+///     // the directory and its contents are gone when scratch leaves scope
+///
+/// Non-copyable, non-movable. Removal on destruction ignores failure.
+class ScratchDirectory
+{
+public:
+  /// @brief Take ownership of @p path: remove whatever is there and create it empty, along with
+  /// any missing parents.
+  ///
+  /// @throws std::filesystem::filesystem_error if the directory cannot be created.
+  explicit ScratchDirectory(std::filesystem::path path);
+
+  ScratchDirectory(const ScratchDirectory&) = delete;
+
+  ScratchDirectory(ScratchDirectory&&) noexcept = delete;
+
+  /// @brief Remove the directory and everything beneath it.
+  ~ScratchDirectory();
+
+  ScratchDirectory& operator=(const ScratchDirectory&) = delete;
+
+  ScratchDirectory& operator=(ScratchDirectory&&) noexcept = delete;
+
+  /// @brief The owned directory.
+  [[nodiscard]] const std::filesystem::path& path() const noexcept;
+
+private:
+  std::filesystem::path mPath;
+};
+
 } // namespace nioc::common

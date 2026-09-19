@@ -7,6 +7,7 @@
 #include "testComponent.hpp"
 #include <filesystem>
 #include <gtest/gtest.h>
+#include <nioc/common/filesystem.hpp>
 #include <nioc/concurrent/routine.hpp>
 #include <nioc/terminus/component.hpp>
 #include <nioc/terminus/idl/testSchema.capnp.h>
@@ -15,6 +16,7 @@
 #include <nioc/terminus/publisher.hpp>
 #include <nioc/terminus/runContext.hpp>
 #include <stdexcept>
+#include <string>
 #include <string_view>
 
 namespace nioc::terminus
@@ -39,18 +41,33 @@ void publishSeveral(Port& port, const std::string_view topic, const int count)
   }
 }
 
-Port makePort()
+/// @brief This test's own directory beneath @p base: `niocUnitTest/<Suite>.<test>`.
+std::filesystem::path unitTestDirectory(
+    const std::filesystem::path& base = std::filesystem::temp_directory_path())
 {
-  auto workingDir = std::filesystem::temp_directory_path() / "niocComponentTest";
-  std::filesystem::remove_all(workingDir);
-  return Port{
-      RunContext{std::move(workingDir), {}, true, ""},
-      [](Port&, Port::Drivers&, Port::Components&, Port::Runners&) {}};
+  const auto* const info = ::testing::UnitTest::GetInstance()->current_test_info();
+  return base / "niocUnitTest" / (std::string{info->test_suite_name()} + "." + info->name());
 }
+
+// NOLINTNEXTLINE(misc-multiple-inheritance): the fixture is the test and its directory.
+class ComponentTest: public common::ScratchDirectory, public ::testing::Test
+{
+public:
+  ComponentTest(): ScratchDirectory{unitTestDirectory()} {}
+
+protected:
+  /// @brief A Port recording into this test's own directory, with nothing wired to it.
+  [[nodiscard]] Port makePort() const
+  {
+    return Port{
+        RunContext{path(), {}, true, ""},
+        [](Port&, Port::Drivers&, Port::Components&, Port::Runners&) {}};
+  }
+};
 
 } // namespace
 
-TEST(ComponentTest, zeroCapacityThrows)
+TEST_F(ComponentTest, zeroCapacityThrows)
 {
   auto port = makePort();
   EXPECT_THROW(
@@ -58,14 +75,14 @@ TEST(ComponentTest, zeroCapacityThrows)
       std::invalid_argument);
 }
 
-TEST(ComponentTest, emptyInboxWaits)
+TEST_F(ComponentTest, emptyInboxWaits)
 {
   auto port = makePort();
   auto component = EarthComponent{port, 4, concurrent::BufferMode::Overwriting};
   EXPECT_EQ(component.tick(), concurrent::Routine::State::Waiting);
 }
 
-TEST(ComponentTest, drainsOneMessagePerRun)
+TEST_F(ComponentTest, drainsOneMessagePerRun)
 {
   auto port = makePort();
   auto component = EarthComponent{port, 4, concurrent::BufferMode::Overwriting};
@@ -76,7 +93,7 @@ TEST(ComponentTest, drainsOneMessagePerRun)
   EXPECT_EQ(component.tick(), concurrent::Routine::State::Waiting);
 }
 
-TEST(ComponentTest, overwriteDropsOldestWhenFull)
+TEST_F(ComponentTest, overwriteDropsOldestWhenFull)
 {
   auto port = makePort();
   auto component = EarthComponent{port, 2, concurrent::BufferMode::Overwriting};
@@ -89,7 +106,7 @@ TEST(ComponentTest, overwriteDropsOldestWhenFull)
   EXPECT_EQ(component.tick(), concurrent::Routine::State::Waiting);
 }
 
-TEST(ComponentTest, duplicateSubscriptionThrows)
+TEST_F(ComponentTest, duplicateSubscriptionThrows)
 {
   auto port = makePort();
 
@@ -108,7 +125,7 @@ TEST(ComponentTest, duplicateSubscriptionThrows)
   EXPECT_THROW(DoubleSubscriber{port}, std::logic_error);
 }
 
-TEST(ComponentTest, callbackFailureEndsTheComponentWithoutEscaping)
+TEST_F(ComponentTest, callbackFailureEndsTheComponentWithoutEscaping)
 {
   auto port = makePort();
   constexpr auto kThrowingTopic = std::string_view{"throwing"};
@@ -133,7 +150,7 @@ TEST(ComponentTest, callbackFailureEndsTheComponentWithoutEscaping)
   EXPECT_EQ(component.tick(), concurrent::Routine::State::Done);
 }
 
-TEST(ComponentTest, unboundedRetainsEveryMessage)
+TEST_F(ComponentTest, unboundedRetainsEveryMessage)
 {
   auto port = makePort();
   auto component = EarthComponent{port, 1, concurrent::BufferMode::Unbounded};

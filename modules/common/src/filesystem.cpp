@@ -7,6 +7,7 @@
 #include <nioc/common/exception.hpp>
 #include <nioc/common/filesystem.hpp>
 #include <stdexcept>
+#include <system_error>
 #include <utility>
 
 namespace nioc::common
@@ -46,6 +47,23 @@ std::filesystem::path requireEmptyDirectory(std::filesystem::path path)
     throwException<std::invalid_argument>("Directory is not empty: {}", path.string());
   }
   return path;
+}
+
+ScratchDirectory::ScratchDirectory(std::filesystem::path path): mPath{std::move(path)}
+{
+  std::filesystem::remove_all(mPath);
+  std::filesystem::create_directories(mPath);
+}
+
+ScratchDirectory::~ScratchDirectory()
+{
+  auto errorCode = std::error_code{};
+  std::filesystem::remove_all(mPath, errorCode);
+}
+
+const std::filesystem::path& ScratchDirectory::path() const noexcept
+{
+  return mPath;
 }
 
 } // namespace nioc::common

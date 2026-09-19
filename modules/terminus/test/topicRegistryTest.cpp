@@ -10,6 +10,7 @@
 #include <fstream>
 #include <gtest/gtest.h>
 #include <nioc/chronicle/defines.hpp>
+#include <nioc/common/filesystem.hpp>
 #include <nioc/terminus/topicRegistry.hpp>
 #include <sstream>
 #include <stdexcept>
@@ -22,15 +23,20 @@ namespace fs = std::filesystem;
 namespace
 {
 
-/// A fresh, unique working directory for the running test, cleared of any prior run.
-fs::path testDir()
+/// @brief This test's own directory beneath @p base: `niocUnitTest/<Suite>.<test>`.
+std::filesystem::path unitTestDirectory(
+    const std::filesystem::path& base = std::filesystem::temp_directory_path())
 {
   const auto* const info = ::testing::UnitTest::GetInstance()->current_test_info();
-  const auto dir = fs::temp_directory_path() / "niocTopicRegistryTest" / info->name();
-  fs::remove_all(dir);
-  fs::create_directories(dir);
-  return dir;
+  return base / "niocUnitTest" / (std::string{info->test_suite_name()} + "." + info->name());
 }
+
+// NOLINTNEXTLINE(misc-multiple-inheritance): the fixture is the test and its directory.
+class TopicRegistryTest: public common::ScratchDirectory, public ::testing::Test
+{
+public:
+  TopicRegistryTest(): ScratchDirectory{unitTestDirectory()} {}
+};
 
 chronicle::ChannelId channel(const std::uint64_t value)
 {
@@ -59,15 +65,15 @@ constexpr auto kGnssSchemaId = std::uint64_t{0x0d1eULL};
 
 } // namespace
 
-TEST(TopicRegistry, aDefaultRegistryIsEmpty)
+TEST_F(TopicRegistryTest, aDefaultRegistryIsEmpty)
 {
   const auto registry = TopicRegistry{};
   EXPECT_TRUE(registry.empty());
 }
 
-TEST(TopicRegistry, aRecordedTopicRoundTripsThroughDisk)
+TEST_F(TopicRegistryTest, aRecordedTopicRoundTripsThroughDisk)
 {
-  const auto dir = testDir();
+  const auto& dir = path();
 
   auto written = TopicRegistry{};
   written.record(channel(kImuChannel), "/imu", kImuSchemaId, "nioc::sensors::Imu");
@@ -85,7 +91,7 @@ TEST(TopicRegistry, aRecordedTopicRoundTripsThroughDisk)
   EXPECT_EQ("nioc::sensors::Imu", imu->mSchemaName);
 }
 
-TEST(TopicRegistry, recordingAChannelTwiceThrowsEvenForTheIdenticalTopic)
+TEST_F(TopicRegistryTest, recordingAChannelTwiceThrowsEvenForTheIdenticalTopic)
 {
   auto registry = TopicRegistry{};
   registry.record(channel(kImuChannel), "/imu", kImuSchemaId, "nioc::sensors::Imu");
@@ -98,7 +104,7 @@ TEST(TopicRegistry, recordingAChannelTwiceThrowsEvenForTheIdenticalTopic)
   EXPECT_EQ(1U, registry.size());
 }
 
-TEST(TopicRegistry, reusingAChannelForADifferentTopicThrows)
+TEST_F(TopicRegistryTest, reusingAChannelForADifferentTopicThrows)
 {
   auto registry = TopicRegistry{};
   registry.record(channel(kImuChannel), "/imu", kImuSchemaId, "nioc::sensors::Imu");
@@ -109,28 +115,27 @@ TEST(TopicRegistry, reusingAChannelForADifferentTopicThrows)
       std::runtime_error);
 }
 
-TEST(TopicRegistry, anEmptyPathAdoptsNothing)
+TEST_F(TopicRegistryTest, anEmptyPathAdoptsNothing)
 {
   const auto registry = TopicRegistry{fs::path{}};
   EXPECT_TRUE(registry.empty());
 }
 
-TEST(TopicRegistry, aDirectoryWithoutARecordIsAdoptedAsEmpty)
+TEST_F(TopicRegistryTest, aDirectoryWithoutARecordIsAdoptedAsEmpty)
 {
-  const auto registry = TopicRegistry{testDir()};
+  const auto registry = TopicRegistry{path()};
   EXPECT_TRUE(registry.empty());
 }
 
-TEST(TopicRegistry, aMalformedRecordIsAdoptedAsEmpty)
+TEST_F(TopicRegistryTest, aMalformedRecordIsAdoptedAsEmpty)
 {
-  const auto dir = testDir();
-  std::ofstream{dir / "topics.json"} << "{ this is not json";
+  std::ofstream{path() / "topics.json"} << "{ this is not json";
 
-  const auto registry = TopicRegistry{dir};
+  const auto registry = TopicRegistry{path()};
   EXPECT_TRUE(registry.empty());
 }
 
-TEST(TopicRegistry, streamingEmitsAHeadingRowAndOneRowPerTopic)
+TEST_F(TopicRegistryTest, streamingEmitsAHeadingRowAndOneRowPerTopic)
 {
   auto registry = TopicRegistry{};
   registry.record(channel(kImuChannel), "/imu", kImuSchemaId, "nioc::sensors::Imu");

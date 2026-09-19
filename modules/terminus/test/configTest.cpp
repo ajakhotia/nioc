@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <fstream>
 #include <gtest/gtest.h>
+#include <nioc/common/filesystem.hpp>
 #include <nioc/containers/mmapConstArray.hpp>
 #include <nioc/terminus/arenaMessageBuilder.hpp>
 #include <nioc/terminus/config.hpp>
@@ -27,20 +28,36 @@ namespace fs = std::filesystem;
 namespace
 {
 
-fs::path testDirectory()
+/// @brief This test's own directory beneath @p base: `niocUnitTest/<Suite>.<test>`.
+std::filesystem::path unitTestDirectory(
+    const std::filesystem::path& base = std::filesystem::temp_directory_path())
 {
-  return fs::temp_directory_path() / "niocConfigTest";
+  const auto* const info = ::testing::UnitTest::GetInstance()->current_test_info();
+  return base / "niocUnitTest" / (std::string{info->test_suite_name()} + "." + info->name());
 }
 
-/// Read a routine's `<name>.json`: the effective config, every field resolved.
-nlohmann::json readEffective(const std::string& name)
+// NOLINTNEXTLINE(misc-multiple-inheritance): the fixture is the test and its directory.
+class ConfigTest: public common::ScratchDirectory, public ::testing::Test
 {
-  return nlohmann::json::parse(std::ifstream(testDirectory() / (name + ".json")));
-}
+public:
+  ConfigTest(): ScratchDirectory{unitTestDirectory()} {}
+
+protected:
+  [[nodiscard]] fs::path testDirectory() const
+  {
+    return path();
+  }
+
+  /// Read a routine's `<name>.json`: the effective config, every field resolved.
+  [[nodiscard]] nlohmann::json readEffective(const std::string& name) const
+  {
+    return nlohmann::json::parse(std::ifstream(path() / (name + ".json")));
+  }
+};
 
 } // namespace
 
-TEST(ConfigTest, defaultsAloneYieldSchemaDefaults)
+TEST_F(ConfigTest, defaultsAloneYieldSchemaDefaults)
 {
   const auto config = Config<TestConfig>{nlohmann::json::object(), testDirectory(), "defaults"};
   const auto reader = config.reader();
@@ -51,7 +68,7 @@ TEST(ConfigTest, defaultsAloneYieldSchemaDefaults)
   EXPECT_EQ(std::string{reader.getLeaf().getTag().cStr()}, "lit");
 }
 
-TEST(ConfigTest, overridesMergeOntoDefaults)
+TEST_F(ConfigTest, overridesMergeOntoDefaults)
 {
   // Patching one leaf field must not reset its siblings: the struct-literal default survives
   // because the overrides merge onto the fully materialized default tree.
@@ -64,7 +81,7 @@ TEST(ConfigTest, overridesMergeOntoDefaults)
   EXPECT_EQ(std::string{reader.getLeaf().getTag().cStr()}, "patched");
 }
 
-TEST(ConfigTest, nullOverrideRevertsToSchemaDefault)
+TEST_F(ConfigTest, nullOverrideRevertsToSchemaDefault)
 {
   const auto overrides = nlohmann::json{{"count", nullptr}};
   const auto config = Config<TestConfig>{overrides, testDirectory(), "nullReverted"};
@@ -72,7 +89,7 @@ TEST(ConfigTest, nullOverrideRevertsToSchemaDefault)
   EXPECT_EQ(config.reader().getCount(), 7U);
 }
 
-TEST(ConfigTest, offSchemaKeysAreToleratedButNotRecorded)
+TEST_F(ConfigTest, offSchemaKeysAreToleratedButNotRecorded)
 {
   // Overrides may carry fields outside the current schema (e.g. written by a newer build). They
   // are tolerated at decode time rather than rejected, but the effective record is the schema
@@ -87,7 +104,7 @@ TEST(ConfigTest, offSchemaKeysAreToleratedButNotRecorded)
   EXPECT_FALSE(effective.contains("futureField"));
 }
 
-TEST(ConfigTest, effectiveConfigIsWrittenFlat)
+TEST_F(ConfigTest, effectiveConfigIsWrittenFlat)
 {
   const auto config = Config<TestConfig>{nlohmann::json::object(), testDirectory(), "flat"};
 
@@ -98,7 +115,7 @@ TEST(ConfigTest, effectiveConfigIsWrittenFlat)
   EXPECT_EQ(onDisk.at("count").get<int>(), 7);
 }
 
-TEST(ConfigTest, effectiveConfigMaterializesEveryDefault)
+TEST_F(ConfigTest, effectiveConfigMaterializesEveryDefault)
 {
   const auto config = Config<TestConfig>{nlohmann::json::object(), testDirectory(), "materialized"};
 
@@ -111,7 +128,7 @@ TEST(ConfigTest, effectiveConfigMaterializesEveryDefault)
   EXPECT_EQ(effective.at("leaf").at("tag").get<std::string>(), "lit");
 }
 
-TEST(ConfigTest, binaryArtifactLoadsIndependently)
+TEST_F(ConfigTest, binaryArtifactLoadsIndependently)
 {
   const auto overrides = nlohmann::json{{"name", "mapped"}, {"gains", {1.5, 2.5}}};
   const auto config = Config<TestConfig>{overrides, testDirectory(), "standalone"};
@@ -137,14 +154,14 @@ TEST(ConfigTest, binaryArtifactLoadsIndependently)
   EXPECT_DOUBLE_EQ(gains.at(1), 2.5);
 }
 
-TEST(ConfigTest, nonObjectOverridesThrow)
+TEST_F(ConfigTest, nonObjectOverridesThrow)
 {
   EXPECT_THROW(
       (Config<TestConfig>{nlohmann::json(42), testDirectory(), "nonObject"}),
       std::invalid_argument);
 }
 
-TEST(ConfigTest, missingDirectoriesAreCreated)
+TEST_F(ConfigTest, missingDirectoriesAreCreated)
 {
   const auto directory = testDirectory() / "nested" / "deep";
   const auto config = Config<TestConfig>{nlohmann::json::object(), directory, "cfg"};
@@ -153,7 +170,7 @@ TEST(ConfigTest, missingDirectoriesAreCreated)
   EXPECT_TRUE(fs::exists(directory / "cfg.bin"));
 }
 
-TEST(ConfigTest, movedConfigKeepsReading)
+TEST_F(ConfigTest, movedConfigKeepsReading)
 {
   auto source = Config<TestConfig>{nlohmann::json{{"name", "mover"}}, testDirectory(), "moved"};
 

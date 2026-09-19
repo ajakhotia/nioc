@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <gtest/gtest.h>
+#include <nioc/common/filesystem.hpp>
 #include <nioc/terminus/idl/testSchema.capnp.h>
 #include <nioc/terminus/port.hpp>
 #include <nioc/terminus/publisher.hpp>
@@ -28,20 +29,26 @@ namespace fs = std::filesystem;
 namespace
 {
 
-/// A fresh directory for one test case, cleared of any previous run's leavings.
-fs::path makeCaseDir(const std::string_view name)
+/// @brief This test's own directory beneath @p base: `niocUnitTest/<Suite>.<test>`.
+std::filesystem::path unitTestDirectory(
+    const std::filesystem::path& base = std::filesystem::temp_directory_path())
 {
-  auto caseDir = fs::temp_directory_path() / "nioc-schemaRegistryTest" / name;
-  fs::remove_all(caseDir);
-  fs::create_directories(caseDir);
-  return caseDir;
+  const auto* const info = ::testing::UnitTest::GetInstance()->current_test_info();
+  return base / "niocUnitTest" / (std::string{info->test_suite_name()} + "." + info->name());
 }
+
+// NOLINTNEXTLINE(misc-multiple-inheritance): the fixture is the test and its directory.
+class SchemaRegistryTest: public common::ScratchDirectory, public ::testing::Test
+{
+public:
+  SchemaRegistryTest(): ScratchDirectory{unitTestDirectory()} {}
+};
 
 } // namespace
 
-TEST(SchemaRegistry, recordedSchemasRoundTripAndReadAMessageDynamically)
+TEST_F(SchemaRegistryTest, recordedSchemasRoundTripAndReadAMessageDynamically)
 {
-  const auto caseDir = makeCaseDir("roundTrip");
+  const auto& caseDir = path();
 
   // Record the compiled schema and persist it, as a recording run does.
   {
@@ -71,7 +78,7 @@ TEST(SchemaRegistry, recordedSchemasRoundTripAndReadAMessageDynamically)
   EXPECT_EQ(std::string{dynamic.get("text").as<capnp::Text>().cStr()}, kText);
 }
 
-TEST(SchemaRegistry, anUnrecordedIdIsAbsentAndRefused)
+TEST_F(SchemaRegistryTest, anUnrecordedIdIsAbsentAndRefused)
 {
   const auto registry = SchemaRegistry{};
 
@@ -79,25 +86,25 @@ TEST(SchemaRegistry, anUnrecordedIdIsAbsentAndRefused)
   EXPECT_THROW(static_cast<void>(registry.at(kSchemaId<TestSchema>)), std::out_of_range);
 }
 
-TEST(SchemaRegistry, anEmptyPathYieldsAnEmptyRegistry)
+TEST_F(SchemaRegistryTest, anEmptyPathYieldsAnEmptyRegistry)
 {
   const auto registry = SchemaRegistry{fs::path{}};
 
   EXPECT_FALSE(registry.contains(kSchemaId<TestSchema>));
 }
 
-TEST(SchemaRegistry, aRecordingWithoutSchemasYieldsAnEmptyRegistry)
+TEST_F(SchemaRegistryTest, aRecordingWithoutSchemasYieldsAnEmptyRegistry)
 {
-  const auto registry = SchemaRegistry{makeCaseDir("noSchemas")};
+  const auto registry = SchemaRegistry{path()};
 
   EXPECT_FALSE(registry.contains(kSchemaId<TestSchema>));
 }
 
-TEST(SchemaRegistry, aPortRecordsItsPublishersSchemasAndAReplayAdoptsThem)
+TEST_F(SchemaRegistryTest, aPortRecordsItsPublishersSchemasAndAReplayAdoptsThem)
 {
   const auto workingDir = [&]
   {
-    auto recordingDir = makeCaseDir("portRecords");
+    auto recordingDir = path();
     auto port = Port{
         RunContext{std::move(recordingDir), {}, true, ""},
         [](Port& port, Port::Drivers&, Port::Components&, Port::Runners&)

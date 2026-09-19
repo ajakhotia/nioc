@@ -9,10 +9,10 @@
 #include <cstdint>
 #include <fcntl.h>
 #include <filesystem>
-#include <format>
 #include <fstream>
 #include <gtest/gtest.h>
 #include <memory>
+#include <nioc/common/filesystem.hpp>
 #include <string>
 #include <unistd.h>
 #include <vector>
@@ -28,20 +28,15 @@ constexpr auto kFileBytes = std::uint64_t{1024ULL * 1024ULL};
 /// One WILLNEED request, matching the kernel's default per-file readahead limit.
 constexpr auto kChunkBytes = std::uint32_t{128U * 1024U};
 
-/// @brief A temporary file filled with kFillByte plus its open descriptor, deleted on
-/// destruction. Named after the running test, so tests running in parallel processes never
-/// share a file.
+/// @brief A file at a given path filled with kFillByte plus its open descriptor. Owns and
+/// closes the descriptor; the enclosing ScratchDirectory owns and deletes the file itself.
 struct ScratchFile
 {
   /// The byte value every position of the file holds; read-back assertions compare against it.
   static constexpr auto kFillByte = char{7};
 
-  explicit ScratchFile(const std::size_t byteCount):
-    mPath{
-        std::filesystem::temp_directory_path() /
-        std::format(
-            "nioc-adviceRingTest-{}.bin",
-            ::testing::UnitTest::GetInstance()->current_test_info()->name())},
+  ScratchFile(std::filesystem::path path, const std::size_t byteCount):
+    mPath{std::move(path)},
     mDescriptor{[&]
                 {
                   auto stream = std::ofstream{mPath, std::ios::binary | std::ios::trunc};
@@ -57,7 +52,6 @@ struct ScratchFile
   ~ScratchFile()
   {
     static_cast<void>(::close(mDescriptor));
-    std::filesystem::remove(mPath);
   }
 
   ScratchFile(const ScratchFile&) = delete;
@@ -69,9 +63,24 @@ struct ScratchFile
   int mDescriptor;
 };
 
+/// @brief This test's own directory beneath @p base: `niocUnitTest/<Suite>.<test>`.
+std::filesystem::path unitTestDirectory(
+    const std::filesystem::path& base = std::filesystem::temp_directory_path())
+{
+  const auto* const info = ::testing::UnitTest::GetInstance()->current_test_info();
+  return base / "niocUnitTest" / (std::string{info->test_suite_name()} + "." + info->name());
+}
+
+// NOLINTNEXTLINE(misc-multiple-inheritance): the fixture is the test and its directory.
+class AdviceRingTest: public common::ScratchDirectory, public ::testing::Test
+{
+public:
+  AdviceRingTest(): ScratchDirectory{unitTestDirectory()} {}
+};
+
 } // namespace
 
-TEST(AdviceRing, queueFullBurstsLeaveATwoSlotRingHealthy)
+TEST_F(AdviceRingTest, queueFullBurstsLeaveATwoSlotRingHealthy)
 {
   // A two-slot ring forces the queue-full submit path on nearly every request.
   auto ring = AdviceRing{2};
@@ -80,7 +89,7 @@ TEST(AdviceRing, queueFullBurstsLeaveATwoSlotRingHealthy)
     GTEST_SKIP() << "io_uring is unavailable in this environment.";
   }
 
-  const auto file = ScratchFile{kFileBytes};
+  const auto file = ScratchFile{path() / "advice.bin", kFileBytes};
   ASSERT_GE(file.mDescriptor, 0);
 
   for(auto offset = std::uint64_t{0}; offset < kFileBytes; offset += kChunkBytes)
@@ -98,13 +107,13 @@ TEST(AdviceRing, queueFullBurstsLeaveATwoSlotRingHealthy)
   EXPECT_TRUE(ring.asynchronous());
 }
 
-TEST(AdviceRing, synchronousFallbackAppliesAdviceWithoutARing)
+TEST_F(AdviceRingTest, synchronousFallbackAppliesAdviceWithoutARing)
 {
   // Zero slots cannot be set up, so the ring must degrade to synchronous advice on construction.
   auto ring = AdviceRing{0};
   EXPECT_FALSE(ring.asynchronous());
 
-  const auto file = ScratchFile{kFileBytes};
+  const auto file = ScratchFile{path() / "advice.bin", kFileBytes};
   ASSERT_GE(file.mDescriptor, 0);
   ring.advise(file.mDescriptor, {.mBegin = 0, .mEnd = kFileBytes}, POSIX_FADV_WILLNEED);
   ring.advise(file.mDescriptor, {.mBegin = 0, .mEnd = kFileBytes}, POSIX_FADV_DONTNEED);
@@ -116,9 +125,9 @@ TEST(AdviceRing, synchronousFallbackAppliesAdviceWithoutARing)
   EXPECT_EQ(byte, ScratchFile::kFillByte);
 }
 
-TEST(AdviceRing, destructionWithOperationsInFlightLeavesFileReadable)
+TEST_F(AdviceRingTest, destructionWithOperationsInFlightLeavesFileReadable)
 {
-  const auto file = ScratchFile{kFileBytes};
+  const auto file = ScratchFile{path() / "advice.bin", kFileBytes};
   ASSERT_GE(file.mDescriptor, 0);
 
   {

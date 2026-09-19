@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <gtest/gtest.h>
 #include <iterator>
+#include <nioc/common/filesystem.hpp>
 #include <nioc/containers/mmapArray.hpp>
 #include <nioc/containers/mmapConstArray.hpp>
 #include <numeric>
@@ -16,7 +17,7 @@
 #include <ranges>
 #include <span>
 #include <stdexcept>
-#include <string_view>
+#include <string>
 #include <type_traits>
 #include <utility>
 
@@ -24,7 +25,6 @@ namespace nioc::containers
 {
 namespace
 {
-namespace fs = std::filesystem;
 
 // Compile-time guarantees the runtime tests cannot exercise: const-ness reaches the pointee (a
 // const array hands out const access), and the array models a contiguous range.
@@ -42,21 +42,27 @@ static_assert(std::is_same_v<
 static_assert(std::contiguous_iterator<MmapArray<int>::iterator>);
 static_assert(std::ranges::contiguous_range<MmapArray<int>>);
 
-fs::path freshPath(const std::string_view name)
+/// @brief This test's own directory beneath @p base: `niocUnitTest/<Suite>.<test>`.
+std::filesystem::path unitTestDirectory(
+    const std::filesystem::path& base = std::filesystem::temp_directory_path())
 {
-  const auto directory = fs::temp_directory_path() / "nioc-containersTest";
-  fs::create_directories(directory);
-  const auto path = directory / name;
-  fs::remove(path);
-  return path;
+  const auto* const info = ::testing::UnitTest::GetInstance()->current_test_info();
+  return base / "niocUnitTest" / (std::string{info->test_suite_name()} + "." + info->name());
 }
+
+// NOLINTNEXTLINE(misc-multiple-inheritance): the fixture is the test and its directory.
+class MmapArrayTest: public common::ScratchDirectory, public ::testing::Test
+{
+public:
+  MmapArrayTest(): ScratchDirectory{unitTestDirectory()} {}
+};
 
 } // namespace
 
-TEST(MmapArray, writesAreReadableThroughAConstArray)
+TEST_F(MmapArrayTest, writesAreReadableThroughAConstArray)
 {
   constexpr auto kCount = std::size_t{8};
-  const auto path = freshPath("array");
+  const auto path = this->path() / "array";
 
   {
     auto array = MmapArray<std::uint32_t>{path, kCount};
@@ -76,10 +82,10 @@ TEST(MmapArray, writesAreReadableThroughAConstArray)
   }
 }
 
-TEST(MmapArray, worksAsAContiguousRange)
+TEST_F(MmapArrayTest, worksAsAContiguousRange)
 {
   constexpr auto kCount = std::size_t{5};
-  const auto path = freshPath("arrayRange");
+  const auto path = this->path() / "arrayRange";
 
   auto array = MmapArray<int>{path, kCount};
   std::iota(array.begin(), array.end(), 1);
@@ -88,10 +94,10 @@ TEST(MmapArray, worksAsAContiguousRange)
   EXPECT_EQ(std::span{array}.size(), kCount);
 }
 
-TEST(MmapArray, evictLeavesElementsReadable)
+TEST_F(MmapArrayTest, evictLeavesElementsReadable)
 {
   constexpr auto kCount = std::size_t{4096};
-  const auto path = freshPath("arrayEvict");
+  const auto path = this->path() / "arrayEvict";
 
   auto array = MmapArray<int>{path, kCount};
   std::iota(array.begin(), array.end(), 0);
@@ -103,9 +109,9 @@ TEST(MmapArray, evictLeavesElementsReadable)
   EXPECT_EQ(std::accumulate(array.begin(), array.end(), 0LL), (kCount * (kCount - 1)) / 2);
 }
 
-TEST(MmapArray, resizeReducesTheElementCount)
+TEST_F(MmapArrayTest, resizeReducesTheElementCount)
 {
-  const auto path = freshPath("arrayResize");
+  const auto path = this->path() / "arrayResize";
 
   {
     auto array = MmapArray<int>{path, 16};
@@ -116,10 +122,10 @@ TEST(MmapArray, resizeReducesTheElementCount)
   EXPECT_EQ(array.size(), 4U);
 }
 
-TEST(MmapArray, atReturnsTheElementAndIsWritable)
+TEST_F(MmapArrayTest, atReturnsTheElementAndIsWritable)
 {
   constexpr auto kCount = std::size_t{4};
-  const auto path = freshPath("arrayAt");
+  const auto path = this->path() / "arrayAt";
 
   auto array = MmapArray<int>{path, kCount};
   for(auto index = std::size_t{0}; index < kCount; ++index)
@@ -134,9 +140,9 @@ TEST(MmapArray, atReturnsTheElementAndIsWritable)
   }
 }
 
-TEST(MmapArray, atThrowsWhenIndexIsOutOfRange)
+TEST_F(MmapArrayTest, atThrowsWhenIndexIsOutOfRange)
 {
-  const auto path = freshPath("arrayAtThrows");
+  const auto path = this->path() / "arrayAtThrows";
   auto array = MmapArray<int>{path, 3};
 
   EXPECT_NO_THROW(static_cast<void>(array.at(2)));
@@ -144,9 +150,9 @@ TEST(MmapArray, atThrowsWhenIndexIsOutOfRange)
   EXPECT_THROW(static_cast<void>(array.at(99)), std::out_of_range);
 }
 
-TEST(MmapArray, moveTransfersOwnershipOfTheMapping)
+TEST_F(MmapArrayTest, moveTransfersOwnershipOfTheMapping)
 {
-  const auto path = freshPath("movedArray");
+  const auto path = this->path() / "movedArray";
 
   constexpr auto kMarker = std::int32_t{42}; // survives the move, proving the same bytes are read
   auto source = std::optional<MmapArray<std::int32_t>>{std::in_place, path, std::size_t{4}};
