@@ -2,7 +2,8 @@ find_package(GTest REQUIRED)
 include(GoogleTest)
 
 add_executable(containersTest
-    mmapRegionTest.cpp
+    fileTest.cpp
+    mappingTest.cpp
     mmapArrayTest.cpp
     mmapConstArrayTest.cpp
     tapeTest.cpp)

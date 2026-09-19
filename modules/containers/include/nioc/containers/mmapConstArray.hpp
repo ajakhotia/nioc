@@ -5,11 +5,13 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include "mmapRegion.hpp"
+#include "file.hpp"
+#include "mapping.hpp"
 #include <cstddef>
 #include <filesystem>
 #include <iterator>
 #include <nioc/common/exception.hpp>
+#include <nioc/common/typeTraits.hpp>
 #include <span>
 #include <stdexcept>
 #include <type_traits>
@@ -44,7 +46,7 @@ namespace nioc::containers
 /// @tparam ValueType The element type the file's bytes are reinterpreted as. Must be trivially
 /// copyable and have no top-level cv-qualifiers; elements are mapped, never constructed.
 ///
-/// @see MmapRegion
+/// @see Mapping
 template<typename ValueType>
   requires std::is_trivially_copyable_v<ValueType> and
            std::is_same_v<ValueType, std::remove_cv_t<ValueType>>
@@ -68,14 +70,16 @@ public:
   ///
   /// @throws std::runtime_error if the file cannot be opened or mapped, or if its byte length is
   /// not a whole multiple of sizeof(ValueType).
-  explicit MmapConstArray(std::filesystem::path path): mRegion{std::move(path)}
+  explicit MmapConstArray(std::filesystem::path path):
+    mFile{File::open(std::move(path))},
+    mMapping{Mapping::readOnly(mFile, mFile.size())}
   {
-    if(mRegion.size() % sizeof(ValueType) != 0)
+    if(mMapping.size() % sizeof(ValueType) != 0)
     {
       common::throwException<std::runtime_error>(
           "{} is {} bytes, not a whole multiple of the {}-byte element size",
-          mRegion.path().string(),
-          mRegion.size(),
+          mFile.path().string(),
+          mMapping.size(),
           sizeof(ValueType));
     }
   }
@@ -151,13 +155,22 @@ public:
   /// @brief True if the array holds no elements.
   [[nodiscard]] bool empty() const noexcept
   {
-    return mRegion.empty();
+    return mMapping.empty();
+  }
+
+  /// @brief The backing file's descriptor, open for the array's lifetime, for kernel calls that
+  /// address the file rather than the mapping.
+  ///
+  /// @see File::nativeHandle
+  [[nodiscard]] int nativeHandle() const noexcept
+  {
+    return mFile.nativeHandle();
   }
 
   /// @brief Number of elements. Equals the file's byte length divided by sizeof(ValueType).
   [[nodiscard]] size_type size() const noexcept
   {
-    return mRegion.size() / sizeof(ValueType);
+    return mMapping.size() / sizeof(ValueType);
   }
 
   /// @brief Evict from memory the pages lying entirely within the elements [@p first, @p last).
@@ -169,25 +182,26 @@ public:
   ///
   /// @param last One past the last element of the range; an iterator of this array.
   ///
-  /// @see MmapRegion::evict
+  /// @see Mapping::evict
   template<std::contiguous_iterator Iterator>
     requires std::is_same_v<std::iter_value_t<Iterator>, ValueType>
   void evict(const Iterator first, const Iterator last) const noexcept
   {
-    mRegion.evict(std::as_bytes(std::span{first, last}));
+    mMapping.evict(std::as_bytes(std::span{first, last}));
   }
 
 private:
   /// The elements as one contiguous span over the mapping.
   [[nodiscard]] std::span<const ValueType> elements() const noexcept
   {
-    return mRegion.elements<ValueType>();
+    return common::startLifetimeAsArray<ValueType>(mMapping.bytes());
   }
 
-  /// The read-only memory mapping of the file. Owns the lifetime of the bytes that every element
-  /// pointer, reference, and iterator refers to, and supplies the byte length divided to compute
-  /// size().
-  MmapRegion mRegion;
+  /// The backing file, opened read-only.
+  File mFile;
+
+  /// The read-only mapping of the whole file; every element reference points into it.
+  Mapping mMapping;
 };
 
 } // namespace nioc::containers

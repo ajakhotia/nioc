@@ -6,9 +6,11 @@ add_exported_library(
     EXPORT
         niocTargets
     SOURCES
-        src/mmapRegion.cpp
+        src/file.cpp
+        src/mapping.cpp
     HEADERS
-        PUBLIC include/nioc/containers/mmapRegion.hpp
+        PUBLIC include/nioc/containers/file.hpp
+        PUBLIC include/nioc/containers/mapping.hpp
         PUBLIC include/nioc/containers/mmapArray.hpp
         PUBLIC include/nioc/containers/mmapConstArray.hpp
         PUBLIC include/nioc/containers/tape.hpp

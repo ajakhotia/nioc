@@ -11,17 +11,13 @@
 #include <cstdint>
 #include <cstdio>
 #include <filesystem>
-#include <fstream>
 #include <gtest/gtest.h>
 #include <iterator>
 #include <memory>
-#include <nioc/containers/mmapRegion.hpp>
-#include <numeric>
-#include <optional>
+#include <nioc/containers/file.hpp>
+#include <nioc/containers/mapping.hpp>
 #include <span>
-#include <sstream>
 #include <stdexcept>
-#include <string>
 #include <string_view>
 #include <sys/types.h>
 #include <type_traits>
@@ -46,11 +42,11 @@ fs::path freshPath(const std::string_view name)
 
 /// @brief Whether each page of @p region is mapped into this process's page tables, read from
 /// /proc/self/pagemap (one 64-bit entry per virtual page; bit 63 is the present bit).
-std::vector<bool> mappedPages(const MmapRegion& region)
+std::vector<bool> mappedPages(const Mapping& mapping)
 {
   const auto pageBytes = static_cast<std::size_t>(::sysconf(_SC_PAGESIZE));
-  const auto pageCount = (region.size() + pageBytes - 1) / pageBytes;
-  const auto firstPage = std::bit_cast<std::uintptr_t>(region.data()) / pageBytes;
+  const auto pageCount = (mapping.size() + pageBytes - 1) / pageBytes;
+  const auto firstPage = std::bit_cast<std::uintptr_t>(mapping.data()) / pageBytes;
 
   // std::ifstream cannot read this pseudo-file; the C stream API can.
   auto entries = std::vector<std::uint64_t>(pageCount);
@@ -77,111 +73,84 @@ std::vector<bool> mappedPages(const MmapRegion& region)
 
 } // namespace
 
-TEST(MmapRegion, writesAreVisibleWhenReopenedReadOnly)
+TEST(Mapping, readWriteReachesTheFileAndAReadOnlyMapping)
 {
-  const auto path = freshPath("region");
+  constexpr auto kBytes = std::size_t{4096};
+  constexpr auto kMarker = std::byte{0x3C};
+  const auto file = File::create(freshPath("mappingShared"), kBytes);
 
-  {
-    auto region = MmapRegion{path, 64};
-    EXPECT_EQ(region.size(), 64);
-    region.bytes().front() = std::byte{0xAB};
-    region.bytes().back() = std::byte{0xCD};
-  }
+  auto writable = Mapping::readWrite(file, kBytes);
+  const auto readable = Mapping::readOnly(file, kBytes);
+  ASSERT_EQ(writable.size(), kBytes);
+  ASSERT_EQ(readable.size(), kBytes);
 
-  EXPECT_EQ(fs::file_size(path), 64);
-
-  const auto region = MmapRegion{path};
-  EXPECT_EQ(region.size(), 64);
-  EXPECT_EQ(region.bytes().front(), std::byte{0xAB});
-  EXPECT_EQ(region.bytes().back(), std::byte{0xCD});
+  std::ranges::fill(writable, kMarker);
+  EXPECT_TRUE(std::ranges::all_of(readable, [](const auto byte) { return byte == kMarker; }));
 }
 
-TEST(MmapRegion, iteratesAndViewsElements)
+TEST(Mapping, offsetMapsATailOfTheFile)
 {
-  constexpr auto kCount = std::size_t{16};
-  const auto path = freshPath("regionElements");
+  constexpr auto kMarker = std::byte{0x7E};
+  const auto pageBytes = static_cast<std::size_t>(::sysconf(_SC_PAGESIZE));
+  const auto file = File::create(freshPath("mappingOffset"), 3 * pageBytes);
+  auto whole = Mapping::readWrite(file, 3 * pageBytes);
+  whole.bytes().back() = kMarker;
 
-  auto region = MmapRegion{path, kCount * sizeof(std::uint32_t)};
-  std::ranges::fill(region, std::byte{0});
-  auto words = region.elements<std::uint32_t>();
-  ASSERT_EQ(words.size(), kCount);
-  std::ranges::iota(words, 0U);
-
-  const auto& constRegion = region;
-  static_assert(std::is_same_v<decltype(constRegion.begin()), MmapRegion::const_iterator>);
-  static_assert(std::is_same_v<decltype(region.begin()), MmapRegion::iterator>);
-  EXPECT_EQ(std::distance(constRegion.begin(), constRegion.end()), kCount * sizeof(std::uint32_t));
-  EXPECT_EQ(std::accumulate(words.begin(), words.end(), 0U), (kCount * (kCount - 1)) / 2);
-  EXPECT_EQ(constRegion.elements<std::uint32_t>().back(), kCount - 1);
+  const auto tail = Mapping::readOnly(file, pageBytes, static_cast<std::int64_t>(2 * pageBytes));
+  ASSERT_EQ(tail.size(), pageBytes);
+  EXPECT_EQ(tail.bytes().back(), kMarker);
 }
 
-TEST(MmapRegion, resizeShrinksBackingFile)
+TEST(Mapping, iteratesAsAByteRange)
 {
-  const auto path = freshPath("regionResize");
+  constexpr auto kBytes = std::size_t{64};
+  const auto file = File::create(freshPath("mappingIterate"), kBytes);
+  auto mapping = Mapping::readWrite(file, kBytes);
 
-  {
-    auto region = MmapRegion{path, 64};
-    region.resize(16);
-  }
-
-  EXPECT_EQ(fs::file_size(path), 16);
+  static_assert(std::is_same_v<decltype(mapping.begin()), Mapping::iterator>);
+  static_assert(std::is_same_v<decltype(std::as_const(mapping).begin()), Mapping::const_iterator>);
+  std::ranges::fill(mapping, std::byte{1});
+  EXPECT_EQ(std::distance(mapping.cbegin(), mapping.cend()), kBytes);
+  EXPECT_TRUE(std::ranges::all_of(mapping, [](const auto byte) { return byte == std::byte{1}; }));
 }
 
-TEST(MmapRegion, resizeExtendsBackingFile)
+TEST(Mapping, zeroLengthIsEmpty)
 {
-  const auto path = freshPath("regionExtend");
-
-  {
-    auto region = MmapRegion{path, 64};
-    region.resize(256);
-  }
-
-  EXPECT_EQ(fs::file_size(path), 256);
+  const auto file = File::create(freshPath("mappingEmpty"), 0);
+  const auto mapping = Mapping::readOnly(file, 0);
+  EXPECT_TRUE(mapping.empty());
+  EXPECT_EQ(mapping.size(), 0);
+  EXPECT_TRUE(mapping.bytes().empty());
 }
 
-TEST(MmapRegion, emptyFileMapsToEmptyRegion)
+TEST(Mapping, mappingBeyondTheFileThrows)
 {
-  const auto path = freshPath("emptyRegion");
-  static_cast<void>(std::ofstream{path});
-  ASSERT_EQ(fs::file_size(path), 0);
-
-  const auto region = MmapRegion{path};
-  EXPECT_TRUE(region.empty());
-  EXPECT_EQ(region.size(), 0);
-  EXPECT_TRUE(region.bytes().empty());
+  const auto file = File::create(freshPath("mappingBeyond"), 16);
+  const auto pageBytes = static_cast<std::int64_t>(::sysconf(_SC_PAGESIZE));
+  // An offset past the end is accepted by mmap; an unaligned one is not, which is what is tested.
+  EXPECT_THROW(static_cast<void>(Mapping::readOnly(file, 16, pageBytes + 1)), std::runtime_error);
 }
 
-TEST(MmapRegion, openingAMissingFileThrows)
+TEST(Mapping, moveTransfersOwnership)
 {
-  EXPECT_THROW((MmapRegion{freshPath("missingRegion")}), std::runtime_error);
+  constexpr auto kBytes = std::size_t{4096};
+  const auto file = File::create(freshPath("mappingMove"), kBytes);
+  auto source = Mapping::readWrite(file, kBytes);
+  const auto* const data = source.data();
+
+  const auto moved = Mapping{std::move(source)};
+  EXPECT_EQ(moved.data(), data);
+  EXPECT_EQ(moved.size(), kBytes);
 }
 
-TEST(MmapRegion, moveTransfersOwnershipOfTheMapping)
-{
-  const auto path = freshPath("movedRegion");
-
-  constexpr auto kMarker = std::byte{0xEF}; // survives the move, proving the same bytes are read
-  auto source = std::optional<MmapRegion>{std::in_place, path, std::size_t{64}};
-  source->bytes().front() = kMarker;
-  const auto* const data = source->data();
-
-  const auto region = MmapRegion{std::move(*source)};
-  // Destroying the moved-from source must release nothing: the mapping now belongs to region.
-  source.reset();
-
-  EXPECT_EQ(region.data(), data);
-  EXPECT_EQ(region.size(), 64);
-  EXPECT_EQ(region.bytes().front(), kMarker);
-}
-
-TEST(MmapRegion, evictDropsOnlyThePagesInsideTheRange)
+TEST(Mapping, evictDropsOnlyThePagesInsideTheRange)
 {
   constexpr auto kPageCount = std::size_t{8};
   constexpr auto kMarker = std::byte{0x5A};
   const auto pageBytes = static_cast<std::size_t>(::sysconf(_SC_PAGESIZE));
 
-  const auto path = freshPath("evictedRegion");
-  auto writable = MmapRegion{path, kPageCount * pageBytes};
+  const auto file = File::create(freshPath("evictedMapping"), kPageCount * pageBytes);
+  auto writable = Mapping::readWrite(file, file.size());
   std::ranges::fill(writable.bytes(), kMarker);
   const auto& region = writable;
   ASSERT_EQ(mappedPages(region), std::vector<bool>(kPageCount, true));
@@ -203,22 +172,21 @@ TEST(MmapRegion, evictDropsOnlyThePagesInsideTheRange)
   EXPECT_TRUE(std::ranges::all_of(region.bytes(), [](const auto byte) { return byte == kMarker; }));
 }
 
-TEST(MmapRegion, evictIgnoresRangesOutsideTheMapping)
+TEST(Mapping, evictIgnoresRangesOutsideTheMapping)
 {
   constexpr auto kRegionBytes = std::size_t{4096};
   constexpr auto kMarker = std::byte{0xA5};
 
-  const auto path = freshPath("evictForeign");
-  auto region = MmapRegion{path, kRegionBytes};
+  const auto file = File::create(freshPath("evictForeign"), kRegionBytes);
+  auto region = Mapping::readWrite(file, kRegionBytes);
   std::ranges::fill(region.bytes(), kMarker);
 
   const auto foreign = std::array<std::byte, 16>{};
   region.evict(std::span<const std::byte>{foreign});
   region.evict(std::span<const std::byte>{});
 
-  const auto emptyPath = freshPath("evictEmpty");
-  static_cast<void>(std::ofstream{emptyPath});
-  const auto empty = MmapRegion{emptyPath};
+  const auto emptyFile = File::create(freshPath("evictEmpty"), 0);
+  const auto empty = Mapping::readOnly(emptyFile, 0);
   empty.evict(empty.bytes());
 
   EXPECT_TRUE(std::ranges::all_of(region.bytes(), [](const auto byte) { return byte == kMarker; }));
