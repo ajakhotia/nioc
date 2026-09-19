@@ -41,9 +41,13 @@ std::vector<bool> mappedPages(const Mapping& mapping)
 
   // std::ifstream cannot read this pseudo-file; the C stream API can.
   auto entries = std::vector<std::uint64_t>(pageCount);
-  const auto pagemap = std::unique_ptr<std::FILE, decltype(&std::fclose)>{
-      std::fopen("/proc/self/pagemap", "rbe"),
-      &std::fclose};
+
+  constexpr auto closeFile = [](std::FILE* file)
+  {
+    static_cast<void>(std::fclose(file)); // NOLINT(cppcoreguidelines-owning-memory)
+  };
+  const auto pagemap = std::unique_ptr<std::FILE, decltype(closeFile)>{
+      std::fopen("/proc/self/pagemap", "rbe")};
   if(pagemap == nullptr or
      ::fseeko(pagemap.get(), static_cast<off_t>(firstPage * sizeof(std::uint64_t)), SEEK_SET) !=
          0 or
