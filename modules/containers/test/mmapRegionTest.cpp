@@ -16,6 +16,7 @@
 #include <iterator>
 #include <memory>
 #include <nioc/containers/mmapRegion.hpp>
+#include <numeric>
 #include <optional>
 #include <span>
 #include <sstream>
@@ -23,6 +24,7 @@
 #include <string>
 #include <string_view>
 #include <sys/types.h>
+#include <type_traits>
 #include <unistd.h>
 #include <utility>
 #include <vector>
@@ -92,6 +94,25 @@ TEST(MmapRegion, writesAreVisibleWhenReopenedReadOnly)
   EXPECT_EQ(region.size(), 64);
   EXPECT_EQ(region.bytes().front(), std::byte{0xAB});
   EXPECT_EQ(region.bytes().back(), std::byte{0xCD});
+}
+
+TEST(MmapRegion, iteratesAndViewsElements)
+{
+  constexpr auto kCount = std::size_t{16};
+  const auto path = freshPath("regionElements");
+
+  auto region = MmapRegion{path, kCount * sizeof(std::uint32_t)};
+  std::ranges::fill(region, std::byte{0});
+  auto words = region.elements<std::uint32_t>();
+  ASSERT_EQ(words.size(), kCount);
+  std::ranges::iota(words, 0U);
+
+  const auto& constRegion = region;
+  static_assert(std::is_same_v<decltype(constRegion.begin()), MmapRegion::const_iterator>);
+  static_assert(std::is_same_v<decltype(region.begin()), MmapRegion::iterator>);
+  EXPECT_EQ(std::distance(constRegion.begin(), constRegion.end()), kCount * sizeof(std::uint32_t));
+  EXPECT_EQ(std::accumulate(words.begin(), words.end(), 0U), (kCount * (kCount - 1)) / 2);
+  EXPECT_EQ(constRegion.elements<std::uint32_t>().back(), kCount - 1);
 }
 
 TEST(MmapRegion, resizeShrinksBackingFile)

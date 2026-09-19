@@ -27,15 +27,18 @@ namespace
 namespace fs = std::filesystem;
 
 // Compile-time guarantees the runtime tests cannot exercise: const-ness reaches the pointee (a
-// const array hands out const access), and the array models a contiguous range with raw-pointer
-// iterators.
+// const array hands out const access), and the array models a contiguous range.
 static_assert(std::is_same_v<decltype(std::declval<MmapArray<int>&>().data()), int*>);
 static_assert(std::is_same_v<decltype(std::declval<const MmapArray<int>&>().data()), const int*>);
 static_assert(std::is_same_v<decltype(std::declval<MmapArray<int>&>()[0]), int&>);
 static_assert(std::is_same_v<decltype(std::declval<const MmapArray<int>&>()[0]), const int&>);
 static_assert(std::is_same_v<decltype(std::declval<MmapArray<int>&>().at(0)), int&>);
 static_assert(std::is_same_v<decltype(std::declval<const MmapArray<int>&>().at(0)), const int&>);
-static_assert(std::is_same_v<MmapArray<int>::iterator, int*>);
+static_assert(std::is_same_v<MmapArray<int>::iterator, std::span<int>::iterator>);
+static_assert(std::is_same_v<MmapArray<int>::const_iterator, std::span<const int>::iterator>);
+static_assert(std::is_same_v<
+              decltype(std::declval<const MmapArray<int>&>().begin()),
+              MmapArray<int>::const_iterator>);
 static_assert(std::contiguous_iterator<MmapArray<int>::iterator>);
 static_assert(std::ranges::contiguous_range<MmapArray<int>>);
 
@@ -83,6 +86,21 @@ TEST(MmapArray, worksAsAContiguousRange)
 
   EXPECT_EQ(std::accumulate(array.begin(), array.end(), 0), 15);
   EXPECT_EQ(std::span{array}.size(), kCount);
+}
+
+TEST(MmapArray, evictLeavesElementsReadable)
+{
+  constexpr auto kCount = std::size_t{4096};
+  const auto path = freshPath("arrayEvict");
+
+  auto array = MmapArray<int>{path, kCount};
+  std::iota(array.begin(), array.end(), 0);
+
+  array.evict(array.begin(), array.end());
+  const auto& constArray = array;
+  constArray.evict(constArray.cbegin(), constArray.cend());
+
+  EXPECT_EQ(std::accumulate(array.begin(), array.end(), 0LL), (kCount * (kCount - 1)) / 2);
 }
 
 TEST(MmapArray, resizeReducesTheElementCount)

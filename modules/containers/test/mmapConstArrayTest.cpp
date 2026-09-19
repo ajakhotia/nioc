@@ -14,6 +14,7 @@
 #include <numeric>
 #include <optional>
 #include <ranges>
+#include <span>
 #include <stdexcept>
 #include <string_view>
 #include <type_traits>
@@ -25,12 +26,12 @@ namespace
 {
 namespace fs = std::filesystem;
 
-// Read-only by construction, and a contiguous range with raw-pointer iterators.
+// Read-only by construction, and a contiguous range.
 static_assert(
     std::is_same_v<decltype(std::declval<const MmapConstArray<int>&>().data()), const int*>);
 static_assert(
     std::is_same_v<decltype(std::declval<const MmapConstArray<int>&>().at(0)), const int&>);
-static_assert(std::is_same_v<MmapConstArray<int>::const_iterator, const int*>);
+static_assert(std::is_same_v<MmapConstArray<int>::const_iterator, std::span<const int>::iterator>);
 static_assert(std::contiguous_iterator<MmapConstArray<int>::const_iterator>);
 static_assert(std::ranges::contiguous_range<MmapConstArray<int>>);
 
@@ -74,6 +75,17 @@ TEST(MmapConstArray, worksAsAContiguousRange)
 
   const auto array = MmapConstArray<std::int32_t>{path};
   EXPECT_EQ(std::accumulate(array.begin(), array.end(), 0), 10);
+}
+
+TEST(MmapConstArray, evictLeavesElementsReadable)
+{
+  constexpr auto kCount = std::size_t{4096};
+  const auto path = writeRamp("constArrayEvict", kCount);
+
+  const auto array = MmapConstArray<std::int32_t>{path};
+  array.evict(array.begin(), array.end());
+
+  EXPECT_EQ(std::accumulate(array.begin(), array.end(), 0LL), (kCount * (kCount - 1)) / 2);
 }
 
 TEST(MmapConstArray, openingAMissingFileThrows)
