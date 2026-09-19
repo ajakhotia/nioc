@@ -89,7 +89,7 @@ public:
 
 TEST_F(WriterTest, constructionAcceptsEmptyDirectory)
 {
-  EXPECT_NO_THROW(Writer(path()));
+  EXPECT_NO_THROW(Writer{path()});
 }
 
 TEST_F(WriterTest, constructionRejectsMissingDirectory)

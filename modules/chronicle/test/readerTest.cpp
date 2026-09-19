@@ -58,7 +58,7 @@ std::size_t cachedPageCount(const fs::path& file)
 {
   const auto pageBytes = static_cast<std::size_t>(::sysconf(_SC_PAGESIZE));
   const auto byteCount = static_cast<std::size_t>(fs::file_size(file));
-  const auto stream = std::unique_ptr<std::FILE, decltype(&std::fclose)>{
+  const auto stream = std::unique_ptr<std::FILE, int (*)(std::FILE*)>{
       std::fopen(file.c_str(), "rbe"),
       &std::fclose};
   if(stream == nullptr or ::fdatasync(::fileno(stream.get())) != 0)
