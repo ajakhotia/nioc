@@ -120,10 +120,10 @@ public:
   void evict(std::span<const std::byte> range) const noexcept;
 
 private:
-  explicit Mapping(std::span<std::byte> bytes) noexcept;
-
   /// The mapped bytes; empty in a moved-from mapping. The destructor unmaps this range.
   std::span<std::byte> mBytes;
+
+  explicit Mapping(std::span<std::byte> bytes) noexcept;
 };
 
 } // namespace nioc::containers

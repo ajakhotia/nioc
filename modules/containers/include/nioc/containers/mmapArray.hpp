@@ -199,17 +199,17 @@ public:
   }
 
 private:
-  /// The elements as one contiguous span over the mapping; `const`-qualified to match @p self.
-  [[nodiscard]] auto elements(this auto&& self) noexcept
-  {
-    return common::startLifetimeAsArray<ValueType>(self.mMapping.bytes());
-  }
-
   /// The backing file, created read-write and sized to the element count.
   File mFile;
 
   /// The read-write mapping of the whole file; every element access reads or writes through it.
   Mapping mMapping;
+
+  /// The elements as one contiguous span over the mapping; `const`-qualified to match @p self.
+  [[nodiscard]] auto elements(this auto&& self) noexcept
+  {
+    return common::startLifetimeAsArray<ValueType>(self.mMapping.bytes());
+  }
 };
 
 } // namespace nioc::containers

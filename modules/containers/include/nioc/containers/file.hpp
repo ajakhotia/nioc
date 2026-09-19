@@ -70,13 +70,13 @@ public:
   [[nodiscard]] std::string describe() const;
 
 private:
-  File(std::filesystem::path path, int descriptor) noexcept;
-
   /// Path the file was created or opened at; empty for an adopted descriptor.
   std::filesystem::path mPath;
 
   /// The owned descriptor; -1 once moved from.
   int mDescriptor;
+
+  File(std::filesystem::path path, int descriptor) noexcept;
 };
 
 } // namespace nioc::containers

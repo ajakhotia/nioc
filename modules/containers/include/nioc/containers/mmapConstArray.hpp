@@ -191,17 +191,17 @@ public:
   }
 
 private:
-  /// The elements as one contiguous span over the mapping.
-  [[nodiscard]] std::span<const ValueType> elements() const noexcept
-  {
-    return common::startLifetimeAsArray<ValueType>(mMapping.bytes());
-  }
-
   /// The backing file, opened read-only.
   File mFile;
 
   /// The read-only mapping of the whole file; every element reference points into it.
   Mapping mMapping;
+
+  /// The elements as one contiguous span over the mapping.
+  [[nodiscard]] std::span<const ValueType> elements() const noexcept
+  {
+    return common::startLifetimeAsArray<ValueType>(mMapping.bytes());
+  }
 };
 
 } // namespace nioc::containers
