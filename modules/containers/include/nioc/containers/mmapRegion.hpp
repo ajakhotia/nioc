@@ -51,7 +51,7 @@ public:
   /// @brief Map the existing file at @p path read-only, sized to the file's current length.
   ///
   /// Use only the const accessors. Writing through the bytes faults because the mapping lacks
-  /// write protection.
+  /// write protection. A zero-length file yields an empty region with no mapping.
   ///
   /// @param path Existing file to map. Must already exist.
   ///
@@ -95,6 +95,19 @@ public:
 
   /// @brief Number of mapped bytes.
   [[nodiscard]] std::size_t size() const noexcept;
+
+  /// @brief Evict from memory the pages that lie entirely within @p range.
+  ///
+  /// The kernel works in whole pages, so a page only partly covered by the range stays resident:
+  /// eviction never touches a byte outside the range. A range narrower than a page evicts nothing.
+  /// On a file-backed mapping an evicted page transparently re-reads from the file on its next
+  /// access, so no content is ever lost.
+  ///
+  /// A hint that never fails the caller: on error the region logs at debug level and continues.
+  /// A range that does not lie within bytes() is ignored, as is an empty range or an empty region.
+  ///
+  /// @param range A subspan of bytes() whose interior pages to evict.
+  void evict(std::span<const std::byte> range) const noexcept;
 
   /// @brief Truncate or extend the backing file on disk to @p size bytes without remapping.
   ///

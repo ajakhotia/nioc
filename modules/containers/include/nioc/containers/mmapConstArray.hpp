@@ -166,6 +166,21 @@ public:
     return mRegion.size() / sizeof(ValueType);
   }
 
+  /// @brief Evict from memory the pages lying entirely within the elements [@p first, @p last).
+  ///
+  /// Elements remain readable: an evicted page transparently re-reads from the file on its next
+  /// access. Pages only partly covered stay resident, so a short element range may evict nothing.
+  ///
+  /// @param first The first element of the range; an iterator of this array.
+  ///
+  /// @param last One past the last element of the range; an iterator of this array.
+  ///
+  /// @see MmapRegion::evict
+  void evict(const const_iterator first, const const_iterator last) const noexcept
+  {
+    mRegion.evict(std::as_bytes(std::span{first, last}));
+  }
+
 private:
   /// The read-only memory mapping of the file. Owns the lifetime of the bytes that every element
   /// pointer, reference, and iterator refers to, and supplies the byte length divided to compute

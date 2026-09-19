@@ -6,6 +6,9 @@
 
 #include <cerrno>
 #include <fcntl.h>
+#include <functional>
+#include <iterator>
+#include <memory>
 #include <nioc/common/exception.hpp>
 #include <nioc/containers/mmapRegion.hpp>
 #include <nioc/logger/logger.hpp>
@@ -90,6 +93,12 @@ std::span<std::byte> mapMemory(
     const bool writable,
     const std::filesystem::path& path)
 {
+  if(size == 0)
+  {
+    // mmap rejects a zero-length request; an empty file is simply an empty region.
+    return {};
+  }
+
   const auto protection = writable ? PROT_READ | PROT_WRITE : PROT_READ;
   void* const address = ::mmap(nullptr, size, protection, MAP_SHARED, fileDescriptor, 0);
   if(address == MAP_FAILED)
@@ -164,6 +173,43 @@ bool MmapRegion::empty() const noexcept
 std::size_t MmapRegion::size() const noexcept
 {
   return mBytes.size();
+}
+
+void MmapRegion::evict(const std::span<const std::byte> range) const noexcept
+{
+  // std::less_equal gives a total order over unrelated pointers, so a foreign span is rejected
+  // rather than compared with unspecified results.
+  const auto mapped = std::span<const std::byte>{mBytes};
+  const auto notAfter = std::less_equal<const std::byte*>{};
+  if(range.empty() or
+     mapped.empty() or
+     not notAfter(mapped.data(), range.data()) or
+     not notAfter(std::to_address(range.end()), std::to_address(mapped.end())))
+  {
+    return;
+  }
+
+  // Shrink to the pages wholly inside the range: first page boundary at or after the start, last
+  // page boundary at or before the end.
+  const auto pageSize = static_cast<std::size_t>(::sysconf(_SC_PAGESIZE));
+  const auto begin = static_cast<std::size_t>(std::distance(mapped.begin(), range.begin()));
+  const auto end = begin + range.size();
+  const auto firstPage = ((begin + pageSize - 1) / pageSize) * pageSize;
+  const auto lastPage = (end / pageSize) * pageSize;
+  if(firstPage >= lastPage)
+  {
+    return;
+  }
+
+  // glibc's posix_madvise silently ignores DONTNEED, so the raw madvise(2) is required.
+  if(::madvise(mBytes.subspan(firstPage).data(), lastPage - firstPage, MADV_DONTNEED) != 0)
+  {
+    logger::debug(
+        "Evicting {} bytes of {} was not applied: {}",
+        lastPage - firstPage,
+        mPath.string(),
+        std::generic_category().message(errno));
+  }
 }
 
 void MmapRegion::resize(const std::size_t size) noexcept
