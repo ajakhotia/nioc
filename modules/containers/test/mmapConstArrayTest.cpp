@@ -9,13 +9,15 @@
 #include <filesystem>
 #include <gtest/gtest.h>
 #include <iterator>
+#include <nioc/common/filesystem.hpp>
 #include <nioc/containers/mmapArray.hpp>
 #include <nioc/containers/mmapConstArray.hpp>
 #include <numeric>
 #include <optional>
 #include <ranges>
+#include <span>
 #include <stdexcept>
-#include <string_view>
+#include <string>
 #include <type_traits>
 #include <utility>
 
@@ -25,39 +27,44 @@ namespace
 {
 namespace fs = std::filesystem;
 
-// Read-only by construction, and a contiguous range with raw-pointer iterators.
+// Read-only by construction, and a contiguous range.
 static_assert(
     std::is_same_v<decltype(std::declval<const MmapConstArray<int>&>().data()), const int*>);
 static_assert(
     std::is_same_v<decltype(std::declval<const MmapConstArray<int>&>().at(0)), const int&>);
-static_assert(std::is_same_v<MmapConstArray<int>::const_iterator, const int*>);
+static_assert(std::is_same_v<MmapConstArray<int>::const_iterator, std::span<const int>::iterator>);
 static_assert(std::contiguous_iterator<MmapConstArray<int>::const_iterator>);
 static_assert(std::ranges::contiguous_range<MmapConstArray<int>>);
 
-fs::path freshPath(const std::string_view name)
+// Writes 0, 1, 2, ... into a fresh array file at path.
+void writeRamp(const fs::path& path, const std::size_t count)
 {
-  const auto directory = fs::temp_directory_path() / "nioc-containersTest";
-  fs::create_directories(directory);
-  const auto path = directory / name;
-  fs::remove(path);
-  return path;
-}
-
-// Writes 0, 1, 2, ... into a fresh array file and returns its path.
-fs::path writeRamp(const std::string_view name, const std::size_t count)
-{
-  const auto path = freshPath(name);
   auto array = MmapArray<std::int32_t>{path, count};
   std::iota(array.begin(), array.end(), 0);
-  return path;
 }
+
+/// @brief This test's own directory beneath @p base: `niocUnitTest/<Suite>.<test>`.
+std::filesystem::path unitTestDirectory(
+    const std::filesystem::path& base = std::filesystem::temp_directory_path())
+{
+  const auto* const info = ::testing::UnitTest::GetInstance()->current_test_info();
+  return base / "niocUnitTest" / (std::string{info->test_suite_name()} + "." + info->name());
+}
+
+// NOLINTNEXTLINE(misc-multiple-inheritance): the fixture is the test and its directory.
+class MmapConstArrayTest: public common::ScratchDirectory, public ::testing::Test
+{
+public:
+  MmapConstArrayTest(): ScratchDirectory{unitTestDirectory()} {}
+};
 
 } // namespace
 
-TEST(MmapConstArray, readsAnExistingFile)
+TEST_F(MmapConstArrayTest, readsAnExistingFile)
 {
   constexpr auto kCount = std::size_t{6};
-  const auto path = writeRamp("constArray", kCount);
+  const auto path = this->path() / "constArray";
+  writeRamp(path, kCount);
 
   const auto array = MmapConstArray<std::int32_t>{path};
   ASSERT_EQ(array.size(), kCount);
@@ -68,32 +75,46 @@ TEST(MmapConstArray, readsAnExistingFile)
   }
 }
 
-TEST(MmapConstArray, worksAsAContiguousRange)
+TEST_F(MmapConstArrayTest, worksAsAContiguousRange)
 {
-  const auto path = writeRamp("constArrayRange", 5);
+  const auto path = this->path() / "constArrayRange";
+  writeRamp(path, 5);
 
   const auto array = MmapConstArray<std::int32_t>{path};
   EXPECT_EQ(std::accumulate(array.begin(), array.end(), 0), 10);
 }
 
-TEST(MmapConstArray, openingAMissingFileThrows)
+TEST_F(MmapConstArrayTest, evictLeavesElementsReadable)
 {
-  EXPECT_THROW((MmapConstArray<std::int32_t>{freshPath("missingConst")}), std::runtime_error);
+  constexpr auto kCount = std::size_t{4096};
+  const auto path = this->path() / "constArrayEvict";
+  writeRamp(path, kCount);
+
+  const auto array = MmapConstArray<std::int32_t>{path};
+  array.evict(array.begin(), array.end());
+
+  EXPECT_EQ(std::accumulate(array.begin(), array.end(), 0LL), (kCount * (kCount - 1)) / 2);
 }
 
-TEST(MmapConstArray, openingAFileThatIsNotAWholeNumberOfElementsThrows)
+TEST_F(MmapConstArrayTest, openingAMissingFileThrows)
+{
+  EXPECT_THROW((MmapConstArray<std::int32_t>{path() / "missingConst"}), std::runtime_error);
+}
+
+TEST_F(MmapConstArrayTest, openingAFileThatIsNotAWholeNumberOfElementsThrows)
 {
   // Not a multiple of sizeof(int32_t), so the file cannot be a whole number of elements.
-  const auto path = freshPath("ragged");
+  const auto path = this->path() / "ragged";
   static_cast<void>(MmapArray<std::byte>{path, std::size_t{15}});
 
   EXPECT_THROW((MmapConstArray<std::int32_t>{path}), std::runtime_error);
 }
 
-TEST(MmapConstArray, atReadsElementsAndThrowsOutOfRange)
+TEST_F(MmapConstArrayTest, atReadsElementsAndThrowsOutOfRange)
 {
   constexpr auto kCount = std::size_t{5};
-  const auto path = writeRamp("constArrayAt", kCount);
+  const auto path = this->path() / "constArrayAt";
+  writeRamp(path, kCount);
 
   const auto array = MmapConstArray<std::int32_t>{path};
   for(auto index = std::size_t{0}; index < kCount; ++index)
@@ -105,10 +126,11 @@ TEST(MmapConstArray, atReadsElementsAndThrowsOutOfRange)
   EXPECT_THROW(static_cast<void>(array.at(kCount)), std::out_of_range);
 }
 
-TEST(MmapConstArray, moveTransfersOwnershipOfTheMapping)
+TEST_F(MmapConstArrayTest, moveTransfersOwnershipOfTheMapping)
 {
   constexpr auto kCount = std::size_t{6};
-  const auto path = writeRamp("movedConstArray", kCount);
+  const auto path = this->path() / "movedConstArray";
+  writeRamp(path, kCount);
 
   auto source = std::optional<MmapConstArray<std::int32_t>>{std::in_place, path};
   const auto* const data = source->data();

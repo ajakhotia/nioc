@@ -10,6 +10,7 @@
 #include <gtest/gtest.h>
 #include <nioc/chronicle/defines.hpp>
 #include <nioc/chronicle/reader.hpp>
+#include <nioc/common/filesystem.hpp>
 #include <nioc/terminus/draft.hpp>
 #include <nioc/terminus/idl/testSchema.capnp.h>
 #include <nioc/terminus/message.hpp>
@@ -24,7 +25,6 @@
 
 namespace nioc::terminus
 {
-namespace fs = std::filesystem;
 
 namespace
 {
@@ -34,18 +34,32 @@ chronicle::ChannelId channelFor(const std::string_view topic)
   return chronicle::makeChannelId(kSchemaId<TestSchema>, topic);
 }
 
-Port makePort(const std::string_view name)
+/// @brief This test's own directory beneath @p base: `niocUnitTest/<Suite>.<test>`.
+std::filesystem::path unitTestDirectory(
+    const std::filesystem::path& base = std::filesystem::temp_directory_path())
 {
-  auto workingDir = fs::temp_directory_path() / "nioc-messageTest" / name;
-  fs::remove_all(workingDir);
-  return Port{
-      RunContext{std::move(workingDir), {}, true, ""},
-      [](Port&, Port::Drivers&, Port::Components&, Port::Runners&) {}};
+  const auto* const info = ::testing::UnitTest::GetInstance()->current_test_info();
+  return base / "niocUnitTest" / (std::string{info->test_suite_name()} + "." + info->name());
 }
+
+// NOLINTNEXTLINE(misc-multiple-inheritance): the fixture is the test and its directory.
+class MessageTest: public common::ScratchDirectory, public ::testing::Test
+{
+public:
+  MessageTest(): ScratchDirectory{unitTestDirectory()} {}
+
+protected:
+  [[nodiscard]] Port makePort(const std::string_view name) const
+  {
+    return Port{
+        RunContext{path() / name, {}, true, ""},
+        [](Port&, Port::Drivers&, Port::Components&, Port::Runners&) {}};
+  }
+};
 
 } // namespace
 
-TEST(Message, draftBuildsReadsAndRoundTripsThroughAChronicle)
+TEST_F(MessageTest, draftBuildsReadsAndRoundTripsThroughAChronicle)
 {
   constexpr auto kValue = std::int64_t{86};
   constexpr auto kTopic = std::string_view{"roundTrip"};
@@ -82,7 +96,7 @@ TEST(Message, draftBuildsReadsAndRoundTripsThroughAChronicle)
   EXPECT_EQ(loaded.sequenceNumber(), sequenceNumber);
 }
 
-TEST(Message, anUnbuiltDraftIsAGapThatRoundTrips)
+TEST_F(MessageTest, anUnbuiltDraftIsAGapThatRoundTrips)
 {
   const auto [chronicleDir, sequenceNumber] = [&]
   {
@@ -104,7 +118,7 @@ TEST(Message, anUnbuiltDraftIsAGapThatRoundTrips)
   EXPECT_EQ(loaded.sequenceNumber(), sequenceNumber);
 }
 
-TEST(Message, aBustedReservationFlattensAndRoundTrips)
+TEST_F(MessageTest, aBustedReservationFlattensAndRoundTrips)
 {
   constexpr auto kValue = std::int64_t{1234};
 
@@ -129,7 +143,7 @@ TEST(Message, aBustedReservationFlattensAndRoundTrips)
   EXPECT_EQ(loaded.reader().getValue(), kValue);
 }
 
-TEST(Message, moveConstructsAndReadsAfterTheSourceIsDestroyed)
+TEST_F(MessageTest, moveConstructsAndReadsAfterTheSourceIsDestroyed)
 {
   constexpr auto kValue = std::int64_t{55};
 
@@ -150,7 +164,7 @@ TEST(Message, moveConstructsAndReadsAfterTheSourceIsDestroyed)
   EXPECT_EQ(moved.reader().getValue(), kValue);
 }
 
-TEST(Message, aMultiSegmentBuildFlattensAndRoundTrips)
+TEST_F(MessageTest, aMultiSegmentBuildFlattensAndRoundTrips)
 {
   constexpr auto kValue = std::int64_t{99};
   constexpr auto kCount = std::size_t{2000};

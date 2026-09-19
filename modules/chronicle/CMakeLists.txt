@@ -12,15 +12,19 @@ add_exported_library(
     EXPORT
         niocTargets
     SOURCES
+        src/adviceRing.cpp
         src/channel.cpp
         src/crate.cpp
         src/defines.cpp
         src/reader.cpp
         src/reservation.cpp
         src/utils.cpp
+        src/workingSet.cpp
         src/writer.cpp
     HEADERS
+        PRIVATE src/adviceRing.hpp
         PRIVATE src/utils.hpp
+        PRIVATE src/workingSet.hpp
         PUBLIC include/nioc/chronicle/channel.hpp
         PUBLIC include/nioc/chronicle/crate.hpp
         PUBLIC include/nioc/chronicle/defines.hpp

@@ -14,6 +14,7 @@
 #include <memory>
 #include <nioc/chronicle/defines.hpp>
 #include <nioc/chronicle/reader.hpp>
+#include <nioc/common/filesystem.hpp>
 #include <nioc/common/typeTraits.hpp>
 #include <nioc/concurrent/threadedRunner.hpp>
 #include <nioc/terminus/driver.hpp>
@@ -59,41 +60,9 @@ fs::path resourceDuplicate()
   return testDataDir() / "duplicate" / "testResource.bin";
 }
 
-fs::path logRoot()
-{
-  return fs::temp_directory_path() / "niocLogs";
-}
-
-/// A fresh, unique working directory for the running test, cleared of any prior run.
-fs::path testWorkingDir()
-{
-  const auto* const info = ::testing::UnitTest::GetInstance()->current_test_info();
-  const auto dir = fs::temp_directory_path() /
-                   "niocPortTest" /
-                   info->test_suite_name() /
-                   info->name();
-  fs::remove_all(dir);
-  return dir;
-}
-
 std::string sampleCommandLine()
 {
   return "myRobot --config /etc/foo.json";
-}
-
-RunContext testRunContext(
-    std::string commandLine = "",
-    const bool recordChronicle = true,
-    std::vector<fs::path> resourcePaths = {},
-    std::vector<fs::path> appendConfigPaths = {})
-{
-  return RunContext{
-      testWorkingDir(),
-      std::move(resourcePaths),
-      recordChronicle,
-      std::move(commandLine),
-      {},
-      std::move(appendConfigPaths)};
 }
 
 void emptySetup(
@@ -110,9 +79,52 @@ void publishGap(Port& port, const std::string_view topic)
   publisher.publish(publisher.draft());
 }
 
+/// @brief This test's own directory beneath @p base: `niocUnitTest/<Suite>.<test>`.
+std::filesystem::path unitTestDirectory(
+    const std::filesystem::path& base = std::filesystem::temp_directory_path())
+{
+  const auto* const info = ::testing::UnitTest::GetInstance()->current_test_info();
+  return base / "niocUnitTest" / (std::string{info->test_suite_name()} + "." + info->name());
+}
+
+// NOLINTNEXTLINE(misc-multiple-inheritance): the fixture is the test and its directory.
+class PortTest: public common::ScratchDirectory, public ::testing::Test
+{
+public:
+  PortTest(): ScratchDirectory{unitTestDirectory()} {}
+
+protected:
+  [[nodiscard]] fs::path logRoot() const
+  {
+    return path() / "logs";
+  }
+
+  /// A working directory unique to the running test, not yet created; the test that asserts a
+  /// Port creates it depends on that.
+  [[nodiscard]] fs::path testWorkingDir() const
+  {
+    return path() / "work";
+  }
+
+  [[nodiscard]] RunContext testRunContext(
+      std::string commandLine = "",
+      const bool recordChronicle = true,
+      std::vector<fs::path> resourcePaths = {},
+      std::vector<fs::path> appendConfigPaths = {}) const
+  {
+    return RunContext{
+        testWorkingDir(),
+        std::move(resourcePaths),
+        recordChronicle,
+        std::move(commandLine),
+        {},
+        std::move(appendConfigPaths)};
+  }
+};
+
 } // namespace
 
-TEST(PortTest, constructionCreatesRecordingDirectory)
+TEST_F(PortTest, constructionCreatesRecordingDirectory)
 {
   const auto workingDir = [&]
   {
@@ -129,7 +141,7 @@ TEST(PortTest, constructionCreatesRecordingDirectory)
   EXPECT_TRUE(fs::is_regular_file(workingDir / "resources.json"));
 }
 
-TEST(PortTest, recordingCarriesManifestAndResources)
+TEST_F(PortTest, recordingCarriesManifestAndResources)
 {
   const auto workingDir = [&]
   {
@@ -150,7 +162,7 @@ TEST(PortTest, recordingCarriesManifestAndResources)
   EXPECT_EQ(resources.at(resource().string()).get<std::string>(), "testResource.bin");
 }
 
-TEST(PortTest, recordingWritesItsTopicRegistry)
+TEST_F(PortTest, recordingWritesItsTopicRegistry)
 {
   const auto workingDir = [&]
   {
@@ -178,7 +190,7 @@ TEST(PortTest, recordingWritesItsTopicRegistry)
   EXPECT_TRUE(registry.contains(alpha));
 }
 
-TEST(PortTest, playbackAdoptsTheReplayedRecordingsTopics)
+TEST_F(PortTest, playbackAdoptsTheReplayedRecordingsTopics)
 {
   const auto base = testWorkingDir();
 
@@ -201,13 +213,13 @@ TEST(PortTest, playbackAdoptsTheReplayedRecordingsTopics)
   EXPECT_TRUE(port.playbackTopics().contains(alpha));
 }
 
-TEST(PortTest, aLiveRunReplaysNothingSoItsPlaybackRegistryIsEmpty)
+TEST_F(PortTest, aLiveRunReplaysNothingSoItsPlaybackRegistryIsEmpty)
 {
   auto port = Port{testRunContext(sampleCommandLine()), emptySetup};
   EXPECT_TRUE(port.playbackTopics().empty());
 }
 
-TEST(PortTest, acquireResourceRemapsToWorkingDirCopy)
+TEST_F(PortTest, acquireResourceRemapsToWorkingDirCopy)
 {
   auto port = Port{testRunContext(), emptySetup};
   port.addResource(resource());
@@ -217,26 +229,26 @@ TEST(PortTest, acquireResourceRemapsToWorkingDirCopy)
   EXPECT_TRUE(fs::is_regular_file(acquired));
 }
 
-TEST(PortTest, acquireResourceRejectsUnaddedResource)
+TEST_F(PortTest, acquireResourceRejectsUnaddedResource)
 {
   auto port = Port{testRunContext(), emptySetup};
   EXPECT_THROW((void)port.acquireResource(testDataDir() / "never.bin"), std::invalid_argument);
 }
 
-TEST(PortTest, addResourceRejectsBasenameCollision)
+TEST_F(PortTest, addResourceRejectsBasenameCollision)
 {
   auto port = Port{testRunContext(), emptySetup};
   port.addResource(resource());
   EXPECT_THROW(port.addResource(resourceDuplicate()), std::invalid_argument);
 }
 
-TEST(PortTest, addResourceRejectsMissingFile)
+TEST_F(PortTest, addResourceRejectsMissingFile)
 {
   auto port = Port{testRunContext(), emptySetup};
   EXPECT_THROW(port.addResource(testDataDir() / "doesNotExist"), std::invalid_argument);
 }
 
-TEST(PortTest, constructionCreatesTheWorkingDirectory)
+TEST_F(PortTest, constructionCreatesTheWorkingDirectory)
 {
   const auto expectedDir = testWorkingDir();
   ASSERT_FALSE(fs::exists(expectedDir));
@@ -247,7 +259,7 @@ TEST(PortTest, constructionCreatesTheWorkingDirectory)
   EXPECT_TRUE(fs::is_directory(expectedDir));
 }
 
-TEST(PortTest, recordChronicleFalseOmitsChronicleDir)
+TEST_F(PortTest, recordChronicleFalseOmitsChronicleDir)
 {
   // Without recording there is no chronicle writer; producers build messages on the heap instead.
   const auto workingDir = [&]
@@ -263,17 +275,17 @@ TEST(PortTest, recordChronicleFalseOmitsChronicleDir)
   EXPECT_TRUE(fs::is_regular_file(workingDir / "resources.json"));
 }
 
-TEST(PortTest, constructionAddsListedResources)
+TEST_F(PortTest, constructionAddsListedResources)
 {
   auto port = Port{testRunContext("", true, {resource()}), emptySetup};
   EXPECT_TRUE(fs::is_regular_file(port.workingDir() / "testResource.bin"));
 }
 
-TEST(PortTest, constructionFromCommandLineReadsEveryOption)
+TEST_F(PortTest, constructionFromCommandLineReadsEveryOption)
 {
   // Stage two config layers, then build an argv that exercises every run-context option, mirroring
   // a real command line.
-  const auto stagingDir = fs::temp_directory_path() / "niocPortTestCli";
+  const auto stagingDir = path() / "cli";
   fs::create_directories(stagingDir);
   const auto base = stagingDir / "base.json";
   std::ofstream(base) << R"({"name": "base", "count": 1})";
@@ -319,21 +331,21 @@ TEST(PortTest, constructionFromCommandLineReadsEveryOption)
   EXPECT_EQ(onDisk.at("name").get<std::string>(), "cli"); // --config-override wins over files
 }
 
-TEST(PortTest, constructionRejectsUnreadableConfig)
+TEST_F(PortTest, constructionRejectsUnreadableConfig)
 {
   EXPECT_THROW(
       (Port{testRunContext("", true, {}, {testDataDir() / "doesNotExist.json"}), emptySetup}),
       std::runtime_error);
 }
 
-TEST(PortTest, constructionRejectsMalformedConfig)
+TEST_F(PortTest, constructionRejectsMalformedConfig)
 {
   EXPECT_THROW(
       (Port{testRunContext("", true, {}, {malformedConfig()}), emptySetup}),
       nlohmann::json::parse_error);
 }
 
-TEST(PortTest, publishFansOutToEverySubscriberOnTheChannel)
+TEST_F(PortTest, publishFansOutToEverySubscriberOnTheChannel)
 {
   auto port = Port{testRunContext(), emptySetup};
 
@@ -356,7 +368,7 @@ TEST(PortTest, publishFansOutToEverySubscriberOnTheChannel)
   EXPECT_EQ(0, otherCount);
 }
 
-TEST(PortTest, shutdownAndAbortTripTheirTokensIndependently)
+TEST_F(PortTest, shutdownAndAbortTripTheirTokensIndependently)
 {
   const auto port = Port{testRunContext(), emptySetup};
 
@@ -371,7 +383,7 @@ TEST(PortTest, shutdownAndAbortTripTheirTokensIndependently)
   EXPECT_TRUE(port.abortToken().stop_requested());
 }
 
-TEST(PortTest, awaitQuiescenceBlocksUntilDeliveredConsignmentsDie)
+TEST_F(PortTest, awaitQuiescenceBlocksUntilDeliveredConsignmentsDie)
 {
   auto port = Port{testRunContext(), emptySetup};
 
@@ -400,7 +412,7 @@ TEST(PortTest, awaitQuiescenceBlocksUntilDeliveredConsignmentsDie)
   EXPECT_TRUE(quiesced.load());
 }
 
-TEST(PortTest, abortUnblocksAwaitQuiescenceWithConsignmentsStillHeld)
+TEST_F(PortTest, abortUnblocksAwaitQuiescenceWithConsignmentsStillHeld)
 {
   auto port = Port{testRunContext(), emptySetup};
 
@@ -431,7 +443,7 @@ TEST(PortTest, abortUnblocksAwaitQuiescenceWithConsignmentsStillHeld)
   held.clear();
 }
 
-TEST(PortTest, everyPublishedMessageIsRecordedInOrder)
+TEST_F(PortTest, everyPublishedMessageIsRecordedInOrder)
 {
   constexpr auto kMessageCount = std::int64_t{64};
   constexpr auto kTopic = std::string_view{"chronicleGate"};
@@ -469,7 +481,7 @@ TEST(PortTest, everyPublishedMessageIsRecordedInOrder)
   EXPECT_EQ(kMessageCount, nextValue);
 }
 
-TEST(PortTest, waitReturnsFalseOnceEveryDriverIsDone)
+TEST_F(PortTest, waitReturnsFalseOnceEveryDriverIsDone)
 {
   class ScriptedDriver final: public Driver
   {

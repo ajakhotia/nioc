@@ -5,10 +5,14 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include "mmapRegion.hpp"
+#include "file.hpp"
+#include "mapping.hpp"
 #include <cstddef>
 #include <filesystem>
+#include <iterator>
 #include <nioc/common/exception.hpp>
+#include <nioc/common/typeTraits.hpp>
+#include <span>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
@@ -42,7 +46,7 @@ namespace nioc::containers
 /// @tparam ValueType The element type the file's bytes are reinterpreted as. Must be trivially
 /// copyable and have no top-level cv-qualifiers; elements are mapped, never constructed.
 ///
-/// @see MmapRegion
+/// @see Mapping
 template<typename ValueType>
   requires std::is_trivially_copyable_v<ValueType> and
            std::is_same_v<ValueType, std::remove_cv_t<ValueType>>
@@ -52,15 +56,11 @@ public:
   using value_type = ValueType;
   using size_type = std::size_t;
   using difference_type = std::ptrdiff_t;
-
-  /// Reference to an element; always const since the view is read-only.
   using const_reference = const ValueType&;
-
-  /// Pointer to an element; always const since the view is read-only.
   using const_pointer = const ValueType*;
 
-  /// Iterator over elements; a raw const pointer, so the range is contiguous.
-  using const_iterator = const_pointer;
+  /// Contiguous, random-access iterator over the elements.
+  using const_iterator = std::span<const ValueType>::iterator;
 
   /// @brief Map the existing file at @p path read-only and view its bytes as a sequence of
   /// @p ValueType.
@@ -70,21 +70,24 @@ public:
   ///
   /// @throws std::runtime_error if the file cannot be opened or mapped, or if its byte length is
   /// not a whole multiple of sizeof(ValueType).
-  explicit MmapConstArray(std::filesystem::path path): mRegion{std::move(path)}
+  explicit MmapConstArray(std::filesystem::path path):
+    mFile{File::open(std::move(path))},
+    mMapping{Mapping::readOnly(mFile, mFile.size())}
   {
-    if(mRegion.size() % sizeof(ValueType) != 0)
+    if(mMapping.size() % sizeof(ValueType) != 0)
     {
       common::throwException<std::runtime_error>(
           "{} is {} bytes, not a whole multiple of the {}-byte element size",
-          mRegion.path().string(),
-          mRegion.size(),
+          mFile.path().string(),
+          mMapping.size(),
           sizeof(ValueType));
     }
   }
 
   MmapConstArray(const MmapConstArray&) = delete;
 
-  /// @brief Take over @p other's mapping, leaving @p other empty and fit only for destruction.
+  /// @brief Take over @p other's mapping and file descriptor, leaving @p other empty and fit only
+  /// for destruction.
   MmapConstArray(MmapConstArray&&) noexcept = default;
 
   ~MmapConstArray() = default;
@@ -93,28 +96,25 @@ public:
 
   MmapConstArray& operator=(MmapConstArray&&) noexcept = delete;
 
-  /// @brief Pointer to the first element. Equals end() when empty.
-  ///
-  /// Stays valid for the container's lifetime.
+  /// @brief Pointer to the first element. Equals end() when empty. Valid for the array's lifetime.
   [[nodiscard]] const_pointer data() const noexcept
   {
-    return asElementPointer<ValueType>(mRegion.bytes());
+    return elements().data();
   }
 
-  /// @brief Element at @p index.
+  /// @brief Reference to the element at @p index.
   ///
-  /// @param index Position to read. Unchecked: must be less than size(), otherwise behaviour is
-  /// undefined.
+  /// @param index Element position. Not bounds-checked; must be less than size().
   [[nodiscard]] const_reference operator[](const size_type index) const noexcept
   {
-    return data()[index]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    return *std::next(begin(), static_cast<difference_type>(index));
   }
 
-  /// @brief Element at @p index, bounds-checked.
+  /// @brief Reference to the element at @p index, bounds-checked.
   ///
-  /// @param index Position to read.
+  /// @param index Element position.
   ///
-  /// @throws std::out_of_range if @p index is not less than `size()`.
+  /// @throws std::out_of_range if @p index is not less than size().
   [[nodiscard]] const_reference at(const size_type index) const
   {
     if(index >= size())
@@ -128,49 +128,80 @@ public:
     return (*this)[index];
   }
 
-  /// Iterator to the first element.
+  /// @brief Iterator to the first element.
   [[nodiscard]] const_iterator begin() const noexcept
   {
-    return data();
+    return elements().begin();
   }
 
-  /// Iterator one past the last element.
+  /// @brief Iterator one past the last element.
   [[nodiscard]] const_iterator end() const noexcept
   {
-    return data() + size(); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    return elements().end();
   }
 
-  /// Iterator to the first element; same as begin().
+  /// @brief Const iterator to the first element; same as begin().
   [[nodiscard]] const_iterator cbegin() const noexcept
   {
     return begin();
   }
 
-  /// Iterator one past the last element; same as end().
+  /// @brief Const iterator one past the last element; same as end().
   [[nodiscard]] const_iterator cend() const noexcept
   {
     return end();
   }
 
-  /// True if the view holds no elements.
+  /// @brief True if the array holds no elements.
   [[nodiscard]] bool empty() const noexcept
   {
-    return mRegion.empty();
+    return mMapping.empty();
   }
 
-  /// @brief Number of elements.
+  /// @brief The backing file's descriptor, open for the array's lifetime, for kernel calls that
+  /// address the file rather than the mapping.
   ///
-  /// Equals the file's byte length divided by sizeof(ValueType).
+  /// @see File::nativeHandle
+  [[nodiscard]] int nativeHandle() const noexcept
+  {
+    return mFile.nativeHandle();
+  }
+
+  /// @brief Number of elements. Equals the file's byte length divided by sizeof(ValueType).
   [[nodiscard]] size_type size() const noexcept
   {
-    return mRegion.size() / sizeof(ValueType);
+    return mMapping.size() / sizeof(ValueType);
+  }
+
+  /// @brief Evict from memory the pages lying entirely within the elements [@p first, @p last).
+  ///
+  /// Elements remain readable: an evicted page transparently re-reads from the file on its next
+  /// access. Pages only partly covered stay resident, so a short element range may evict nothing.
+  ///
+  /// @param first The first element of the range; an iterator of this array.
+  ///
+  /// @param last One past the last element of the range; an iterator of this array.
+  ///
+  /// @see Mapping::evict
+  template<std::contiguous_iterator Iterator>
+    requires std::is_same_v<std::iter_value_t<Iterator>, ValueType>
+  void evict(const Iterator first, const Iterator last) const noexcept
+  {
+    mMapping.evict(std::as_bytes(std::span{first, last}));
   }
 
 private:
-  /// The read-only memory mapping of the file. Owns the lifetime of the bytes that every element
-  /// pointer, reference, and iterator refers to, and supplies the byte length divided to compute
-  /// size().
-  MmapRegion mRegion;
+  /// The backing file, opened read-only.
+  File mFile;
+
+  /// The read-only mapping of the whole file; every element reference points into it.
+  Mapping mMapping;
+
+  /// The elements as one contiguous span over the mapping.
+  [[nodiscard]] std::span<const ValueType> elements() const noexcept
+  {
+    return common::startLifetimeAsArray<ValueType>(mMapping.bytes());
+  }
 };
 
 } // namespace nioc::containers

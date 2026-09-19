@@ -14,10 +14,11 @@
 #include <memory>
 #include <nioc/containers/mmapConstArray.hpp>
 #include <optional>
-#include <unordered_map>
 
 namespace nioc::chronicle
 {
+
+class WorkingSet;
 
 /// @brief One replayed record produced by a Reader: the channel it was logged on, paired with its
 /// payload bytes.
@@ -52,19 +53,45 @@ struct Entry
 class Reader
 {
 public:
+  /// Default read-ahead window: generous against disk-latency bursts, small against machine RAM.
+  static constexpr auto kDefaultReadAheadBytes = std::uint64_t{256ULL * 1024ULL * 1024ULL};
+
+  /// Default trail-behind distance: grace for consumers that lag slightly behind the cursor.
+  static constexpr auto kDefaultTrailBehindBytes = std::uint64_t{64ULL * 1024ULL * 1024ULL};
+
   /// @brief Open the chronicle rooted at @p logRoot for replay.
   ///
-  /// @param logRoot Path to the chronicle's root directory; must name an existing directory. A
-  /// chronicle whose timeline file is missing or empty replays as an empty range.
+  /// The Reader keeps a bounded working set resident around its cursor: the next @p readAheadBytes
+  /// of payload are loaded ahead of consumption, and consumed pages are released once they fall
+  /// @p trailBehindBytes behind, so resident memory stays near the two budgets' sum regardless of
+  /// log size. Size the read-ahead to cover the burstiest stretch of disk latency times
+  /// consumption rate, and the sum to fit the machine's free memory. A consumer lagging within the
+  /// trail-behind distance re-reads nothing; one reaching further back (a retained Crate) stays
+  /// correct and transparently re-reads released pages from the log.
   ///
-  /// @throws std::invalid_argument If @p logRoot does not exist or is not a directory.
-  explicit Reader(std::filesystem::path logRoot);
+  /// @param logRoot Path to the chronicle's root directory; must name an existing directory that
+  /// holds a timeline file. A chronicle that recorded nothing (an empty timeline) replays as an
+  /// empty range.
+  ///
+  /// @param readAheadBytes Payload bytes the kernel is asked to hold ready ahead of the cursor.
+  ///
+  /// @param trailBehindBytes Consumed payload bytes kept resident behind the cursor before release.
+  ///
+  /// @throws std::invalid_argument If @p logRoot is not a directory or holds no timeline file.
+  ///
+  /// @throws std::runtime_error If the timeline file cannot be mapped.
+  explicit Reader(
+      std::filesystem::path logRoot,
+      std::uint64_t readAheadBytes = kDefaultReadAheadBytes,
+      std::uint64_t trailBehindBytes = kDefaultTrailBehindBytes);
 
   Reader(const Reader&) = delete;
 
   Reader(Reader&&) noexcept = delete;
 
-  /// @brief Close the chronicle and release every memory-mapped file the Reader opened.
+  /// @brief End replay and drop the Reader's own hold on its memory-mapped files. Mappings
+  /// shared with still-live Crates survive through their shared ownership and are released when
+  /// the last such Crate is destroyed.
   ~Reader();
 
   Reader& operator=(const Reader&) = delete;
@@ -139,25 +166,19 @@ private:
   /// naming the channel, roll, and offset where every record's bytes live.
   using TimelineFile = containers::MmapConstArray<TimelineEntry>;
 
-  /// A roll: one memory-mapped chunk of a channel's payload bytes, addressed by byte offset.
-  using Roll = containers::MmapConstArray<std::byte>;
-
-  /// The set of currently mapped rolls for one channel, keyed by roll id. Each value is a weak
-  /// reference, so a roll stays mapped only while some live Entry still holds it.
-  using RollCache = std::unordered_map<std::uint64_t, std::weak_ptr<const Roll>>;
-
   /// The chronicle's root directory, captured at construction.
   const std::filesystem::path mLogRoot;
 
-  /// The mapped timeline driving replay, or empty if the chronicle has no timeline file.
-  std::unique_ptr<const TimelineFile> mTimelineFile;
+  /// The mapped timeline driving replay; empty for a chronicle that recorded nothing.
+  const TimelineFile mTimelineFile;
 
-  /// The index of the next timeline record to read; the replay cursor into mTimelineFile.
-  std::uint64_t mEntryInTimeline{0ULL};
+  /// The working set: owns the payload rolls' mappings and keeps the kernel loading pages ahead
+  /// of the cursor and releasing them behind it, per the construction-time byte budgets.
+  /// Never null; destroyed before mTimelineFile, which it borrows.
+  const std::unique_ptr<WorkingSet> mWorkingSet;
 
-  /// The cache of mapped rolls, partitioned by channel, that keeps recently used rolls mapped so
-  /// successive records on the same channel reuse one mapping.
-  std::unordered_map<ChannelId, RollCache> mRollCache;
+  /// The next timeline record to read; end() once the replay is exhausted.
+  TimelineFile::const_iterator mTimelineCursor{mTimelineFile.begin()};
 
   /// @brief Read the record at the current cursor and advance the cursor by one.
   ///
@@ -165,16 +186,6 @@ private:
   ///
   /// @return The next Entry, or std::nullopt once the timeline is exhausted.
   std::optional<Entry> readNextEntry();
-
-  /// @brief Return the roll holding the given channel's bytes, mapping it if it is not already
-  /// resident and recording it in mRollCache.
-  ///
-  /// @param channelId The channel whose roll is needed.
-  ///
-  /// @param rollId The id of the roll to map within that channel.
-  ///
-  /// @return A shared owner of the mapped roll, kept alive by every Entry that references it.
-  std::shared_ptr<const Roll> acquireRoll(ChannelId channelId, std::uint64_t rollId);
 };
 
 } // namespace nioc::chronicle

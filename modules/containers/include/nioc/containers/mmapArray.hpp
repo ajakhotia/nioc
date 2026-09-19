@@ -5,10 +5,14 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#include "mmapRegion.hpp"
+#include "file.hpp"
+#include "mapping.hpp"
 #include <cstddef>
 #include <filesystem>
+#include <iterator>
 #include <nioc/common/exception.hpp>
+#include <nioc/common/typeTraits.hpp>
+#include <span>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
@@ -39,7 +43,7 @@ namespace nioc::containers
 ///
 /// @tparam ValueType Element type. Must be trivially copyable and have no top-level cv-qualifiers.
 ///
-/// @see MmapConstArray for read-only mapping of an existing file, MmapRegion
+/// @see MmapConstArray for read-only mapping of an existing file, File, Mapping
 template<typename ValueType>
   requires std::is_trivially_copyable_v<ValueType> and
            std::is_same_v<ValueType, std::remove_cv_t<ValueType>>
@@ -53,8 +57,10 @@ public:
   using const_reference = const ValueType&;
   using pointer = ValueType*;
   using const_pointer = const ValueType*;
-  using iterator = pointer;
-  using const_iterator = const_pointer;
+
+  /// Contiguous, random-access iterators over the elements.
+  using iterator = std::span<ValueType>::iterator;
+  using const_iterator = std::span<const ValueType>::iterator;
 
   /// @brief Create or truncate the file at @p path to hold @p count elements and map it read-write.
   ///
@@ -67,7 +73,8 @@ public:
   ///
   /// @throws std::runtime_error If the file cannot be created, sized, or mapped.
   MmapArray(std::filesystem::path path, const size_type count):
-    mRegion{std::move(path), count * sizeof(ValueType)}
+    mFile{File::create(std::move(path), count * sizeof(ValueType))},
+    mMapping{Mapping::readWrite(mFile, count * sizeof(ValueType))}
   {
   }
 
@@ -83,28 +90,27 @@ public:
 
   MmapArray& operator=(MmapArray&&) noexcept = delete;
 
-  /// @brief Pointer to the first element. Const-qualified when called on a `const` array.
-  ///
-  /// Valid for the array's lifetime.
+  /// @brief Pointer to the first element; `const`-qualified to match @p self. Equals end() when
+  /// empty. Valid for the array's lifetime.
   [[nodiscard]] auto data(this auto&& self) noexcept
   {
-    return asElementPointer<ValueType>(self.mRegion.bytes());
+    return self.elements().data();
   }
 
-  /// @brief Reference to the element at @p index. Const-qualified when called on a `const` array.
+  /// @brief Reference to the element at @p index; `const`-qualified to match @p self.
   ///
-  /// @param index Element position. Not bounds-checked; must be less than `size()`.
+  /// @param index Element position. Not bounds-checked; must be less than size().
   [[nodiscard]] decltype(auto) operator[](this auto&& self, const size_type index) noexcept
   {
-    return self.data()[index]; // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    return *std::next(self.begin(), static_cast<difference_type>(index));
   }
 
-  /// @brief Reference to the element at @p index, bounds-checked. Const-qualified when called on a
-  /// `const` array.
+  /// @brief Reference to the element at @p index, bounds-checked; `const`-qualified to match
+  /// @p self.
   ///
   /// @param index Element position.
   ///
-  /// @throws std::out_of_range if @p index is not less than `size()`.
+  /// @throws std::out_of_range if @p index is not less than size().
   [[nodiscard]] decltype(auto) at(this auto&& self, const size_type index)
   {
     if(index >= self.size())
@@ -118,16 +124,16 @@ public:
     return std::forward<decltype(self)>(self)[index];
   }
 
-  /// @brief Iterator to the first element. Const-qualified when called on a `const` array.
+  /// @brief Iterator to the first element; `const`-qualified to match @p self.
   [[nodiscard]] auto begin(this auto&& self) noexcept
   {
-    return self.data();
+    return self.elements().begin();
   }
 
-  /// @brief Iterator one past the last element. Const-qualified when called on a `const` array.
+  /// @brief Iterator one past the last element; `const`-qualified to match @p self.
   [[nodiscard]] auto end(this auto&& self) noexcept
   {
-    return self.data() + self.size(); // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    return self.elements().end();
   }
 
   /// @brief Const iterator to the first element.
@@ -145,31 +151,65 @@ public:
   /// @brief True if the array holds no elements.
   [[nodiscard]] bool empty() const noexcept
   {
-    return mRegion.empty();
+    return mMapping.empty();
+  }
+
+  /// @brief The backing file's descriptor, open for the array's lifetime, for kernel calls that
+  /// address the file rather than the mapping.
+  ///
+  /// @see File::nativeHandle
+  [[nodiscard]] int nativeHandle() const noexcept
+  {
+    return mFile.nativeHandle();
   }
 
   /// @brief Number of elements currently mapped.
   [[nodiscard]] size_type size() const noexcept
   {
-    return mRegion.size() / sizeof(ValueType);
+    return mMapping.size() / sizeof(ValueType);
+  }
+
+  /// @brief Evict from memory the pages lying entirely within the elements [@p first, @p last).
+  ///
+  /// Elements remain readable: an evicted page transparently re-reads from the file on its next
+  /// access. Pages only partly covered stay resident, so a short element range may evict nothing.
+  ///
+  /// @param first The first element of the range; an iterator of this array.
+  ///
+  /// @param last One past the last element of the range; an iterator of this array.
+  ///
+  /// @see Mapping::evict
+  template<std::contiguous_iterator Iterator>
+    requires std::is_same_v<std::iter_value_t<Iterator>, ValueType>
+  void evict(const Iterator first, const Iterator last) const noexcept
+  {
+    mMapping.evict(std::as_bytes(std::span{first, last}));
   }
 
   /// @brief Truncate or extend the on-disk backing file to @p count elements; does not remap.
   ///
-  /// Only the file's length changes. The mapping is untouched, so `size()`, `data()`, and the
+  /// Only the file's length changes. The mapping is untouched, so size(), data(), and the
   /// iterator range keep their original element count and stay valid. Typically used to trim
   /// trailing slack before destruction. On failure, logs an error and leaves the file unchanged.
   ///
   /// @param count New element count on disk. May be larger or smaller than the mapped count.
   void resize(const size_type count) noexcept
   {
-    mRegion.resize(count * sizeof(ValueType));
+    mFile.resize(count * sizeof(ValueType));
   }
 
 private:
-  /// The read-write memory mapping and its backing file. Owns both; sizing this region in bytes
-  /// defines the element count, and every element access reads or writes through it.
-  MmapRegion mRegion;
+  /// The backing file, created read-write and sized to the element count.
+  File mFile;
+
+  /// The read-write mapping of the whole file; every element access reads or writes through it.
+  Mapping mMapping;
+
+  /// The elements as one contiguous span over the mapping; `const`-qualified to match @p self.
+  [[nodiscard]] auto elements(this auto&& self) noexcept
+  {
+    return common::startLifetimeAsArray<ValueType>(self.mMapping.bytes());
+  }
 };
 
 } // namespace nioc::containers

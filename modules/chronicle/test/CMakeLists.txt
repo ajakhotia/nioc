@@ -2,6 +2,7 @@ find_package(GTest REQUIRED)
 include(GoogleTest)
 
 add_executable(chronicleTest
+    adviceRingTest.cpp
     crateTest.cpp
     channelTest.cpp
     definesTest.cpp

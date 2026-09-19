@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <fstream>
 #include <gtest/gtest.h>
+#include <nioc/common/filesystem.hpp>
 #include <nioc/terminus/programOption.hpp>
 #include <nioc/terminus/runContext.hpp>
 #include <nlohmann/json.hpp>
@@ -30,22 +31,32 @@ boost::program_options::variables_map parse(std::vector<const char*> arguments)
       RunContext::cliOptions());
 }
 
-fs::path testDirectory(const fs::path& name)
+/// @brief This test's own directory beneath @p base: `niocUnitTest/<Suite>.<test>`.
+std::filesystem::path unitTestDirectory(
+    const std::filesystem::path& base = std::filesystem::temp_directory_path())
 {
-  return fs::temp_directory_path() / "niocRunContextTest" / name;
+  const auto* const info = ::testing::UnitTest::GetInstance()->current_test_info();
+  return base / "niocUnitTest" / (std::string{info->test_suite_name()} + "." + info->name());
 }
+
+// NOLINTNEXTLINE(misc-multiple-inheritance): the fixture is the test and its directory.
+class RunContextTest: public common::ScratchDirectory, public ::testing::Test
+{
+public:
+  RunContextTest(): ScratchDirectory{unitTestDirectory()} {}
+};
 
 } // namespace
 
-TEST(RunContextTest, onlineByDefault)
+TEST_F(RunContextTest, onlineByDefault)
 {
   const auto context = RunContext{parse({})};
   EXPECT_FALSE(context.playback());
 }
 
-TEST(RunContextTest, mintsAndCreatesWorkingDirUnderLogRoot)
+TEST_F(RunContextTest, mintsAndCreatesWorkingDirUnderLogRoot)
 {
-  const auto root = testDirectory("logRoot");
+  const auto root = path();
   const auto rootArg = root.string();
   const auto context = RunContext{parse({"--log-root", rootArg.c_str()})};
 
@@ -53,9 +64,9 @@ TEST(RunContextTest, mintsAndCreatesWorkingDirUnderLogRoot)
   EXPECT_TRUE(fs::is_directory(context.workingDir()));
 }
 
-TEST(RunContextTest, readsRecordChronicleAndCommandLine)
+TEST_F(RunContextTest, readsRecordChronicleAndCommandLine)
 {
-  const auto root = testDirectory("optionsRoot");
+  const auto root = path();
   const auto rootArg = root.string();
   const auto context = RunContext{
       parse({"--log-root", rootArg.c_str(), "--record-chronicle", "false"})};
@@ -64,12 +75,12 @@ TEST(RunContextTest, readsRecordChronicleAndCommandLine)
   EXPECT_FALSE(context.commandLine().empty());
 }
 
-TEST(RunContextTest, constructionEstablishesTheRunOnDisk)
+TEST_F(RunContextTest, constructionEstablishesTheRunOnDisk)
 {
   // Constructing a context creates the working directory and writes both the assembled overlay and
   // the manifest into it, before any Port exists.
   const auto context = RunContext{
-      testDirectory("established"),
+      path(),
       {},
       true,
       "myRobot --run",

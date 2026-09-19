@@ -12,6 +12,7 @@
 #include <filesystem>
 #include <fstream>
 #include <gtest/gtest.h>
+#include <nioc/common/filesystem.hpp>
 #include <nioc/terminus/config/testConfig.capnp.h>
 #include <nioc/terminus/utils.hpp>
 #include <nlohmann/json.hpp>
@@ -25,14 +26,28 @@ namespace
 {
 namespace fs = std::filesystem;
 
-fs::path testDirectory()
+/// @brief This test's own directory beneath @p base: `niocUnitTest/<Suite>.<test>`.
+std::filesystem::path unitTestDirectory(
+    const std::filesystem::path& base = std::filesystem::temp_directory_path())
 {
-  const auto directory = fs::temp_directory_path() / "niocUtilsTest";
-  fs::create_directories(directory);
-  return directory;
+  const auto* const info = ::testing::UnitTest::GetInstance()->current_test_info();
+  return base / "niocUnitTest" / (std::string{info->test_suite_name()} + "." + info->name());
 }
 
-TEST(UtilsTest, encodeAsJsonRendersSchemaDefaults)
+// NOLINTNEXTLINE(misc-multiple-inheritance): the fixture is the test and its directory.
+class UtilsTest: public common::ScratchDirectory, public ::testing::Test
+{
+public:
+  UtilsTest(): ScratchDirectory{unitTestDirectory()} {}
+
+protected:
+  [[nodiscard]] fs::path testDirectory() const
+  {
+    return path();
+  }
+};
+
+TEST_F(UtilsTest, encodeAsJsonRendersSchemaDefaults)
 {
   const auto defaults = encodeAsJson(capnp::Schema::from<TestConfig>());
 
@@ -44,7 +59,7 @@ TEST(UtilsTest, encodeAsJsonRendersSchemaDefaults)
   EXPECT_TRUE(defaults.at("leaf").is_object()); // nested struct -> nested object
 }
 
-TEST(UtilsTest, encodeAsJsonSurfacesStructLiteralDefaultsAndQuotes64BitIntegers)
+TEST_F(UtilsTest, encodeAsJsonSurfacesStructLiteralDefaultsAndQuotes64BitIntegers)
 {
   const auto defaults = encodeAsJson(capnp::Schema::from<TestConfig>());
 
@@ -54,7 +69,7 @@ TEST(UtilsTest, encodeAsJsonSurfacesStructLiteralDefaultsAndQuotes64BitIntegers)
   EXPECT_EQ(defaults.at("leaf").at("tag").get<std::string>(), "lit");
 }
 
-TEST(UtilsTest, decodeFromJsonDecodesFields)
+TEST_F(UtilsTest, decodeFromJsonDecodesFields)
 {
   const auto schema = capnp::Schema::from<TestConfig>();
   const auto message = decodeFromJson(R"({"count": 5})", schema);
@@ -63,7 +78,7 @@ TEST(UtilsTest, decodeFromJsonDecodesFields)
   EXPECT_EQ(config.getCount(), 5U);
 }
 
-TEST(UtilsTest, decodeFromJsonIgnoresFieldsOutsideSchema)
+TEST_F(UtilsTest, decodeFromJsonIgnoresFieldsOutsideSchema)
 {
   const auto schema = capnp::Schema::from<TestConfig>();
 
@@ -74,7 +89,7 @@ TEST(UtilsTest, decodeFromJsonIgnoresFieldsOutsideSchema)
   EXPECT_EQ(config.getCount(), 5U);
 }
 
-TEST(UtilsTest, writeJsonFileThenReadJsonFileRoundTrips)
+TEST_F(UtilsTest, writeJsonFileThenReadJsonFileRoundTrips)
 {
   const auto path = testDirectory() / "roundTrip.json";
   const auto original = nlohmann::json{{"name", "value"}, {"nested", {{"count", 3}}}};
@@ -84,14 +99,14 @@ TEST(UtilsTest, writeJsonFileThenReadJsonFileRoundTrips)
   EXPECT_EQ(readJsonFile(path), original);
 }
 
-TEST(UtilsTest, readJsonFileThrowsWhenFileMissing)
+TEST_F(UtilsTest, readJsonFileThrowsWhenFileMissing)
 {
   EXPECT_THROW(
       static_cast<void>(readJsonFile(testDirectory() / "doesNotExist.json")),
       std::runtime_error);
 }
 
-TEST(UtilsTest, readJsonFileThrowsOnMalformedJson)
+TEST_F(UtilsTest, readJsonFileThrowsOnMalformedJson)
 {
   const auto path = testDirectory() / "malformed.json";
   std::ofstream(path) << "{ not valid json";
@@ -99,7 +114,7 @@ TEST(UtilsTest, readJsonFileThrowsOnMalformedJson)
   EXPECT_THROW(static_cast<void>(readJsonFile(path)), nlohmann::json::parse_error);
 }
 
-TEST(UtilsTest, buildFieldNodeChainResolvesOneHandlePerSegment)
+TEST_F(UtilsTest, buildFieldNodeChainResolvesOneHandlePerSegment)
 {
   const auto chain = buildFieldNodeChain(capnp::Schema::from<TestConfig>(), "leaf.value");
   if(not chain.has_value())
@@ -112,7 +127,7 @@ TEST(UtilsTest, buildFieldNodeChainResolvesOneHandlePerSegment)
   EXPECT_EQ(std::string_view{chain->back().getProto().getName().cStr()}, "value");
 }
 
-TEST(UtilsTest, dynamicFieldExtractorReadsNestedLeaf)
+TEST_F(UtilsTest, dynamicFieldExtractorReadsNestedLeaf)
 {
   constexpr auto kLeafValue = std::int64_t{42};
 
@@ -130,7 +145,7 @@ TEST(UtilsTest, dynamicFieldExtractorReadsNestedLeaf)
   EXPECT_EQ((*extractor)(builder.getRoot<capnp::AnyPointer>().asReader()), kLeafValue);
 }
 
-TEST(UtilsTest, dynamicFieldExtractorReadsTopLevelField)
+TEST_F(UtilsTest, dynamicFieldExtractorReadsTopLevelField)
 {
   const auto extractor = dynamicFieldExtractor<std::uint32_t>(
       capnp::Schema::from<TestConfig>(),
@@ -146,7 +161,7 @@ TEST(UtilsTest, dynamicFieldExtractorReadsTopLevelField)
   EXPECT_EQ((*extractor)(builder.getRoot<capnp::AnyPointer>().asReader()), 9U);
 }
 
-TEST(UtilsTest, dynamicFieldExtractorRejectsMissingField)
+TEST_F(UtilsTest, dynamicFieldExtractorRejectsMissingField)
 {
   const auto schema = capnp::Schema::from<TestConfig>();
 
@@ -154,7 +169,7 @@ TEST(UtilsTest, dynamicFieldExtractorRejectsMissingField)
   EXPECT_FALSE(dynamicFieldExtractor<std::int64_t>(schema, "leaf.absent").has_value());
 }
 
-TEST(UtilsTest, dynamicFieldExtractorRejectsNonStructIntermediate)
+TEST_F(UtilsTest, dynamicFieldExtractorRejectsNonStructIntermediate)
 {
   // `count` is a UInt32, so no path can descend through it.
   EXPECT_FALSE(

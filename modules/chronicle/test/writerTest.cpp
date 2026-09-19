@@ -8,14 +8,17 @@
 #include <array>
 #include <cstddef>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <gtest/gtest.h>
 #include <nioc/chronicle/channel.hpp>
 #include <nioc/chronicle/crate.hpp>
 #include <nioc/chronicle/reader.hpp>
 #include <nioc/chronicle/writer.hpp>
+#include <nioc/common/filesystem.hpp>
 #include <nioc/common/utils.hpp>
 #include <span>
+#include <string>
 #include <thread>
 #include <utility>
 #include <vector>
@@ -47,14 +50,6 @@ void fill(const Reservation& reservation, const std::span<const std::byte> sourc
   std::memcpy(reservation.span().data(), source.data(), source.size());
 }
 
-fs::path makeFreshEmptyDir(std::string_view name)
-{
-  const auto path = fs::temp_directory_path() / "nioc-chronicleTest" / name;
-  fs::remove_all(path);
-  fs::create_directories(path);
-  return path;
-}
-
 fs::path rollPath(const fs::path& logRoot, const ChannelId channelId, const std::uint64_t rollId)
 {
   return logRoot / common::hexString(channelId.mValue) / buildRollName(rollId);
@@ -75,47 +70,59 @@ std::vector<Entry> drain(const fs::path& logRoot)
   return entries;
 }
 
+/// @brief This test's own directory beneath @p base: `niocUnitTest/<Suite>.<test>`.
+std::filesystem::path unitTestDirectory(
+    const std::filesystem::path& base = std::filesystem::temp_directory_path())
+{
+  const auto* const info = ::testing::UnitTest::GetInstance()->current_test_info();
+  return base / "niocUnitTest" / (std::string{info->test_suite_name()} + "." + info->name());
+}
+
+// NOLINTNEXTLINE(misc-multiple-inheritance): the fixture is the test and its directory.
+class WriterTest: public common::ScratchDirectory, public ::testing::Test
+{
+public:
+  WriterTest(): ScratchDirectory{unitTestDirectory()} {}
+};
+
 } // namespace
 
-TEST(Writer, constructionAcceptsEmptyDirectory)
+TEST_F(WriterTest, constructionAcceptsEmptyDirectory)
 {
-  EXPECT_NO_THROW(Writer(makeFreshEmptyDir("ctor-default")));
+  EXPECT_NO_THROW(Writer{path()});
 }
 
-TEST(Writer, constructionRejectsMissingDirectory)
+TEST_F(WriterTest, constructionRejectsMissingDirectory)
 {
-  const auto missing = fs::temp_directory_path() / "nioc-chronicleTest" / "doesNotExist";
-  fs::remove_all(missing);
-  EXPECT_THROW(Writer{missing}, std::invalid_argument);
+  EXPECT_THROW(Writer{path() / "doesNotExist"}, std::invalid_argument);
 }
 
-TEST(Writer, constructionRejectsFilePath)
+TEST_F(WriterTest, constructionRejectsFilePath)
 {
-  const auto parent = makeFreshEmptyDir("ctor-filePath");
-  const auto filePath = parent / "notADirectory";
+  const auto filePath = path() / "notADirectory";
   {
     const auto sink = std::ofstream(filePath);
   }
   EXPECT_THROW(Writer{filePath}, std::invalid_argument);
 }
 
-TEST(Writer, constructionRejectsNonEmptyDirectory)
+TEST_F(WriterTest, constructionRejectsNonEmptyDirectory)
 {
-  const auto dir = makeFreshEmptyDir("ctor-nonEmpty");
+  const auto dir = path();
   {
     const auto sink = std::ofstream(dir / "leftover");
   }
   EXPECT_THROW(Writer{dir}, std::invalid_argument);
 }
 
-TEST(Writer, writeOneShotRoundTrips)
+TEST_F(WriterTest, writeOneShotRoundTrips)
 {
   const auto dataA = makeBytes(20, std::byte{1});
   const auto dataB = makeBytes(34, std::byte{100});
 
   const auto logPath = [&]
   {
-    auto writer = Writer{makeFreshEmptyDir("writeOneShot"), 256};
+    auto writer = Writer{path(), 256};
     writer.write(channelA, dataA);
     writer.write(channelB, dataB);
     return writer.path();
@@ -130,14 +137,14 @@ TEST(Writer, writeOneShotRoundTrips)
   expectBytesEqual(dataB, entries.at(1).mCrate.span());
 }
 
-TEST(Writer, reserveAndRecordBuildsInPlace)
+TEST_F(WriterTest, reserveAndRecordBuildsInPlace)
 {
   const auto first = makeBytes(20, std::byte{1});
   const auto second = makeBytes(30, std::byte{50});
 
   const auto logPath = [&]
   {
-    auto writer = Writer{makeFreshEmptyDir("reserveAndRecord"), 256};
+    auto writer = Writer{path(), 256};
     auto& channel = writer.channel(channelA);
 
     {
@@ -161,13 +168,13 @@ TEST(Writer, reserveAndRecordBuildsInPlace)
   expectBytesEqual(second, entries.at(1).mCrate.span());
 }
 
-TEST(Writer, rollsOverWhenFull)
+TEST_F(WriterTest, rollsOverWhenFull)
 {
   const auto frame = makeBytes(100, std::byte{7});
 
   const auto logPath = [&]
   {
-    auto writer = Writer{makeFreshEmptyDir("rollsOver"), 128};
+    auto writer = Writer{path(), 128};
     auto& channel = writer.channel(channelA);
     channel.write(frame); // roll 0
     channel.write(frame); // would overflow roll 0 (104 + 104 > 128) -> roll 1
@@ -183,13 +190,13 @@ TEST(Writer, rollsOverWhenFull)
   expectBytesEqual(frame, entries.at(1).mCrate.span());
 }
 
-TEST(Writer, framesLargerThanRollCapacityGetOwnRoll)
+TEST_F(WriterTest, framesLargerThanRollCapacityGetOwnRoll)
 {
   const auto big = makeBytes(300, std::byte{3});
 
   const auto logPath = [&]
   {
-    auto writer = Writer{makeFreshEmptyDir("bigFrame"), 128};
+    auto writer = Writer{path(), 128};
     writer.write(channelA, big);
     return writer.path();
   }();
@@ -199,7 +206,7 @@ TEST(Writer, framesLargerThanRollCapacityGetOwnRoll)
   expectBytesEqual(big, entries.at(0).mCrate.span());
 }
 
-TEST(Writer, concurrentChannelsConserveEveryFrame)
+TEST_F(WriterTest, concurrentChannelsConserveEveryFrame)
 {
   constexpr auto kThreads = 4ULL;
   constexpr auto kFramesPerThread = 64ULL;
@@ -208,7 +215,7 @@ TEST(Writer, concurrentChannelsConserveEveryFrame)
   // pairs so the read-back can prove conservation and per-channel FIFO order.
   const auto logPath = [&]
   {
-    auto writer = Writer{makeFreshEmptyDir("concurrentChannels")};
+    auto writer = Writer{path()};
 
     auto producers = std::vector<std::thread>{};
     producers.reserve(kThreads);
@@ -257,13 +264,13 @@ TEST(Writer, concurrentChannelsConserveEveryFrame)
   }
 }
 
-TEST(Writer, recordsAcrossChannelsAndReplaysInGlobalOrder)
+TEST_F(WriterTest, recordsAcrossChannelsAndReplaysInGlobalOrder)
 {
   constexpr auto kFrameCount = 5U;
 
   const auto logPath = [&]
   {
-    auto writer = Writer{makeFreshEmptyDir("timelineOrder"), 256};
+    auto writer = Writer{path(), 256};
     for(auto index = std::uint8_t{0}; index < kFrameCount; ++index)
     {
       const auto frame = makeBytes(4, std::byte{index});
@@ -286,9 +293,9 @@ TEST(Writer, recordsAcrossChannelsAndReplaysInGlobalOrder)
   EXPECT_EQ(kFrameCount, index);
 }
 
-TEST(Writer, path)
+TEST_F(WriterTest, path)
 {
-  const auto dir = makeFreshEmptyDir("writerPath");
+  const auto dir = path();
   const auto writer = Writer{dir};
   EXPECT_EQ(writer.path(), dir);
 }

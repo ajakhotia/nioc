@@ -7,11 +7,11 @@
 #include <filesystem>
 #include <fstream>
 #include <gtest/gtest.h>
+#include <nioc/common/filesystem.hpp>
 #include <nioc/terminus/configOverlay.hpp>
 #include <nlohmann/json.hpp>
 #include <stdexcept>
 #include <string>
-#include <vector>
 
 namespace nioc::terminus
 {
@@ -20,31 +20,42 @@ namespace fs = std::filesystem;
 namespace
 {
 
-fs::path testDirectory(const fs::path& name)
+/// @brief This test's own directory beneath @p base: `niocUnitTest/<Suite>.<test>`.
+std::filesystem::path unitTestDirectory(
+    const std::filesystem::path& base = std::filesystem::temp_directory_path())
 {
-  return fs::temp_directory_path() / "niocConfigOverlayTest" / name;
+  const auto* const info = ::testing::UnitTest::GetInstance()->current_test_info();
+  return base / "niocUnitTest" / (std::string{info->test_suite_name()} + "." + info->name());
 }
 
-fs::path writeConfigFile(const fs::path& name, const std::string& text)
+// NOLINTNEXTLINE(misc-multiple-inheritance): the fixture is the test and its directory.
+class ConfigOverlayTest: public common::ScratchDirectory, public ::testing::Test
 {
-  const auto path = testDirectory(name);
-  fs::create_directories(path.parent_path());
-  std::ofstream(path) << text;
-  return path;
-}
+public:
+  ConfigOverlayTest(): ScratchDirectory{unitTestDirectory()} {}
 
-/// Stage a recording directory holding a `configOverlay.json`, as playback reads it.
-fs::path makeRecording(const fs::path& name, const std::string& overlayText)
-{
-  const auto dir = testDirectory(name);
-  fs::create_directories(dir);
-  std::ofstream(dir / "configOverlay.json") << overlayText;
-  return dir;
-}
+protected:
+  [[nodiscard]] fs::path writeConfigFile(const fs::path& name, const std::string& text) const
+  {
+    const auto path = this->path() / name;
+    fs::create_directories(path.parent_path());
+    std::ofstream(path) << text;
+    return path;
+  }
+
+  /// Stage a recording directory holding a `configOverlay.json`, as playback reads it.
+  [[nodiscard]] fs::path makeRecording(const fs::path& name, const std::string& overlayText) const
+  {
+    const auto dir = path() / name;
+    fs::create_directories(dir);
+    std::ofstream(dir / "configOverlay.json") << overlayText;
+    return dir;
+  }
+};
 
 } // namespace
 
-TEST(ConfigOverlayTest, layersFilesLeftToRightThenOverrides)
+TEST_F(ConfigOverlayTest, layersFilesLeftToRightThenOverrides)
 {
   const auto base = writeConfigFile(
       "base.json",
@@ -67,7 +78,7 @@ TEST(ConfigOverlayTest, layersFilesLeftToRightThenOverrides)
       "brick");
 }
 
-TEST(ConfigOverlayTest, overrideCreatesAnAbsentPath)
+TEST_F(ConfigOverlayTest, overrideCreatesAnAbsentPath)
 {
   const auto overrides = ConfigOverlay{{}, {}, {"routines.drivers.hiroHills.miningTimeMs=5"}};
 
@@ -77,7 +88,7 @@ TEST(ConfigOverlayTest, overrideCreatesAnAbsentPath)
       5);
 }
 
-TEST(ConfigOverlayTest, playbackLayersRecordedOverlayBeneathThisRun)
+TEST_F(ConfigOverlayTest, playbackLayersRecordedOverlayBeneathThisRun)
 {
   const auto recording = makeRecording(
       "replayed",
@@ -96,12 +107,12 @@ TEST(ConfigOverlayTest, playbackLayersRecordedOverlayBeneathThisRun)
       "brick");
 }
 
-TEST(ConfigOverlayTest, playbackRejectsNonRecording)
+TEST_F(ConfigOverlayTest, playbackRejectsNonRecording)
 {
-  EXPECT_THROW((ConfigOverlay{testDirectory("noSuchRecording"), {}, {}}), std::invalid_argument);
+  EXPECT_THROW((ConfigOverlay{path() / "noSuchRecording", {}, {}}), std::invalid_argument);
 }
 
-TEST(ConfigOverlayTest, overridesLookupIsByNameAcrossSections)
+TEST_F(ConfigOverlayTest, overridesLookupIsByNameAcrossSections)
 {
   const auto config = writeConfigFile(
       "byName.json",
@@ -116,13 +127,13 @@ TEST(ConfigOverlayTest, overridesLookupIsByNameAcrossSections)
   EXPECT_EQ(overlay.acquireOverrides("rohanTheRoadBuilder").at("brickPerRoad"), 2);
 }
 
-TEST(ConfigOverlayTest, acquireOverridesReturnsEmptyForUnknownRoutine)
+TEST_F(ConfigOverlayTest, acquireOverridesReturnsEmptyForUnknownRoutine)
 {
   const auto overlay = ConfigOverlay{{}, {}, {}};
   EXPECT_TRUE(overlay.acquireOverrides("neverConfigured").empty());
 }
 
-TEST(ConfigOverlayTest, rejectsNameInMoreThanOneSection)
+TEST_F(ConfigOverlayTest, rejectsNameInMoreThanOneSection)
 {
   const auto config = writeConfigFile(
       "collision.json",
@@ -133,10 +144,10 @@ TEST(ConfigOverlayTest, rejectsNameInMoreThanOneSection)
   EXPECT_THROW((ConfigOverlay{{}, {config}, {}}), std::invalid_argument);
 }
 
-TEST(ConfigOverlayTest, writePersistsTheDocument)
+TEST_F(ConfigOverlayTest, writePersistsTheDocument)
 {
   const auto overrides = ConfigOverlay{{}, {}, {"routines.drivers.hiroHills.miningTimeMs=4"}};
-  const auto directory = testDirectory("persisted");
+  const auto directory = path() / "persisted";
   fs::create_directories(directory);
 
   overrides.write(directory);

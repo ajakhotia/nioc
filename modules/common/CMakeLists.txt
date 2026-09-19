@@ -9,6 +9,7 @@ add_exported_library(
   EXPORT
     niocTargets
   SOURCES
+    src/filesystem.cpp
     src/signalCatcher.cpp
     src/utils.cpp
   HEADERS

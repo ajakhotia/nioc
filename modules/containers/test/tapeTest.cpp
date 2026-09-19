@@ -12,13 +12,14 @@
 #include <gtest/gtest.h>
 #include <iterator>
 #include <latch>
+#include <nioc/common/filesystem.hpp>
 #include <nioc/containers/mmapArray.hpp>
 #include <nioc/containers/tape.hpp>
 #include <numeric>
 #include <ranges>
 #include <span>
 #include <stdexcept>
-#include <string_view>
+#include <string>
 #include <thread>
 #include <type_traits>
 #include <utility>
@@ -46,16 +47,24 @@ static_assert(std::is_same_v<decltype(std::declval<const IntArrayTape&>().at(0))
 // shrink_to_fit is available when the storage can be resized (e.g. std::vector, MmapArray).
 static_assert(requires(Tape<std::vector<int>> tape) { tape.shrink_to_fit(); });
 
-fs::path freshPath(const std::string_view name)
+/// @brief This test's own directory beneath @p base: `niocUnitTest/<Suite>.<test>`.
+std::filesystem::path unitTestDirectory(
+    const std::filesystem::path& base = std::filesystem::temp_directory_path())
 {
-  const auto directory = fs::temp_directory_path() / "nioc-containersTest";
-  fs::create_directories(directory);
-  const auto path = directory / name;
-  fs::remove(path);
-  return path;
+  const auto* const info = ::testing::UnitTest::GetInstance()->current_test_info();
+  return base / "niocUnitTest" / (std::string{info->test_suite_name()} + "." + info->name());
 }
 
-TEST(Tape, claimReservesSlotsAndFillsToCapacity)
+// NOLINTNEXTLINE(misc-multiple-inheritance): the fixture is the test and its directory.
+class TapeTest: public common::ScratchDirectory, public ::testing::Test
+{
+public:
+  TapeTest(): ScratchDirectory{unitTestDirectory()} {}
+};
+
+} // namespace
+
+TEST_F(TapeTest, claimReservesSlotsAndFillsToCapacity)
 {
   auto tape = Tape<std::array<int, 4>>{};
   EXPECT_TRUE(tape.empty());
@@ -79,7 +88,7 @@ TEST(Tape, claimReservesSlotsAndFillsToCapacity)
   EXPECT_EQ(values, (std::vector<int>{1, 2, 3, 4}));
 }
 
-TEST(Tape, claimReturnsAnEmptySpanWhenItDoesNotFit)
+TEST_F(TapeTest, claimReturnsAnEmptySpanWhenItDoesNotFit)
 {
   auto tape = Tape<std::array<int, 4>>{};
 
@@ -93,14 +102,14 @@ TEST(Tape, claimReturnsAnEmptySpanWhenItDoesNotFit)
   EXPECT_TRUE(tape.full());
 }
 
-TEST(Tape, claimLargerThanCapacityReturnsAnEmptySpan)
+TEST_F(TapeTest, claimLargerThanCapacityReturnsAnEmptySpan)
 {
   auto tape = Tape<std::array<int, 4>>{};
   EXPECT_TRUE(tape.claim(5).empty());
   EXPECT_EQ(tape.size(), 0U);
 }
 
-TEST(Tape, rewindAtTheTailFreesTheUnusedSpace)
+TEST_F(TapeTest, rewindAtTheTailFreesTheUnusedSpace)
 {
   auto tape = Tape<std::array<int, 8>>{};
 
@@ -119,7 +128,7 @@ TEST(Tape, rewindAtTheTailFreesTheUnusedSpace)
   EXPECT_EQ(tape.size(), 5U);
 }
 
-TEST(Tape, rewindIsANoOpOnceALaterClaimStrandsTheTail)
+TEST_F(TapeTest, rewindIsANoOpOnceALaterClaimStrandsTheTail)
 {
   auto tape = Tape<std::array<int, 8>>{};
 
@@ -139,7 +148,7 @@ TEST(Tape, rewindIsANoOpOnceALaterClaimStrandsTheTail)
   EXPECT_EQ(third.data(), std::next(second.data(), 2));
 }
 
-TEST(Tape, emplaceConstructsInPlaceAndReportsFullWithNull)
+TEST_F(TapeTest, emplaceConstructsInPlaceAndReportsFullWithNull)
 {
   auto tape = Tape<std::array<int, 3>>{};
 
@@ -155,7 +164,7 @@ TEST(Tape, emplaceConstructsInPlaceAndReportsFullWithNull)
   EXPECT_EQ(std::accumulate(tape.begin(), tape.end(), 0), 60);
 }
 
-TEST(Tape, adaptsAPreSizedVector)
+TEST_F(TapeTest, adaptsAPreSizedVector)
 {
   auto tape = Tape<std::vector<int>>{5};
   EXPECT_EQ(tape.capacity(), 5U);
@@ -169,9 +178,9 @@ TEST(Tape, adaptsAPreSizedVector)
   EXPECT_EQ(tape.storage().size(), 5U); // the whole storage, including the unwritten tail
 }
 
-TEST(Tape, adaptsAMemoryMappedByteArray)
+TEST_F(TapeTest, adaptsAMemoryMappedByteArray)
 {
-  const auto path = freshPath("tapeBytes");
+  const auto path = this->path() / "tapeBytes";
 
   auto tape = Tape<MmapArray<std::byte>>{path, 16};
   EXPECT_EQ(tape.capacity(), 16U);
@@ -191,7 +200,7 @@ TEST(Tape, adaptsAMemoryMappedByteArray)
   EXPECT_EQ(tape[11], std::byte{0xCD});
 }
 
-TEST(Tape, shrinkToFitTrimsCapacityToTheWrittenSize)
+TEST_F(TapeTest, shrinkToFitTrimsCapacityToTheWrittenSize)
 {
   auto tape = Tape<std::vector<int>>{8};
   EXPECT_EQ(tape.capacity(), 8U);
@@ -206,9 +215,9 @@ TEST(Tape, shrinkToFitTrimsCapacityToTheWrittenSize)
   EXPECT_EQ(std::accumulate(tape.begin(), tape.end(), 0), 6); // written elements survive
 }
 
-TEST(Tape, shrinkToFitTrimsTheBackingFile)
+TEST_F(TapeTest, shrinkToFitTrimsTheBackingFile)
 {
-  const auto path = freshPath("tapeShrink");
+  const auto path = this->path() / "tapeShrink";
 
   auto tape = Tape<MmapArray<std::byte>>{path, 16};
   const auto head = tape.claim(4);
@@ -224,7 +233,7 @@ TEST(Tape, shrinkToFitTrimsTheBackingFile)
 // capacity-N tape must yield exactly the indices {0..N-1} — no duplicates, no gaps — whatever the
 // interleaving. (gtest ASSERT_* must not run inside the worker lambdas; record, then check after
 // the threads join.)
-TEST(Tape, concurrentClaimsAreDisjointAndComplete)
+TEST_F(TapeTest, concurrentClaimsAreDisjointAndComplete)
 {
   constexpr std::size_t kThreads = 8;
   constexpr std::size_t kPerThread = 2000;
@@ -266,7 +275,7 @@ TEST(Tape, concurrentClaimsAreDisjointAndComplete)
 // Variable-size claims under contention: the successful runs must tile [0, size()) with no gaps and
 // no overlaps. This exercises the non-monotonic "full" path (a large claim fails while a smaller
 // one still fits) and the empty-span sentinel.
-TEST(Tape, concurrentVariableClaimsTileTheWrittenRegion)
+TEST_F(TapeTest, concurrentVariableClaimsTileTheWrittenRegion)
 {
   constexpr std::size_t kThreads = 8;
   constexpr std::size_t kAttempts = 1000;
@@ -314,7 +323,7 @@ TEST(Tape, concurrentVariableClaimsTileTheWrittenRegion)
   EXPECT_LE(tape.size(), kCapacity);
 }
 
-TEST(Tape, atReturnsClaimedElementsAndIsWritable)
+TEST_F(TapeTest, atReturnsClaimedElementsAndIsWritable)
 {
   auto tape = Tape<std::array<int, 8>>{};
   const auto slot = tape.claim(3);
@@ -329,7 +338,7 @@ TEST(Tape, atReturnsClaimedElementsAndIsWritable)
   EXPECT_EQ(&tape.at(1), &tape[1]);
 }
 
-TEST(Tape, atThrowsBeyondTheClaimedSize)
+TEST_F(TapeTest, atThrowsBeyondTheClaimedSize)
 {
   auto tape = Tape<std::array<int, 8>>{};
   static_cast<void>(tape.claim(2)); // size() == 2, although capacity is 8
@@ -341,5 +350,4 @@ TEST(Tape, atThrowsBeyondTheClaimedSize)
   EXPECT_THROW(static_cast<void>(tape.at(8)), std::out_of_range);
 }
 
-} // namespace
 } // namespace nioc::containers
